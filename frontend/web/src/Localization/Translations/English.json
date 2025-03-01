@@ -1,0 +1,26 @@
+{
+    "common": {
+        "login": "Log in",
+        "signup": "Sign up",
+        "firstName": "firstName",
+        "lastName": "lastName",
+        "email": "email",
+        "password": "password",
+        "confirmPassword": "Confirm password",
+        "google": "Google",
+        "sms": "SMS",
+        "phoneNumber": "Phone number"
+    },
+    "authModal": {
+        "title": "Login/Sign Up",
+        "titleQuestion": "Don't have an account?",
+        "titleQuestionAnswer": "Create one",
+        "loginQuestion": "Don't have an account?",
+        "loginQuestionAnswer": "Create one",
+        "signupQuestion": "already have an account?",
+        "signupQuestionAnswer": "Login",
+        "orLoginWith": "Or login with",
+        "consent": "I agree to the",
+        "consentLink": "terms & conditions"
+    }
+}
