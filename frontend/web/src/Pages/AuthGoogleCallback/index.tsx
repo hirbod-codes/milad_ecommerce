@@ -4,11 +4,23 @@ import { Navigate, useSearchParams } from "react-router";
 export function AuthGoogleCallback() {
     const [searchParams, setSearchParams] = useSearchParams();
 
-    let invalidVariables = searchParams.has('access_token') !== true || searchParams.has('refresh_token') !== true
+    for (const k of searchParams.keys()) {
+        console.log('k', k)
+    }
 
-    if (!invalidVariables)
-        AuthManager.storeTokens(searchParams.get('access_token')!, searchParams.get('refresh_token')!)
+    for (const v of searchParams.values()) {
+        console.log('v', v)
+    }
 
-    return (<Navigate to={'/'} />)
+    // let invalidVariables = searchParams.has('access_token') !== true || searchParams.has('refresh_token') !== true
+
+    // if (!invalidVariables)
+    //     AuthManager.storeTokens(searchParams.get('access_token')!, searchParams.get('refresh_token')!)
+
+    return (
+        <>
+            HI
+        </>
+    )
 }
 
