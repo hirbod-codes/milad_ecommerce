@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { emailConfig, googleOAuth2Config, OtpProviderConfig, transporter, userRepository } from ".";
+import { emailConfig, googleOAuth2Config, hostPort, OtpProviderConfig, transporter, userRepository } from ".";
 import { number, string } from "yup";
 import { DateTime } from "luxon";
 import { SessionManager } from "./Session/SessionManager";
@@ -358,7 +358,7 @@ router.post('/login-email', async (req, res) => {
     }
 })
 
-router.get('/auth/google', async (req, res) => {
+router.get('/auth/google2', async (req, res) => {
     try {
         console.log('received request to /auth/google')
 
@@ -551,6 +551,129 @@ router.get('/auth/google/callback', async (req, res) => {
             res.redirect(`${decodeURIComponent(redirectUrl)}?access_token=${tokens.accessToken}&refresh_token=${tokens.refreshToken}`)
         else
             res.status(r === undefined ? 200 : 201).json(tokens)
+    } catch (e) {
+        console.error(e)
+        res.sendStatus(500)
+    }
+})
+
+router.get('/auth/google', async (req, res) => {
+    try {
+        console.log('received request to /auth/google')
+
+        const { code, codeVerifier } = req.body
+
+        if (!string().required().isValidSync(code)) {
+            console.log('Invalid code query variable provided')
+            res.destroy()
+            return
+        }
+
+        if (!string().required().isValidSync(codeVerifier)) {
+            console.log('Invalid code query variable provided')
+            res.destroy()
+            return
+        }
+
+        console.log('code', code)
+        console.log('codeVerifier', codeVerifier)
+
+        let data = new URLSearchParams()
+        data.append('code', code)
+        data.append('client_id', googleOAuth2Config.clientId)
+        data.append('client_secret', googleOAuth2Config.clientSecret)
+        data.append('redirect_uri', `http://127.0.0.1:80/`)
+        data.append('grant_type', 'authorization_code')
+        data.append('codeVerifier', codeVerifier)
+
+        let accessToken = undefined
+        try {
+            let tokenResponse = await httpsRequest({
+                hostname: 'oauth2.googleapis.com',
+                path: '/token',
+                port: 443,
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                }
+            }, data.toString())
+
+            accessToken = JSON.parse(tokenResponse.data).access_token
+        } catch (e) {
+            console.error(e)
+            throw new Error('system failed to get google\'s access token')
+        }
+
+        if (!accessToken)
+            throw new Error('system failed to get google\'s access token')
+
+        console.log('accessToken', accessToken)
+
+        let userInfo = undefined
+        try {
+            let userInfoResponse = await httpsRequest({
+                hostname: 'www.googleapis.com',
+                path: '/oauth2/v2/userinfo',
+                port: 443,
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${accessToken}`
+                }
+            })
+
+            userInfo = JSON.parse(userInfoResponse.data)
+        } catch (e) {
+            console.error(e)
+            throw new Error('system failed to get google account\'s user info')
+        }
+
+        if (!userInfo)
+            throw new Error('system failed to get google account\'s user info')
+
+        console.log('userInfo', userInfo)
+
+        let tokens = undefined
+        try {
+            const authResponse = await fetch('http://authorization:3000/generate-tokens', {
+                method: 'post',
+                headers: [['Content-Type', 'application/json'], ['Accept', 'application/json']],
+                body: JSON.stringify({ username: userInfo.email })
+            })
+            if (!authResponse.ok)
+                throw new Error('authorization service failed to create tokens')
+
+            tokens = await authResponse.json()
+        } catch (e) {
+            console.error(e)
+            throw new Error('authorization service failed to create tokens')
+        }
+
+        console.log('tokens', tokens)
+
+        let r = undefined
+        try {
+            if (!await userRepository.emailExists(userInfo.email)) {
+                const now = DateTime.utc().toUnixInteger()
+                r = await userRepository.createUser({
+                    schemaVersion: 'v0.0.0',
+                    username: userInfo.email,
+                    email: userInfo.email,
+                    firstName: userInfo.given_name,
+                    lastName: userInfo.family_name,
+                    avatarUrl: userInfo.picture,
+                    createdAt: now,
+                    updatedAt: now,
+                })
+            }
+        } catch (e) {
+            console.error(e)
+            throw new Error('system failed to create user')
+        }
+
+        if (r !== undefined && r.acknowledged !== true)
+            throw new Error('system failed to create user')
+
+        res.status(r === undefined ? 200 : 201).json(tokens)
     } catch (e) {
         console.error(e)
         res.sendStatus(500)

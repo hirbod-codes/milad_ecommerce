@@ -6,6 +6,7 @@ import { MongoDB } from "./DB/mongodb";
 import { getBooleanEnv, getIntegerEnv, getStringEnv } from "./helpers";
 import { schedule } from "node-cron";
 import { DateTime } from "luxon";
+import cors from "cors";
 
 dotenv.config({ debug: process.env.DEBUG !== undefined ? Boolean(process.env.DEBUG) : undefined })
 
@@ -44,6 +45,13 @@ export const db = new MongoDB(dbConfig);
 const app = express()
 
 app.disable('x-powered-by')
+
+app.use(cors({
+    origin: '*',
+    methods: ['*'],
+    allowedHeaders: ['*'],
+    credentials: true,
+}));
 
 // To Do: Add rate limiter middleware
 

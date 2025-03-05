@@ -1,4 +1,4 @@
-import { Point } from "@/src/Lib/Math"
+import { Point } from "@/src/Lib"
 import { cn } from "@/src/shadcn/lib/utils"
 import { ComponentProps, PointerEvent, ReactNode, useEffect, useRef, useState } from "react"
 

@@ -6,11 +6,12 @@ import { router } from "./router";
 import { getBooleanEnv, getIntegerEnv, getStringEnv, httpRequest } from "./helpers";
 import { UserRepository } from "./DB/Repositories/UserRepository";
 import nodemailer from "nodemailer";
+import cors from "cors";
 
 dotenv.config({ debug: process.env.DEBUG !== undefined ? Boolean(process.env.DEBUG) : undefined })
 
-const host = getStringEnv('HOST', 'The HOST environment variable is not provided')
-const port = getIntegerEnv('PORT', 'The PORT environment variable is not provided', (s) => s.min(1025))
+export const hostName = getStringEnv('HOST', 'The HOST environment variable is not provided')
+export const hostPort = getIntegerEnv('PORT', 'The PORT environment variable is not provided', (s) => s.min(1025))
 
 // Communications
 export const jwtSecret = getStringEnv('JWT_SECRET', 'The Jwt secret environment variable is not provided')
@@ -76,6 +77,13 @@ const app = express()
 
 app.disable('x-powered-by')
 
+app.use(cors({
+    origin: '*',
+    methods: ['*'],
+    allowedHeaders: ['*'],
+    credentials: true,
+}));
+
 // To Do: Add rate limiter middleware
 
 app.use(express.json())
@@ -117,4 +125,4 @@ app.all('*', (req, res) => {
     res.sendStatus(404)
 })
 
-app.listen(port, host, () => console.log(`listening on ${host}:${port}...`))
+app.listen(hostPort, hostName, () => console.log(`listening on ${hostName}:${hostPort}...`))
