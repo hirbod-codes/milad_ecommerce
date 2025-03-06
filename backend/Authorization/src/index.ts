@@ -40,41 +40,42 @@ export const db = new MongoDB(dbConfig);
         }
         catch (e) { console.error(e) }
     }
+
+    const app = express()
+
+    app.disable('x-powered-by')
+
+    app.use(cors({
+        origin: '*',
+        methods: ['*'],
+        allowedHeaders: ['*'],
+        credentials: true,
+    }));
+
+    // To Do: Add rate limiter middleware
+
+    app.use(express.json())
+
+    app.use(router)
+
+    app.all('*', (req, res) => {
+        res.sendStatus(404)
+    })
+
+    app.listen(port, host, () => console.log(`listening on ${host}:${port}...`))
+
+    const scheduleCallback = async () => {
+        console.log('running scheduled task...')
+
+        let dt = DateTime.utc()
+
+        console.log('\n' + dt.toString() + '\n')
+
+        let r = await (await db.getRefreshTokensCollection()).deleteMany({ expiresAt: { $lte: dt.toUnixInteger() } })
+
+        console.log('scheduled task result', r)
+    }
+
+    schedule('0 0 0 * * *', scheduleCallback, { name: 'expired_tokens_cleaner', runOnInit: true, timezone: 'UTC' })
+
 })()
-
-const app = express()
-
-app.disable('x-powered-by')
-
-app.use(cors({
-    origin: '*',
-    methods: ['*'],
-    allowedHeaders: ['*'],
-    credentials: true,
-}));
-
-// To Do: Add rate limiter middleware
-
-app.use(express.json())
-
-app.use(router)
-
-app.all('*', (req, res) => {
-    res.sendStatus(404)
-})
-
-app.listen(port, host, () => console.log(`listening on ${host}:${port}...`))
-
-const scheduleCallback = async () => {
-    console.log('running scheduled task...')
-
-    let dt = DateTime.utc()
-
-    console.log('\n' + dt.toString() + '\n')
-
-    let r = await (await db.getRefreshTokensCollection()).deleteMany({ expiresAt: { $lte: dt.toUnixInteger() } })
-
-    console.log('scheduled task result', r)
-}
-
-schedule('0 0 0 * * *', scheduleCallback, { name: 'expired_tokens_cleaner', runOnInit: true, timezone: 'UTC' })
