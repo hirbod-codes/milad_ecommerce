@@ -7,18 +7,54 @@ import { getBooleanEnv, getIntegerEnv, getStringEnv } from "./helpers";
 import { schedule } from "node-cron";
 import { DateTime } from "luxon";
 import cors from "cors";
+import { createCluster } from "redis";
+import nodemailer from "nodemailer";
+import { UserRepository } from "./DB/Repositories/UserRepository";
 
 dotenv.config({ debug: process.env.DEBUG !== undefined ? Boolean(process.env.DEBUG) : undefined })
 
-const host = getStringEnv('HOST', 'The HOST environment variable is not provided')
-const port = getIntegerEnv('PORT', 'The PORT environment variable is not provided', (s) => s.min(1025))
-const jwtSecret = getStringEnv('JWT_SECRET', 'The Jwt secret environment variable is not provided')
+export const hostName = getStringEnv('HOST', 'The HOST environment variable is not provided')
+export const hostPort = getIntegerEnv('PORT', 'The PORT environment variable is not provided', (s) => s.min(1025))
+
+export const jwtSecret = getStringEnv('JWT_SECRET', 'The Jwt secret environment variable is not provided')
 
 export const accessTokenExpiresIn = getIntegerEnv('ACCESS_TOKEN_EXPIRES_IN', 'The Access token expires in environment variable is not provided')
 
 export const refreshTokenExpiresIn = getIntegerEnv('REFRESH_TOKEN_EXPIRES_IN', 'The Refresh token expires in environment variable is not provided')
 
 export const authManager = new AuthManager(jwtSecret, 'HS512', accessTokenExpiresIn, refreshTokenExpiresIn)
+
+export const otpProviderConfig = {
+    otpProviderUsername: getStringEnv('OTP_PROVIDER_USERNAME'),
+    otpProviderPassword: getStringEnv('OTP_PROVIDER_PASSWORD'),
+    otpProviderSenderNumber: getStringEnv('OTP_PROVIDER_SENDER_NUMBER')
+}
+
+export const emailConfig = {
+    user: getStringEnv('EMAIL'),
+    pass: getStringEnv('EMAIL_PASSWORD'),
+}
+
+export const transporter = nodemailer.createTransport({
+    service: "Gmail",
+    auth: {
+        user: emailConfig.user,
+        pass: emailConfig.pass,
+    }
+})
+
+export const googleOAuth2Config = {
+    clientId: getStringEnv('GOOGLE_CLIENT_ID'),
+    clientSecret: getStringEnv('GOOGLE_CLIENT_SECRET'),
+}
+
+// Stores
+const redisInitialNodeUrl = getStringEnv('REDIS_INITIAL_NODE_URL')
+
+export const redisClient = createCluster({
+    rootNodes: [{ url: redisInitialNodeUrl }],
+    useReplicas: true
+});
 
 export const dbConfig = {
     databaseName: getStringEnv('DB_DATABASE_NAME'),
@@ -32,10 +68,13 @@ export const dbConfig = {
 
 export const db = new MongoDB(dbConfig);
 
+export let userRepository: UserRepository = undefined!;
+
 (async () => {
     while (true) {
         try {
             await db.initializeDb();
+            userRepository = new UserRepository(await db.getUserCollection())
             break;
         }
         catch (e) { console.error(e) }
@@ -62,7 +101,7 @@ export const db = new MongoDB(dbConfig);
         res.sendStatus(404)
     })
 
-    app.listen(port, host, () => console.log(`listening on ${host}:${port}...`))
+    app.listen(hostPort, hostName, () => console.log(`listening on ${hostName}:${hostPort}...`))
 
     const scheduleCallback = async () => {
         console.log('running scheduled task...')

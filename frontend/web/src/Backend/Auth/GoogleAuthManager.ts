@@ -1,6 +1,8 @@
 import { Auth } from "./Auth";
 
 export class GoogleAuthManager extends Auth {
+    static redirectUri: String = 'http://127.0.0.1:80/'
+
     static async goToConcentPage() {
         const codeVerifier = this.generateRandomString(128);
         const codeChallenge = await this.generateCodeChallenge(codeVerifier);
@@ -8,11 +10,10 @@ export class GoogleAuthManager extends Auth {
         localStorage.setItem('code_verifier', codeVerifier);
 
         const clientId = '380103624736-onrv4mne42t89atn4gpougk9ocqln5pl.apps.googleusercontent.com'
-        const redirectUri = 'http://127.0.0.1:80/'
 
-        const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?response_type=code&client_id=${clientId}&redirect_uri=${redirectUri}&scope=openid profile email&code_challenge=${codeChallenge}&code_challenge_method=S256`;
+        const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?response_type=code&client_id=${clientId}&redirect_uri=${this.redirectUri}&scope=openid profile email&code_challenge=${codeChallenge}&code_challenge_method=S256`;
 
-        console.log(codeVerifier, codeChallenge, clientId, redirectUri)
+        console.log(codeVerifier, codeChallenge, clientId, this.redirectUri)
 
         window.location.href = authUrl;
     }
@@ -24,12 +25,12 @@ export class GoogleAuthManager extends Auth {
             return false
         }
 
-        const response = await fetch('http://api:3000/auth/google', {
+        const response = await fetch('http://api:3000/oauth/google/token', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({ code, codeVerifier }),
+            body: JSON.stringify({ code, codeVerifier, redirectUri: this.redirectUri }),
         });
 
         const { accessToken, refreshToken } = await response.json();

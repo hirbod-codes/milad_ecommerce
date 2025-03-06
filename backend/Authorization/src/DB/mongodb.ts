@@ -1,4 +1,5 @@
 import { ClientSession, Collection, Db, MongoClient } from 'mongodb'
+import { User, collectionName as userCollectionName } from './Models/User'
 import { RefreshToken, collectionName as refreshTokensCollectionName } from './Models/RefreshToken'
 import { DbConfigurationError } from './Exceptions/DbConfigurationError'
 import { ConnectionError } from './Exceptions/ConnectionError'
@@ -170,10 +171,11 @@ export class MongoDB {
     }
 
     async addCollections() {
-        await this.addRefreshTokensCollection()
+        await this.addRefreshTokenCollection()
+        await this.addUserCollection()
     }
 
-    private async addRefreshTokensCollection() {
+    private async addRefreshTokenCollection() {
         const db = await this.getDb();
 
         if (!(await db.listCollections().toArray()).map(e => e.name).includes(refreshTokensCollectionName))
@@ -188,13 +190,41 @@ export class MongoDB {
             await db.createIndex(refreshTokensCollectionName, { refreshToken: 1 }, { name: 'refreshToken' })
 
         if (indexes.find(i => i.name === 'expiresAt') === undefined)
-            await db.createIndex(refreshTokensCollectionName, { expiresAt: 1 }, { name: 'expiresAt' })
+            await db.createIndex(refreshTokensCollectionName, { expiresAt: 1 }, { expireAfterSeconds: 0, name: 'expiresAt' })
 
         if (indexes.find(i => i.name === 'createdAt') === undefined)
             await db.createIndex(refreshTokensCollectionName, { createdAt: 1 }, { name: 'createdAt' })
     }
 
+    private async addUserCollection() {
+        const db = await this.getDb();
+
+        if (!(await db.listCollections().toArray()).map(e => e.name).includes(userCollectionName))
+            await db.createCollection(userCollectionName)
+
+        const indexes = await db.collection(userCollectionName).indexes()
+
+        if (indexes.find(i => i.name === 'unique-username') === undefined)
+            await db.createIndex(userCollectionName, { username: 1 }, { unique: true, name: 'unique-username' })
+
+        if (indexes.find(i => i.name === 'unique-email') === undefined)
+            await db.createIndex(userCollectionName, { email: 1 }, { sparse: true, unique: true, name: 'email' })
+
+        if (indexes.find(i => i.name === 'unique-phoneNumber') === undefined)
+            await db.createIndex(userCollectionName, { phoneNumber: 1 }, { sparse: true, unique: true, name: 'phoneNumber' })
+
+        if (indexes.find(i => i.name === 'createdAt') === undefined)
+            await db.createIndex(userCollectionName, { createdAt: 1 }, { name: 'createdAt' })
+
+        if (indexes.find(i => i.name === 'updatedAt') === undefined)
+            await db.createIndex(userCollectionName, { updatedAt: 1 }, { name: 'updatedAt' })
+    }
+
     async getRefreshTokensCollection(client?: MongoClient, db?: Db): Promise<Collection<RefreshToken>> {
         return (db ?? (await this.getDb(client))).collection<RefreshToken>(refreshTokensCollectionName)
+    }
+
+    async getUserCollection(client?: MongoClient, db?: Db): Promise<Collection<User>> {
+        return (db ?? (await this.getDb(client))).collection<User>(userCollectionName)
     }
 }

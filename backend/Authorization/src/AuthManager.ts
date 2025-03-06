@@ -72,11 +72,14 @@ export class AuthManager {
                 catch (e) { reject(e) }
 
                 let doc = (await (await db.getRefreshTokensCollection()).findOne({ refreshToken }))
-                if (!doc)
+
+                if (!doc || doc.username !== username) {
                     reject()
+                    return
+                }
 
                 try { Jwt.verify(doc!.refreshToken, this.jwtSecret, { issuer: this.issuer, algorithms: [this.algorithm] }) }
-                catch (e) { reject(e) }
+                catch (e) { reject(e); return }
 
                 resolve(await this.generateAccessToken(username))
             } catch (e) {
