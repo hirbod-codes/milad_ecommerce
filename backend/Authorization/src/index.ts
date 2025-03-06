@@ -7,7 +7,7 @@ import { getBooleanEnv, getIntegerEnv, getStringEnv } from "./helpers";
 import { schedule } from "node-cron";
 import { DateTime } from "luxon";
 import cors from "cors";
-import { createCluster } from "redis";
+import { createClient, createCluster, RedisClientType, RedisClusterType, RedisDefaultModules } from "redis";
 import nodemailer from "nodemailer";
 import { UserRepository } from "./DB/Repositories/UserRepository";
 
@@ -49,12 +49,19 @@ export const googleOAuth2Config = {
 }
 
 // Stores
+const redisType = getStringEnv('REDIS_TYPE')
 const redisInitialNodeUrl = getStringEnv('REDIS_INITIAL_NODE_URL')
 
-export const redisClient = createCluster({
-    rootNodes: [{ url: redisInitialNodeUrl }],
-    useReplicas: true
-});
+let redisClient: RedisClusterType<RedisDefaultModules> | RedisClientType<RedisDefaultModules> = undefined!
+if (redisType === 'single')
+    redisClient = createClient({ url: redisInitialNodeUrl })
+else if (redisType === 'cluster')
+    redisClient = createCluster({
+        rootNodes: [{ url: redisInitialNodeUrl }],
+        useReplicas: true
+    });
+
+export { redisClient }
 
 export const dbConfig = {
     databaseName: getStringEnv('DB_DATABASE_NAME'),
