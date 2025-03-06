@@ -77,6 +77,11 @@ const app = express()
 
 app.disable('x-powered-by')
 
+app.use((req, res, next) => {
+    console.log('hit!')
+    next()
+})
+
 app.use(cors({
     origin: '*',
     methods: ['*'],
@@ -87,37 +92,6 @@ app.use(cors({
 // To Do: Add rate limiter middleware
 
 app.use(express.json())
-
-app.all('/test/:id', async (req, res) => {
-    try {
-        console.log('received request to /test')
-
-        console.log('params', req.params)
-        console.log('query', req.query)
-        console.log('body', req.body)
-
-        let r = await httpRequest({
-            hostname: 'authorization',
-            port: 3000,
-            path: '/generate-tokens',
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Accept': 'application/json',
-            },
-        }, JSON.stringify({
-            username: "hirbod1"
-        }))
-        console.log(r.response.statusCode)
-
-        let data = JSON.parse(r.data)
-        console.log(data)
-        res.send(data)
-    } catch (e) {
-        console.error(e)
-        res.sendStatus(500)
-    }
-})
 
 app.use(router)
 
