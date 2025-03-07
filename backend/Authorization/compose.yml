@@ -1,7 +1,18 @@
-version: "3.8"
+version: '3.8'
 
 services:
+    web:
+        container_name: web
+        build:
+            context: ../../frontend/web/
+            dockerfile: Dockerfile.development
+        ports:
+          - 80:80
+        networks:
+            - web
+
     authorization:
+        container_name: authorization
         build: 
             context: .
             dockerfile: Dockerfile.development
@@ -12,15 +23,42 @@ services:
             - /app/node_modules
         environment:
             - NODE_ENV=development
+        networks:
+            - authorization
+            - base
 
     authorization_mongodb:
         container_name: authorization_mongodb
         build:
-            context: ./
+            context: .
             dockerfile: ./mongodb/mongodb.Dockerfile
         ports:
-                - 8082:27017
+                - 8083:27017
         environment:
             username: admin
             password: password
             databaseName: primaryDB
+        networks:
+            - authorization
+
+    authorization_session_redis:
+        container_name: authorization_session_redis
+        image: redis:7.0
+        ports:
+            - 6379:6379
+        networks:
+            - authorization
+
+    # authorization_revoked_tokens_redis:
+    #     container_name: authorization_revoked_tokens_redis
+    #     image: redis:7.0
+    #     ports:
+    #         - 6379:6379
+    #     networks:
+    #         - authorization
+
+networks:
+    web:
+    base:
+    api:
+    authorization:

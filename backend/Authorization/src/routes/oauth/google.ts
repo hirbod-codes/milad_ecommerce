@@ -6,6 +6,10 @@ import { string } from "yup";
 
 const oauthGoogleRouter = Router()
 
+oauthGoogleRouter.get('/client-id', async (req, res) => {
+    res.json({clientId: googleOAuth2Config.clientId})
+})
+
 oauthGoogleRouter.get('/token', async (req, res) => {
     try {
         console.log('received request to /auth/google')

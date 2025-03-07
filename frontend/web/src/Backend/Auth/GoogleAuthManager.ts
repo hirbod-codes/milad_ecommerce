@@ -1,3 +1,4 @@
+import { string } from "yup";
 import { Auth } from "./Auth";
 
 export class GoogleAuthManager extends Auth {
@@ -7,9 +8,20 @@ export class GoogleAuthManager extends Auth {
         const codeVerifier = this.generateRandomString(128);
         const codeChallenge = await this.generateCodeChallenge(codeVerifier);
 
-        localStorage.setItem('code_verifier', codeVerifier);
+        const authApiUrl = import.meta.env.VITE_AUTH_API_URL;
+        if(!string().required().url().isValidSync(authApiUrl))
+            throw new Error('AUTH_API_URL environment variable is not provided')
 
-        const clientId = '380103624736-onrv4mne42t89atn4gpougk9ocqln5pl.apps.googleusercontent.com'
+        let clientId = undefined
+        try {
+            let r = await fetch(`${authApiUrl}/oauth/google/client-id`, { headers: { 'Accept': 'application/json' } })
+            clientId = (await r.json())!.clientId!
+        } catch (e) { }
+
+        if (clientId === undefined)
+            throw new Error('system failed to get client id')
+
+        localStorage.setItem('code_verifier', codeVerifier);
 
         const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?response_type=code&client_id=${clientId}&redirect_uri=${this.redirectUri}&scope=openid profile email&code_challenge=${codeChallenge}&code_challenge_method=S256`;
 
@@ -25,7 +37,11 @@ export class GoogleAuthManager extends Auth {
             return false
         }
 
-        const response = await fetch('http://api:3000/oauth/google/token', {
+        const authApiUrl = import.meta.env.VITE_AUTH_API_URL;
+        if(!string().required().url().isValidSync(authApiUrl))
+            throw new Error('AUTH_API_URL environment variable is not provided')
+
+        const response = await fetch(`${authApiUrl}/oauth/google/token`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',

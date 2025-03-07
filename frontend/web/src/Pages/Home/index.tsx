@@ -1,11 +1,9 @@
 import { GoogleAuthManager } from "@/src/Backend/Auth/GoogleAuthManager";
 import { useEffect } from "react";
-import { useNavigate, useSearchParams } from "react-router";
+import { useSearchParams } from "react-router";
 
 export function Home() {
     console.log('Home')
-
-    const navigate = useNavigate()
 
     const [queryVars, setQueryVars] = useSearchParams()
     const code = queryVars.get('code')
@@ -29,7 +27,8 @@ export function Home() {
             console.error(e)
         }
 
-        navigate('/')
+        if (code)
+            window.location.reload();
     }
 
     return (
