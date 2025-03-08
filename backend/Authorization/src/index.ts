@@ -1,15 +1,17 @@
 import dotenv from "dotenv";
 import express from "express";
-import { router } from "./router";
 import { AuthManager } from "./AuthManager";
 import { MongoDB } from "./DB/mongodb";
 import { getBooleanEnv, getIntegerEnv, getStringEnv } from "./helpers";
-import { schedule } from "node-cron";
-import { DateTime } from "luxon";
 import cors from "cors";
 import { createClient, createCluster, RedisClientType, RedisClusterType, RedisDefaultModules } from "redis";
 import nodemailer from "nodemailer";
 import { UserRepository } from "./DB/Repositories/UserRepository";
+
+import { tokenRouter } from "./routes/Auth/tokens";
+import { emailRouter } from "./routes/Auth/email";
+import { phoneNumberRouter } from "./routes/Auth/phoneNumber";
+import { oauthGoogleRouter } from "./routes/oauth/google";
 
 dotenv.config({ debug: process.env.DEBUG !== undefined ? Boolean(process.env.DEBUG) : undefined })
 
@@ -102,26 +104,16 @@ export let userRepository: UserRepository = undefined!;
 
     app.use(express.json())
 
-    app.use(router)
+    app.use('/auth/tokens', tokenRouter)
+    app.use('/auth/email', emailRouter)
+    app.use('/auth/phone-number', phoneNumberRouter)
+
+    app.use('/oauth/google', oauthGoogleRouter)
 
     app.all('*', (req, res) => {
+        console.log('Not Found')
         res.sendStatus(404)
     })
 
     app.listen(hostPort, hostName, () => console.log(`listening on ${hostName}:${hostPort}...`))
-
-    const scheduleCallback = async () => {
-        console.log('running scheduled task...')
-
-        let dt = DateTime.utc()
-
-        console.log('\n' + dt.toString() + '\n')
-
-        let r = await (await db.getRefreshTokensCollection()).deleteMany({ expiresAt: { $lte: dt.toUnixInteger() } })
-
-        console.log('scheduled task result', r)
-    }
-
-    schedule('0 0 0 * * *', scheduleCallback, { name: 'expired_tokens_cleaner', runOnInit: true, timezone: 'UTC' })
-
 })()

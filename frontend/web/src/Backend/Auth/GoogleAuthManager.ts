@@ -2,19 +2,22 @@ import { string } from "yup";
 import { Auth } from "./Auth";
 
 export class GoogleAuthManager extends Auth {
-    static redirectUri: String = 'http://127.0.0.1:80/'
 
     static async goToConcentPage() {
         const codeVerifier = this.generateRandomString(128);
         const codeChallenge = await this.generateCodeChallenge(codeVerifier);
 
         const authApiUrl = import.meta.env.VITE_AUTH_API_URL;
-        if(!string().required().url().isValidSync(authApiUrl))
-            throw new Error('AUTH_API_URL environment variable is not provided')
+        if (!string().required().isValidSync(authApiUrl))
+            throw new Error('VITE_AUTH_API_URL environment variable is not provided')
+
+        let redirectUri = import .meta.env.VITE_REDIRECT_URI
+        if(!string().required().isValidSync(redirectUri))
+            throw new Error('VITE_REDIRECT_URI environment variable is not provided')
 
         let clientId = undefined
         try {
-            let r = await fetch(`${authApiUrl}/oauth/google/client-id`, { headers: { 'Accept': 'application/json' } })
+            let r = await fetch(`${authApiUrl}/oauth/google/client-id`, { headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' } })
             clientId = (await r.json())!.clientId!
         } catch (e) { }
 
@@ -23,9 +26,9 @@ export class GoogleAuthManager extends Auth {
 
         localStorage.setItem('code_verifier', codeVerifier);
 
-        const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?response_type=code&client_id=${clientId}&redirect_uri=${this.redirectUri}&scope=openid profile email&code_challenge=${codeChallenge}&code_challenge_method=S256`;
+        const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?response_type=code&client_id=${clientId}&redirect_uri=${redirectUri}&scope=openid profile email&code_challenge=${codeChallenge}&code_challenge_method=S256`;
 
-        console.log(codeVerifier, codeChallenge, clientId, this.redirectUri)
+        console.log(codeVerifier, codeChallenge, clientId, redirectUri)
 
         window.location.href = authUrl;
     }
@@ -38,15 +41,20 @@ export class GoogleAuthManager extends Auth {
         }
 
         const authApiUrl = import.meta.env.VITE_AUTH_API_URL;
-        if(!string().required().url().isValidSync(authApiUrl))
-            throw new Error('AUTH_API_URL environment variable is not provided')
+        if (!string().required().isValidSync(authApiUrl))
+            throw new Error('VITE_AUTH_API_URL environment variable is not provided')
+
+        let redirectUri = import .meta.env.VITE_REDIRECT_URI
+        if(!string().required().isValidSync(redirectUri))
+            throw new Error('VITE_REDIRECT_URI environment variable is not provided')
 
         const response = await fetch(`${authApiUrl}/oauth/google/token`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
+                'Accept': 'application/json',
             },
-            body: JSON.stringify({ code, codeVerifier, redirectUri: this.redirectUri }),
+            body: JSON.stringify({ code, codeVerifier, redirectUri: redirectUri }),
         });
 
         const { accessToken, refreshToken } = await response.json();

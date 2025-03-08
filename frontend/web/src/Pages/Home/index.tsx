@@ -27,8 +27,8 @@ export function Home() {
             console.error(e)
         }
 
-        if (code)
-            window.location.reload();
+        // if (code)
+        //     window.location.href = window.location.origin + window.location.pathname;
     }
 
     return (

@@ -1,18 +1,18 @@
 import { Router } from "express";
 import { DateTime } from "luxon";
-import { googleOAuth2Config, userRepository } from "src";
-import { httpsRequest } from "src/helpers";
+import { authManager, googleOAuth2Config, userRepository } from "../../";
+import { httpsRequest } from "../../helpers";
 import { string } from "yup";
 
 const oauthGoogleRouter = Router()
 
 oauthGoogleRouter.get('/client-id', async (req, res) => {
-    res.json({clientId: googleOAuth2Config.clientId})
+    res.json({ clientId: googleOAuth2Config.clientId })
 })
 
-oauthGoogleRouter.get('/token', async (req, res) => {
+oauthGoogleRouter.post('/token', async (req, res) => {
     try {
-        console.log('received request to /auth/google')
+        console.log('received request to /auth/google/token')
 
         const { code, codeVerifier, redirectUri } = req.body
 
@@ -94,15 +94,7 @@ oauthGoogleRouter.get('/token', async (req, res) => {
 
         let tokens = undefined
         try {
-            const authResponse = await fetch('http://authorization:3000/generate-tokens', {
-                method: 'post',
-                headers: [['Content-Type', 'application/json'], ['Accept', 'application/json']],
-                body: JSON.stringify({ username: userInfo.email })
-            })
-            if (!authResponse.ok)
-                throw new Error('authorization service failed to create tokens')
-
-            tokens = await authResponse.json()
+            tokens = await authManager.generateTokens(userInfo.email)
         } catch (e) {
             console.error(e)
             throw new Error('authorization service failed to create tokens')

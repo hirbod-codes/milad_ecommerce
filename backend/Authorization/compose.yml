@@ -1,15 +1,16 @@
 version: '3.8'
 
 services:
-    web:
-        container_name: web
-        build:
-            context: ../../frontend/web/
-            dockerfile: Dockerfile.development
-        ports:
-          - 80:80
-        networks:
-            - web
+    # to test nginx configuration
+    # web:
+    #     container_name: web
+    #     build:
+    #         context: ../../frontend/web/
+    #         dockerfile: Dockerfile.development
+    #     ports:
+    #       - 80:80
+    #     networks:
+    #         - web
 
     authorization:
         container_name: authorization

@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { DateTime } from "luxon";
-import { otpProviderConfig, userRepository } from "src";
-import { SessionManager } from "src/DB/Session/SessionManager";
+import { otpProviderConfig, userRepository } from "../../";
+import { SessionManager } from "../../DB/Session/SessionManager";
 import { number, string } from "yup";
 
 const phoneNumberRouter = Router()
