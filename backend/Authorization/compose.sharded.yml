@@ -1,48 +1,6 @@
 version: '3.8'
 
 services:
-    web:
-        container_name: web
-        build:
-            context: ../../frontend/web
-            dockerfile: Dockerfile.development
-        ports:
-            - 80:80
-            - 5173:5173
-        networks:
-            - web
-
-    api:
-        container_name: api
-        build:
-            context: .
-            dockerfile: Dockerfile.development
-        ports:
-            - 3000:3000
-        volumes:
-            - .:/app
-            - /app/node_modules
-        environment:
-            - NODE_ENV=development
-        networks:
-            - web
-            - base
-            - api
-
-    api_mongodb:
-        container_name: api_mongodb
-        build:
-            context: ./
-            dockerfile: ./mongodb/mongodb.Dockerfile
-        ports:
-                - 8082:27017
-        environment:
-            username: admin
-            password: password
-            databaseName: primaryDB
-        networks:
-            - api
-
     authorization:
         container_name: authorization
         build: 
@@ -55,98 +13,231 @@ services:
             - /app/node_modules
         environment:
             - NODE_ENV=development
+            - REDIS_TYPE=cluster
+            - REDIS_INITIAL_NODE_URL=redis://authorization_session_redis_1:6379
+            - DB_SUPPORTS_TRANSACTION=true
+            - DB_URL=mongodb://authorization_mongodb_load_balancer:27017
         networks:
             - authorization
-            - base
+            - authorization_redis
 
-    authorization_mongodb:
-        container_name: authorization_mongodb
+    authorization_mongodb_load_balancer:
+        container_name: authorization_mongodb_load_balancer
         build:
-            context: ../Authorization
-            dockerfile: ../Authorization/mongodb/mongodb.Dockerfile
+            context: .
+            dockerfile: ./mongodb/sharded/Dockerfile.nginx
         ports:
-                - 8083:27017
-        environment:
-            username: admin
-            password: password
-            databaseName: primaryDB
+            - 8083:27017
         networks:
             - authorization
+            - authorization_mongodb
 
-    redis-1:
-        container_name: redis-1
+    # Initialization Service
+    authorization_mongodb_init:
+        image: mongo:4.0
+        container_name: authorization_mongodb_init
+        entrypoint: ["sh", "-c", "/scripts/init.sh"]
+        volumes:
+            - ./mongodb/sharded/scripts:/scripts
+        depends_on:
+            - authorization_mongodb_config1
+            - authorization_mongodb_config2
+            - authorization_mongodb_config3
+            - authorization_mongodb_shard1a
+            - authorization_mongodb_shard1b
+            - authorization_mongodb_shard1c
+            - authorization_mongodb_shard2a
+            - authorization_mongodb_shard2b
+            - authorization_mongodb_shard2c
+            - authorization_mongodb_mongos1
+            - authorization_mongodb_mongos2
+        environment:
+            ADMIN_USERNAME: admin
+            ADMIN_PASSWORD: password
+        networks:
+            - authorization_mongodb
+
+    # Mongos Routers (2 instances for high availability)
+    authorization_mongodb_mongos1:
+        image: mongo:4.0
+        container_name: authorization_mongodb_mongos1
+        command: mongos --configdb configrs/authorization_mongodb_config1:27017,authorization_mongodb_config2:27017,authorization_mongodb_config3:27017 --bind_ip_all
+        ports:
+            - "27017:27017"
+        depends_on:
+            - authorization_mongodb_config1
+            - authorization_mongodb_config2
+            - authorization_mongodb_config3
+            - authorization_mongodb_shard1a
+            - authorization_mongodb_shard1b
+            - authorization_mongodb_shard1c
+            - authorization_mongodb_shard2a
+            - authorization_mongodb_shard2b
+            - authorization_mongodb_shard2c
+        environment:
+            USERNAME: admin
+            PASSWORD: password
+        networks:
+            - authorization_mongodb
+
+    authorization_mongodb_mongos2:
+        image: mongo:4.0
+        container_name: authorization_mongodb_mongos2
+        command: mongos --configdb configrs/authorization_mongodb_config1:27017,authorization_mongodb_config2:27017,authorization_mongodb_config3:27017 --bind_ip_all
+        ports:
+            - "27018:27017"
+        depends_on:
+            - authorization_mongodb_config1
+            - authorization_mongodb_config2
+            - authorization_mongodb_config3
+            - authorization_mongodb_shard1a
+            - authorization_mongodb_shard1b
+            - authorization_mongodb_shard1c
+            - authorization_mongodb_shard2a
+            - authorization_mongodb_shard2b
+            - authorization_mongodb_shard2c
+        networks:
+            - authorization_mongodb
+
+    # Config Servers (3-node replica set)
+    authorization_mongodb_config1:
+        image: mongo:4.0
+        container_name: authorization_mongodb_config1
+        command: mongod --configsvr --replSet configrs --bind_ip_all
+        networks:
+            - authorization_mongodb
+
+    authorization_mongodb_config2:
+        image: mongo:4.0
+        container_name: authorization_mongodb_config2
+        command: mongod --configsvr --replSet configrs --bind_ip_all
+        networks:
+            - authorization_mongodb
+
+    authorization_mongodb_config3:
+        image: mongo:4.0
+        container_name: authorization_mongodb_config3
+        command: mongod --configsvr --replSet configrs --bind_ip_all
+        networks:
+            - authorization_mongodb
+
+    # Shard Servers (2 shards, each a 3-node replica set)
+    authorization_mongodb_shard1a:
+        image: mongo:4.0
+        container_name: authorization_mongodb_shard1a
+        command: mongod --shardsvr --replSet shard1rs --bind_ip_all
+        networks:
+            - authorization_mongodb
+
+    authorization_mongodb_shard1b:
+        image: mongo:4.0
+        container_name: authorization_mongodb_shard1b
+        command: mongod --shardsvr --replSet shard1rs --bind_ip_all
+        networks:
+            - authorization_mongodb
+
+    authorization_mongodb_shard1c:
+        image: mongo:4.0
+        container_name: authorization_mongodb_shard1c
+        command: mongod --shardsvr --replSet shard1rs --bind_ip_all
+        networks:
+            - authorization_mongodb
+
+    authorization_mongodb_shard2a:
+        image: mongo:4.0
+        container_name: authorization_mongodb_shard2a
+        command: mongod --shardsvr --replSet shard2rs --bind_ip_all
+        networks:
+            - authorization_mongodb
+
+    authorization_mongodb_shard2b:
+        image: mongo:4.0
+        container_name: authorization_mongodb_shard2b
+        command: mongod --shardsvr --replSet shard2rs --bind_ip_all
+        networks:
+            - authorization_mongodb
+
+    authorization_mongodb_shard2c:
+        image: mongo:4.0
+        container_name: authorization_mongodb_shard2c
+        command: mongod --shardsvr --replSet shard2rs --bind_ip_all
+        networks:
+            - authorization_mongodb
+
+    authorization_session_redis_1:
+        container_name: authorization_session_redis_1
         build:
             context: ./redis
         environment:
-            - HOSTNAME=redis-1
+            - HOSTNAME=authorization_session_redis_1
             - REDIS_CLUSTER_INIT=true
+            - nodes=authorization_session_redis_1:6379 authorization_session_redis_2:6379 authorization_session_redis_3:6379 authorization_session_redis_4:6379 authorization_session_redis_5:6379 authorization_session_redis_6:6379
         ports:
             - 7000:6379
         networks:
-            - api
+            - authorization_redis
 
-    redis-2:
-        container_name: redis-2
+    authorization_session_redis_2:
+        container_name: authorization_session_redis_2
         build:
             context: ./redis
         environment:
-            - HOSTNAME=redis-2
+            - HOSTNAME=authorization_session_redis_2
             - REDIS_CLUSTER_INIT=false
         ports:
             - 7001:6379
         networks:
-            - api
+            - authorization_redis
 
-    redis-3:
-        container_name: redis-3
+    authorization_session_redis_3:
+        container_name: authorization_session_redis_3
         build:
             context: ./redis
         environment:
-            - HOSTNAME=redis-3
+            - HOSTNAME=authorization_session_redis_3
             - REDIS_CLUSTER_INIT=false
         ports:
             - 7002:6379
         networks:
-            - api
+            - authorization_redis
 
-    redis-4:
-        container_name: redis-4
+    authorization_session_redis_4:
+        container_name: authorization_session_redis_4
         build:
             context: ./redis
         environment:
-            - HOSTNAME=redis-4
+            - HOSTNAME=authorization_session_redis_4
             - REDIS_CLUSTER_INIT=false
         ports:
             - 7003:6379
         networks:
-            - api
+            - authorization_redis
 
-    redis-5:
-        container_name: redis-5
+    authorization_session_redis_5:
+        container_name: authorization_session_redis_5
         build:
             context: ./redis
         environment:
-            - HOSTNAME=redis-5
+            - HOSTNAME=authorization_session_redis_5
             - REDIS_CLUSTER_INIT=false
         ports:
             - 7004:6379
         networks:
-            - api
+            - authorization_redis
 
-    redis-6:
-        container_name: redis-6
+    authorization_session_redis_6:
+        container_name: authorization_session_redis_6
         build:
             context: ./redis
         environment:
-            - HOSTNAME=redis-6
+            - HOSTNAME=authorization_session_redis_6
             - REDIS_CLUSTER_INIT=false
         ports:
             - 7005:6379
         networks:
-            - api
+            - authorization_redis
 
 networks:
-    web:
-    base:
-    api:
     authorization:
+    authorization_mongodb:
+    authorization_redis:

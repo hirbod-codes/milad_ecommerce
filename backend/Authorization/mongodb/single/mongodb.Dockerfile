@@ -1,6 +1,6 @@
 FROM  mongo:4
 
-COPY ./mongodb/scripts /mongodb/scripts
+COPY ./mongodb/single/scripts /mongodb/scripts
 
 RUN chmod ugo+x /mongodb/scripts/run.sh
 

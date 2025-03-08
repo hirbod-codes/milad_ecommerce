@@ -25,6 +25,10 @@ services:
             - /app/node_modules
         environment:
             - NODE_ENV=development
+            - REDIS_TYPE=single
+            - REDIS_INITIAL_NODE_URL=redis://authorization_session_redis:6379
+            - DB_SUPPORTS_TRANSACTION=false
+            - DB_URL=mongodb://authorization_mongodb:27017
         networks:
             - authorization
             - base
@@ -33,7 +37,7 @@ services:
         container_name: authorization_mongodb
         build:
             context: .
-            dockerfile: ./mongodb/mongodb.Dockerfile
+            dockerfile: ./mongodb/single/mongodb.Dockerfile
         ports:
                 - 8083:27017
         environment:

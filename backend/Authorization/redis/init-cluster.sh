@@ -8,7 +8,7 @@ redis-server --cluster-enabled yes --cluster-config-file nodes.conf --cluster-no
 echo "HOSTNAME $HOSTNAME"
 
 # Initialize the Redis cluster
-if [ $HOSTNAME == "redis-1" ]; then
+if [ $HOSTNAME == "authorization_session_redis_1" ]; then
     # Wait for all nodes to be ready
     echo "Waiting for all Redis nodes to start..."
     sleep 5s
@@ -23,8 +23,9 @@ if [ $HOSTNAME == "redis-1" ]; then
     #     exit 1
     # fi
 
+    echo "nodes: $nodes"
     echo "Initializing Redis cluster..."
-    echo "yes" | redis-cli --cluster create redis-1:6379 redis-2:6379 redis-3:6379 redis-4:6379 redis-5:6379 redis-6:6379 --cluster-replicas 1
+    echo "yes" | redis-cli --cluster create $nodes --cluster-replicas 1
 fi
 
 # Keep the container running
