@@ -13,8 +13,7 @@ export function AppBar() {
         <>
             <Stack stackProps={{ className: 'items-center p-4' }}>
                 <SiteLogo />
-                <div className="flex-grow border">
-                    button
+                <div className="flex-grow">
                 </div>
                 {Auth.isAuthenticated() === false
                     ? <Stack stackProps={{ className: 'items-center' }}>
