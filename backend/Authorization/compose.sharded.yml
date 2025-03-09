@@ -6,6 +6,7 @@ services:
         build: 
             context: ../Authorization
             dockerfile: Dockerfile.development
+        command: ["sh", "-c", "sleep 100s && npm run dev"]
         ports:
             - 3001:3000
         volumes:
@@ -16,27 +17,17 @@ services:
             - REDIS_TYPE=cluster
             - REDIS_INITIAL_NODE_URL=redis://authorization_session_redis_1:6379
             - DB_SUPPORTS_TRANSACTION=true
-            - DB_URL=mongodb://authorization_mongodb_load_balancer:27017
+            - DB_URL=mongodb://authorization_mongodb_mongos1:27017,authorization_mongodb_mongos2:27017
         networks:
             - authorization
             - authorization_redis
-
-    authorization_mongodb_load_balancer:
-        container_name: authorization_mongodb_load_balancer
-        build:
-            context: .
-            dockerfile: ./mongodb/sharded/Dockerfile.nginx
-        ports:
-            - 8083:27017
-        networks:
-            - authorization
             - authorization_mongodb
 
     # Initialization Service
     authorization_mongodb_init:
         image: mongo:4.0
         container_name: authorization_mongodb_init
-        entrypoint: ["sh", "-c", "/scripts/init.sh"]
+        entrypoint: ["sh", "-c", "sleep 40s && chmod +x /scripts/init.sh && /scripts/init.sh"]
         volumes:
             - ./mongodb/sharded/scripts:/scripts
         depends_on:
@@ -61,7 +52,7 @@ services:
     authorization_mongodb_mongos1:
         image: mongo:4.0
         container_name: authorization_mongodb_mongos1
-        command: mongos --configdb configrs/authorization_mongodb_config1:27017,authorization_mongodb_config2:27017,authorization_mongodb_config3:27017 --bind_ip_all
+        entrypoint: ["sh", "-c", "sleep 20s && mongos --port 27017 --configdb configrs/authorization_mongodb_config1:27017,authorization_mongodb_config2:27017,authorization_mongodb_config3:27017 --bind_ip_all"]
         ports:
             - "27017:27017"
         depends_on:
@@ -83,7 +74,7 @@ services:
     authorization_mongodb_mongos2:
         image: mongo:4.0
         container_name: authorization_mongodb_mongos2
-        command: mongos --configdb configrs/authorization_mongodb_config1:27017,authorization_mongodb_config2:27017,authorization_mongodb_config3:27017 --bind_ip_all
+        entrypoint: ["sh", "-c", "sleep 20s && mongos --port 27017 --configdb configrs/authorization_mongodb_config1:27017,authorization_mongodb_config2:27017,authorization_mongodb_config3:27017 --bind_ip_all"]
         ports:
             - "27018:27017"
         depends_on:
@@ -103,21 +94,21 @@ services:
     authorization_mongodb_config1:
         image: mongo:4.0
         container_name: authorization_mongodb_config1
-        command: mongod --configsvr --replSet configrs --bind_ip_all
+        command: mongod --port 27017 --configsvr --replSet configrs --bind_ip_all
         networks:
             - authorization_mongodb
 
     authorization_mongodb_config2:
         image: mongo:4.0
         container_name: authorization_mongodb_config2
-        command: mongod --configsvr --replSet configrs --bind_ip_all
+        command: mongod --port 27017 --configsvr --replSet configrs --bind_ip_all
         networks:
             - authorization_mongodb
 
     authorization_mongodb_config3:
         image: mongo:4.0
         container_name: authorization_mongodb_config3
-        command: mongod --configsvr --replSet configrs --bind_ip_all
+        command: mongod --port 27017 --configsvr --replSet configrs --bind_ip_all
         networks:
             - authorization_mongodb
 
@@ -125,42 +116,42 @@ services:
     authorization_mongodb_shard1a:
         image: mongo:4.0
         container_name: authorization_mongodb_shard1a
-        command: mongod --shardsvr --replSet shard1rs --bind_ip_all
+        command: mongod --port 27017 --shardsvr --replSet shard1rs --bind_ip_all
         networks:
             - authorization_mongodb
 
     authorization_mongodb_shard1b:
         image: mongo:4.0
         container_name: authorization_mongodb_shard1b
-        command: mongod --shardsvr --replSet shard1rs --bind_ip_all
+        command: mongod --port 27017 --shardsvr --replSet shard1rs --bind_ip_all
         networks:
             - authorization_mongodb
 
     authorization_mongodb_shard1c:
         image: mongo:4.0
         container_name: authorization_mongodb_shard1c
-        command: mongod --shardsvr --replSet shard1rs --bind_ip_all
+        command: mongod --port 27017 --shardsvr --replSet shard1rs --bind_ip_all
         networks:
             - authorization_mongodb
 
     authorization_mongodb_shard2a:
         image: mongo:4.0
         container_name: authorization_mongodb_shard2a
-        command: mongod --shardsvr --replSet shard2rs --bind_ip_all
+        command: mongod --port 27017 --shardsvr --replSet shard2rs --bind_ip_all
         networks:
             - authorization_mongodb
 
     authorization_mongodb_shard2b:
         image: mongo:4.0
         container_name: authorization_mongodb_shard2b
-        command: mongod --shardsvr --replSet shard2rs --bind_ip_all
+        command: mongod --port 27017 --shardsvr --replSet shard2rs --bind_ip_all
         networks:
             - authorization_mongodb
 
     authorization_mongodb_shard2c:
         image: mongo:4.0
         container_name: authorization_mongodb_shard2c
-        command: mongod --shardsvr --replSet shard2rs --bind_ip_all
+        command: mongod --port 27017 --shardsvr --replSet shard2rs --bind_ip_all
         networks:
             - authorization_mongodb
 

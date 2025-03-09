@@ -1,9 +1,6 @@
 #!/bin/bash
 
-# Wait for all services to start
-sleep 10
-
-# Initialize the Config Server Replica Set
+echo Initialize the Config Server Replica Set
 mongo --host authorization_mongodb_config1:27017 --eval 'rs.initiate({
   _id: "configrs",
   configsvr: true,
@@ -14,7 +11,7 @@ mongo --host authorization_mongodb_config1:27017 --eval 'rs.initiate({
   ]
 })'
 
-# Initialize Shard 1 Replica Set
+echo Initialize Shard 1 Replica Set
 mongo --host authorization_mongodb_shard1a:27017 --eval 'rs.initiate({
   _id: "shard1rs",
   members: [
@@ -24,7 +21,7 @@ mongo --host authorization_mongodb_shard1a:27017 --eval 'rs.initiate({
   ]
 })'
 
-# Initialize Shard 2 Replica Set
+echo Initialize Shard 2 Replica Set
 mongo --host authorization_mongodb_shard2a:27017 --eval 'rs.initiate({
   _id: "shard2rs",
   members: [
@@ -34,17 +31,17 @@ mongo --host authorization_mongodb_shard2a:27017 --eval 'rs.initiate({
   ]
 })'
 
-# Wait for replica sets to initialize
-sleep 10
+echo Waiting for replica sets to initialize
+sleep 40s
 
-# Add Shards to the Cluster
+echo Add Shards to the Cluster
 mongo --host authorization_mongodb_mongos1:27017 --eval 'sh.addShard("shard1rs/authorization_mongodb_shard1a:27017,authorization_mongodb_shard1b:27017,authorization_mongodb_shard1c:27017")'
 mongo --host authorization_mongodb_mongos1:27017 --eval 'sh.addShard("shard2rs/authorization_mongodb_shard2a:27017,authorization_mongodb_shard2b:27017,authorization_mongodb_shard2c:27017")'
 
 mongo --host authorization_mongodb_mongos2:27017 --eval 'sh.addShard("shard1rs/authorization_mongodb_shard1a:27017,authorization_mongodb_shard1b:27017,authorization_mongodb_shard1c:27017")'
 mongo --host authorization_mongodb_mongos2:27017 --eval 'sh.addShard("shard2rs/authorization_mongodb_shard2a:27017,authorization_mongodb_shard2b:27017,authorization_mongodb_shard2c:27017")'
 
-# Read Docker secrets for admin credentials
+echo Read Docker secrets for admin credentials
 if [ -z ${ADMIN_USERNAME+x} ]; then
     ADMIN_USERNAME=$(cat /run/secrets/authorization_mongodb_admin_username)
 fi
@@ -52,7 +49,8 @@ if [ -z ${ADMIN_PASSWORD+x} ]; then
     ADMIN_PASSWORD=$(cat /run/secrets/authorization_mongodb_admin_password)
 fi
 
-# Create Admin User
+echo Create Admin User
+
 mongo --host authorization_mongodb_mongos1:27017 --eval "db.getSiblingDB('admin').createUser({
   user: '$ADMIN_USERNAME',
   pwd: '$ADMIN_PASSWORD',

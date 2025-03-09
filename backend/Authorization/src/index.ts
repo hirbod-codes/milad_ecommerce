@@ -12,6 +12,7 @@ import { tokenRouter } from "./routes/Auth/tokens";
 import { emailRouter } from "./routes/Auth/email";
 import { phoneNumberRouter } from "./routes/Auth/phoneNumber";
 import { oauthGoogleRouter } from "./routes/oauth/google";
+import { exit } from "process";
 
 dotenv.config({ debug: process.env.DEBUG !== undefined ? Boolean(process.env.DEBUG) : undefined })
 
@@ -80,13 +81,21 @@ export const db = new MongoDB(dbConfig);
 export let userRepository: UserRepository = undefined!;
 
 (async () => {
-    while (true) {
+    let safety = 0
+    while (safety <= 100) {
+        safety++
         try {
             await db.initializeDb();
             userRepository = new UserRepository(await db.getUserCollection())
             break;
         }
         catch (e) { console.error(e) }
+    }
+
+    if (safety > 100) {
+        console.log('safety reached!!')
+        exit(1)
+        return
     }
 
     const app = express()

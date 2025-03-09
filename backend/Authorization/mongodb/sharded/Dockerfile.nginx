@@ -1,3 +1,4 @@
 FROM nginx:alpine
 
-COPY ./mongodb/sharded/ngonx.conf /etc/nginx/conf.d/default.conf
+COPY ./mongodb/sharded/nginx.conf /etc/nginx/conf.d/default.conf
+
