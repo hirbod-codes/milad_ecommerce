@@ -7,6 +7,7 @@ services:
     #     build:
     #         context: ../../frontend/web/
     #         dockerfile: Dockerfile.development
+    #         target: development
     #     ports:
     #       # Don't forget to change the .env file, if you change the port number ( for google OAuth )
     #       - 5173:80
@@ -17,7 +18,8 @@ services:
         container_name: authorization
         build: 
             context: .
-            dockerfile: Dockerfile.development
+            dockerfile: Dockerfile
+            target: development
         ports:
             - 3001:3000
         volumes:
@@ -37,12 +39,13 @@ services:
         container_name: authorization_mongodb
         build:
             context: .
-            dockerfile: ./mongodb/single/mongodb.Dockerfile
+            dockerfile: ./mongodb/single/Dockerfile
+            target: development
         ports:
                 - 8083:27017
         environment:
-            username: admin
-            password: password
+            MONGODB_USERNAME: admin
+            MONGODB_PASSWORD: password
             databaseName: primaryDB
         networks:
             - authorization

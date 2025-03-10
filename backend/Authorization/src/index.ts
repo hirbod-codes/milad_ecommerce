@@ -71,8 +71,8 @@ export const dbConfig = {
     supportsTransaction: getBooleanEnv('DB_SUPPORTS_TRANSACTION'),
     url: getStringEnv('DB_URL'),
     auth: {
-        username: getStringEnv('DB_AUTH_USERNAME'),
-        password: getStringEnv('DB_AUTH_PASSWORD'),
+        username: getStringEnv('MONGODB_USERNAME'),
+        password: getStringEnv('MONGODB_PASSWORD'),
     }
 }
 

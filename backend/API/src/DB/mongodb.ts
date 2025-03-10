@@ -106,7 +106,6 @@ export class MongoDB {
                 throw new Error('Mongodb configuration not found.')
 
             const client = new MongoClient(c.url, {
-                directConnection: true,
                 authMechanism: "DEFAULT",
                 auth: c.auth
                     ? {

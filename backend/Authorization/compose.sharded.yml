@@ -4,13 +4,14 @@ services:
     authorization:
         container_name: authorization
         build: 
-            context: ../Authorization
-            dockerfile: Dockerfile.development
+            context: .
+            dockerfile: Dockerfile
+            target: development
         command: ["sh", "-c", "sleep 100s && npm run dev"]
         ports:
             - 3001:3000
         volumes:
-            - ../Authorization:/app
+            - .:/app
             - /app/node_modules
         environment:
             - NODE_ENV=development
@@ -43,8 +44,8 @@ services:
             - authorization_mongodb_mongos1
             - authorization_mongodb_mongos2
         environment:
-            ADMIN_USERNAME: admin
-            ADMIN_PASSWORD: password
+            MONGODB_USERNAME: admin
+            MONGODB_PASSWORD: password
         networks:
             - authorization_mongodb
 
@@ -158,7 +159,9 @@ services:
     authorization_session_redis_1:
         container_name: authorization_session_redis_1
         build:
-            context: ./redis
+            context: .
+            dockerfile: ./redis/cluster/Dockerfile
+            target: development
         environment:
             - HOSTNAME=authorization_session_redis_1
             - REDIS_CLUSTER_INIT=true
@@ -171,7 +174,9 @@ services:
     authorization_session_redis_2:
         container_name: authorization_session_redis_2
         build:
-            context: ./redis
+            context: .
+            dockerfile: ./redis/cluster/Dockerfile
+            target: development
         environment:
             - HOSTNAME=authorization_session_redis_2
             - REDIS_CLUSTER_INIT=false
@@ -183,7 +188,9 @@ services:
     authorization_session_redis_3:
         container_name: authorization_session_redis_3
         build:
-            context: ./redis
+            context: .
+            dockerfile: ./redis/cluster/Dockerfile
+            target: development
         environment:
             - HOSTNAME=authorization_session_redis_3
             - REDIS_CLUSTER_INIT=false
@@ -195,7 +202,9 @@ services:
     authorization_session_redis_4:
         container_name: authorization_session_redis_4
         build:
-            context: ./redis
+            context: .
+            dockerfile: ./redis/cluster/Dockerfile
+            target: development
         environment:
             - HOSTNAME=authorization_session_redis_4
             - REDIS_CLUSTER_INIT=false
@@ -207,7 +216,9 @@ services:
     authorization_session_redis_5:
         container_name: authorization_session_redis_5
         build:
-            context: ./redis
+            context: .
+            dockerfile: ./redis/cluster/Dockerfile
+            target: development
         environment:
             - HOSTNAME=authorization_session_redis_5
             - REDIS_CLUSTER_INIT=false
@@ -219,7 +230,9 @@ services:
     authorization_session_redis_6:
         container_name: authorization_session_redis_6
         build:
-            context: ./redis
+            context: .
+            dockerfile: ./redis/cluster/Dockerfile
+            target: development
         environment:
             - HOSTNAME=authorization_session_redis_6
             - REDIS_CLUSTER_INIT=false

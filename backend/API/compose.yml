@@ -1,28 +1,22 @@
 version: '3.8'
 
 services:
-    web:
-        container_name: web
-        build:
-            context: ../../frontend/web/
-            dockerfile: Dockerfile.development
-        ports:
-          - 80:80
-        networks:
-            - web
-
     api:
         container_name: api
         build:
-            context: ../API
-            dockerfile: Dockerfile.development
+            context: .
+            dockerfile: Dockerfile
+            target: development
         ports:
             - 3000:3000
         volumes:
-            - ../API:/app
+            - .:/app
             - /app/node_modules
         environment:
             - NODE_ENV=development
+            - DB_URL=mongodb://api_mongodb:27017
+            - REDIS_TYPE=single
+            - REDIS_INITIAL_NODE_URL=redis://api_session_redis:6379
         networks:
             - base
             - api
@@ -30,8 +24,9 @@ services:
     api_mongodb:
         container_name: api_mongodb
         build:
-            context: ../API
-            dockerfile: mongodb/mongodb.Dockerfile
+            context: .
+            dockerfile: mongodb/single/Dockerfile
+            target: development
         ports:
                 - 8082:27017
         environment:
@@ -41,34 +36,31 @@ services:
         networks:
             - api
 
-    # api_session_redis:
-    #     container_name: api_session_redis
-    #     image: redis:7.0
-    #     ports:
-    #         - 6379:6379
-    #     networks:
-    #         - api
-
-    # api_cache_redis:
-    #     container_name: api_cache_redis
-    #     image: redis:7.0
-    #     ports:
-    #         - 6379:6379
-    #     networks:
-    #         - api
+    api_session_redis:
+        container_name: api_session_redis
+        image: redis:7.0
+        ports:
+            - 6379:6379
+        networks:
+            - api
 
     authorization:
         container_name: authorization
         build: 
-            context: .
-            dockerfile: Dockerfile.development
+            context: ../Authorization
+            dockerfile: Dockerfile
+            target: development
         ports:
             - 3001:3000
         volumes:
-            - .:/app
+            - ../Authorization:/app
             - /app/node_modules
         environment:
             - NODE_ENV=development
+            - REDIS_TYPE=single
+            - REDIS_INITIAL_NODE_URL=redis://authorization_session_redis:6379
+            - DB_SUPPORTS_TRANSACTION=false
+            - DB_URL=mongodb://authorization_mongodb:27017
         networks:
             - authorization
             - base
@@ -76,8 +68,9 @@ services:
     authorization_mongodb:
         container_name: authorization_mongodb
         build:
-            context: .
-            dockerfile: ./mongodb/mongodb.Dockerfile
+            context: ../Authorization
+            dockerfile: ./mongodb/single/Dockerfile
+            target: development
         ports:
                 - 8083:27017
         environment:
@@ -104,7 +97,6 @@ services:
     #         - authorization
 
 networks:
-    web:
     base:
     api:
     authorization:

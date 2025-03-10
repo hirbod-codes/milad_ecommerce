@@ -1,6 +1,6 @@
 import dotenv from "dotenv";
 import express from "express";
-import { createCluster } from "redis";
+import { createClient, createCluster, RedisClientType, RedisClusterType, RedisDefaultModules } from "redis";
 import { MongoDB } from "./DB/mongodb";
 import { router } from "./router";
 import { getBooleanEnv, getIntegerEnv, getStringEnv, httpRequest } from "./helpers";
@@ -41,20 +41,27 @@ export const googleOAuth2Config = {
 }
 
 // Stores
+const redisType = getStringEnv('REDIS_TYPE')
 const redisInitialNodeUrl = getStringEnv('REDIS_INITIAL_NODE_URL')
 
-export const redisClient = createCluster({
-    rootNodes: [{ url: redisInitialNodeUrl }],
-    useReplicas: true
-});
+let redisClient: RedisClusterType<RedisDefaultModules> | RedisClientType<RedisDefaultModules> = undefined!
+if (redisType === 'single')
+    redisClient = createClient({ url: redisInitialNodeUrl })
+else if (redisType === 'cluster')
+    redisClient = createCluster({
+        rootNodes: [{ url: redisInitialNodeUrl }],
+        useReplicas: true
+    });
+
+export { redisClient }
 
 export const dbConfig = {
     databaseName: getStringEnv('DB_DATABASE_NAME'),
     supportsTransaction: getBooleanEnv('DB_SUPPORTS_TRANSACTION'),
     url: getStringEnv('DB_URL'),
     auth: {
-        username: getStringEnv('DB_AUTH_USERNAME'),
-        password: getStringEnv('DB_AUTH_PASSWORD'),
+        username: getStringEnv('MONGODB_USERNAME'),
+        password: getStringEnv('MONGODB_PASSWORD'),
     }
 }
 
