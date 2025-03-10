@@ -45,10 +45,10 @@ services:
             - 1506:3000
         environment:
             NODE_ENV: production
-            HOST: 0.0.0.0
+            HOST: "0.0.0.0"
             PORT: 3000
             DB_DATABASE_NAME: primaryDB
-            DB_SUPPORTS_TRANSACTION: false
+            DB_SUPPORTS_TRANSACTION: "false"
             DB_URL: mongodb://milad_e_commerce_api_mongodb:27017
             REDIS_TYPE: single
             REDIS_INITIAL_NODE_URL: redis://milad_e_commerce_api_session_redis:6379
@@ -114,10 +114,10 @@ services:
             - 1507:3000
         environment:
             NODE_ENV: production
-            HOST: 0.0.0.0
+            HOST: "0.0.0.0"
             PORT: 3000
             DB_DATABASE_NAME: primaryDB
-            DB_SUPPORTS_TRANSACTION: false
+            DB_SUPPORTS_TRANSACTION: "false"
             DB_URL: mongodb://milad_e_commerce_authorization_mongodb:27017
             REDIS_TYPE: single
             REDIS_INITIAL_NODE_URL: redis://milad_e_commerce_authorization_session_redis:6379
