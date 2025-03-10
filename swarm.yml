@@ -9,17 +9,17 @@ networks:
     milad_e_commerce_authorization_session_redis:
 
 secrets:
-    MILAD_E_COMMERCE_API_JWT_SECRET:
+    milad_e_commerce_api_jwt_secret:
         external: true
-    MILAD_E_COMMERCE_API_MONGODB_USERNAME:
+    milad_e_commerce_api_mongodb_username:
         external: true
-    MILAD_E_COMMERCE_API_MONGODB_PASSWORD:
+    milad_e_commerce_api_mongodb_password:
         external: true
-    MILAD_E_COMMERCE_AUTHORIZATION_JWT_SECRET:
+    milad_e_commerce_authorization_jwt_secret:
         external: true
-    MILAD_E_COMMERCE_AUTHORIZATION_MONGODB_USERNAME:
+    milad_e_commerce_authorization_mongodb_username:
         external: true
-    MILAD_E_COMMERCE_AUTHORIZATION_MONGODB_PASSWORD:
+    milad_e_commerce_authorization_mongodb_password:
         external: true
 
 volumes:
@@ -52,11 +52,11 @@ services:
             DB_URL: mongodb://milad_e_commerce_api_mongodb:27017
             REDIS_TYPE: single
             REDIS_INITIAL_NODE_URL: redis://milad_e_commerce_api_session_redis:6379
-            secret_prefix: MILAD_E_COMMERCE_API
+            secret_prefix: milad_e_commerce_api
         secrets:
-            - MILAD_E_COMMERCE_API_JWT_SECRET
-            - MILAD_E_COMMERCE_API_MONGODB_USERNAME
-            - MILAD_E_COMMERCE_API_MONGODB_PASSWORD
+            - milad_e_commerce_api_jwt_secret
+            - milad_e_commerce_api_mongodb_username
+            - milad_e_commerce_api_mongodb_password
         deploy:
             resources:
                 limits:
@@ -74,10 +74,10 @@ services:
         image: ghcr.io/hirbod-codes/milad_e_commerce/milad_e_commerce_api_mongodb_single:${tag}
         environment:
             databaseName: primaryDB
-            secret_prefix: MILAD_E_COMMERCE_API
+            secret_prefix: milad_e_commerce_api
         secrets:
-            - MILAD_E_COMMERCE_API_MONGODB_USERNAME
-            - MILAD_E_COMMERCE_API_MONGODB_PASSWORD
+            - milad_e_commerce_api_mongodb_username
+            - milad_e_commerce_api_mongodb_password
         volumes:
             - milad_e_commerce_api_mongodb:/data/db
         deploy:
@@ -94,7 +94,7 @@ services:
     milad_e_commerce_api_session_redis:
         image: redis:7.0
         environment:
-            secret_prefix: MILAD_E_COMMERCE_API
+            secret_prefix: milad_e_commerce_api
         volumes:
             - milad_e_commerce_api_session_redis:/data
         deploy:
@@ -121,11 +121,11 @@ services:
             DB_URL: mongodb://milad_e_commerce_authorization_mongodb:27017
             REDIS_TYPE: single
             REDIS_INITIAL_NODE_URL: redis://milad_e_commerce_authorization_session_redis:6379
-            secret_prefix: MILAD_E_COMMERCE_AUTHORIZATION
+            secret_prefix: milad_e_commerce_authorization
         secrets:
-            - MILAD_E_COMMERCE_AUTHORIZATION_JWT_SECRET
-            - MILAD_E_COMMERCE_AUTHORIZATION_MONGODB_USERNAME
-            - MILAD_E_COMMERCE_AUTHORIZATION_MONGODB_PASSWORD
+            - milad_e_commerce_authorization_jwt_secret
+            - milad_e_commerce_authorization_mongodb_username
+            - milad_e_commerce_authorization_mongodb_password
         deploy:
             resources:
                 limits:
@@ -143,10 +143,10 @@ services:
         image: ghcr.io/hirbod-codes/milad_e_commerce/milad_e_commerce_authorization_mongodb_single:${tag}
         environment:
             databaseName: primaryDB
-            secret_prefix: MILAD_E_COMMERCE_AUTHORIZATION
+            secret_prefix: milad_e_commerce_authorization
         secrets:
-            - MILAD_E_COMMERCE_AUTHORIZATION_MONGODB_USERNAME
-            - MILAD_E_COMMERCE_AUTHORIZATION_MONGODB_PASSWORD
+            - milad_e_commerce_authorization_mongodb_username
+            - milad_e_commerce_authorization_mongodb_password
         volumes:
             - milad_e_commerce_authorization_mongodb:/data/db
         deploy:
@@ -163,7 +163,7 @@ services:
     milad_e_commerce_authorization_session_redis:
         image: redis:7.0
         environment:
-            secret_prefix: MILAD_E_COMMERCE_AUTHORIZATION
+            secret_prefix: milad_e_commerce_authorization
         volumes:
             - milad_e_commerce_authorization_session_redis:/data
         deploy:

@@ -13,6 +13,8 @@ createEnvironmentVariables() {
     echo "trimmed file name: $trimmed_file_name"
 
     export ${trimmed_file_name}=$value
+    export ${trimmed_file_name,,}=$value
+    export ${trimmed_file_name^^}=$value
 }
 
 ls -al /run/secrets
