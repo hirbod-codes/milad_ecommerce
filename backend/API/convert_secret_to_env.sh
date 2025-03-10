@@ -1,3 +1,5 @@
+#!/bin/sh
+
 createEnvironmentVariables() {
     local file_name=$1
     echo "file name: $file_name"
@@ -8,13 +10,15 @@ createEnvironmentVariables() {
     local prefix=$3
     echo "prefix: $prefix"
 
-    echo ${file_name##${prefix:-""}}
-    local trimmed_file_name=${file_name##${prefix:-""}}
-    echo "trimmed file name: $trimmed_file_name"
+    local k=${file_name##${prefix:-""}}
+    echo "trimmed file name: $k"
 
-    export ${trimmed_file_name}=$value
-    export ${trimmed_file_name,,}=$value
-    export ${trimmed_file_name^^}=$value
+    local lower_k=$(echo "$k") | tr '[:upper:]' '[:lower:]'
+    local upper_k=$(echo "$k") | tr '[:lower:]' '[:upper:]'
+
+    export ${k}=$value
+    export ${lower_k}=$value
+    export ${upper_k}=$value
 }
 
 ls -al /run/secrets
