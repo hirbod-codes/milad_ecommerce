@@ -13,10 +13,10 @@ createEnvironmentVariables() {
     local k=${file_name##${prefix:-""}}
     echo "trimmed file name: $k"
 
-    local lowerK=$(echo "$k") | tr '[:upper:]' '[:lower:]'
+    local lowerK=$(echo $k | tr '[:upper:]' '[:lower:]')
     echo "lowerK: $lowerK"
 
-    local upperK=$(echo "$k") | tr '[:lower:]' '[:upper:]'
+    local upperK=$(echo $k | tr '[:lower:]' '[:upper:]')
     echo "upperK: $upperK"
 
     export ${k}=$value
