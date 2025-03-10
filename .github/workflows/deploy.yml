@@ -283,7 +283,7 @@ jobs:
                     password: ${{ secrets.SSH_SERVER_PASSWORD }}
                     script: |
                         cd swarm/milad_e_commerce
-                        docker stack rm milad_e_commerce
+                        docker stack rm milad_e_commerce || true
                         server_ip=${{ secrets.MAIN_HOST_IP }} tag=${{ steps.tag_version.outputs.new_version }} docker stack deploy --prune --detach=true --with-registry-auth -c swarm.yml milad_e_commerce
 
             -
