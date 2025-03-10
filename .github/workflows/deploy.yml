@@ -284,6 +284,7 @@ jobs:
                     script: |
                         cd swarm/milad_e_commerce
                         docker stack rm milad_e_commerce || true
+                        docker login -u hirbod-codes -p ${{ secrets.MILAD_VPS_GITHUB_PACKAGES_KEY }} ghcr.io
                         server_ip=${{ secrets.MAIN_HOST_IP }} tag=${{ steps.tag_version.outputs.new_version }} docker stack deploy --prune --detach=true --with-registry-auth -c swarm.yml milad_e_commerce
 
             -
