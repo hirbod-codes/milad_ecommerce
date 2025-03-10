@@ -7,6 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import GoogleIcon from '@/src/assets/google-icon.svg'
 import { EmailLogin } from "./EmailLogin";
 import { EmailSignup } from "./EmailSignup";
+import { GoogleAuthManager } from "@/src/Backend/Auth/GoogleAuthManager";
 
 export function EmailAuth() {
     const [emailMode, setEmailMode] = useState<'login' | 'signup'>('login')
@@ -51,7 +52,7 @@ export function EmailAuth() {
                 </Stack>
 
                 <Stack stackProps={{ className: 'items-center w-full' }}>
-                    <Button variant='outline' className='flex-grow'><img src={GoogleIcon} width={24} alt="Google Logo" /> {t('common.google')}</Button>
+                    <Button variant='outline' className='flex-grow' onClick={async () => { await GoogleAuthManager.goToConcentPage() }}><img src={GoogleIcon} width={24} alt="Google Logo" /> {t('common.google')}</Button>
                 </Stack>
             </Stack>
         </Stack>

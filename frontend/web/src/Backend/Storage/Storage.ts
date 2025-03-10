@@ -1,4 +1,4 @@
-import { Config } from "../Contexts/Configuration";
+import { Config } from "@/src/Contexts/Configuration";
 import { IStorage } from "./IStorage";
 
 export class Storage implements IStorage {

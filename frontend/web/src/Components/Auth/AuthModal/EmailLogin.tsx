@@ -61,7 +61,7 @@ export function EmailLogin({ goToSignup }: { goToSignup?: () => void }) {
                 return
             }
 
-            let r = await EmailAuthenticationManager.login(email, password, scheme.cast(c))
+            let r = await EmailAuthenticationManager.authenticate(email, password, scheme.cast(c))
 
             if (r.success)
                 navigate(-1)

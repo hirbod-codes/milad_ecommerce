@@ -4,7 +4,7 @@ import { DateTime } from "luxon"
 import type { Date, Time, GregorianDate, PersianDate, DateTimeView } from '.'
 import { mixed } from "yup"
 import { getLuxonLocale } from "../localization"
-import { Local } from "../../../Electron/Configuration/renderer.d"
+import { Local } from "@/src/Contexts/Configuration"
 
 export const DATE_TIME = 'cccc d/M/y H:m:s'
 export const DATE = 'cccc d/M/y'

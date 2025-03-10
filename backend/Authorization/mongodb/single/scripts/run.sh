@@ -12,8 +12,8 @@ use admin
 
 db.createUser(
   {
-    user: \"$username\",
-    pwd: \"$password\",
+    user: \"$MONGODB_USERNAME\",
+    pwd: \"$MONGODB_PASSWORD\",
     roles: [
       { role: \"root\", db: \"admin\" },
       { role: \"userAdminAnyDatabase\", db: \"admin\" },

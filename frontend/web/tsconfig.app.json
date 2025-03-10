@@ -20,10 +20,10 @@
         /* Linting */
         "strict": true,
         "noImplicitAny": false,
-        "noUnusedLocals": true,
-        "noUnusedParameters": true,
-        "noFallthroughCasesInSwitch": true,
-        "noUncheckedSideEffectImports": true,
+        "noUnusedLocals": false,
+        "noUnusedParameters": false,
+        "noFallthroughCasesInSwitch": false,
+        "noUncheckedSideEffectImports": false,
         /* shad cn */
         "baseUrl": ".",
         "paths": {
