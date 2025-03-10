@@ -13,12 +13,15 @@ createEnvironmentVariables() {
     local k=${file_name##${prefix:-""}}
     echo "trimmed file name: $k"
 
-    local lower_k=$(echo "$k") | tr '[:upper:]' '[:lower:]'
-    local upper_k=$(echo "$k") | tr '[:lower:]' '[:upper:]'
+    local lowerK=$(echo "$k") | tr '[:upper:]' '[:lower:]'
+    echo "lowerK: $lowerK"
+
+    local upperK=$(echo "$k") | tr '[:lower:]' '[:upper:]'
+    echo "upperK: $upperK"
 
     export ${k}=$value
-    export ${lower_k}=$value
-    export ${upper_k}=$value
+    export ${lowerK}=$value
+    export ${upperK}=$value
 }
 
 ls -al /run/secrets
