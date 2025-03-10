@@ -43,4 +43,4 @@ EXPOSE 3000
 COPY ./convert_secret_to_env.sh /usr/local/bin/convert_secret_to_env.sh
 RUN chmod +x /usr/local/bin/convert_secret_to_env.sh
 
-CMD . /usr/local/bin/convert_secret_to_env.sh && node dist/index.js
+CMD ["sh", "-c", "source /usr/local/bin/convert_secret_to_env.sh && node dist/index.js"]
