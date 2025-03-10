@@ -5,7 +5,7 @@ import { useAnimate } from "framer-motion";
 
 export type DropdownMenuProps = {
     children: ReactNode
-    anchorRef?: RefObject<HTMLElement>
+    anchorRef?: RefObject<HTMLElement | null>
     anchorDomRect?: { left?: number, top?: number, width?: number, height?: number }
     open?: boolean
     onOpenChange?: (open: boolean) => void
