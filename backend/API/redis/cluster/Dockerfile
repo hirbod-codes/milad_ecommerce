@@ -16,4 +16,4 @@ FROM base AS production
 COPY ./convert_secret_to_env.sh /usr/local/bin/convert_secret_to_env.sh
 RUN chmod +x /usr/local/bin/convert_secret_to_env.sh
 
-CMD source /usr/local/bin/convert_secret_to_env.sh && /usr/local/bin/init-cluster.sh
+CMD . /usr/local/bin/convert_secret_to_env.sh && /usr/local/bin/init-cluster.sh
