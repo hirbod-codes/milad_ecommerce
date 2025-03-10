@@ -36,11 +36,107 @@ jobs:
                         latest=false
                     images: |
                         ghcr.io/hirbod-codes/milad_e_commerce/milad_e_commerce_api
+                    tags: |
+                        type=schedule
+                        type=ref,event=branch
+                        type=ref,event=pr
+                        type=semver,pattern={{version}},value=${{ steps.tag_version.outputs.new_version }}
+                        type=semver,pattern={{major}}.{{minor}},value=${{ steps.tag_version.outputs.new_version }}
+                        type=semver,pattern={{major}},value=${{ steps.tag_version.outputs.new_version }}
+                        type=sha
+
+            -
+                id: apiMongodbSingleMeta
+                uses: docker/metadata-action@v5
+                with:
+                    flavor: |
+                        latest=false
+                    images: |
                         ghcr.io/hirbod-codes/milad_e_commerce/milad_e_commerce_api_mongodb_single
+                    tags: |
+                        type=schedule
+                        type=ref,event=branch
+                        type=ref,event=pr
+                        type=semver,pattern={{version}},value=${{ steps.tag_version.outputs.new_version }}
+                        type=semver,pattern={{major}}.{{minor}},value=${{ steps.tag_version.outputs.new_version }}
+                        type=semver,pattern={{major}},value=${{ steps.tag_version.outputs.new_version }}
+                        type=sha
+
+            -
+                id: apiRedisClusterMeta
+                uses: docker/metadata-action@v5
+                with:
+                    flavor: |
+                        latest=false
+                    images: |
                         ghcr.io/hirbod-codes/milad_e_commerce/milad_e_commerce_api_redis_cluster
+                    tags: |
+                        type=schedule
+                        type=ref,event=branch
+                        type=ref,event=pr
+                        type=semver,pattern={{version}},value=${{ steps.tag_version.outputs.new_version }}
+                        type=semver,pattern={{major}}.{{minor}},value=${{ steps.tag_version.outputs.new_version }}
+                        type=semver,pattern={{major}},value=${{ steps.tag_version.outputs.new_version }}
+                        type=sha
+
+            -
+                id: authorizationMeta
+                uses: docker/metadata-action@v5
+                with:
+                    flavor: |
+                        latest=false
+                    images: |
                         ghcr.io/hirbod-codes/milad_e_commerce/milad_e_commerce_authorization
+                    tags: |
+                        type=schedule
+                        type=ref,event=branch
+                        type=ref,event=pr
+                        type=semver,pattern={{version}},value=${{ steps.tag_version.outputs.new_version }}
+                        type=semver,pattern={{major}}.{{minor}},value=${{ steps.tag_version.outputs.new_version }}
+                        type=semver,pattern={{major}},value=${{ steps.tag_version.outputs.new_version }}
+                        type=sha
+
+            -
+                id: authorizationMongodbSingleMeta
+                uses: docker/metadata-action@v5
+                with:
+                    flavor: |
+                        latest=false
+                    images: |
                         ghcr.io/hirbod-codes/milad_e_commerce/milad_e_commerce_authorization_mongodb_single
+                    tags: |
+                        type=schedule
+                        type=ref,event=branch
+                        type=ref,event=pr
+                        type=semver,pattern={{version}},value=${{ steps.tag_version.outputs.new_version }}
+                        type=semver,pattern={{major}}.{{minor}},value=${{ steps.tag_version.outputs.new_version }}
+                        type=semver,pattern={{major}},value=${{ steps.tag_version.outputs.new_version }}
+                        type=sha
+
+            -
+                id: authorizationRedisClusterMeta
+                uses: docker/metadata-action@v5
+                with:
+                    flavor: |
+                        latest=false
+                    images: |
                         ghcr.io/hirbod-codes/milad_e_commerce/milad_e_commerce_authorization_redis_cluster
+                    tags: |
+                        type=schedule
+                        type=ref,event=branch
+                        type=ref,event=pr
+                        type=semver,pattern={{version}},value=${{ steps.tag_version.outputs.new_version }}
+                        type=semver,pattern={{major}}.{{minor}},value=${{ steps.tag_version.outputs.new_version }}
+                        type=semver,pattern={{major}},value=${{ steps.tag_version.outputs.new_version }}
+                        type=sha
+
+            -
+                id: webMeta
+                uses: docker/metadata-action@v5
+                with:
+                    flavor: |
+                        latest=false
+                    images: |
                         ghcr.io/hirbod-codes/milad_e_commerce/milad_e_commerce_web
                     tags: |
                         type=schedule
