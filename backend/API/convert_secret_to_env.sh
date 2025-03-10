@@ -36,6 +36,3 @@ else
         createEnvironmentVariables $(basename $secret_file) $(cat $secret_file) $secret_prefix
     done
 fi
-
-# Chain with existing entrypoint (if any)
-exec "$@"
