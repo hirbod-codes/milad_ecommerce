@@ -1,4 +1,4 @@
-version: 3.8
+version: '3.8'
 
 networks:
     milad_e_commerce_api:
@@ -22,7 +22,23 @@ secrets:
     MILAD_E_COMMERCE_AUTHORIZATION_MONGODB_PASSWORD:
         external: true
 
+volumes:
+    milad_e_commerce_api_mongodb:
+    milad_e_commerce_api_session_redis:
+    milad_e_commerce_authorization_mongodb:
+    milad_e_commerce_authorization_session_redis:
+
 services:
+    milad_e_commerce_web:
+        image: ghcr.io/hirbod-codes/milad_e_commerce/milad_e_commerce_web:${tag}
+        environment:
+            VITE_API_URL: http://${server_ip}:1506
+            VITE_AUTH_API_URL: http://${server_ip}:1507
+            VITE_REDIRECT_URI: http://127.0.0.1:1508/
+        ports:
+        # Don't forget to change the .env file, if you change the port number ( for google OAuth )
+        - 1508:80
+
     milad_e_commerce_api:
         image: ghcr.io/hirbod-codes/milad_e_commerce/milad_e_commerce_api:${tag}
         ports:
@@ -95,7 +111,7 @@ services:
     milad_e_commerce_authorization:
         image: ghcr.io/hirbod-codes/milad_e_commerce/milad_e_commerce_authorization:${tag}
         ports:
-            - 1506:3000
+            - 1507:3000
         environment:
             NODE_ENV: production
             HOST: 0.0.0.0

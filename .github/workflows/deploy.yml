@@ -179,6 +179,7 @@ jobs:
                 with:
                     context: ./backend/API
                     file: ./mongodb/single/Dockerfile
+                    target: production
                     push: true
                     tags: ${{ steps.apiMongodbSingleMeta.outputs.tags }}
                     labels: ${{ steps.apiMongodbSingleMeta.outputs.labels }}
@@ -188,6 +189,7 @@ jobs:
                 with:
                     context: ./backend/API
                     file: ./redis/cluster/Dockerfile
+                    target: production
                     push: true
                     tags: ${{ steps.apiRedisClusterMeta.outputs.tags }}
                     labels: ${{ steps.apiRedisClusterMeta.outputs.labels }}
@@ -207,6 +209,7 @@ jobs:
                 with:
                     context: ./backend/Authorization
                     file: ./mongodb/single/Dockerfile
+                    target: production
                     push: true
                     tags: ${{ steps.authorizationMongodbSingleMeta.outputs.tags }}
                     labels: ${{ steps.authorizationMongodbSingleMeta.outputs.labels }}
@@ -216,9 +219,20 @@ jobs:
                 with:
                     context: ./backend/Authorization
                     file: ./redis/cluster/Dockerfile
+                    target: production
                     push: true
                     tags: ${{ steps.authorizationRedisClusterMeta.outputs.tags }}
                     labels: ${{ steps.authorizationRedisClusterMeta.outputs.labels }}
+
+            -
+                uses: docker/build-push-action@v6
+                with:
+                    context: ./frontend/web
+                    file: ./Dockerfile
+                    target: production
+                    push: true
+                    tags: ${{ steps.webMeta.outputs.tags }}
+                    labels: ${{ steps.webMeta.outputs.labels }}
 
             -
                 uses: appleboy/ssh-action@v1.0.3
@@ -262,7 +276,7 @@ jobs:
                     script: |
                         cd swarm/milad_e_commerce
                         docker stack rm milad_e_commerce
-                        tag=${{ steps.tag_version.outputs.new_version }} docker stack deploy --prune --detach=true --with-registry-auth -c swarm.yml milad_e_commerce
+                        server_ip=${{ secrets.MAIN_HOST_IP }} tag=${{ steps.tag_version.outputs.new_version }} docker stack deploy --prune --detach=true --with-registry-auth -c swarm.yml milad_e_commerce
 
             -
                 id: create_release
