@@ -1,5 +1,3 @@
-#!/bin/sh
-
 createEnvironmentVariables() {
     local file_name=$1
     echo "file name: $file_name"
