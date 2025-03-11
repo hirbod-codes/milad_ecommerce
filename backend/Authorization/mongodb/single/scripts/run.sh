@@ -1,3 +1,5 @@
+#!/bin/bash
+
 # Enable job control
 set -m
 
