@@ -1,29 +1,59 @@
 version: '3.8'
 
 services:
-    # to test nginx configuration
-    # web:
-    #     container_name: web
-    #     build:
-    #         context: ../../frontend/web/
-    #         dockerfile: Dockerfile.development
-    #         target: development
-    #     ports:
-    #       # Don't forget to change the .env file, if you change the port number ( for google OAuth )
-    #       - 5173:80
-    #     networks:
-    #         - web
+    api:
+        container_name: api
+        build:
+            context: .
+            dockerfile: Dockerfile
+            target: development
+        ports:
+            - 3000:3000
+        volumes:
+            - .:/app
+            - /app/node_modules
+        environment:
+            - NODE_ENV=development
+            - DB_URL=mongodb://api_mongodb:27017
+            - REDIS_TYPE=single
+            - REDIS_INITIAL_NODE_URL=redis://api_session_redis:6379
+        networks:
+            - base
+            - api
+
+    api_mongodb:
+        container_name: api_mongodb
+        build:
+            context: .
+            dockerfile: mongodb/single/Dockerfile
+            target: development
+        ports:
+                - 8082:27017
+        environment:
+            username: admin
+            password: password
+            databaseName: primaryDB
+        networks:
+            - api
+
+    api_session_redis:
+        container_name: api_session_redis
+        image: redis:7.0
+        ports:
+            - 6379:6379
+        networks:
+            - api
 
     authorization:
         container_name: authorization
         build: 
-            context: .
+            context: ../Authorization
             dockerfile: Dockerfile
             target: development
         ports:
             - 3001:3000
         volumes:
-            - .:/app
+            - ../Authorization:/app
             - /app/node_modules
         environment:
             - NODE_ENV=development
@@ -38,14 +68,14 @@ services:
     authorization_mongodb:
         container_name: authorization_mongodb
         build:
-            context: .
+            context: ../Authorization
             dockerfile: ./mongodb/single/Dockerfile
             target: development
         ports:
                 - 8083:27017
         environment:
-            MONGODB_USERNAME: admin
-            MONGODB_PASSWORD: password
+            username: admin
+            password: password
             databaseName: primaryDB
         networks:
             - authorization
@@ -67,7 +97,6 @@ services:
     #         - authorization
 
 networks:
-    web:
     base:
     api:
     authorization:

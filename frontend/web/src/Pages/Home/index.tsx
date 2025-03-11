@@ -1,11 +1,9 @@
 import { GoogleAuthManager } from "@/src/Backend/Auth/GoogleAuthManager";
 import { useEffect } from "react";
-import { useNavigate, useSearchParams } from "react-router";
+import { useSearchParams } from "react-router";
 
 export function Home() {
     console.log('Home')
-
-    const navigate = useNavigate()
 
     const [queryVars, setQueryVars] = useSearchParams()
     const code = queryVars.get('code')
@@ -21,15 +19,14 @@ export function Home() {
         console.log('Home', 'googleAuth')
 
         try {
-            if (code)
-                await GoogleAuthManager.authenticate(code)
-            else
+            if (code) {
+                if (await GoogleAuthManager.authenticate(code) === true)
+                    window.location.href = window.location.origin + window.location.pathname;
+            } else
                 console.log('no code')
         } catch (e) {
             console.error(e)
         }
-
-        navigate('/')
     }
 
     return (

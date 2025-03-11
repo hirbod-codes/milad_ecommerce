@@ -1,4 +1,6 @@
 import { boolean, BooleanSchema, number, NumberSchema, string, StringSchema } from "yup";
+import http from "http";
+import https from "https";
 
 export function validateBooleanEnv(env?: boolean, message?: string, validate?: (schema: BooleanSchema) => BooleanSchema, manuallyValidate?: (env?: boolean) => boolean) {
     let schema: any = boolean().required()
@@ -61,4 +63,64 @@ export function getBooleanEnv(key: string, message?: string, validate?: (schema:
     validateBooleanEnv(env, message, validate, manuallyValidate)
 
     return env!
+}
+
+export async function httpRequest(options: http.RequestOptions, sendData?: string) {
+    return new Promise<{ response: http.IncomingMessage, data: string }>((resolve, reject) => {
+        const request = http.request(options, (response) => {
+            let data = '';
+            response.on('data', (chunk) => {
+                data += chunk;
+            });
+
+            response.on('end', () => {
+                resolve({ response, data })
+            });
+
+            response.on('error', (e) => {
+                console.error(e)
+                reject(e)
+            });
+        });
+
+        request.on('error', (e) => {
+            console.error(e)
+            reject(e)
+        });
+
+        if (sendData)
+            request.write(sendData);
+
+        request.end();
+    })
+}
+
+export async function httpsRequest(options: https.RequestOptions, sendData?: string) {
+    return new Promise<{ response: https.RequestOptions, data: string }>((resolve, reject) => {
+        const request = https.request(options, (response) => {
+            let data = '';
+            response.on('data', (chunk) => {
+                data += chunk;
+            });
+
+            response.on('end', () => {
+                resolve({ response, data })
+            });
+
+            response.on('error', (e) => {
+                console.error(e)
+                reject(e)
+            });
+        });
+
+        request.on('error', (e) => {
+            console.error(e)
+            reject(e)
+        });
+
+        if (sendData)
+            request.write(sendData);
+
+        request.end();
+    })
 }

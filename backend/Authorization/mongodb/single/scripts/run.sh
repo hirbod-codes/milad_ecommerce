@@ -1,3 +1,5 @@
+#!/bin/bash
+
 # Enable job control
 set -m
 
@@ -7,13 +9,18 @@ echo "\n\nWaiting...............................................................
 sleep 10s
 echo "\n\nWaited...................................................................................\n\n"
 
+echo "................................"
+echo $MONGODB_USERNAME
+echo $MONGODB_PASSWORD
+echo "................................"
+
 echo "
 use admin
 
 db.createUser(
   {
-    user: \"$username\",
-    pwd: \"$password\",
+    user: \"$MONGODB_USERNAME\",
+    pwd: \"$MONGODB_PASSWORD\",
     roles: [
       { role: \"root\", db: \"admin\" },
       { role: \"userAdminAnyDatabase\", db: \"admin\" },
