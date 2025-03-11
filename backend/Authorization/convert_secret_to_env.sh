@@ -33,6 +33,6 @@ if [[ ! -d /run/secrets/ ]]; then
 else
     for secret_file in /run/secrets/*; do
         echo "secret file: $secret_file"
-        createEnvironmentVariables $(basename $secret_file) $(cat $secret_file) $secret_prefix
+        createEnvironmentVariables $(basename $secret_file) "$(cat $secret_file)" "$secret_prefix"
     done
 fi
