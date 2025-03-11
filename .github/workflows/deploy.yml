@@ -1,0 +1,299 @@
+name: build and deploy
+
+on:
+    workflow_dispatch:
+
+    push:
+        branches:
+            - main
+
+jobs:
+    secrets:
+        runs-on: ubuntu-22.04
+
+        permissions: write-all
+
+        steps:
+            -
+                id: changelog_generator
+                uses: heinrichreimer/action-github-changelog-generator@v2.3
+                with:
+                    token: ${{ secrets.GITHUB_TOKEN }}
+                    unreleased: false
+
+            -
+                id: tag_version
+                uses: mathieudutour/github-tag-action@v6.2
+                with:
+                    github_token: ${{ secrets.GITHUB_TOKEN }}
+                    default_prerelease_bump: false
+
+            -
+                id: apiMeta
+                uses: docker/metadata-action@v5
+                with:
+                    flavor: |
+                        latest=false
+                    images: |
+                        ghcr.io/hirbod-codes/milad_e_commerce/milad_e_commerce_api
+                    tags: |
+                        type=schedule
+                        type=ref,event=branch
+                        type=ref,event=pr
+                        type=semver,pattern={{version}},value=${{ steps.tag_version.outputs.new_version }}
+                        type=semver,pattern={{major}}.{{minor}},value=${{ steps.tag_version.outputs.new_version }}
+                        type=semver,pattern={{major}},value=${{ steps.tag_version.outputs.new_version }}
+                        type=sha
+
+            -
+                id: apiMongodbSingleMeta
+                uses: docker/metadata-action@v5
+                with:
+                    flavor: |
+                        latest=false
+                    images: |
+                        ghcr.io/hirbod-codes/milad_e_commerce/milad_e_commerce_api_mongodb_single
+                    tags: |
+                        type=schedule
+                        type=ref,event=branch
+                        type=ref,event=pr
+                        type=semver,pattern={{version}},value=${{ steps.tag_version.outputs.new_version }}
+                        type=semver,pattern={{major}}.{{minor}},value=${{ steps.tag_version.outputs.new_version }}
+                        type=semver,pattern={{major}},value=${{ steps.tag_version.outputs.new_version }}
+                        type=sha
+
+            -
+                id: apiRedisClusterMeta
+                uses: docker/metadata-action@v5
+                with:
+                    flavor: |
+                        latest=false
+                    images: |
+                        ghcr.io/hirbod-codes/milad_e_commerce/milad_e_commerce_api_redis_cluster
+                    tags: |
+                        type=schedule
+                        type=ref,event=branch
+                        type=ref,event=pr
+                        type=semver,pattern={{version}},value=${{ steps.tag_version.outputs.new_version }}
+                        type=semver,pattern={{major}}.{{minor}},value=${{ steps.tag_version.outputs.new_version }}
+                        type=semver,pattern={{major}},value=${{ steps.tag_version.outputs.new_version }}
+                        type=sha
+
+            -
+                id: authorizationMeta
+                uses: docker/metadata-action@v5
+                with:
+                    flavor: |
+                        latest=false
+                    images: |
+                        ghcr.io/hirbod-codes/milad_e_commerce/milad_e_commerce_authorization
+                    tags: |
+                        type=schedule
+                        type=ref,event=branch
+                        type=ref,event=pr
+                        type=semver,pattern={{version}},value=${{ steps.tag_version.outputs.new_version }}
+                        type=semver,pattern={{major}}.{{minor}},value=${{ steps.tag_version.outputs.new_version }}
+                        type=semver,pattern={{major}},value=${{ steps.tag_version.outputs.new_version }}
+                        type=sha
+
+            -
+                id: authorizationMongodbSingleMeta
+                uses: docker/metadata-action@v5
+                with:
+                    flavor: |
+                        latest=false
+                    images: |
+                        ghcr.io/hirbod-codes/milad_e_commerce/milad_e_commerce_authorization_mongodb_single
+                    tags: |
+                        type=schedule
+                        type=ref,event=branch
+                        type=ref,event=pr
+                        type=semver,pattern={{version}},value=${{ steps.tag_version.outputs.new_version }}
+                        type=semver,pattern={{major}}.{{minor}},value=${{ steps.tag_version.outputs.new_version }}
+                        type=semver,pattern={{major}},value=${{ steps.tag_version.outputs.new_version }}
+                        type=sha
+
+            -
+                id: authorizationRedisClusterMeta
+                uses: docker/metadata-action@v5
+                with:
+                    flavor: |
+                        latest=false
+                    images: |
+                        ghcr.io/hirbod-codes/milad_e_commerce/milad_e_commerce_authorization_redis_cluster
+                    tags: |
+                        type=schedule
+                        type=ref,event=branch
+                        type=ref,event=pr
+                        type=semver,pattern={{version}},value=${{ steps.tag_version.outputs.new_version }}
+                        type=semver,pattern={{major}}.{{minor}},value=${{ steps.tag_version.outputs.new_version }}
+                        type=semver,pattern={{major}},value=${{ steps.tag_version.outputs.new_version }}
+                        type=sha
+
+            -
+                id: webMeta
+                uses: docker/metadata-action@v5
+                with:
+                    flavor: |
+                        latest=false
+                    images: |
+                        ghcr.io/hirbod-codes/milad_e_commerce/milad_e_commerce_web
+                    tags: |
+                        type=schedule
+                        type=ref,event=branch
+                        type=ref,event=pr
+                        type=semver,pattern={{version}},value=${{ steps.tag_version.outputs.new_version }}
+                        type=semver,pattern={{major}}.{{minor}},value=${{ steps.tag_version.outputs.new_version }}
+                        type=semver,pattern={{major}},value=${{ steps.tag_version.outputs.new_version }}
+                        type=sha
+
+            -
+                uses: actions/checkout@v4
+
+            -
+                uses: docker/setup-qemu-action@v3
+
+            -
+                uses: docker/setup-buildx-action@v3
+
+            -
+                name: Login to GitHub Container Registry
+                uses: docker/login-action@v3
+                with:
+                    registry: ghcr.io
+                    username: ${{ github.actor }}
+                    password: ${{ secrets.GITHUB_TOKEN }}
+
+            -
+                uses: docker/build-push-action@v6
+                name: build/push api
+                with:
+                    context: ./backend/API
+                    file: ./backend/API/Dockerfile
+                    target: production
+                    push: true
+                    tags: ${{ steps.apiMeta.outputs.tags }}
+                    labels: ${{ steps.apiMeta.outputs.labels }}
+
+            -
+                uses: docker/build-push-action@v6
+                name: build/push api's mongodb single
+                with:
+                    context: ./backend/API
+                    file: ./backend/API/mongodb/single/Dockerfile
+                    target: production
+                    push: true
+                    tags: ${{ steps.apiMongodbSingleMeta.outputs.tags }}
+                    labels: ${{ steps.apiMongodbSingleMeta.outputs.labels }}
+
+            -
+                uses: docker/build-push-action@v6
+                name: build/push api's redis cluster
+                with:
+                    context: ./backend/API
+                    file: ./backend/API/redis/cluster/Dockerfile
+                    target: production
+                    push: true
+                    tags: ${{ steps.apiRedisClusterMeta.outputs.tags }}
+                    labels: ${{ steps.apiRedisClusterMeta.outputs.labels }}
+
+            -
+                uses: docker/build-push-action@v6
+                name: build/push authorization
+                with:
+                    context: ./backend/Authorization
+                    file: ./backend/Authorization/Dockerfile
+                    target: production
+                    push: true
+                    tags: ${{ steps.authorizationMeta.outputs.tags }}
+                    labels: ${{ steps.authorizationMeta.outputs.labels }}
+
+            -
+                uses: docker/build-push-action@v6
+                name: build/push authorization's mongodb single
+                with:
+                    context: ./backend/Authorization
+                    file: ./backend/Authorization/mongodb/single/Dockerfile
+                    target: production
+                    push: true
+                    tags: ${{ steps.authorizationMongodbSingleMeta.outputs.tags }}
+                    labels: ${{ steps.authorizationMongodbSingleMeta.outputs.labels }}
+
+            -
+                uses: docker/build-push-action@v6
+                name: build/push authorization's redis cluster
+                with:
+                    context: ./backend/Authorization
+                    file: ./backend/Authorization/redis/cluster/Dockerfile
+                    target: production
+                    push: true
+                    tags: ${{ steps.authorizationRedisClusterMeta.outputs.tags }}
+                    labels: ${{ steps.authorizationRedisClusterMeta.outputs.labels }}
+
+            -
+                uses: docker/build-push-action@v6
+                name: build/push web
+                with:
+                    context: ./frontend/web
+                    file: ./frontend/web/Dockerfile
+                    target: production
+                    push: true
+                    tags: ${{ steps.webMeta.outputs.tags }}
+                    labels: ${{ steps.webMeta.outputs.labels }}
+
+            -
+                uses: appleboy/ssh-action@v1.0.3
+                with:
+                    host: ${{ secrets.SSH_SERVER_ADDRESS }}
+                    port: ${{ secrets.SSH_SERVER_PORT }}
+                    username: ${{ secrets.SSH_SERVER_USERNAME }}
+                    password: ${{ secrets.SSH_SERVER_PASSWORD }}
+                    script: |
+                        mkdir -p swarm/milad_e_commerce
+                        docker stack rm milad_e_commerce
+                        sleep 5s
+
+            -
+                uses: hirbod-codes/secret_creator_github_action@v1.2.22
+                with:
+                    swarm-secrets-prefix: 'SWARM_'
+                    ssh-server-address: ${{ secrets.SSH_SERVER_ADDRESS }}
+                    ssh-server-port: ${{ secrets.SSH_SERVER_PORT }}
+                    ssh-server-username: ${{ secrets.SSH_SERVER_USERNAME }}
+                    ssh-server-password: ${{ secrets.SSH_SERVER_PASSWORD }}
+                    secrets-json: ${{ toJson(secrets) }}
+
+            -
+                uses: appleboy/scp-action@v0.1.7
+                with:
+                    host: ${{ secrets.SSH_SERVER_ADDRESS }}
+                    port: ${{ secrets.SSH_SERVER_PORT }}
+                    username: ${{ secrets.SSH_SERVER_USERNAME }}
+                    password: ${{ secrets.SSH_SERVER_PASSWORD }}
+                    source: "./swarm.yml"
+                    target: ~/swarm/milad_e_commerce/
+
+            -
+                uses: appleboy/ssh-action@v1.0.3
+                name: ssh
+                with:
+                    host: ${{ secrets.SSH_SERVER_ADDRESS }}
+                    port: ${{ secrets.SSH_SERVER_PORT }}
+                    username: ${{ secrets.SSH_SERVER_USERNAME }}
+                    password: ${{ secrets.SSH_SERVER_PASSWORD }}
+                    script: |
+                        cd swarm/milad_e_commerce
+                        docker stack rm milad_e_commerce || true
+                        docker login -u hirbod-codes -p ${{ secrets.MILAD_VPS_GITHUB_PACKAGES_KEY }} ghcr.io
+                        server_ip=${{ secrets.MAIN_HOST_IP }} tag=${{ steps.tag_version.outputs.new_version }} docker stack deploy --prune --detach=true --with-registry-auth -c swarm.yml milad_e_commerce
+
+            -
+                id: create_release
+                uses: softprops/action-gh-release@v1
+                with:
+                    token: ${{ secrets.GITHUB_TOKEN }}
+                    tag_name: ${{ steps.tag_version.outputs.new_tag }}
+                    name: Release ${{ steps.tag_version.outputs.new_tag }}
+                    body: ${{ steps.changelog_generator.outputs.changelog }}
+                    draft: false
+                    prerelease: false

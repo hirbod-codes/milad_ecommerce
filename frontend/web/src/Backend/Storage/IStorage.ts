@@ -1,4 +1,4 @@
-import { Config } from "../Contexts/Configuration";
+import { Config } from "@/src/Contexts/Configuration"
 
 export interface IStorage {
     getConfig(): Promise<Config | undefined>

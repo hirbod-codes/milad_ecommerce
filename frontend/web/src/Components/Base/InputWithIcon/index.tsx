@@ -2,7 +2,7 @@ import { ConfigurationContext } from "@/src/Contexts/Configuration/Configuration
 import { cn } from "@/src/shadcn/lib/utils";
 import { ComponentProps, ReactNode, RefObject, useContext } from "react";
 
-export function InputWithIcon({ startIcon, startIconProps, endIcon, endIconProps, inputRef, ...props }: { startIcon?: ReactNode, startIconProps?: ComponentProps<'div'>, endIcon?: ReactNode, endIconProps?: ComponentProps<'div'>, inputRef?: RefObject<HTMLInputElement> } & ComponentProps<'input'>) {
+export function InputWithIcon({ startIcon, startIconProps, endIcon, endIconProps, inputRef, ...props }: { startIcon?: ReactNode, startIconProps?: ComponentProps<'div'>, endIcon?: ReactNode, endIconProps?: ComponentProps<'div'>, inputRef?: RefObject<HTMLInputElement | null> } & ComponentProps<'input'>) {
     let local = useContext(ConfigurationContext)!.local
 
     let si = local.direction === 'ltr' ? startIcon : endIcon

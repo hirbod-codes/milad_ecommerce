@@ -1,0 +1,55 @@
+###
+POST http://0.0.0.0:3000/send-code-phone-number/ HTTP/1.1
+Content-Type: application/json
+
+{
+    "phoneNumber": "09380978577"
+}
+
+###
+POST http://0.0.0.0:3000/auth-phone-number/ HTTP/1.1
+Content-Type: application/json
+
+{
+    "phoneNumber": "09380978577",
+    "code": 165865
+}
+
+###
+POST http://0.0.0.0:3000/send-code-email/ HTTP/1.1
+Content-Type: application/json
+
+{
+    "email": "username@example.com"
+}
+
+###
+POST http://0.0.0.0:3000/signup-email/ HTTP/1.1
+Content-Type: application/json
+
+{
+    "email": "username@example.com",
+    "password": "password",
+    "code": 877235
+}
+
+###
+POST http://0.0.0.0:3000/login-email/ HTTP/1.1
+Content-Type: application/json
+
+{
+    "email": "username@example.com",
+    "password": "password"
+}
+
+###
+GET http://0.0.0.0:3000/auth/google/?redirectUrl= HTTP/1.1
+
+###
+POST http://0.0.0.0:3000/test/5?foo=bar HTTP/1.1
+Content-Type: application/json
+
+{
+    "email": "username@example.com",
+    "password": "password"
+}
