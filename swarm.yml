@@ -21,6 +21,24 @@ secrets:
         external: true
     milad_e_commerce_authorization_mongodb_password:
         external: true
+    milad_e_commerce_authorization_access_token_expires_in:
+        external: true
+    milad_e_commerce_authorization_refresh_token_expires_in:
+        external: true
+    milad_e_commerce_authorization_otp_provider_username:
+        external: true
+    milad_e_commerce_authorization_otp_provider_password:
+        external: true
+    milad_e_commerce_authorization_otp_provider_sender_number:
+        external: true
+    milad_e_commerce_authorization_email:
+        external: true
+    milad_e_commerce_authorization_email_password:
+        external: true
+    milad_e_commerce_authorization_google_client_id:
+        external: true
+    milad_e_commerce_authorization_google_client_secret:
+        external: true
 
 volumes:
     milad_e_commerce_api_mongodb:
@@ -124,6 +142,15 @@ services:
             secret_prefix: milad_e_commerce_authorization_
         secrets:
             - milad_e_commerce_authorization_jwt_secret
+            - milad_e_commerce_authorization_access_token_expires_in
+            - milad_e_commerce_authorization_refresh_token_expires_in
+            - milad_e_commerce_authorization_otp_provider_username
+            - milad_e_commerce_authorization_otp_provider_password
+            - milad_e_commerce_authorization_otp_provider_sender_number
+            - milad_e_commerce_authorization_email
+            - milad_e_commerce_authorization_email_password
+            - milad_e_commerce_authorization_google_client_id
+            - milad_e_commerce_authorization_google_client_secret
             - milad_e_commerce_authorization_mongodb_username
             - milad_e_commerce_authorization_mongodb_password
         deploy:
