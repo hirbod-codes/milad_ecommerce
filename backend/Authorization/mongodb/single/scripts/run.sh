@@ -1,3 +1,5 @@
+#!/bin/bash
+
 # Enable job control
 set -m
 
@@ -6,6 +8,11 @@ mongod --auth --port 27017 --dbpath /data/db --bind_ip_all &
 echo "\n\nWaiting...................................................................................\n\n"
 sleep 10s
 echo "\n\nWaited...................................................................................\n\n"
+
+echo "................................"
+echo $MONGODB_USERNAME
+echo $MONGODB_PASSWORD
+echo "................................"
 
 echo "
 use admin

@@ -1,3 +1,5 @@
+#!/bin/sh
+
 createEnvironmentVariables() {
     local file_name=$1
     echo "file name: $file_name"
@@ -8,11 +10,18 @@ createEnvironmentVariables() {
     local prefix=$3
     echo "prefix: $prefix"
 
-    echo ${file_name##${prefix:-""}}
-    local trimmed_file_name=${file_name##${prefix:-""}}
-    echo "trimmed file name: $trimmed_file_name"
+    local k=${file_name##${prefix:-""}}
+    echo "trimmed file name: $k"
 
-    export ${trimmed_file_name}=$value
+    local lowerK=$(echo $k | tr '[:upper:]' '[:lower:]')
+    echo "lowerK: $lowerK"
+
+    local upperK=$(echo $k | tr '[:lower:]' '[:upper:]')
+    echo "upperK: $upperK"
+
+    export ${k}=$value
+    export ${lowerK}=$value
+    export ${upperK}=$value
 }
 
 ls -al /run/secrets
@@ -24,9 +33,6 @@ if [[ ! -d /run/secrets/ ]]; then
 else
     for secret_file in /run/secrets/*; do
         echo "secret file: $secret_file"
-        createEnvironmentVariables $(basename $secret_file) $(cat $secret_file) $secret_prefix
+        createEnvironmentVariables $(basename $secret_file) "$(cat $secret_file)" "$secret_prefix"
     done
 fi
-
-# Chain with existing entrypoint (if any)
-exec "$@"

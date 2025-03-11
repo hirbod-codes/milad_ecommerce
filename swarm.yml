@@ -9,17 +9,35 @@ networks:
     milad_e_commerce_authorization_session_redis:
 
 secrets:
-    MILAD_E_COMMERCE_API_JWT_SECRET:
+    milad_e_commerce_api_jwt_secret:
         external: true
-    MILAD_E_COMMERCE_API_MONGODB_USERNAME:
+    milad_e_commerce_api_mongodb_username:
         external: true
-    MILAD_E_COMMERCE_API_MONGODB_PASSWORD:
+    milad_e_commerce_api_mongodb_password:
         external: true
-    MILAD_E_COMMERCE_AUTHORIZATION_JWT_SECRET:
+    milad_e_commerce_authorization_jwt_secret:
         external: true
-    MILAD_E_COMMERCE_AUTHORIZATION_MONGODB_USERNAME:
+    milad_e_commerce_authorization_mongodb_username:
         external: true
-    MILAD_E_COMMERCE_AUTHORIZATION_MONGODB_PASSWORD:
+    milad_e_commerce_authorization_mongodb_password:
+        external: true
+    milad_e_commerce_authorization_access_token_expires_in:
+        external: true
+    milad_e_commerce_authorization_refresh_token_expires_in:
+        external: true
+    milad_e_commerce_authorization_otp_provider_username:
+        external: true
+    milad_e_commerce_authorization_otp_provider_password:
+        external: true
+    milad_e_commerce_authorization_otp_provider_sender_number:
+        external: true
+    milad_e_commerce_authorization_email:
+        external: true
+    milad_e_commerce_authorization_email_password:
+        external: true
+    milad_e_commerce_authorization_google_client_id:
+        external: true
+    milad_e_commerce_authorization_google_client_secret:
         external: true
 
 volumes:
@@ -45,18 +63,18 @@ services:
             - 1506:3000
         environment:
             NODE_ENV: production
-            HOST: 0.0.0.0
+            HOST: "0.0.0.0"
             PORT: 3000
             DB_DATABASE_NAME: primaryDB
-            DB_SUPPORTS_TRANSACTION: false
+            DB_SUPPORTS_TRANSACTION: "false"
             DB_URL: mongodb://milad_e_commerce_api_mongodb:27017
             REDIS_TYPE: single
             REDIS_INITIAL_NODE_URL: redis://milad_e_commerce_api_session_redis:6379
-            secret_prefix: MILAD_E_COMMERCE_API
+            secret_prefix: milad_e_commerce_api_
         secrets:
-            - MILAD_E_COMMERCE_API_JWT_SECRET
-            - MILAD_E_COMMERCE_API_MONGODB_USERNAME
-            - MILAD_E_COMMERCE_API_MONGODB_PASSWORD
+            - milad_e_commerce_api_jwt_secret
+            - milad_e_commerce_api_mongodb_username
+            - milad_e_commerce_api_mongodb_password
         deploy:
             resources:
                 limits:
@@ -74,10 +92,10 @@ services:
         image: ghcr.io/hirbod-codes/milad_e_commerce/milad_e_commerce_api_mongodb_single:${tag}
         environment:
             databaseName: primaryDB
-            secret_prefix: MILAD_E_COMMERCE_API
+            secret_prefix: milad_e_commerce_api_
         secrets:
-            - MILAD_E_COMMERCE_API_MONGODB_USERNAME
-            - MILAD_E_COMMERCE_API_MONGODB_PASSWORD
+            - milad_e_commerce_api_mongodb_username
+            - milad_e_commerce_api_mongodb_password
         volumes:
             - milad_e_commerce_api_mongodb:/data/db
         deploy:
@@ -94,7 +112,7 @@ services:
     milad_e_commerce_api_session_redis:
         image: redis:7.0
         environment:
-            secret_prefix: MILAD_E_COMMERCE_API
+            secret_prefix: milad_e_commerce_api_
         volumes:
             - milad_e_commerce_api_session_redis:/data
         deploy:
@@ -114,18 +132,27 @@ services:
             - 1507:3000
         environment:
             NODE_ENV: production
-            HOST: 0.0.0.0
+            HOST: "0.0.0.0"
             PORT: 3000
             DB_DATABASE_NAME: primaryDB
-            DB_SUPPORTS_TRANSACTION: false
+            DB_SUPPORTS_TRANSACTION: "false"
             DB_URL: mongodb://milad_e_commerce_authorization_mongodb:27017
             REDIS_TYPE: single
             REDIS_INITIAL_NODE_URL: redis://milad_e_commerce_authorization_session_redis:6379
-            secret_prefix: MILAD_E_COMMERCE_AUTHORIZATION
+            secret_prefix: milad_e_commerce_authorization_
         secrets:
-            - MILAD_E_COMMERCE_AUTHORIZATION_JWT_SECRET
-            - MILAD_E_COMMERCE_AUTHORIZATION_MONGODB_USERNAME
-            - MILAD_E_COMMERCE_AUTHORIZATION_MONGODB_PASSWORD
+            - milad_e_commerce_authorization_jwt_secret
+            - milad_e_commerce_authorization_access_token_expires_in
+            - milad_e_commerce_authorization_refresh_token_expires_in
+            - milad_e_commerce_authorization_otp_provider_username
+            - milad_e_commerce_authorization_otp_provider_password
+            - milad_e_commerce_authorization_otp_provider_sender_number
+            - milad_e_commerce_authorization_email
+            - milad_e_commerce_authorization_email_password
+            - milad_e_commerce_authorization_google_client_id
+            - milad_e_commerce_authorization_google_client_secret
+            - milad_e_commerce_authorization_mongodb_username
+            - milad_e_commerce_authorization_mongodb_password
         deploy:
             resources:
                 limits:
@@ -143,10 +170,10 @@ services:
         image: ghcr.io/hirbod-codes/milad_e_commerce/milad_e_commerce_authorization_mongodb_single:${tag}
         environment:
             databaseName: primaryDB
-            secret_prefix: MILAD_E_COMMERCE_AUTHORIZATION
+            secret_prefix: milad_e_commerce_authorization_
         secrets:
-            - MILAD_E_COMMERCE_AUTHORIZATION_MONGODB_USERNAME
-            - MILAD_E_COMMERCE_AUTHORIZATION_MONGODB_PASSWORD
+            - milad_e_commerce_authorization_mongodb_username
+            - milad_e_commerce_authorization_mongodb_password
         volumes:
             - milad_e_commerce_authorization_mongodb:/data/db
         deploy:
@@ -163,7 +190,7 @@ services:
     milad_e_commerce_authorization_session_redis:
         image: redis:7.0
         environment:
-            secret_prefix: MILAD_E_COMMERCE_AUTHORIZATION
+            secret_prefix: milad_e_commerce_authorization_
         volumes:
             - milad_e_commerce_authorization_session_redis:/data
         deploy:
