@@ -166,9 +166,10 @@ jobs:
 
             -
                 uses: docker/build-push-action@v6
+                name: build/push api
                 with:
                     context: ./backend/API
-                    file: Dockerfile
+                    file: ./backend/API/Dockerfile
                     target: production
                     push: true
                     tags: ${{ steps.apiMeta.outputs.tags }}
@@ -176,9 +177,10 @@ jobs:
 
             -
                 uses: docker/build-push-action@v6
+                name: build/push api's mongodb single
                 with:
                     context: ./backend/API
-                    file: ./mongodb/single/Dockerfile
+                    file: ./backend/API/mongodb/single/Dockerfile
                     target: production
                     push: true
                     tags: ${{ steps.apiMongodbSingleMeta.outputs.tags }}
@@ -186,9 +188,10 @@ jobs:
 
             -
                 uses: docker/build-push-action@v6
+                name: build/push api's redis cluster
                 with:
                     context: ./backend/API
-                    file: ./redis/cluster/Dockerfile
+                    file: ./backend/API/redis/cluster/Dockerfile
                     target: production
                     push: true
                     tags: ${{ steps.apiRedisClusterMeta.outputs.tags }}
@@ -196,9 +199,10 @@ jobs:
 
             -
                 uses: docker/build-push-action@v6
+                name: build/push authorization
                 with:
                     context: ./backend/Authorization
-                    file: Dockerfile
+                    file: ./backend/Authorization/Dockerfile
                     target: production
                     push: true
                     tags: ${{ steps.authorizationMeta.outputs.tags }}
@@ -206,9 +210,10 @@ jobs:
 
             -
                 uses: docker/build-push-action@v6
+                name: build/push authorization's mongodb single
                 with:
                     context: ./backend/Authorization
-                    file: ./mongodb/single/Dockerfile
+                    file: ./backend/Authorization/mongodb/single/Dockerfile
                     target: production
                     push: true
                     tags: ${{ steps.authorizationMongodbSingleMeta.outputs.tags }}
@@ -216,9 +221,10 @@ jobs:
 
             -
                 uses: docker/build-push-action@v6
+                name: build/push authorization's redis cluster
                 with:
                     context: ./backend/Authorization
-                    file: ./redis/cluster/Dockerfile
+                    file: ./backend/Authorization/redis/cluster/Dockerfile
                     target: production
                     push: true
                     tags: ${{ steps.authorizationRedisClusterMeta.outputs.tags }}
@@ -226,9 +232,10 @@ jobs:
 
             -
                 uses: docker/build-push-action@v6
+                name: build/push web
                 with:
                     context: ./frontend/web
-                    file: ./Dockerfile
+                    file: ./frontend/web/Dockerfile
                     target: production
                     push: true
                     tags: ${{ steps.webMeta.outputs.tags }}
@@ -268,6 +275,7 @@ jobs:
 
             -
                 uses: appleboy/ssh-action@v1.0.3
+                name: ssh
                 with:
                     host: ${{ secrets.SSH_SERVER_ADDRESS }}
                     port: ${{ secrets.SSH_SERVER_PORT }}
@@ -275,7 +283,8 @@ jobs:
                     password: ${{ secrets.SSH_SERVER_PASSWORD }}
                     script: |
                         cd swarm/milad_e_commerce
-                        docker stack rm milad_e_commerce
+                        docker stack rm milad_e_commerce || true
+                        docker login -u hirbod-codes -p ${{ secrets.MILAD_VPS_GITHUB_PACKAGES_KEY }} ghcr.io
                         server_ip=${{ secrets.MAIN_HOST_IP }} tag=${{ steps.tag_version.outputs.new_version }} docker stack deploy --prune --detach=true --with-registry-auth -c swarm.yml milad_e_commerce
 
             -
