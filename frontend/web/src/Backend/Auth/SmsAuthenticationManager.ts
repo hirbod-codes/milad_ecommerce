@@ -1,7 +1,7 @@
 import { Response } from ".."
-import { AuthManager } from "./AuthManager"
+import { Auth } from "./Auth"
 
-export class SmsAuthenticationManager extends AuthManager {
+export class SmsAuthenticationManager extends Auth {
     static async sendSms(phoneNumber: string): Promise<Response<string>> {
         return { success: false }
     }

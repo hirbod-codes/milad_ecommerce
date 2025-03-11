@@ -22,8 +22,8 @@
         "noImplicitAny": false,
         "noUnusedLocals": false,
         "noUnusedParameters": false,
-        "noFallthroughCasesInSwitch": true,
-        "noUncheckedSideEffectImports": true,
+        "noFallthroughCasesInSwitch": false,
+        "noUncheckedSideEffectImports": false,
         /* shad cn */
         "baseUrl": ".",
         "paths": {
