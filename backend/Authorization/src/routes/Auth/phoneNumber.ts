@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { DateTime } from "luxon";
-import { otpProviderConfig, userRepository } from "../../";
+import { authManager, otpProviderConfig, userRepository } from "../../";
 import { SessionManager } from "../../DB/Session/SessionManager";
 import { number, string } from "yup";
 
@@ -109,23 +109,17 @@ phoneNumberRouter.post('/authenticate', async (req, res) => {
 
         let tokens = undefined
         try {
-            const authResponse = await fetch('http://authorization:3000/generate-tokens', {
-                method: 'post',
-                headers: [['Content-Type', 'application/json'], ['Accept', 'application/json']],
-                body: JSON.stringify({ username: phoneNumber })
-            })
-            if (!authResponse.ok)
-                throw new Error('authorization service failed to create tokens')
-
-            tokens = await authResponse.json()
+            tokens = await authManager.generateTokens(phoneNumber)
+            console.log('tokens', tokens)
         } catch (e) {
             console.error(e)
-            throw new Error('authorization service failed to create tokens')
+            throw new Error('system failed to create tokens')
         }
 
         try {
             if (!await userRepository.phoneNumberExists(phoneNumber)) {
                 let dbResponse = await userRepository.createUser({ schemaVersion: 'v0.0.0', username: phoneNumber, phoneNumber, createdAt: DateTime.utc().toUnixInteger(), updatedAt: DateTime.utc().toUnixInteger() })
+                console.log('dbResponse', dbResponse)
                 if (!dbResponse.acknowledged)
                     throw new Error('system failed to create a user')
             }

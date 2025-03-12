@@ -24,13 +24,13 @@ createEnvironmentVariables() {
     export ${upperK}=$value
 }
 
-ls -al /run/secrets
-
-echo "secret_prefix: $secret_prefix"
-
-if [[ ! -d /run/secrets/ ]]; then
+if [ ! -d '/run/secrets/' ]; then
     echo 'there is no secret to use!'
 else
+    ls -al /run/secrets
+
+    echo "secret_prefix: $secret_prefix"
+
     for secret_file in /run/secrets/*; do
         echo "secret file: $secret_file"
         createEnvironmentVariables $(basename $secret_file) "$(cat $secret_file)" "$secret_prefix"

@@ -15,8 +15,10 @@ services:
         environment:
             - NODE_ENV=development
             - DB_URL=mongodb://api_mongodb:27017
-            - REDIS_TYPE=single
-            - REDIS_INITIAL_NODE_URL=redis://api_session_redis:6379
+            - SESSION_REDIS_TYPE=single
+            - SESSION_REDIS_INITIAL_NODE_URL=redis://api_session_redis:6379
+            - REVOKED_TOKENS_REDIS_TYPE=single
+            - REVOKED_TOKENS_REDIS_INITIAL_NODE_URL=redis://api_revoked_tokens_redis:6379
         networks:
             - base
             - api
@@ -38,6 +40,14 @@ services:
 
     api_session_redis:
         container_name: api_session_redis
+        image: redis:7.0
+        ports:
+            - 6379:6379
+        networks:
+            - api
+
+    api_revoked_tokens_redis:
+        container_name: api_revoked_tokens_redis
         image: redis:7.0
         ports:
             - 6379:6379
@@ -87,14 +97,6 @@ services:
             - 6379:6379
         networks:
             - authorization
-
-    # authorization_revoked_tokens_redis:
-    #     container_name: authorization_revoked_tokens_redis
-    #     image: redis:7.0
-    #     ports:
-    #         - 6379:6379
-    #     networks:
-    #         - authorization
 
 networks:
     base:

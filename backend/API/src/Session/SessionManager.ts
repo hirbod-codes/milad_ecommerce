@@ -1,13 +1,13 @@
-import { redisClient } from "..";
+import { sessionRedisClient } from "..";
 import { SessionInsertionFailure } from "./Exceptions/SessionInsertionFailure";
 import { SessionRetrievalFailure } from "./Exceptions/SessionRetrievalFailure";
 
 export class SessionManager {
     static async setSession(key: string, value: string, expiresAt?: number): Promise<void> {
         try {
-            await redisClient.connect()
+            await sessionRedisClient.connect()
 
-            let result = await redisClient.set(key, value, { EXAT: expiresAt })
+            let result = await sessionRedisClient.set(key, value, { EXAT: expiresAt })
 
             if (result === null || result === undefined)
                 throw new SessionInsertionFailure()
@@ -15,22 +15,22 @@ export class SessionManager {
             console.error(e)
             throw new SessionInsertionFailure()
         } finally {
-            await redisClient.quit()
+            await sessionRedisClient.quit()
         }
     }
 
     static async getSession(key: string): Promise<string | undefined> {
         try {
-            await redisClient.connect()
+            await sessionRedisClient.connect()
 
-            let v = await redisClient.get(key)
+            let v = await sessionRedisClient.get(key)
 
             return v === null ? undefined : v
         } catch (e) {
             console.error(e)
             throw new SessionRetrievalFailure()
         } finally {
-            await redisClient.quit()
+            await sessionRedisClient.quit()
         }
     }
 }
