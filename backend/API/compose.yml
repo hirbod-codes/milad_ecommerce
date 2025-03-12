@@ -44,6 +44,14 @@ services:
         networks:
             - api
 
+    api_revoked_tokens_redis:
+        container_name: api_revoked_tokens_redis
+        image: redis:7.0
+        ports:
+            - 6379:6379
+        networks:
+            - api
+
     authorization:
         container_name: authorization
         build: 
@@ -87,14 +95,6 @@ services:
             - 6379:6379
         networks:
             - authorization
-
-    # authorization_revoked_tokens_redis:
-    #     container_name: authorization_revoked_tokens_redis
-    #     image: redis:7.0
-    #     ports:
-    #         - 6379:6379
-    #     networks:
-    #         - authorization
 
 networks:
     base:
