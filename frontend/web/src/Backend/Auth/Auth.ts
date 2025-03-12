@@ -1,15 +1,15 @@
+import { StorageApi } from "../Storage/StorageApi"
+
 export class Auth {
     static isAuthenticated() {
         return localStorage.getItem('accessToken') !== null
     }
 
-    protected static login(accessToken: string, refreshToken: string) {
-        localStorage.setItem('accessToken', accessToken)
-        localStorage.setItem('refreshToken', refreshToken)
+    protected static async login(accessToken: string, refreshToken: string) {
+        (await StorageApi.getInstance()).setTokens({ accessToken, refreshToken })
     }
 
-    static logout() {
-        localStorage.removeItem('accessToken')
-        localStorage.removeItem('refreshToken')
+    static async logout() {
+        (await StorageApi.getInstance()).unsetTokens()
     }
 }
