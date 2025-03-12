@@ -16,21 +16,30 @@ export const hostPort = getIntegerEnv('PORT', 'The PORT environment variable is 
 export const jwtSecret = getStringEnv('JWT_SECRET', 'The Jwt secret environment variable is not provided')
 
 // Stores
-const redisType = getStringEnv('REDIS_TYPE', 'The Redis type environment variable is not provided')
-const redisInitialNodeUrl = getStringEnv('REDIS_INITIAL_NODE_URL', 'The Redis initial node url environment variable is not provided')
+const sessionRedisType = getStringEnv('SESSION_REDIS_TYPE', 'The Session redis type environment variable is not provided')
+const sessionRedisInitialNodeUrl = getStringEnv('SESSION_REDIS_INITIAL_NODE_URL', 'The Session redis initial node url environment variable is not provided')
+const revokedTokensRedisType = getStringEnv('REVOKED_TOKENS_REDIS_TYPE', 'The Revoked tokens redis type environment variable is not provided')
+const revokedTokensRedisInitialNodeUrl = getStringEnv('REVOKED_TOKENS_REDIS_INITIAL_NODE_URL', 'The Revoked tokens redis initial node url environment variable is not provided')
 
 let sessionRedisClient: RedisClusterType<RedisDefaultModules> | RedisClientType<RedisDefaultModules> = undefined!
-if (redisType === 'single')
-    sessionRedisClient = createClient({ url: redisInitialNodeUrl })
-else if (redisType === 'cluster')
+if (sessionRedisType === 'single')
+    sessionRedisClient = createClient({ url: sessionRedisInitialNodeUrl })
+else if (sessionRedisType === 'cluster')
     sessionRedisClient = createCluster({
-        rootNodes: [{ url: redisInitialNodeUrl }],
+        rootNodes: [{ url: sessionRedisInitialNodeUrl }],
         useReplicas: true
     });
 
-export { redisClient }
+let revokedTokensRedisClient: RedisClusterType<RedisDefaultModules> | RedisClientType<RedisDefaultModules> = undefined!
+if (revokedTokensRedisType === 'single')
+    revokedTokensRedisClient = createClient({ url: revokedTokensRedisInitialNodeUrl })
+else if (revokedTokensRedisType === 'cluster')
+    revokedTokensRedisClient = createCluster({
+        rootNodes: [{ url: revokedTokensRedisInitialNodeUrl }],
+        useReplicas: true
+    });
 
-export { sessionRedisClient }
+export { sessionRedisClient, revokedTokensRedisClient }
 
 export const dbConfig = {
     databaseName: getStringEnv('DB_DATABASE_NAME', 'The Db database name environment variable is not provided'),
