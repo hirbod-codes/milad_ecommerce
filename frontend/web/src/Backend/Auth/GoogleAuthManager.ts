@@ -100,13 +100,6 @@ export class GoogleAuthManager extends Auth {
         return this.toBase64(new Uint8Array(hashBuffer))
     }
 
-    private static async generateCodeChallengea(codeVerifier: string) {
-        const encoder = new TextEncoder();
-        const data = encoder.encode(codeVerifier);
-        const hashBuffer = await window.crypto.subtle.digest('SHA-256', data);
-        return this.toBase64(new Uint8Array(hashBuffer))
-    }
-
     private static toBase64(hashBuffer: number[] | Uint8Array) {
         return btoa(String.fromCharCode(...hashBuffer))
             .replace(/\+/g, '-')
