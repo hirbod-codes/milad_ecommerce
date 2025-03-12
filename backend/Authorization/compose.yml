@@ -1,19 +1,6 @@
 version: '3.8'
 
 services:
-    # to test nginx configuration
-    # web:
-    #     container_name: web
-    #     build:
-    #         context: ../../frontend/web/
-    #         dockerfile: Dockerfile.development
-    #         target: development
-    #     ports:
-    #       # Don't forget to change the .env file, if you change the port number ( for google OAuth )
-    #       - 5173:80
-    #     networks:
-    #         - web
-
     authorization:
         container_name: authorization
         build: 
@@ -33,7 +20,6 @@ services:
             - DB_URL=mongodb://authorization_mongodb:27017
         networks:
             - authorization
-            - base
 
     authorization_mongodb:
         container_name: authorization_mongodb
@@ -50,24 +36,5 @@ services:
         networks:
             - authorization
 
-    authorization_session_redis:
-        container_name: authorization_session_redis
-        image: redis:7.0
-        ports:
-            - 6379:6379
-        networks:
-            - authorization
-
-    # authorization_revoked_tokens_redis:
-    #     container_name: authorization_revoked_tokens_redis
-    #     image: redis:7.0
-    #     ports:
-    #         - 6379:6379
-    #     networks:
-    #         - authorization
-
 networks:
-    web:
-    base:
-    api:
     authorization:

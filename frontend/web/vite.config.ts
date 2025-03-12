@@ -4,10 +4,20 @@ import path from 'path'
 
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [react()],
-  resolve: {
-    alias: {
-      "@": path.resolve(__dirname, "./"),
+    server: {
+        allowedHosts: ['*'],
+        cors: {
+            // origin: ['self', 'http://api:3000/*'],
+            origin: ['*'],
+            methods: ['*'],
+            allowedHeaders: ['*'],
+            credentials: true,
+        },
     },
-  },
+    plugins: [react()],
+    resolve: {
+        alias: {
+            "@": path.resolve(__dirname, "./"),
+        },
+    },
 })
