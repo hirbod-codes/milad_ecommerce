@@ -33,24 +33,24 @@ from sender`
         }
         const json = JSON.stringify(data)
 
-        // try {
-        //     let otpResponse = (await fetch(`https://rest.payamak-panel.com/api/SendSMS/SendSMS`, {
-        //         method: 'post',
-        //         body: json,
-        //         headers: [['Content-Type', 'application/json'], ['Accept', 'application/json']]
-        //     }))
-        //     console.log(otpResponse.status)
+        try {
+            let otpResponse = (await fetch(`https://rest.payamak-panel.com/api/SendSMS/SendSMS`, {
+                method: 'post',
+                body: json,
+                headers: [['Content-Type', 'application/json'], ['Accept', 'application/json']]
+            }))
+            console.log(otpResponse.status)
 
-        //     if (!otpResponse.ok)
-        //         throw new Error('system failed to send an otp message')
+            if (!otpResponse.ok)
+                throw new Error('system failed to send an otp message')
 
-        //     let responseStatus = Number((await otpResponse.json()).value)
-        //     if (responseStatus <= 35)
-        //         throw new Error('system failed to send an otp message')
-        // } catch (e) {
-        //     console.error(e)
-        //     throw new Error('system failed to send an otp message')
-        // }
+            let responseStatus = Number((await otpResponse.json()).value)
+            if (responseStatus <= 35)
+                throw new Error('system failed to send an otp message')
+        } catch (e) {
+            console.error(e)
+            throw new Error('system failed to send an otp message')
+        }
 
         const expiresAt = DateTime.utc().plus({ seconds: 60 }).toUnixInteger()
 
@@ -86,26 +86,26 @@ phoneNumberRouter.post('/authenticate', async (req, res) => {
 
         console.log('from user', { phoneNumber, code })
 
-        // let json = undefined
-        // try { json = await SessionManager.getSession(phoneNumber) }
-        // catch (e) {
-        //     console.error(e)
-        //     throw new Error('session not found')
-        // }
+        let json = undefined
+        try { json = await SessionManager.getSession(phoneNumber) }
+        catch (e) {
+            console.error(e)
+            throw new Error('session not found')
+        }
 
-        // if (!json)
-        //     throw new Error('session not found')
+        if (!json)
+            throw new Error('session not found')
 
-        // let { code: inSessionCode, expiresAt: inSessionExpiresAt } = JSON.parse(json)
-        // inSessionCode = Number(inSessionCode)
-        // inSessionExpiresAt = Number(inSessionExpiresAt)
+        let { code: inSessionCode, expiresAt: inSessionExpiresAt } = JSON.parse(json)
+        inSessionCode = Number(inSessionCode)
+        inSessionExpiresAt = Number(inSessionExpiresAt)
 
-        // console.log('from redis', { inSessionCode, inSessionExpiresAt })
+        console.log('from redis', { inSessionCode, inSessionExpiresAt })
 
-        // if (inSessionCode !== code || inSessionExpiresAt <= DateTime.utc().toUnixInteger()) {
-        //     res.sendStatus(400)
-        //     return
-        // }
+        if (inSessionCode !== code || inSessionExpiresAt <= DateTime.utc().toUnixInteger()) {
+            res.sendStatus(400)
+            return
+        }
 
         let tokens = undefined
         try {
