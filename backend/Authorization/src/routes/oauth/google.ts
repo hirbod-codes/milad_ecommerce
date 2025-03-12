@@ -97,7 +97,7 @@ oauthGoogleRouter.post('/token', async (req, res) => {
             tokens = await authManager.generateTokens(userInfo.email)
         } catch (e) {
             console.error(e)
-            throw new Error('authorization service failed to create tokens')
+            throw new Error('system failed to create tokens')
         }
 
         console.log('tokens', tokens)

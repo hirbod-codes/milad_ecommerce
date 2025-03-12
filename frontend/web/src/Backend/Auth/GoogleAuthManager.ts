@@ -22,7 +22,9 @@ export class GoogleAuthManager extends Auth {
         try {
             let r = await fetch(`${authApiUrl}/oauth/google/client-id`, { headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' } })
             clientId = (await r.json())!.clientId!
-        } catch (e) { }
+        } catch (e) {
+            console.error(e)
+        }
 
         if (clientId === undefined)
             throw new Error('system failed to get client id')

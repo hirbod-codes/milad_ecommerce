@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { DateTime } from "luxon";
-import { otpProviderConfig, userRepository } from "../../";
+import { authManager, otpProviderConfig, userRepository } from "../../";
 import { SessionManager } from "../../DB/Session/SessionManager";
 import { number, string } from "yup";
 
@@ -33,24 +33,24 @@ from sender`
         }
         const json = JSON.stringify(data)
 
-        try {
-            let otpResponse = (await fetch(`https://rest.payamak-panel.com/api/SendSMS/SendSMS`, {
-                method: 'post',
-                body: json,
-                headers: [['Content-Type', 'application/json'], ['Accept', 'application/json']]
-            }))
-            console.log(otpResponse.status)
+        // try {
+        //     let otpResponse = (await fetch(`https://rest.payamak-panel.com/api/SendSMS/SendSMS`, {
+        //         method: 'post',
+        //         body: json,
+        //         headers: [['Content-Type', 'application/json'], ['Accept', 'application/json']]
+        //     }))
+        //     console.log(otpResponse.status)
 
-            if (!otpResponse.ok)
-                throw new Error('system failed to send an otp message')
+        //     if (!otpResponse.ok)
+        //         throw new Error('system failed to send an otp message')
 
-            let responseStatus = Number((await otpResponse.json()).value)
-            if (responseStatus <= 35)
-                throw new Error('system failed to send an otp message')
-        } catch (e) {
-            console.error(e)
-            throw new Error('system failed to send an otp message')
-        }
+        //     let responseStatus = Number((await otpResponse.json()).value)
+        //     if (responseStatus <= 35)
+        //         throw new Error('system failed to send an otp message')
+        // } catch (e) {
+        //     console.error(e)
+        //     throw new Error('system failed to send an otp message')
+        // }
 
         const expiresAt = DateTime.utc().plus({ seconds: 60 }).toUnixInteger()
 
@@ -86,46 +86,40 @@ phoneNumberRouter.post('/authenticate', async (req, res) => {
 
         console.log('from user', { phoneNumber, code })
 
-        let json = undefined
-        try { json = await SessionManager.getSession(phoneNumber) }
-        catch (e) {
-            console.error(e)
-            throw new Error('session not found')
-        }
+        // let json = undefined
+        // try { json = await SessionManager.getSession(phoneNumber) }
+        // catch (e) {
+        //     console.error(e)
+        //     throw new Error('session not found')
+        // }
 
-        if (!json)
-            throw new Error('session not found')
+        // if (!json)
+        //     throw new Error('session not found')
 
-        let { code: inSessionCode, expiresAt: inSessionExpiresAt } = JSON.parse(json)
-        inSessionCode = Number(inSessionCode)
-        inSessionExpiresAt = Number(inSessionExpiresAt)
+        // let { code: inSessionCode, expiresAt: inSessionExpiresAt } = JSON.parse(json)
+        // inSessionCode = Number(inSessionCode)
+        // inSessionExpiresAt = Number(inSessionExpiresAt)
 
-        console.log('from redis', { inSessionCode, inSessionExpiresAt })
+        // console.log('from redis', { inSessionCode, inSessionExpiresAt })
 
-        if (inSessionCode !== code || inSessionExpiresAt <= DateTime.utc().toUnixInteger()) {
-            res.sendStatus(400)
-            return
-        }
+        // if (inSessionCode !== code || inSessionExpiresAt <= DateTime.utc().toUnixInteger()) {
+        //     res.sendStatus(400)
+        //     return
+        // }
 
         let tokens = undefined
         try {
-            const authResponse = await fetch('http://authorization:3000/generate-tokens', {
-                method: 'post',
-                headers: [['Content-Type', 'application/json'], ['Accept', 'application/json']],
-                body: JSON.stringify({ username: phoneNumber })
-            })
-            if (!authResponse.ok)
-                throw new Error('authorization service failed to create tokens')
-
-            tokens = await authResponse.json()
+            tokens = await authManager.generateTokens(phoneNumber)
+            console.log('tokens', tokens)
         } catch (e) {
             console.error(e)
-            throw new Error('authorization service failed to create tokens')
+            throw new Error('system failed to create tokens')
         }
 
         try {
             if (!await userRepository.phoneNumberExists(phoneNumber)) {
                 let dbResponse = await userRepository.createUser({ schemaVersion: 'v0.0.0', username: phoneNumber, phoneNumber, createdAt: DateTime.utc().toUnixInteger(), updatedAt: DateTime.utc().toUnixInteger() })
+                console.log('dbResponse', dbResponse)
                 if (!dbResponse.acknowledged)
                     throw new Error('system failed to create a user')
             }

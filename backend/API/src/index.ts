@@ -63,6 +63,12 @@ export let userRepository: UserRepository = undefined!;
             break;
         }
         catch (e) { console.error(e) }
+        finally {
+            await (() => new Promise<void>((res, rej) => {
+                console.log('waiting for 5 seconds...')
+                setTimeout(() => { res() }, 5000)
+            }))()
+        }
     }
 })()
 
