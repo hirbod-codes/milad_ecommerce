@@ -60,7 +60,7 @@ export function SmsAuth() {
                 return
             }
 
-            let r = await SmsAuthenticationManager.submit(c)
+            let r = await SmsAuthenticationManager.submit(c, phoneNumber)
 
             if (r.success)
                 navigate(-1)
