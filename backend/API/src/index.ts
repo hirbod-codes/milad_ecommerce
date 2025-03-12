@@ -19,16 +19,18 @@ export const jwtSecret = getStringEnv('JWT_SECRET', 'The Jwt secret environment 
 const redisType = getStringEnv('REDIS_TYPE', 'The Redis type environment variable is not provided')
 const redisInitialNodeUrl = getStringEnv('REDIS_INITIAL_NODE_URL', 'The Redis initial node url environment variable is not provided')
 
-let redisClient: RedisClusterType<RedisDefaultModules> | RedisClientType<RedisDefaultModules> = undefined!
+let sessionRedisClient: RedisClusterType<RedisDefaultModules> | RedisClientType<RedisDefaultModules> = undefined!
 if (redisType === 'single')
-    redisClient = createClient({ url: redisInitialNodeUrl })
+    sessionRedisClient = createClient({ url: redisInitialNodeUrl })
 else if (redisType === 'cluster')
-    redisClient = createCluster({
+    sessionRedisClient = createCluster({
         rootNodes: [{ url: redisInitialNodeUrl }],
         useReplicas: true
     });
 
 export { redisClient }
+
+export { sessionRedisClient }
 
 export const dbConfig = {
     databaseName: getStringEnv('DB_DATABASE_NAME', 'The Db database name environment variable is not provided'),
