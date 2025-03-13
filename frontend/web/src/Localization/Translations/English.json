@@ -1,5 +1,7 @@
 {
     "common": {
+        "resend": "Resend",
+        "logout": "Log out",
         "login": "Log in",
         "signup": "Sign up",
         "firstName": "firstName",

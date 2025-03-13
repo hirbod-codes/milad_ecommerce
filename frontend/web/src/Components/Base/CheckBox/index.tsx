@@ -76,7 +76,7 @@ export const CheckBox = memo(function CheckBox({
             <div className={`overflow-hidden relative rounded-full block ${sizeClass[1]} m-1`} onClick={(e) => { if (rippleEffect) ripple(e, color, true) }}>
                 <input type="checkbox" id={inputId ?? (typeof (label) === 'string' ? label : 'checkboxId')} {...inputProps} className={cn(["hidden invisible peer"], inputProps?.className)} />
 
-                <div className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 border rounded-sm ${sizeClass[0]} peer-checked:*:block`}>
+                <div className={cn(`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 border rounded-sm ${sizeClass[0]} peer-checked:*:block`, inputProps?.className)}>
                     <svg
                         style={{ backgroundColor: color }}
                         className="hidden"

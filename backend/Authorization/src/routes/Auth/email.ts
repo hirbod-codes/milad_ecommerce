@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { DateTime } from "luxon";
-import { emailConfig, transporter, userRepository } from "../../";
+import { authManager, emailConfig, transporter, userRepository } from "../../";
 import { SessionManager } from "../../DB/Session/SessionManager";
 import { number, string } from "yup";
 import crypto from "crypto";
@@ -100,18 +100,10 @@ emailRouter.post('/signup', async (req, res) => {
 
         let tokens = undefined
         try {
-            const authResponse = await fetch('http://authorization:3000/generate-tokens', {
-                method: 'post',
-                headers: [['Content-Type', 'application/json'], ['Accept', 'application/json']],
-                body: JSON.stringify({ username: email })
-            })
-            if (!authResponse.ok)
-                throw new Error('authorization service failed to create tokens')
-
-            tokens = await authResponse.json()
+            tokens = await authManager.generateTokens(email)
         } catch (e) {
             console.error(e)
-            throw new Error('authorization service failed to create tokens')
+            throw new Error('system failed to create tokens')
         }
 
         if (await userRepository.emailExists(email)) {
@@ -201,18 +193,10 @@ emailRouter.post('/login', async (req, res) => {
 
         let tokens = undefined
         try {
-            const authResponse = await fetch('http://authorization:3000/generate-tokens', {
-                method: 'post',
-                headers: [['Content-Type', 'application/json'], ['Accept', 'application/json']],
-                body: JSON.stringify({ username: email })
-            })
-            if (!authResponse.ok)
-                throw new Error('authorization service failed to create tokens')
-
-            tokens = await authResponse.json()
+            tokens = await authManager.generateTokens(email)
         } catch (e) {
             console.error(e)
-            throw new Error('authorization service failed to create tokens')
+            throw new Error('system failed to create tokens')
         }
 
         res.status(200).json(tokens)
