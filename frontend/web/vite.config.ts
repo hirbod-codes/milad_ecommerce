@@ -7,7 +7,6 @@ export default defineConfig({
     server: {
         allowedHosts: ['*'],
         cors: {
-            // origin: ['self', 'http://api:3000/*'],
             origin: ['*'],
             methods: ['*'],
             allowedHeaders: ['*'],
@@ -19,5 +18,5 @@ export default defineConfig({
         alias: {
             "@": path.resolve(__dirname, "./"),
         },
-    },
+    }
 })
