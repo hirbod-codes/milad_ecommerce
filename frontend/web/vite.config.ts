@@ -13,16 +13,10 @@ export default defineConfig({
             credentials: true,
         },
     },
-    build: {
-        emptyOutDir: true,
-    },
     plugins: [react()],
     resolve: {
         alias: {
             "@": path.resolve(__dirname, "./"),
         },
-    },
-    define: {
-        "import.meta.env": JSON.stringify(process.env),
-    },
+    }
 })
