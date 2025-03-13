@@ -9,7 +9,7 @@ import { EmailLogin } from "./EmailLogin";
 import { EmailSignup } from "./EmailSignup";
 import { GoogleAuthManager } from "@/src/Backend/Auth/GoogleAuthManager";
 
-export function EmailAuth() {
+export function EmailAuth({ done }: { done?: () => void }) {
     const [emailMode, setEmailMode] = useState<'login' | 'signup'>('login')
 
     return (
@@ -24,7 +24,7 @@ export function EmailAuth() {
                             className="absolute top-0 w-full"
                             key={emailMode}
                         >
-                            <EmailLogin goToSignup={() => setEmailMode('signup')} />
+                            <EmailLogin goToSignup={() => setEmailMode('signup')} done={done} />
                         </motion.div>
                     }
 
@@ -36,7 +36,7 @@ export function EmailAuth() {
                             className="absolute top-0 w-full"
                             key={emailMode}
                         >
-                            <EmailSignup goToLogin={() => setEmailMode('login')} />
+                            <EmailSignup goToLogin={() => setEmailMode('login')} done={done} />
                         </motion.div>
                     }
                 </AnimatePresence>

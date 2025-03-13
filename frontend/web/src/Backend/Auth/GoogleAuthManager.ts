@@ -22,12 +22,32 @@ export class GoogleAuthManager extends Auth {
         try {
             let r = await fetch(`${authApiUrl}/oauth/google/client-id`, { headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' } })
             clientId = (await r.json())!.clientId!
-        } catch (e) { }
+        } catch (e) {
+            console.error(e)
+        }
 
         if (clientId === undefined)
             throw new Error('system failed to get client id')
 
-        localStorage.setItem('code_verifier', codeVerifier);
+        try { localStorage.setItem('code_verifier', codeVerifier) }
+        catch (e) {
+            console.error(e)
+            return
+        }
+
+        // this code waits until code_verifier is successfully stored in local storage.(setItem method of window.localStorage dispatches a storage event on Window objects holding an equivalent Storage object.)
+        let safety = 0
+        while (safety < 10) {
+            safety++
+
+            if (localStorage.getItem('code_verifier') !== null)
+                break;
+
+            console.log('waiting...')
+            await (() => new Promise<void>((res) => {
+                setTimeout(() => { res() }, 500)
+            }))()
+        }
 
         const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?response_type=code&client_id=${clientId}&redirect_uri=${redirectUri}&scope=openid profile email&code_challenge=${codeChallenge}&code_challenge_method=S256`;
 
@@ -94,6 +114,13 @@ export class GoogleAuthManager extends Auth {
             return this.toBase64(hashBuffer8Bit)
         }
 
+        const encoder = new TextEncoder();
+        const data = encoder.encode(codeVerifier);
+        const hashBuffer = await window.crypto.subtle.digest('SHA-256', data);
+        return this.toBase64(new Uint8Array(hashBuffer))
+    }
+
+    private static async generateCodeChallengea(codeVerifier: string) {
         const encoder = new TextEncoder();
         const data = encoder.encode(codeVerifier);
         const hashBuffer = await window.crypto.subtle.digest('SHA-256', data);

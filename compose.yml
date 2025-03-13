@@ -1,0 +1,128 @@
+version: '3.8'
+
+services:
+    web:
+        container_name: web
+        build:
+            context: ./frontend/web/
+            dockerfile: Dockerfile
+            target: production
+        ports:
+          # Don't forget to change the VITE_REDIRECT_URI environment variable, if you change the port number (for google OAuth)
+          - 80:80
+        environment:
+            VITE_API_URL: http://api:3000
+            VITE_AUTH_API_URL: http://authorization:3001
+            VITE_REDIRECT_URI: http://127.0.0.1:80/
+        networks:
+            - web
+
+    api:
+        container_name: api
+        build:
+            context: ./backend/API
+            dockerfile: Dockerfile
+            target: production
+        ports:
+            - 3000:3000
+        env_file:
+            - path: ./backend/API/.env
+              required: true
+        environment:
+            NODE_ENV: production
+            HOST: "0.0.0.0"
+            PORT: 3000
+            DB_DATABASE_NAME: primaryDB
+            DB_SUPPORTS_TRANSACTION: "false"
+            DB_URL: mongodb://api_mongodb:27017
+            SESSION_REDIS_TYPE: single
+            SESSION_REDIS_INITIAL_NODE_URL: redis://api_session_redis:6379
+            REVOKED_TOKENS_REDIS_TYPE: single
+            REVOKED_TOKENS_REDIS_INITIAL_NODE_URL: redis://api_revoked_tokens_redis:6379
+        networks:
+            - base
+            - api
+
+    api_mongodb:
+        container_name: api_mongodb
+        build:
+            context: ./backend/API
+            dockerfile: ./mongodb/single/Dockerfile
+            target: production
+        ports:
+                - 8082:27017
+        environment:
+            MONGODB_USERNAME: admin
+            MONGODB_PASSWORD: password
+            databaseName: primaryDB
+        networks:
+            - api
+
+    api_session_redis:
+        container_name: api_session_redis
+        image: redis:7.0
+        ports:
+            - 6379:6379
+        networks:
+            - api
+
+    api_revoked_tokens_redis:
+        container_name: api_revoked_tokens_redis
+        image: redis:7.0
+        ports:
+            - 6380:6379
+        networks:
+            - api
+
+    authorization:
+        container_name: authorization
+        build: 
+            context: ./backend/Authorization
+            dockerfile: Dockerfile
+            target: production
+        ports:
+            - 3001:3000
+        environment:
+            NODE_ENV: production
+            HOST: "0.0.0.0"
+            PORT: 3000
+            DB_DATABASE_NAME: primaryDB
+            DB_SUPPORTS_TRANSACTION: "false"
+            DB_URL: mongodb://authorization_mongodb:27017
+            REDIS_TYPE: single
+            REDIS_INITIAL_NODE_URL: redis://authorization_session_redis:6379
+        env_file:
+            - path: ./backend/Authorization/.env
+              required: true
+        networks:
+            - authorization
+            - base
+
+    authorization_mongodb:
+        container_name: authorization_mongodb
+        build:
+            context: ./backend/Authorization
+            dockerfile: ./mongodb/single/Dockerfile
+            target: production
+        ports:
+                - 8083:27017
+        environment:
+            MONGODB_USERNAME: admin
+            MONGODB_PASSWORD: password
+            databaseName: primaryDB
+        networks:
+            - authorization
+
+    authorization_session_redis:
+        container_name: authorization_session_redis
+        image: redis:7.0
+        ports:
+            - 6381:6379
+        networks:
+            - authorization
+
+networks:
+    web:
+    base:
+    api:
+    authorization:
