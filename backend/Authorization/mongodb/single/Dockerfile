@@ -1,4 +1,4 @@
-FROM mongo:4 AS base
+FROM  mongo:4 AS base
 
 COPY ./mongodb/single/scripts /mongodb/scripts
 
