@@ -20,4 +20,4 @@ FROM nginx:alpine AS production
 COPY --from=build /app/dist /usr/share/nginx/html
 COPY nginx.conf /etc/nginx/conf.d/nginx_conf.template
 
-CMD envsubst < /etc/nginx/conf.d/nginx_conf.template > /etc/nginx/conf.d/default.conf && exec nginx -g "daemon off;"
+CMD nginx -g "daemon off;"
