@@ -4,6 +4,7 @@ networks:
     milad_e_commerce_api:
     milad_e_commerce_api_mongodb:
     milad_e_commerce_api_session_redis:
+    milad_e_commerce_api_revoked_tokens_redis:
     milad_e_commerce_authorization:
     milad_e_commerce_authorization_mongodb:
     milad_e_commerce_authorization_session_redis:
@@ -70,6 +71,10 @@ services:
             DB_URL: mongodb://milad_e_commerce_api_mongodb:27017
             REDIS_TYPE: single
             REDIS_INITIAL_NODE_URL: redis://milad_e_commerce_api_session_redis:6379
+            SESSION_REDIS_TYPE: single
+            SESSION_REDIS_INITIAL_NODE_URL: redis://milad_e_commerce_api_session_redis:6379
+            REVOKED_TOKENS_REDIS_TYPE: single
+            REVOKED_TOKENS_REDIS_INITIAL_NODE_URL: redis://milad_e_commerce_api_revoked_tokens_redis:6379
             secret_prefix: milad_e_commerce_api_
         secrets:
             - milad_e_commerce_api_jwt_secret
@@ -87,6 +92,7 @@ services:
             - milad_e_commerce_api
             - milad_e_commerce_api_mongodb
             - milad_e_commerce_api_session_redis
+            - milad_e_commerce_api_revoked_tokens_redis
 
     milad_e_commerce_api_mongodb:
         image: ghcr.io/hirbod-codes/milad_e_commerce/milad_e_commerce_api_mongodb_single:${tag}
@@ -111,8 +117,6 @@ services:
 
     milad_e_commerce_api_session_redis:
         image: redis:7.0
-        environment:
-            secret_prefix: milad_e_commerce_api_
         volumes:
             - milad_e_commerce_api_session_redis:/data
         deploy:
@@ -125,6 +129,21 @@ services:
                 max_attempts: 8
         networks:
             - milad_e_commerce_api_session_redis
+
+    milad_e_commerce_api_revoked_tokens_redis:
+        image: redis:7.0
+        volumes:
+            - milad_e_commerce_api_revoked_tokens_redis:/data
+        deploy:
+            resources:
+                limits:
+                    cpus: "0.5"
+            restart_policy:
+                condition: on-failure
+                delay: 5s
+                max_attempts: 8
+        networks:
+            - milad_e_commerce_api_revoked_tokens_redis
 
     milad_e_commerce_authorization:
         image: ghcr.io/hirbod-codes/milad_e_commerce/milad_e_commerce_authorization:${tag}
@@ -189,8 +208,6 @@ services:
 
     milad_e_commerce_authorization_session_redis:
         image: redis:7.0
-        environment:
-            secret_prefix: milad_e_commerce_authorization_
         volumes:
             - milad_e_commerce_authorization_session_redis:/data
         deploy:

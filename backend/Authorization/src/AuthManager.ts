@@ -69,7 +69,7 @@ export class AuthManager {
         return new Promise(async (resolve, reject) => {
             try {
                 try { Jwt.verify(refreshToken, this.jwtSecret, { issuer: this.issuer, algorithms: [this.algorithm] }) }
-                catch (e) { reject(e) }
+                catch (e) { reject(e); return }
 
                 let doc = (await (await db.getRefreshTokensCollection()).findOne({ refreshToken }))
 

@@ -36,8 +36,8 @@ export function AuthModal({ open, onClose, modalProps }: LoginModalProps) {
                         <Button variant="text" fgColor={tabIndex === 1 ? 'success' : 'surface-foreground'}>{t('common.email')}</Button>,
                     ]}
                     tabContents={[
-                        <SmsAuth />,
-                        <EmailAuth />
+                        <SmsAuth done={() => { if (onClose) onClose() }} />,
+                        <EmailAuth done={() => { if (onClose) onClose() }} />
                     ]}
                     onActiveTabChange={i => setTabIndex(i)}
                     containerProps={{ stackProps: { className: 'h-[11cm]' } }}
