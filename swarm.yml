@@ -44,6 +44,7 @@ secrets:
 volumes:
     milad_e_commerce_api_mongodb:
     milad_e_commerce_api_session_redis:
+    milad_e_commerce_api_revoked_tokens_redis:
     milad_e_commerce_authorization_mongodb:
     milad_e_commerce_authorization_session_redis:
 
