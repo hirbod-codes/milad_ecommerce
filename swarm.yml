@@ -52,7 +52,9 @@ services:
     milad_e_commerce_web:
         image: ghcr.io/hirbod-codes/milad_e_commerce/milad_e_commerce_web:${tag}
         environment:
-            ENVIRONMENT_VARIABLES: "window.env = { VITE_API_URL: 'http://${server_ip}:1506', VITE_AUTH_API_URL: 'http://${server_ip}:1507', VITE_REDIRECT_URI: 'http://127.0.0.1:1508/' };"
+            VITE_API_URL: http://${server_ip}:1506
+            VITE_AUTH_API_URL: http://${server_ip}:1507
+            VITE_REDIRECT_URI: http://127.0.0.1:1508/
         ports:
         # Don't forget to change the .env file, if you change the port number ( for google OAuth )
         - 1508:80

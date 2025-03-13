@@ -20,4 +20,4 @@ FROM nginx:alpine AS production
 COPY --from=build /app/dist /usr/share/nginx/html
 COPY nginx.conf /etc/nginx/conf.d/nginx_conf.template
 
-CMD nginx -g "daemon off;"
+CMD echo "window.env = { VITE_API_URL: '$VITE_API_URL', VITE_AUTH_API_URL: '$VITE_AUTH_API_URL', VITE_REDIRECT_URI: '$VITE_REDIRECT_URI' }" > /usr/share/nginx/html/.env.js && nginx -g "daemon off;"

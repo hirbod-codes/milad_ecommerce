@@ -11,7 +11,9 @@ services:
           # Don't forget to change the VITE_REDIRECT_URI environment variable, if you change the port number (for google OAuth)
           - 80:80
         environment:
-            ENVIRONMENT_VARIABLES: "window.env = { VITE_API_URL: 'http://api:3000', VITE_AUTH_API_URL: 'http://authorization:3001', VITE_REDIRECT_URI: 'http://127.0.0.1:80/' };"
+            VITE_API_URL: http://api:3000
+            VITE_AUTH_API_URL: http://authorization:3001
+            VITE_REDIRECT_URI: http://127.0.0.1:80/
         networks:
             - web
 
