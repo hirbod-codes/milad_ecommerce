@@ -7,17 +7,22 @@ export default defineConfig({
     server: {
         allowedHosts: ['*'],
         cors: {
-            // origin: ['self', 'http://api:3000/*'],
             origin: ['*'],
             methods: ['*'],
             allowedHeaders: ['*'],
             credentials: true,
         },
     },
+    build: {
+        emptyOutDir: true,
+    },
     plugins: [react()],
     resolve: {
         alias: {
             "@": path.resolve(__dirname, "./"),
         },
+    },
+    define: {
+        "import.meta.env": JSON.stringify(process.env),
     },
 })

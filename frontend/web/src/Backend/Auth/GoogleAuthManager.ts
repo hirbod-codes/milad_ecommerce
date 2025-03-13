@@ -1,6 +1,7 @@
 import { string } from "yup";
 import { Auth } from "./Auth";
 import { lib, SHA256 } from "crypto-js";
+import { EnvManager } from "@/src/EnvManager";
 
 export class GoogleAuthManager extends Auth {
     static async goToConcentPage() {
@@ -10,11 +11,11 @@ export class GoogleAuthManager extends Auth {
         console.log('codeVerifier', codeVerifier)
         console.log('codeChallenge', codeChallenge)
 
-        const authApiUrl = import.meta.env.VITE_AUTH_API_URL;
+        const authApiUrl = EnvManager.getEnv('VITE_AUTH_API_URL')
         if (!string().required().isValidSync(authApiUrl))
             throw new Error('VITE_AUTH_API_URL environment variable is not provided')
 
-        let redirectUri = import.meta.env.VITE_REDIRECT_URI
+        let redirectUri = EnvManager.getEnv('VITE_REDIRECT_URI')
         if (!string().required().isValidSync(redirectUri))
             throw new Error('VITE_REDIRECT_URI environment variable is not provided')
 
@@ -63,11 +64,11 @@ export class GoogleAuthManager extends Auth {
             return false
         }
 
-        const authApiUrl = import.meta.env.VITE_AUTH_API_URL;
+        const authApiUrl = EnvManager.getEnv('VITE_AUTH_API_URL')
         if (!string().required().isValidSync(authApiUrl))
             throw new Error('VITE_AUTH_API_URL environment variable is not provided')
 
-        let redirectUri = import.meta.env.VITE_REDIRECT_URI
+        let redirectUri = EnvManager.getEnv('VITE_REDIRECT_URI')
         if (!string().required().isValidSync(redirectUri))
             throw new Error('VITE_REDIRECT_URI environment variable is not provided')
 

@@ -1,5 +1,7 @@
 # Vite + SWC + React + TypeScript
 
+## Note: Environment variables are served from Nginx
+
 **List of packages used:**
 
 * yup for validation
