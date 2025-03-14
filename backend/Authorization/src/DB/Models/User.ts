@@ -21,17 +21,6 @@ export const userSchema = object().required().shape({
 
 export type User = InferType<typeof userSchema>
 
-export const fields: (keyof User)[] = [
-    'schemaVersion',
-    '_id',
-    'username',
-    'password',
-    'passwordSalt',
-    'passwordIterations',
-    'phoneNumber',
-    'email',
-    'createdAt',
-    'updatedAt',
-]
+export const fields: (keyof User)[] = Object.keys(userSchema.fields) as any
 export const readableFields = fields.filter(f => !['schemaVersion', 'password', 'passwordSalt', 'passwordIterations'].includes(f))
 export const updatableFields = readableFields.filter(f => !['_id', 'updatedAt', 'createdAt', 'email', 'phoneNumber', 'username'].includes(f))
