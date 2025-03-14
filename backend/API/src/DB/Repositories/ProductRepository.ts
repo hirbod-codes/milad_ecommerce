@@ -1,15 +1,15 @@
 import { DateTime } from "luxon";
-import { Product, ProductInput, ProductCreate, schemaVersion, productUpdateSchema, ProductUpdate, productSchema, ProductImmutable, productImmutableSchema } from "../Models/Product";
+import { Product, ProductInput, ProductCreate, schemaVersion, productUpdateSchema, ProductUpdate, ProductImmutable, productImmutableSchema } from "../Models/Product";
 import { Collection, DeleteResult, InsertOneResult, ObjectId, UpdateResult } from 'mongodb/mongodb'
 
-export class UserRepository {
+export class ProductRepository {
     private collection: Collection<ProductCreate>
 
     constructor(collection: Collection<ProductCreate>) {
         this.collection = collection
     }
 
-    async create(product: ProductInput): Promise<InsertOneResult> {
+    async create(product: ProductInput): Promise<InsertOneResult | false> {
         const ts = DateTime.utc().toUnixInteger()
 
         let p: ProductCreate = {
@@ -24,6 +24,22 @@ export class UserRepository {
 
     async getById(id: string): Promise<Product | null | undefined> {
         try { return await this.collection.findOne({ _id: ObjectId.createFromHexString(id) }) }
+        catch (e) {
+            console.error(e)
+            return undefined
+        }
+    }
+
+    async getByIds(ids: (string | ObjectId)[]): Promise<Product[] | undefined> {
+        try { return await this.collection.find({ _id: { $in: ids.map(id => typeof id === 'string' ? ObjectId.createFromHexString(id) : id) } }).toArray() }
+        catch (e) {
+            console.error(e)
+            return undefined
+        }
+    }
+
+    async getAvailableByIds(ids: (string | ObjectId)[]): Promise<Product[] | undefined> {
+        try { return await this.collection.find({ _id: { $in: ids.map(id => typeof id === 'string' ? ObjectId.createFromHexString(id) : id) }, isAvailable: true }).toArray() }
         catch (e) {
             console.error(e)
             return undefined

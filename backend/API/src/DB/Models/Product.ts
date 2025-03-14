@@ -1,7 +1,7 @@
 import { ObjectId } from "mongodb/mongodb";
-import { array, InferType, lazy, mixed, number, object, string } from "yup";
+import { array, boolean, InferType, lazy, mixed, number, object, Schema, string } from "yup";
 
-const price = lazy(value => object().required().strict(true).shape(Object.keys(value).reduce((prev, key) => ({ ...prev, [key]: number().required().positive() }), {})))
+const price = lazy(value => object().required().strict(true).shape(Object.keys(value).reduce<{ [k: string]: Schema }>((prev, key) => ({ ...prev, [key]: number().strict(true).required().positive() }), {})))
 
 const localizedText = lazy(value => object().required().strict(true).shape(Object.keys(value).reduce((prev, key) => ({ ...prev, [key]: string().required() }), {})))
 
@@ -17,6 +17,7 @@ export const productSchema = object().required().unknown(true).strict(true).shap
     name: localizedText,
     description: localizedText.optional(),
     price,
+    isAvailable: boolean().required(),
     purchaseCount: number().positive().optional(),
     reviewsCount: number().positive().optional(),
     views: number().positive().optional(),
@@ -26,7 +27,7 @@ export const productSchema = object().required().unknown(true).strict(true).shap
 })
 export type Product = InferType<typeof productSchema>
 
-export const productInputSchema = productSchema.required().noUnknown(true).strict(true).pick(['tags', 'categories', 'name', 'description', 'price'])
+export const productInputSchema = productSchema.required().noUnknown(true).strict(true).pick(['tags', 'categories', 'name', 'description', 'price', 'isAvailable'])
 export type ProductInput = InferType<typeof productInputSchema>
 
 export const productCreateSchema = productSchema.required().noUnknown(true).strict(true).omit(['_id']).shape({ _id: mixed<string | ObjectId>().optional() })
