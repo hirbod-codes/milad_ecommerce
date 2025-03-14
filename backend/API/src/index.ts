@@ -6,6 +6,8 @@ import { router } from "./router";
 import { getBooleanEnv, getIntegerEnv, getStringEnv } from "./helpers";
 import { UserRepository } from "./DB/Repositories/UserRepository";
 import cors from "cors";
+import { ProductRepository } from "./DB/Repositories/ProductRepository";
+import { OrderRepository } from "./DB/Repositories/OrderRepository";
 
 dotenv.config({ debug: process.env.DEBUG !== undefined ? Boolean(process.env.DEBUG) : undefined })
 
@@ -54,12 +56,16 @@ export const dbConfig = {
 export const db = new MongoDB(dbConfig);
 
 export let userRepository: UserRepository = undefined!;
+export let productRepository: ProductRepository = undefined!;
+export let orderRepository: OrderRepository = undefined!;
 
 (async () => {
     while (true) {
         try {
             await db.initializeDb();
             userRepository = new UserRepository(await db.getUserCollection())
+            productRepository = new ProductRepository(await db.getProductCollection())
+            orderRepository = new OrderRepository(await db.getOrderCollection())
             break;
         }
         catch (e) { console.error(e) }
