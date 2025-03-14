@@ -136,25 +136,222 @@ services:
         networks:
             - main_mongodb
 
-    ############################################################################################# authorization
-    authorization:
-        container_name: authorization
-        build: 
+    ############################################################################################# revoked_access_tokens_redis
+    revoked_access_tokens_redis_1:
+        container_name: revoked_access_tokens_redis_1
+        build:
+            context: .
+            dockerfile: ./revoked_access_tokens_redis/cluster/Dockerfile
+            target: development
+        environment:
+            - HOSTNAME=revoked_access_tokens_redis_1
+            - REDIS_CLUSTER_INIT=true
+            - nodes=revoked_access_tokens_redis_1:6379 revoked_access_tokens_redis_2:6379 revoked_access_tokens_redis_3:6379 revoked_access_tokens_redis_4:6379 revoked_access_tokens_redis_5:6379 revoked_access_tokens_redis_6:6379
+        ports:
+            - 7000:6379
+        networks:
+            - revoked_access_tokens_redis
+
+    revoked_access_tokens_redis_2:
+        container_name: revoked_access_tokens_redis_2
+        build:
+            context: .
+            dockerfile: ./revoked_access_tokens_redis/cluster/Dockerfile
+            target: development
+        environment:
+            - HOSTNAME=revoked_access_tokens_redis_2
+            - REDIS_CLUSTER_INIT=false
+        ports:
+            - 7001:6379
+        networks:
+            - revoked_access_tokens_redis
+
+    revoked_access_tokens_redis_3:
+        container_name: revoked_access_tokens_redis_3
+        build:
+            context: .
+            dockerfile: ./revoked_access_tokens_redis/cluster/Dockerfile
+            target: development
+        environment:
+            - HOSTNAME=revoked_access_tokens_redis_3
+            - REDIS_CLUSTER_INIT=false
+        ports:
+            - 7002:6379
+        networks:
+            - revoked_access_tokens_redis
+
+    revoked_access_tokens_redis_4:
+        container_name: revoked_access_tokens_redis_4
+        build:
+            context: .
+            dockerfile: ./revoked_access_tokens_redis/cluster/Dockerfile
+            target: development
+        environment:
+            - HOSTNAME=revoked_access_tokens_redis_4
+            - REDIS_CLUSTER_INIT=false
+        ports:
+            - 7003:6379
+        networks:
+            - revoked_access_tokens_redis
+
+    revoked_access_tokens_redis_5:
+        container_name: revoked_access_tokens_redis_5
+        build:
+            context: .
+            dockerfile: ./revoked_access_tokens_redis/cluster/Dockerfile
+            target: development
+        environment:
+            - HOSTNAME=revoked_access_tokens_redis_5
+            - REDIS_CLUSTER_INIT=false
+        ports:
+            - 7004:6379
+        networks:
+            - revoked_access_tokens_redis
+
+    revoked_access_tokens_redis_6:
+        container_name: revoked_access_tokens_redis_6
+        build:
+            context: .
+            dockerfile: ./revoked_access_tokens_redis/cluster/Dockerfile
+            target: development
+        environment:
+            - HOSTNAME=revoked_access_tokens_redis_6
+            - REDIS_CLUSTER_INIT=false
+        ports:
+            - 7005:6379
+        networks:
+            - revoked_access_tokens_redis
+
+    ############################################################################################# api
+    api:
+        container_name: api
+        build:
             context: .
             dockerfile: Dockerfile
             target: development
-        command: ["sh", "-c", "sleep 100s && npm run dev"]
         ports:
-            - 3001:3000
+            - 3000:3000
         volumes:
             - .:/app
             - /app/node_modules
         environment:
             - NODE_ENV=development
-            - REDIS_TYPE=cluster
-            - REDIS_INITIAL_NODE_URL=redis://authorization_session_redis_1:6379
             - DB_SUPPORTS_TRANSACTION=true
-            - DB_URL=mongodb://authorization_mongodb_mongos1:27017,authorization_mongodb_mongos2:27017
+            - DB_URL=mongodb://main_mongodb:27017
+            - SESSION_REDIS_TYPE=cluster
+            - SESSION_REDIS_INITIAL_NODE_URL=redis://api_redis_1:6379
+            - REVOKED_TOKENS_REDIS_TYPE=cluster
+            - REVOKED_TOKENS_REDIS_INITIAL_NODE_URL=redis://revoked_access_tokens_redis_1:6379
+        networks:
+            - base
+            - api
+            - api_redis
+
+    ############################################################################################# api_redis
+    api_redis_1:
+        container_name: api_redis_1
+        build:
+            context: .
+            dockerfile: ./redis/cluster/Dockerfile
+            target: development
+        environment:
+            - HOSTNAME=api_redis_1
+            - REDIS_CLUSTER_INIT=true
+            - nodes=api_redis_1:6379 api_redis_2:6379 api_redis_3:6379 api_redis_4:6379 api_redis_5:6379 api_redis_6:6379
+        ports:
+            - 7000:6379
+        networks:
+            - api_redis
+
+    api_redis_2:
+        container_name: api_redis_2
+        build:
+            context: .
+            dockerfile: ./redis/cluster/Dockerfile
+            target: development
+        environment:
+            - HOSTNAME=api_redis_2
+            - REDIS_CLUSTER_INIT=false
+        ports:
+            - 7001:6379
+        networks:
+            - api_redis
+
+    api_redis_3:
+        container_name: api_redis_3
+        build:
+            context: .
+            dockerfile: ./redis/cluster/Dockerfile
+            target: development
+        environment:
+            - HOSTNAME=api_redis_3
+            - REDIS_CLUSTER_INIT=false
+        ports:
+            - 7002:6379
+        networks:
+            - api_redis
+
+    api_redis_4:
+        container_name: api_redis_4
+        build:
+            context: .
+            dockerfile: ./redis/cluster/Dockerfile
+            target: development
+        environment:
+            - HOSTNAME=api_redis_4
+            - REDIS_CLUSTER_INIT=false
+        ports:
+            - 7003:6379
+        networks:
+            - api_redis
+
+    api_redis_5:
+        container_name: api_redis_5
+        build:
+            context: .
+            dockerfile: ./redis/cluster/Dockerfile
+            target: development
+        environment:
+            - HOSTNAME=api_redis_5
+            - REDIS_CLUSTER_INIT=false
+        ports:
+            - 7004:6379
+        networks:
+            - api_redis
+
+    api_redis_6:
+        container_name: api_redis_6
+        build:
+            context: .
+            dockerfile: ./redis/cluster/Dockerfile
+            target: development
+        environment:
+            - HOSTNAME=api_redis_6
+            - REDIS_CLUSTER_INIT=false
+        ports:
+            - 7005:6379
+        networks:
+            - api_redis
+
+    ############################################################################################# authorization
+    authorization:
+        container_name: authorization
+        build: 
+            context: ../Authorizatoin
+            dockerfile: ../Authorizatoin/Dockerfile
+            target: development
+        command: ["sh", "-c", "sleep 100s && npm run dev"]
+        ports:
+            - 3001:3000
+        volumes:
+            - ../Authorizatoin:/app
+            - /app/node_modules
+        environment:
+            - NODE_ENV=development
+            - REDIS_TYPE=cluster
+            - REDIS_INITIAL_NODE_URL=redis://authorization_redis_1:6379
+            - DB_SUPPORTS_TRANSACTION=true
+            - DB_URL=mongodb://main_mongodb_mongos1:27017,main_mongodb_mongos2:27017
         networks:
             - base
             - authorization
@@ -164,8 +361,8 @@ services:
     authorization_redis_1:
         container_name: authorization_redis_1
         build:
-            context: .
-            dockerfile: ./redis/cluster/Dockerfile
+            context: ../Authorizatoin
+            dockerfile: ../Authorizatoin/redis/cluster/Dockerfile
             target: development
         environment:
             - HOSTNAME=authorization_redis_1
@@ -179,8 +376,8 @@ services:
     authorization_redis_2:
         container_name: authorization_redis_2
         build:
-            context: .
-            dockerfile: ./redis/cluster/Dockerfile
+            context: ../Authorizatoin
+            dockerfile: ../Authorizatoin/redis/cluster/Dockerfile
             target: development
         environment:
             - HOSTNAME=authorization_redis_2
@@ -193,8 +390,8 @@ services:
     authorization_redis_3:
         container_name: authorization_redis_3
         build:
-            context: .
-            dockerfile: ./redis/cluster/Dockerfile
+            context: ../Authorizatoin
+            dockerfile: ../Authorizatoin/redis/cluster/Dockerfile
             target: development
         environment:
             - HOSTNAME=authorization_redis_3
@@ -207,8 +404,8 @@ services:
     authorization_redis_4:
         container_name: authorization_redis_4
         build:
-            context: .
-            dockerfile: ./redis/cluster/Dockerfile
+            context: ../Authorizatoin
+            dockerfile: ../Authorizatoin/redis/cluster/Dockerfile
             target: development
         environment:
             - HOSTNAME=authorization_redis_4
@@ -221,8 +418,8 @@ services:
     authorization_redis_5:
         container_name: authorization_redis_5
         build:
-            context: .
-            dockerfile: ./redis/cluster/Dockerfile
+            context: ../Authorizatoin
+            dockerfile: ../Authorizatoin/redis/cluster/Dockerfile
             target: development
         environment:
             - HOSTNAME=authorization_redis_5
@@ -235,8 +432,8 @@ services:
     authorization_redis_6:
         container_name: authorization_redis_6
         build:
-            context: .
-            dockerfile: ./redis/cluster/Dockerfile
+            context: ../Authorizatoin
+            dockerfile: ../Authorizatoin/redis/cluster/Dockerfile
             target: development
         environment:
             - HOSTNAME=authorization_redis_6
@@ -249,5 +446,8 @@ services:
 networks:
     base:
     main_mongodb:
+    revoked_access_tokens_redis:
     authorization:
     authorization_redis:
+    api:
+    api_redis:

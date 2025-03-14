@@ -24,7 +24,7 @@ if [ $HOSTNAME == "redis-1" ]; then
     # fi
 
     echo "Initializing Redis cluster..."
-    echo "yes" | redis-cli --cluster create redis-1:6379 redis-2:6379 redis-3:6379 redis-4:6379 redis-5:6379 redis-6:6379 --cluster-replicas 1
+    echo "yes" | redis-cli --cluster create api_redis_1:6379 api_redis_2:6379 api_redis_3:6379 api_redis_4:6379 api_redis_5:6379 api_redis_6:6379 --cluster-replicas 1
 fi
 
 # Keep the container running

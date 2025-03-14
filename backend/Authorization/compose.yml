@@ -1,6 +1,23 @@
 version: '3.8'
 
 services:
+    ############################################################################################# main_mongodb
+    main_mongodb:
+        container_name: main_mongodb
+        build:
+            context: .
+            dockerfile: ./mongodb/single/Dockerfile
+            target: development
+        ports:
+                - 8083:27017
+        environment:
+            MONGODB_USERNAME: admin
+            MONGODB_PASSWORD: password
+            databaseName: primaryDB
+        networks:
+            - base
+
+    ############################################################################################# authorization
     authorization:
         container_name: authorization
         build: 
@@ -14,27 +31,21 @@ services:
             - /app/node_modules
         environment:
             - NODE_ENV=development
-            - REDIS_TYPE=single
-            - REDIS_INITIAL_NODE_URL=redis://authorization_session_redis:6379
             - DB_SUPPORTS_TRANSACTION=false
-            - DB_URL=mongodb://authorization_mongodb:27017
+            - DB_URL=mongodb://main_mongodb:27017
+            - REDIS_TYPE=single
+            - REDIS_INITIAL_NODE_URL=redis://authorization_redis:6379
         networks:
             - authorization
 
-    authorization_mongodb:
-        container_name: authorization_mongodb
-        build:
-            context: .
-            dockerfile: ./mongodb/single/Dockerfile
-            target: development
+    ############################################################################################# authorization_redis
+    authorization_redis:
+        container_name: authorization_redis
+        image: redis:7.0
         ports:
-                - 8083:27017
-        environment:
-            MONGODB_USERNAME: admin
-            MONGODB_PASSWORD: password
-            databaseName: primaryDB
+            - 6379:6379
         networks:
-            - authorization
+            - authorization_redis
 
 networks:
     authorization:

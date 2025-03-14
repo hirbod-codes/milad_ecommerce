@@ -3,7 +3,7 @@ import { InferType, mixed, number, object, string } from "yup";
 
 export const collectionName = 'user'
 
-export const userSchema = object().required().shape({
+export const userSchema = object().required().noUnknown().strict(true).shape({
     schemaVersion: string().optional().min(6).max(10),
     _id: mixed<string | ObjectId>().optional(),
     username: string().required(),

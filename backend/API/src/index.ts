@@ -70,32 +70,32 @@ export let userRepository: UserRepository = undefined!;
             }))()
         }
     }
+
+    const app = express()
+
+    app.disable('x-powered-by')
+
+    app.use((req, res, next) => {
+        console.log('hit!')
+        next()
+    })
+
+    app.use(cors({
+        origin: '*',
+        methods: ['*'],
+        allowedHeaders: ['*'],
+        credentials: true,
+    }));
+
+    // To Do: Add rate limiter middleware
+
+    app.use(express.json())
+
+    app.use(router)
+
+    app.all('*', (req, res) => {
+        res.sendStatus(404)
+    })
+
+    app.listen(hostPort, hostName, () => console.log(`listening on ${hostName}:${hostPort}...`))
 })()
-
-const app = express()
-
-app.disable('x-powered-by')
-
-app.use((req, res, next) => {
-    console.log('hit!')
-    next()
-})
-
-app.use(cors({
-    origin: '*',
-    methods: ['*'],
-    allowedHeaders: ['*'],
-    credentials: true,
-}));
-
-// To Do: Add rate limiter middleware
-
-app.use(express.json())
-
-app.use(router)
-
-app.all('*', (req, res) => {
-    res.sendStatus(404)
-})
-
-app.listen(hostPort, hostName, () => console.log(`listening on ${hostName}:${hostPort}...`))
