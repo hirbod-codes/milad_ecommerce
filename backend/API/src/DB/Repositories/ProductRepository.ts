@@ -1,5 +1,5 @@
 import { DateTime } from "luxon";
-import { Product, ProductInput, ProductCreate, schemaVersion, productUpdateSchema, ProductUpdate, ProductImmutable, productImmutableSchema } from "../Models/Product";
+import { Product, ProductInput, ProductCreate, schemaVersion, ProductUpdate, ProductImmutable } from "../Models/Product";
 import { Collection, DeleteResult, InsertOneResult, ObjectId, UpdateResult } from 'mongodb/mongodb'
 
 export class ProductRepository {
@@ -24,71 +24,31 @@ export class ProductRepository {
 
     async getById(id: string): Promise<Product | null | undefined> {
         try { return await this.collection.findOne({ _id: ObjectId.createFromHexString(id) }) }
-        catch (e) {
-            console.error(e)
-            return undefined
-        }
+        catch (e) { console.error(e); return undefined }
     }
 
     async getByIds(ids: (string | ObjectId)[]): Promise<Product[] | undefined> {
         try { return await this.collection.find({ _id: { $in: ids.map(id => typeof id === 'string' ? ObjectId.createFromHexString(id) : id) } }).toArray() }
-        catch (e) {
-            console.error(e)
-            return undefined
-        }
+        catch (e) { console.error(e); return undefined }
     }
 
     async getAvailableByIds(ids: (string | ObjectId)[]): Promise<Product[] | undefined> {
         try { return await this.collection.find({ _id: { $in: ids.map(id => typeof id === 'string' ? ObjectId.createFromHexString(id) : id) }, isAvailable: true }).toArray() }
-        catch (e) {
-            console.error(e)
-            return undefined
-        }
+        catch (e) { console.error(e); return undefined }
     }
 
-    async update(id: string, product: ProductCreate): Promise<UpdateResult | false> {
-        try {
-            let castedProduct: ProductUpdate | undefined = undefined
-            if (!productUpdateSchema.isValidSync(product))
-                return false
-            else
-                castedProduct = productUpdateSchema.cast(product)
-
-            if (castedProduct === undefined || Object.keys(castedProduct).length === 0)
-                return false
-
-            return await this.collection.updateOne({ _id: ObjectId.createFromHexString(id) }, { ...castedProduct, updatedAt: DateTime.utc().toUnixInteger() })
-        }
-        catch (e) {
-            console.error(e)
-            return false
-        }
+    async update(id: string, product: ProductUpdate): Promise<UpdateResult | false> {
+        try { return await this.collection.updateOne({ _id: ObjectId.createFromHexString(id) }, { ...product, updatedAt: DateTime.utc().toUnixInteger() }) }
+        catch (e) { console.error(e); return false }
     }
 
     async updateImmutables(id: string, immutableFields: ProductImmutable): Promise<UpdateResult | false> {
-        try {
-            let immutableFieldsCasted: ProductImmutable | undefined = undefined
-            if (!productImmutableSchema.isValidSync(immutableFields))
-                return false
-            else
-                immutableFieldsCasted = productImmutableSchema.cast(immutableFields)
-
-            if (immutableFieldsCasted === undefined || Object.keys(immutableFieldsCasted).length === 0)
-                return false
-
-            return await this.collection.updateOne({ _id: ObjectId.createFromHexString(id) }, { ...immutableFieldsCasted, updatedAt: DateTime.utc().toUnixInteger() })
-        }
-        catch (e) {
-            console.error(e)
-            return false
-        }
+        try { return await this.collection.updateOne({ _id: ObjectId.createFromHexString(id) }, { ...immutableFields, updatedAt: DateTime.utc().toUnixInteger() }) }
+        catch (e) { console.error(e); return false }
     }
 
     async deleteImmutables(id: string): Promise<DeleteResult | false> {
         try { return await this.collection.deleteOne({ _id: ObjectId.createFromHexString(id) }) }
-        catch (e) {
-            console.error(e)
-            return false
-        }
+        catch (e) { console.error(e); return false }
     }
 }

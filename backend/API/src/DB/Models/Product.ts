@@ -36,7 +36,7 @@ export type ProductCreate = InferType<typeof productCreateSchema>
 export const productUpdateSchema = productSchema.required().noUnknown(true).strict(true).pick(['name', 'description', 'tags', 'categories', 'price'])
 export type ProductUpdate = InferType<typeof productUpdateSchema>
 
-export const productImmutableSchema = productSchema.required().noUnknown(true).strict(true).pick(Object.keys(productSchema.fields).filter(f => !Object.keys(productUpdateSchema.fields).includes(f)).filter(f => !['_id', 'schemaVersion', 'createdAt', 'updatedAt'].includes(f)) as any)
+export const productImmutableSchema = productSchema.required().noUnknown(true).strict(true).pick(Object.keys(productSchema.fields).filter(f => !['_id', 'schemaVersion', 'createdAt', 'updatedAt'].concat(Object.keys(productUpdateSchema.fields)).includes(f)) as any)
 export type ProductImmutable = InferType<typeof productImmutableSchema>
 
 export const fields: (keyof Product)[] = Object.keys(productSchema.fields) as any
