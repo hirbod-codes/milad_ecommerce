@@ -1,4 +1,5 @@
-import { User } from "../Models/User";
+import { DateTime } from "luxon";
+import { schemaVersion, User, UserCreate, UserInput } from "../Models/User";
 import { Collection, InsertOneResult } from 'mongodb'
 
 export class UserRepository {
@@ -8,23 +9,36 @@ export class UserRepository {
         this.collection = collection
     }
 
-    async createUser(user: User): Promise<InsertOneResult> {
-        return await this.collection.insertOne(user)
+    async createUser(user: UserInput): Promise<InsertOneResult | false> {
+        const ts = DateTime.utc().toUnixInteger()
+
+        let u: UserCreate = {
+            ...user,
+            schemaVersion,
+            createdAt: ts,
+            updatedAt: ts,
+        }
+        try { return await this.collection.insertOne(u) }
+        catch (e) { console.error(e); return false }
     }
 
     async getUserByEmail(email: string): Promise<User | null | undefined> {
-        return await this.collection.findOne({ email })
+        try { return await this.collection.findOne({ email }) }
+        catch (e) { console.error(e); return undefined }
     }
 
     async usernameExists(username: string): Promise<boolean> {
-        return await this.collection.countDocuments({ username }) > 0
+        try { return await this.collection.countDocuments({ username }) > 0 }
+        catch (e) { console.error(e); return false }
     }
 
     async phoneNumberExists(phoneNumber: string): Promise<boolean> {
-        return await this.collection.countDocuments({ phoneNumber }) > 0
+        try { return await this.collection.countDocuments({ phoneNumber }) > 0 }
+        catch (e) { console.error(e); return false }
     }
 
     async emailExists(email: string): Promise<boolean> {
-        return await this.collection.countDocuments({ email }) > 0
+        try { return await this.collection.countDocuments({ email }) > 0 }
+        catch (e) { console.error(e); return false }
     }
 }
