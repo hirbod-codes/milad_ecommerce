@@ -23,10 +23,7 @@ export class OrderRepository {
         }
 
         try { return await this.collection.insertOne(o) }
-        catch (e) {
-            console.error(e)
-            return false
-        }
+        catch (e) { console.error(e); return false }
     }
 
     async getById(id: string): Promise<Order | null | undefined> {
