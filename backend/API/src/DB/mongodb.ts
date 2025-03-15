@@ -2,6 +2,13 @@ import { ClientSession, Collection, Db, MongoClient } from 'mongodb'
 import { User, collectionName as userCollectionName } from './Models/User'
 import { DbConfigurationError } from './Exceptions/DbConfigurationError'
 import { ConnectionError } from './Exceptions/ConnectionError'
+import { Category, CategoryCreate } from './Models/Category'
+import { OrderCreate } from './Models/Order'
+import { PrivilegeCreate } from './Models/Privilege'
+import { ProductCreate } from './Models/Product'
+import { ProductReviewCreate } from './Models/ProductReview'
+import { RoleCreate } from './Models/Role'
+import { TagCreate } from './Models/Tag'
 
 export type MongodbConfig = {
     supportsTransaction: boolean;
@@ -170,6 +177,13 @@ export class MongoDB {
 
     async addCollections() {
         await this.addUserCollection()
+        await this.addCategoryCollection()
+        await this.addOrderCollection()
+        await this.addPrivilegeCollection()
+        await this.addProductCollection()
+        await this.addProductReviewsCollection()
+        await this.addRoleCollection()
+        await this.addTagCollection()
     }
 
     private async addUserCollection() {
@@ -198,5 +212,150 @@ export class MongoDB {
 
     async getUserCollection(client?: MongoClient, db?: Db): Promise<Collection<User>> {
         return (db ?? (await this.getDb(client))).collection<User>(userCollectionName)
+    }
+
+    private async addCategoryCollection() {
+        const db = await this.getDb();
+
+        if (!(await db.listCollections().toArray()).map(e => e.name).includes(userCollectionName))
+            await db.createCollection(userCollectionName)
+
+        const indexes = await db.collection(userCollectionName).indexes()
+
+        if (indexes.find(i => i.name === 'unique-name') === undefined)
+            await db.createIndex(userCollectionName, { name: 1 }, { unique: true, name: 'unique-name' })
+
+        if (indexes.find(i => i.name === 'createdAt') === undefined)
+            await db.createIndex(userCollectionName, { createdAt: 1 }, { name: 'createdAt' })
+
+        if (indexes.find(i => i.name === 'updatedAt') === undefined)
+            await db.createIndex(userCollectionName, { updatedAt: 1 }, { name: 'updatedAt' })
+    }
+
+    async getCategoryCollection(client?: MongoClient, db?: Db): Promise<Collection<CategoryCreate>> {
+        return (db ?? (await this.getDb(client))).collection<CategoryCreate>(userCollectionName)
+    }
+
+    private async addOrderCollection() {
+        const db = await this.getDb();
+
+        if (!(await db.listCollections().toArray()).map(e => e.name).includes(userCollectionName))
+            await db.createCollection(userCollectionName)
+
+        const indexes = await db.collection(userCollectionName).indexes()
+
+        if (indexes.find(i => i.name === 'createdAt') === undefined)
+            await db.createIndex(userCollectionName, { createdAt: 1 }, { name: 'createdAt' })
+
+        if (indexes.find(i => i.name === 'updatedAt') === undefined)
+            await db.createIndex(userCollectionName, { updatedAt: 1 }, { name: 'updatedAt' })
+    }
+
+    async getOrderCollection(client?: MongoClient, db?: Db): Promise<Collection<OrderCreate>> {
+        return (db ?? (await this.getDb(client))).collection<OrderCreate>(userCollectionName)
+    }
+
+    private async addPrivilegeCollection() {
+        const db = await this.getDb();
+
+        if (!(await db.listCollections().toArray()).map(e => e.name).includes(userCollectionName))
+            await db.createCollection(userCollectionName)
+
+        const indexes = await db.collection(userCollectionName).indexes()
+
+        if (indexes.find(i => i.name === 'unique-name') === undefined)
+            await db.createIndex(userCollectionName, { name: 1 }, { unique: true, name: 'unique-name' })
+
+        if (indexes.find(i => i.name === 'createdAt') === undefined)
+            await db.createIndex(userCollectionName, { createdAt: 1 }, { name: 'createdAt' })
+
+        if (indexes.find(i => i.name === 'updatedAt') === undefined)
+            await db.createIndex(userCollectionName, { updatedAt: 1 }, { name: 'updatedAt' })
+    }
+
+    async getPrivilegeCollection(client?: MongoClient, db?: Db): Promise<Collection<PrivilegeCreate>> {
+        return (db ?? (await this.getDb(client))).collection<PrivilegeCreate>(userCollectionName)
+    }
+
+    private async addProductCollection() {
+        const db = await this.getDb();
+
+        if (!(await db.listCollections().toArray()).map(e => e.name).includes(userCollectionName))
+            await db.createCollection(userCollectionName)
+
+        const indexes = await db.collection(userCollectionName).indexes()
+
+        if (indexes.find(i => i.name === 'createdAt') === undefined)
+            await db.createIndex(userCollectionName, { createdAt: 1 }, { name: 'createdAt' })
+
+        if (indexes.find(i => i.name === 'updatedAt') === undefined)
+            await db.createIndex(userCollectionName, { updatedAt: 1 }, { name: 'updatedAt' })
+    }
+
+    async getProductCollection(client?: MongoClient, db?: Db): Promise<Collection<ProductCreate>> {
+        return (db ?? (await this.getDb(client))).collection<ProductCreate>(userCollectionName)
+    }
+
+    private async addProductReviewsCollection() {
+        const db = await this.getDb();
+
+        if (!(await db.listCollections().toArray()).map(e => e.name).includes(userCollectionName))
+            await db.createCollection(userCollectionName)
+
+        const indexes = await db.collection(userCollectionName).indexes()
+
+        if (indexes.find(i => i.name === 'createdAt') === undefined)
+            await db.createIndex(userCollectionName, { createdAt: 1 }, { name: 'createdAt' })
+
+        if (indexes.find(i => i.name === 'updatedAt') === undefined)
+            await db.createIndex(userCollectionName, { updatedAt: 1 }, { name: 'updatedAt' })
+    }
+
+    async getProductReviewsCollection(client?: MongoClient, db?: Db): Promise<Collection<ProductReviewCreate>> {
+        return (db ?? (await this.getDb(client))).collection<ProductReviewCreate>(userCollectionName)
+    }
+
+    private async addRoleCollection() {
+        const db = await this.getDb();
+
+        if (!(await db.listCollections().toArray()).map(e => e.name).includes(userCollectionName))
+            await db.createCollection(userCollectionName)
+
+        const indexes = await db.collection(userCollectionName).indexes()
+
+        if (indexes.find(i => i.name === 'unique-name') === undefined)
+            await db.createIndex(userCollectionName, { name: 1 }, { unique: true, name: 'unique-name' })
+
+        if (indexes.find(i => i.name === 'createdAt') === undefined)
+            await db.createIndex(userCollectionName, { createdAt: 1 }, { name: 'createdAt' })
+
+        if (indexes.find(i => i.name === 'updatedAt') === undefined)
+            await db.createIndex(userCollectionName, { updatedAt: 1 }, { name: 'updatedAt' })
+    }
+
+    async getRoleCollection(client?: MongoClient, db?: Db): Promise<Collection<RoleCreate>> {
+        return (db ?? (await this.getDb(client))).collection<RoleCreate>(userCollectionName)
+    }
+
+    private async addTagCollection() {
+        const db = await this.getDb();
+
+        if (!(await db.listCollections().toArray()).map(e => e.name).includes(userCollectionName))
+            await db.createCollection(userCollectionName)
+
+        const indexes = await db.collection(userCollectionName).indexes()
+
+        if (indexes.find(i => i.name === 'unique-name') === undefined)
+            await db.createIndex(userCollectionName, { name: 1 }, { unique: true, name: 'unique-name' })
+
+        if (indexes.find(i => i.name === 'createdAt') === undefined)
+            await db.createIndex(userCollectionName, { createdAt: 1 }, { name: 'createdAt' })
+
+        if (indexes.find(i => i.name === 'updatedAt') === undefined)
+            await db.createIndex(userCollectionName, { updatedAt: 1 }, { name: 'updatedAt' })
+    }
+
+    async getTagCollection(client?: MongoClient, db?: Db): Promise<Collection<TagCreate>> {
+        return (db ?? (await this.getDb(client))).collection<TagCreate>(userCollectionName)
     }
 }
