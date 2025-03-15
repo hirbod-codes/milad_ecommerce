@@ -1,5 +1,5 @@
 import { ObjectId } from "mongodb/mongodb";
-import { array, InferType, mixed, number, object, string } from "yup";
+import { InferType, mixed, number, object, string } from "yup";
 
 export const collectionName = 'privilege'
 
