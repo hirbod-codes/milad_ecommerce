@@ -33,7 +33,7 @@ export type OrderCreate = InferType<typeof orderCreateSchema>
 export const orderUpdateSchema = orderSchema.required().noUnknown(true).strict(true).pick(['address'])
 export type OrderUpdate = InferType<typeof orderUpdateSchema>
 
-export const orderImmutableSchema = orderSchema.required().noUnknown(true).strict(true).pick(Object.keys(orderSchema.fields).filter(f => !Object.keys(orderUpdateSchema.fields).includes(f)).filter(f => !['_id', 'schemaVersion', 'createdAt', 'updatedAt'].includes(f)) as any)
+export const orderImmutableSchema = orderSchema.required().noUnknown(true).strict(true).pick(Object.keys(orderSchema.fields).filter(f => !['_id', 'schemaVersion', 'createdAt', 'updatedAt'].concat(Object.keys(orderUpdateSchema.fields)).includes(f)) as any)
 export type OrderImmutable = InferType<typeof orderImmutableSchema>
 
 export const fields: (keyof Order)[] = Object.keys(orderSchema.fields) as any

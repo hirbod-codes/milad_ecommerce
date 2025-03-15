@@ -1,7 +1,6 @@
-import { Collection, InsertOneResult, ObjectId } from 'mongodb/mongodb'
-import { Order, OrderCreate, OrderInput, schemaVersion } from '../Models/Order'
+import { Collection, DeleteResult, InsertOneResult, ObjectId, UpdateResult } from 'mongodb/mongodb'
+import { Order, OrderCreate, OrderInput, OrderUpdate, schemaVersion } from '../Models/Order'
 import { DateTime } from 'luxon'
-import { productRepository } from 'src'
 
 export class OrderRepository {
     private collection: Collection<OrderCreate>
@@ -10,16 +9,8 @@ export class OrderRepository {
         this.collection = collection
     }
 
-    async create(order: OrderInput): Promise<InsertOneResult | false> {
+    async create(order: OrderInput, cost: { [k: string]: number }): Promise<InsertOneResult | false> {
         const ts = DateTime.utc().toUnixInteger()
-
-        let currencyUnit = 'a'
-        let cost: { [k: string]: number | undefined } | undefined = undefined
-        try { cost = { [currencyUnit]: (await productRepository.getByIds(order.products))?.reduce((p, c) => p + c.price[currencyUnit], 0) ?? undefined } }
-        catch (e) { console.error(e) }
-
-        if (cost === undefined || cost[currencyUnit] === undefined)
-            return false
 
         let o: OrderCreate = {
             ...order,
@@ -44,5 +35,15 @@ export class OrderRepository {
             console.error(e)
             return undefined
         }
+    }
+
+    async updateById(id: string, order: OrderUpdate): Promise<UpdateResult | false> {
+        try { return await this.collection.updateOne({ _id: ObjectId.createFromHexString(id) }, { ...order, updatedAt: DateTime.utc().toUnixInteger() }) }
+        catch (e) { console.error(e); return false }
+    }
+
+    async deleteById(id: string): Promise<DeleteResult | false> {
+        try { return await this.collection.deleteOne({ _id: ObjectId.createFromHexString(id) }) }
+        catch (e) { console.error(e); return false }
     }
 }
