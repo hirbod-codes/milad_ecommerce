@@ -21,10 +21,7 @@ export class TagRepository {
         }
 
         try { return await this.collection.insertOne(o) }
-        catch (e) {
-            console.error(e)
-            return false
-        }
+        catch (e) { console.error(e); return false }
     }
 
     async getById(id: string): Promise<Tag | null | undefined> {
