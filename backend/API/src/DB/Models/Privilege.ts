@@ -1,21 +1,24 @@
 import { ObjectId } from "mongodb/mongodb";
-import { InferType, mixed, number, object, string } from "yup";
+import { InferType, lazy, mixed, number, object, string } from "yup";
 
 export const collectionName = 'privilege'
 
 export const schemaVersion = 'v1.0.0'
 
+const localizedText = lazy(value => object().required().strict(true).shape(Object.keys(value).reduce((prev, key) => ({ ...prev, [key]: string().required() }), {})))
+
 export const privilegeSchema = object().required().noUnknown(true).strict(true).shape({
     schemaVersion: string().required().min(6).max(20),
     _id: mixed<string | ObjectId>().required(),
     name: string().required(),
+    displayName: localizedText,
     value: mixed<string | number | boolean>().required(),
     createdAt: number().required(),
     updatedAt: number().required(),
 })
 export type Privilege = InferType<typeof privilegeSchema>
 
-export const privilegeInputSchema = privilegeSchema.required().noUnknown(true).strict(true).pick(['name', 'value'])
+export const privilegeInputSchema = privilegeSchema.required().noUnknown(true).strict(true).pick(['name', 'value', 'displayName'])
 export type PrivilegeInput = InferType<typeof privilegeInputSchema>
 
 export const privilegeCreateSchema = privilegeSchema.required().noUnknown(true).strict(true).omit(['_id']).shape({ _id: mixed<string | ObjectId>().optional() })
