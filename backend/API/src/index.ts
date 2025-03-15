@@ -6,8 +6,13 @@ import { router } from "./router";
 import { getBooleanEnv, getIntegerEnv, getStringEnv } from "./helpers";
 import { UserRepository } from "./DB/Repositories/UserRepository";
 import cors from "cors";
+import { RoleRepository } from "./DB/Repositories/RoleRepository";
+import { TagRepository } from "./DB/Repositories/TagRepository";
+import { ProductReviewsRepository } from "./DB/Repositories/ProductReviewsRepository";
 import { ProductRepository } from "./DB/Repositories/ProductRepository";
 import { OrderRepository } from "./DB/Repositories/OrderRepository";
+import { CategoryRepository } from "./DB/Repositories/CategoryRepository";
+import { PrivilegeRepository } from "./DB/Repositories/PrivilegeRepository";
 
 dotenv.config({ debug: process.env.DEBUG !== undefined ? Boolean(process.env.DEBUG) : undefined })
 
@@ -53,19 +58,29 @@ export const dbConfig = {
     }
 }
 
-export const db = new MongoDB(dbConfig);
+export const db = new MongoDB(dbConfig)
 
-export let userRepository: UserRepository = undefined!;
-export let productRepository: ProductRepository = undefined!;
-export let orderRepository: OrderRepository = undefined!;
+export let userRepository: UserRepository = undefined!
+export let categoryRepository: CategoryRepository = undefined!
+export let orderRepository: OrderRepository = undefined!
+export let privilegeRepository: PrivilegeRepository = undefined!
+export let productRepository: ProductRepository = undefined!
+export let productReviewsRepository: ProductReviewsRepository = undefined!
+export let roleRepository: RoleRepository = undefined!
+export let tagRepository: TagRepository = undefined!;
 
 (async () => {
     while (true) {
         try {
             await db.initializeDb();
             userRepository = new UserRepository(await db.getUserCollection())
-            productRepository = new ProductRepository(await db.getProductCollection())
+            categoryRepository = new CategoryRepository(await db.getCategoryCollection())
             orderRepository = new OrderRepository(await db.getOrderCollection())
+            privilegeRepository = new PrivilegeRepository(await db.getPrivilegeCollection())
+            productRepository = new ProductRepository(await db.getProductCollection())
+            productReviewsRepository = new ProductReviewsRepository(await db.getProductReviewsCollection())
+            roleRepository = new RoleRepository(await db.getRoleCollection())
+            tagRepository = new TagRepository(await db.getTagCollection())
             break;
         }
         catch (e) { console.error(e) }
