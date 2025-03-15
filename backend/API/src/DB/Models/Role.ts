@@ -3,6 +3,8 @@ import { array, InferType, mixed, number, object, string } from "yup";
 
 export const collectionName = 'role'
 
+export const schemaVersion = 'v1.0.0'
+
 export const roleSchema = object().required().noUnknown(true).strict(true).shape({
     schemaVersion: string().required().min(6).max(20),
     _id: mixed<string | ObjectId>().required(),
@@ -13,9 +15,18 @@ export const roleSchema = object().required().noUnknown(true).strict(true).shape
 })
 export type Role = InferType<typeof roleSchema>
 
-export const fields: string[] = Object.keys(roleSchema.fields)
-export const readableFields = fields.filter(f => !['schemaVersion'].includes(f))
-export const updatableFields = []
+export const roleInputSchema = roleSchema.required().noUnknown(true).strict(true).pick(['name', 'privileges'])
+export type RoleInput = InferType<typeof roleInputSchema>
 
-export const roleCreateSchema = roleSchema.required().noUnknown(true).strict(true).pick(['name', 'privileges'])
+export const roleCreateSchema = roleSchema.required().noUnknown(true).strict(true).omit(['_id']).shape({ _id: mixed<string | ObjectId>().optional() })
 export type RoleCreate = InferType<typeof roleCreateSchema>
+
+export const roleUpdateSchema = roleSchema.required().noUnknown(true).strict(true).pick(['privileges'])
+export type RoleUpdate = InferType<typeof roleUpdateSchema>
+
+export const roleImmutableSchema = roleSchema.required().noUnknown(true).strict(true).pick(Object.keys(roleSchema.fields).filter(f => !['_id', 'schemaVersion', 'createdAt', 'updatedAt'].concat(Object.keys(roleUpdateSchema.fields)).includes(f)) as any)
+export type RoleImmutable = InferType<typeof roleImmutableSchema>
+
+export const fields: (keyof Role)[] = Object.keys(roleSchema.fields) as any
+export const readableFields: (keyof Omit<Role, 'schemaVersion'>)[] = fields.filter(f => !['schemaVersion'].includes(f)) as any
+export const updatableFields: (keyof RoleUpdate)[] = Object.keys(roleUpdateSchema.fields) as any
