@@ -10,9 +10,6 @@ export class UserRepository {
 
     async getById(id: string): Promise<User | null | undefined> {
         try { return await this.collection.findOne({ _id: ObjectId.createFromHexString(id) }) }
-        catch (e) {
-            console.error(e)
-            return undefined
-        }
+        catch (e) { console.error(e); return undefined }
     }
 }
