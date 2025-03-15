@@ -28,6 +28,6 @@ export type CategoryUpdate = InferType<typeof categoryUpdateSchema>
 export const categoryImmutableSchema = categorySchema.required().noUnknown(true).strict(true).pick(Object.keys(categorySchema.fields).filter(f => !['_id', 'schemaVersion', 'createdAt', 'updatedAt'].concat(Object.keys(categoryUpdateSchema.fields)).includes(f)) as any)
 export type CategoryImmutable = InferType<typeof categoryImmutableSchema>
 
-export const fields: string[] = Object.keys(categorySchema.fields)
-export const readableFields = fields.filter(f => !['schemaVersion'].includes(f))
-export const updatableFields = []
+export const fields: (keyof Category)[] = Object.keys(categorySchema.fields) as any
+export const readableFields: (keyof Omit<Category, 'schemaVersion'>)[] = fields.filter(f => !['schemaVersion'].includes(f)) as any
+export const updatableFields: (keyof CategoryUpdate)[] = Object.keys(categoryUpdateSchema.fields) as any

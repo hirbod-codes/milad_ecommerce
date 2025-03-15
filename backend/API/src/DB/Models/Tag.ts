@@ -27,6 +27,6 @@ export type TagUpdate = InferType<typeof tagUpdateSchema>
 export const tagImmutableSchema = tagSchema.required().noUnknown(true).strict(true).pick(Object.keys(tagSchema.fields).filter(f => !['_id', 'schemaVersion', 'createdAt', 'updatedAt'].concat(Object.keys(tagUpdateSchema.fields)).includes(f)) as any)
 export type TagImmutable = InferType<typeof tagImmutableSchema>
 
-export const fields: string[] = Object.keys(tagSchema.fields)
-export const readableFields = fields.filter(f => !['schemaVersion'].includes(f))
-export const updatableFields = []
+export const fields: (keyof Tag)[] = Object.keys(tagSchema.fields) as any
+export const readableFields: (keyof Omit<Tag, 'schemaVersion'>)[] = fields.filter(f => !['schemaVersion'].includes(f)) as any
+export const updatableFields: (keyof TagUpdate)[] = Object.keys(tagUpdateSchema.fields) as any
