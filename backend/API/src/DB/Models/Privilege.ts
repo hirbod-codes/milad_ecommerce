@@ -3,6 +3,8 @@ import { InferType, mixed, number, object, string } from "yup";
 
 export const collectionName = 'privilege'
 
+export const schemaVersion = 'v1.0.0'
+
 export const privilegeSchema = object().required().noUnknown(true).strict(true).shape({
     schemaVersion: string().required().min(6).max(20),
     _id: mixed<string | ObjectId>().required(),
@@ -13,9 +15,18 @@ export const privilegeSchema = object().required().noUnknown(true).strict(true).
 })
 export type Privilege = InferType<typeof privilegeSchema>
 
+export const privilegeInputSchema = privilegeSchema.required().noUnknown(true).strict(true).pick(['name', 'value'])
+export type PrivilegeInput = InferType<typeof privilegeInputSchema>
+
+export const privilegeCreateSchema = privilegeSchema.required().noUnknown(true).strict(true).omit(['_id']).shape({ _id: mixed<string | ObjectId>().optional() })
+export type PrivilegeCreate = InferType<typeof privilegeCreateSchema>
+
+export const privilegeUpdateSchema = privilegeSchema.required().noUnknown(true).strict(true).pick(['value'])
+export type PrivilegeUpdate = InferType<typeof privilegeUpdateSchema>
+
+export const privilegeImmutableSchema = privilegeSchema.required().noUnknown(true).strict(true).pick(Object.keys(privilegeSchema.fields).filter(f => !['_id', 'schemaVersion', 'createdAt', 'updatedAt'].concat(Object.keys(privilegeUpdateSchema.fields)).includes(f)) as any)
+export type PrivilegeImmutable = InferType<typeof privilegeImmutableSchema>
+
 export const fields: string[] = Object.keys(privilegeSchema.fields)
 export const readableFields = fields.filter(f => !['schemaVersion'].includes(f))
 export const updatableFields = []
-
-export const privilegeCreateSchema = privilegeSchema.required().noUnknown(true).strict(true).pick(['name', 'value'])
-export type PrivilegeCreate = InferType<typeof privilegeCreateSchema>
