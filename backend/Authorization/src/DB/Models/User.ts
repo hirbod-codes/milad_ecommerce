@@ -3,7 +3,9 @@ import { InferType, mixed, number, object, string } from "yup";
 
 export const collectionName = 'user'
 
-export const userSchema = object().required().shape({
+export const schemaVersion = 'v1.0.0'
+
+export const userSchema = object().required().stripUnknown().strict(true).shape({
     schemaVersion: string().optional().min(6).max(10),
     _id: mixed<string | ObjectId>().optional(),
     username: string().required(),
@@ -21,6 +23,18 @@ export const userSchema = object().required().shape({
 
 export type User = InferType<typeof userSchema>
 
+export const userInputSchema = userSchema.required().noUnknown(true).strict(true).omit(['schemaVersion', '_id', 'createdAt', 'updatedAt'])
+export type UserInput = InferType<typeof userInputSchema>
+
+export const userCreateSchema = userSchema.required().noUnknown(true).strict(true).omit(['_id']).shape({ _id: mixed<string | ObjectId>().optional() })
+export type UserCreate = InferType<typeof userCreateSchema>
+
+export const userUpdateSchema = userSchema.required().noUnknown(true).strict(true).pick(['lastName', 'firstName', 'avatarUrl'])
+export type UserUpdate = InferType<typeof userUpdateSchema>
+
+export const userImmutableSchema = userSchema.required().noUnknown(true).strict(true).pick(Object.keys(userSchema.fields).filter(f => !['_id', 'schemaVersion', 'createdAt', 'updatedAt'].concat(Object.keys(userUpdateSchema.fields)).includes(f)) as any)
+export type UserImmutable = InferType<typeof userImmutableSchema>
+
 export const fields: (keyof User)[] = Object.keys(userSchema.fields) as any
-export const readableFields = fields.filter(f => !['schemaVersion', 'password', 'passwordSalt', 'passwordIterations'].includes(f))
-export const updatableFields = readableFields.filter(f => !['_id', 'updatedAt', 'createdAt', 'email', 'phoneNumber', 'username'].includes(f))
+export const readableFields: (keyof Omit<User, 'schemaVersion'>)[] = fields.filter(f => !['schemaVersion'].includes(f)) as any
+export const updatableFields: (keyof UserUpdate)[] = Object.keys(userUpdateSchema.fields) as any
