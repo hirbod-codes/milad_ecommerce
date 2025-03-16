@@ -2,6 +2,7 @@ import { ClientSession, Collection, Db, MongoClient } from 'mongodb'
 import { DbConfigurationError } from './Exceptions/DbConfigurationError'
 import { ConnectionError } from './Exceptions/ConnectionError'
 import { User, collectionName as userCollectionName } from './Models/User'
+import { RoleCreate, collectionName as roleCollectionName } from './Models/Role'
 import { CategoryCreate, collectionName as categoryCollectionName } from './Models/Category'
 import { OrderCreate, collectionName as orderCollectionName } from './Models/Order'
 import { ProductCreate, collectionName as productCollectionName } from './Models/Product'
@@ -180,6 +181,7 @@ export class MongoDB {
         await this.addProductCollection()
         await this.addProductReviewsCollection()
         await this.addTagCollection()
+        await this.addRoleCollection()
     }
 
     private async addUserCollection() {
@@ -309,5 +311,16 @@ export class MongoDB {
 
     async getTagCollection(client?: MongoClient, db?: Db): Promise<Collection<TagCreate>> {
         return (db ?? (await this.getDb(client))).collection<TagCreate>(tagCollectionName)
+    }
+
+    private async addRoleCollection() {
+        const db = await this.getDb();
+
+        if (!(await db.listCollections().toArray()).map(e => e.name).includes(roleCollectionName))
+            await db.createCollection(roleCollectionName)
+    }
+
+    async getRoleCollection(client?: MongoClient, db?: Db): Promise<Collection<RoleCreate>> {
+        return (db ?? (await this.getDb(client))).collection<RoleCreate>(roleCollectionName)
     }
 }
