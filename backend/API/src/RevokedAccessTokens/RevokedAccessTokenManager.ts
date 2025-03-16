@@ -1,0 +1,36 @@
+import { sessionRedisClient } from "..";
+import { InsertionFailure } from "./Exceptions/InsertionFailure";
+import { RetrievalFailure } from "./Exceptions/RetrievalFailure";
+
+export class RevokedAccessTokenManager {
+    static async set(key: string, value: string, expiresAt?: number): Promise<void> {
+        try {
+            await sessionRedisClient.connect()
+
+            let result = await sessionRedisClient.set(key, value, { EXAT: expiresAt })
+
+            if (result === null || result === undefined)
+                throw new InsertionFailure()
+        } catch (e) {
+            console.error(e)
+            throw new InsertionFailure()
+        } finally {
+            await sessionRedisClient.quit()
+        }
+    }
+
+    static async get(key: string): Promise<string | undefined> {
+        try {
+            await sessionRedisClient.connect()
+
+            let v = await sessionRedisClient.get(key)
+
+            return v === null ? undefined : v
+        } catch (e) {
+            console.error(e)
+            throw new RetrievalFailure()
+        } finally {
+            await sessionRedisClient.quit()
+        }
+    }
+}

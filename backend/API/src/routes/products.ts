@@ -1,10 +1,34 @@
 import { Router } from "express";
-import { productRepository } from "src";
-import { validateFilters } from "src/DB/helpers";
-import { productSchema, readableFields } from "src/DB/Models/Product";
+import { authentication, productRepository, roleRepository } from "../";
+import { validateFilters } from "../DB/helpers";
+import { productInputSchema, productSchema, readableFields } from "../DB/Models/Product";
 import { array, number, object, string, } from "yup";
+import Jwt from 'jsonwebtoken'
 
 const products = Router()
+
+products.post('/create', authentication, async (req, res) => {
+    let userRole = (Jwt.decode(req.headers['authorization']!.replace('Bearer ', '')!) as Jwt.JwtPayload)?.payload?.role ?? ''
+    console.log('userRole', userRole)
+    if ((await roleRepository.getByPrivilegeName('create-product')).map(r => r.name).includes(userRole)) {
+        res.sendStatus(403)
+        return
+    }
+
+    const { product } = req.body
+
+    if (!productInputSchema.isValidSync(product)) {
+        res.sendStatus(400)
+        return
+    }
+
+    const r = await productRepository.create(product)
+
+    if (r === false || r.acknowledged !== true)
+        res.sendStatus(500)
+    else
+        res.status(201).json({ id: r.insertedId })
+})
 
 products.get('/query', async (req, res) => {
     const { filter: filterJson, sort: sortJson, limit: limitStr, skip: skipStr } = req.query

@@ -1,5 +1,6 @@
-import { ObjectId } from "mongodb/mongodb";
+import { ObjectId } from "mongodb";
 import { array, InferType, lazy, mixed, number, object, string } from "yup";
+import { Privilege } from "./Privilege";
 
 export const collectionName = 'role'
 
@@ -12,11 +13,16 @@ export const roleSchema = object().required().noUnknown(true).strict(true).shape
     _id: mixed<string | ObjectId>().required(),
     name: string().required(),
     displayName: localizedText,
-    privileges: array().required().min(1).of(mixed<string | ObjectId>().required()),
+    privileges: array().required().min(0).of(mixed<string | ObjectId>().required()),
     createdAt: number().required(),
     updatedAt: number().required(),
 })
 export type Role = InferType<typeof roleSchema>
+
+export const roleWithPrivilegesSchema = roleSchema.omit(['privileges']).shape({
+    privileges: array().required().min(0).of(mixed<Privilege>().required()),
+})
+export type RoleWithPrivileges = InferType<typeof roleWithPrivilegesSchema>
 
 export const roleInputSchema = roleSchema.required().noUnknown(true).strict(true).pick(['name', 'privileges', 'displayName'])
 export type RoleInput = InferType<typeof roleInputSchema>

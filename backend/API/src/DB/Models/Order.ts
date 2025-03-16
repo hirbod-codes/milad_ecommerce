@@ -1,4 +1,4 @@
-import { ObjectId } from "mongodb/mongodb";
+import { ObjectId } from "mongodb";
 import { array, boolean, InferType, lazy, mixed, number, object, Schema, string } from "yup";
 
 const cost = lazy(value => object().required().strict(true).shape(Object.keys(value).reduce<{ [k: string]: Schema }>((prev, key) => ({ ...prev, [key]: number().strict(true).required().positive() }), {})))

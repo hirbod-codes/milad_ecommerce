@@ -1,5 +1,6 @@
+import { Role } from "../Models/Role";
 import { User } from "../Models/User";
-import { Collection, ObjectId } from 'mongodb/mongodb'
+import { Collection, ObjectId } from 'mongodb'
 
 export class UserRepository {
     private collection: Collection<User>

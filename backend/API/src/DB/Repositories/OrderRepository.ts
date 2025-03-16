@@ -1,4 +1,4 @@
-import { Collection, DeleteResult, InsertOneResult, ObjectId, UpdateResult } from 'mongodb/mongodb'
+import { Collection, DeleteResult, InsertOneResult, ObjectId, UpdateResult } from 'mongodb'
 import { Order, OrderCreate, OrderInput, OrderUpdate, schemaVersion } from '../Models/Order'
 import { DateTime } from 'luxon'
 

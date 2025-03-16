@@ -1,4 +1,4 @@
-import { Collection, DeleteResult, InsertOneResult, ObjectId, UpdateResult } from 'mongodb/mongodb'
+import { Collection, DeleteResult, InsertOneResult, ObjectId, UpdateResult } from 'mongodb'
 import { DateTime } from 'luxon'
 import { Category, CategoryCreate, CategoryInput, CategoryUpdate, schemaVersion } from '../Models/Category'
 

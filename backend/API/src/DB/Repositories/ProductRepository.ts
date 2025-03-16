@@ -1,6 +1,6 @@
 import { DateTime } from "luxon";
 import { Product, ProductInput, ProductCreate, schemaVersion, ProductUpdate, ProductImmutable } from "../Models/Product";
-import { Collection, DeleteResult, Filter, InsertOneResult, ObjectId, SortDirection, UpdateResult } from 'mongodb/mongodb'
+import { Collection, DeleteResult, Filter, InsertOneResult, ObjectId, SortDirection, UpdateResult } from 'mongodb'
 
 export class ProductRepository {
     private collection: Collection<ProductCreate>

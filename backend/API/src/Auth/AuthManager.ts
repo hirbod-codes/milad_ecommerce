@@ -1,4 +1,4 @@
-import { jwtSecret, revokedTokensRedisClient } from "src"
+import { jwtSecret, revokedTokensRedisClient } from ".."
 import { RevokedTokensRedisInsertionFailure } from "./Exceptions/RevokedTokensRedisInsertionFailure"
 import Jwt from 'jsonwebtoken'
 import { InvalidToken } from "./Exceptions/InvalidToken"

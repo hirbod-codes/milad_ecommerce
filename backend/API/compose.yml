@@ -11,8 +11,8 @@ services:
         ports:
                 - 8082:27017
         environment:
-            username: admin
-            password: password
+            MONGODB_USERNAME: admin
+            MONGODB_PASSWORD: password
             databaseName: primaryDB
         networks:
             - base
@@ -56,7 +56,7 @@ services:
         container_name: api_session_redis
         image: redis:7.0
         ports:
-            - 6379:6379
+            - 6380:6379
         networks:
             - api_redis
 
@@ -88,11 +88,13 @@ services:
         container_name: authorization_redis
         image: redis:7.0
         ports:
-            - 6379:6379
+            - 6381:6379
         networks:
             - authorization_redis
 
 networks:
     base:
     api:
+    api_redis:
     authorization:
+    authorization_redis:

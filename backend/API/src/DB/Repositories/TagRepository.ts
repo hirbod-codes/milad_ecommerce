@@ -1,4 +1,4 @@
-import { Collection, DeleteResult, InsertOneResult, ObjectId, UpdateResult } from 'mongodb/mongodb'
+import { Collection, DeleteResult, InsertOneResult, ObjectId, UpdateResult } from 'mongodb'
 import { DateTime } from 'luxon'
 import { Tag, TagCreate, TagInput, TagUpdate, schemaVersion } from '../Models/Tag'
 

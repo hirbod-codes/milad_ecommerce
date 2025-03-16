@@ -1,4 +1,4 @@
-import { ObjectId } from "mongodb/mongodb";
+import { ObjectId } from "mongodb";
 import { InferType, lazy, mixed, number, object, string } from "yup";
 
 export const collectionName = 'privilege'

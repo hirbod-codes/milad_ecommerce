@@ -1,4 +1,4 @@
-import express from "express";
+import express, { RequestHandler } from "express";
 import dotenv from "dotenv";
 import { getBooleanEnv, getIntegerEnv, getStringEnv } from "./helpers";
 import cors from "cors";
@@ -16,6 +16,8 @@ import { products } from './routes/products'
 import { orders } from './routes/orders'
 import { categories } from './routes/categories'
 import { tags } from './routes/tags'
+import { RevokedAccessTokenManager } from "./RevokedAccessTokens/RevokedAccessTokenManager";
+import Jwt from 'jsonwebtoken'
 
 dotenv.config({ debug: process.env.DEBUG !== undefined ? Boolean(process.env.DEBUG) : undefined })
 
@@ -71,6 +73,26 @@ export let productRepository: ProductRepository = undefined!
 export let productReviewsRepository: ProductReviewsRepository = undefined!
 export let roleRepository: RoleRepository = undefined!
 export let tagRepository: TagRepository = undefined!;
+
+export const authentication: RequestHandler = async (req, res, next) => {
+    try {
+        const header = req.headers['authorization']
+        if (header === undefined) {
+            res.status(401)
+            return
+        }
+
+        const token = header.replace('Bearer ', '')
+
+        if (Jwt.verify(token, jwtSecret) && !await RevokedAccessTokenManager.get(token)) {
+            res.status(401)
+            return
+        }
+
+        next()
+    }
+    catch (e) { console.error(e); res.sendStatus(401) }
+}
 
 (async () => {
     while (true) {

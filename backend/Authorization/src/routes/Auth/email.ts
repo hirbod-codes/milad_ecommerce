@@ -4,7 +4,7 @@ import { authManager, emailConfig, transporter, userRepository } from "../../";
 import { SessionManager } from "../../DB/Session/SessionManager";
 import { number, string } from "yup";
 import crypto from "crypto";
-import { User } from "src/DB/Models/User";
+import { User } from "../../DB/Models/User";
 
 const emailRouter = Router()
 
