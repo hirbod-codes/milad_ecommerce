@@ -126,16 +126,13 @@ emailRouter.post('/signup', async (req, res) => {
 
         try {
             let dbResponse = await userRepository.createUser({
-                schemaVersion: 'v0.0.0',
                 username: email,
                 email,
                 password: hashedPassword,
                 passwordSalt: salt,
                 passwordIterations: iterations,
-                createdAt: DateTime.utc().toUnixInteger(),
-                updatedAt: DateTime.utc().toUnixInteger()
             })
-            if (!dbResponse.acknowledged)
+            if (dbResponse === false || dbResponse.acknowledged !== true)
                 throw new Error('system failed to create a user')
         } catch (e) {
             console.error(e)
