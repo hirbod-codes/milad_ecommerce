@@ -118,7 +118,7 @@ oauthGoogleRouter.post('/token', async (req, res) => {
         }
 
         let tokens = undefined
-        try { tokens = await authManager.generateTokens(userId, 'customer') }
+        try { tokens = await authManager.generateTokens(userId, 'default') }
         catch (e) {
             console.error(e)
             throw new Error('authorization service failed to create tokens')

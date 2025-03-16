@@ -135,7 +135,7 @@ emailRouter.post('/signup', async (req, res) => {
         }
 
         let tokens = undefined
-        try { tokens = await authManager.generateTokens(userId, 'customer') }
+        try { tokens = await authManager.generateTokens(userId, 'default') }
         catch (e) {
             console.error(e)
             throw new Error('system failed to create tokens')
@@ -191,7 +191,7 @@ emailRouter.post('/login', async (req, res) => {
         }
 
         let tokens = undefined
-        try { tokens = await authManager.generateTokens(user._id.toString(), 'customer') }
+        try { tokens = await authManager.generateTokens(user._id.toString(), 'default') }
         catch (e) {
             console.error(e)
             throw new Error('system failed to create tokens')
