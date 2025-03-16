@@ -1,5 +1,5 @@
-import { ObjectId } from "mongodb";
-import { InferType, mixed, number, object, string } from "yup";
+import { InferType, number, object, string } from "yup";
+import { likeObjectId } from "./common_schemas";
 
 export const collectionName = 'productReview'
 
@@ -7,9 +7,9 @@ export const schemaVersion = 'v1.0.0'
 
 export const productReviewSchema = object().required().noUnknown(true).strict(true).shape({
     schemaVersion: string().required().min(6).max(20),
-    _id: mixed<string | ObjectId>().required(),
-    productId: mixed<string | ObjectId>().required(),
-    userId: mixed<string | ObjectId>().required(),
+    _id: likeObjectId.required(),
+    productId: likeObjectId.required(),
+    userId: likeObjectId.required(),
     content: string().optional(),
     rating: number().required(),
     createdAt: number().required(),
@@ -20,7 +20,7 @@ export type ProductReview = InferType<typeof productReviewSchema>
 export const productReviewInputSchema = productReviewSchema.required().noUnknown(true).strict(true).pick(['productId', 'userId', 'content', 'rating'])
 export type ProductReviewInput = InferType<typeof productReviewInputSchema>
 
-export const productReviewCreateSchema = productReviewSchema.required().noUnknown(true).strict(true).omit(['_id']).shape({ _id: mixed<string | ObjectId>().optional() })
+export const productReviewCreateSchema = productReviewSchema.required().noUnknown(true).strict(true).omit(['_id']).shape({ _id: likeObjectId.optional() })
 export type ProductReviewCreate = InferType<typeof productReviewCreateSchema>
 
 export const productReviewUpdateSchema = productReviewSchema.required().noUnknown(true).strict(true).pick(['content', 'rating'])

@@ -39,7 +39,7 @@ export class OrderRepository {
         catch (e) { console.error(e); return false }
     }
 
-    async deleteById(id: string): Promise<DeleteResult | false> {
+    async delete(id: string): Promise<DeleteResult | false> {
         try { return await this.collection.deleteOne({ _id: ObjectId.createFromHexString(id) }) }
         catch (e) { console.error(e); return false }
     }

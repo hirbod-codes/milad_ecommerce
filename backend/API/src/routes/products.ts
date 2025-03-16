@@ -1,9 +1,11 @@
 import { Router } from "express";
 import { authentication, productRepository, roleRepository } from "../";
 import { validateFilters } from "../DB/helpers";
-import { productInputSchema, productSchema, readableFields } from "../DB/Models/Product";
+import { productImmutableSchema, productInputSchema, productSchema, productUpdateSchema, readableFields } from "../DB/Models/Product";
 import { array, number, object, string, } from "yup";
 import Jwt from 'jsonwebtoken'
+import { likeObjectId, stringObjectId } from "src/DB/Models/common_schemas";
+import { ObjectId } from "mongodb";
 
 const products = Router()
 
@@ -22,7 +24,7 @@ products.post('/create', authentication, async (req, res) => {
         return
     }
 
-    const r = await productRepository.create(product)
+    const r = await productRepository.create(productInputSchema.cast(product))
 
     if (r === false || r.acknowledged !== true)
         res.sendStatus(500)
@@ -76,6 +78,75 @@ products.get('/query', async (req, res) => {
     }
 
     res.status(200).json(await productRepository.get(filter, sortSchema.cast(sort) as any, limit, skip))
+})
+
+products.patch('/update', authentication, async (req, res) => {
+    let userRole = (Jwt.decode(req.headers['authorization']!.replace('Bearer ', '')!) as Jwt.JwtPayload)?.payload?.role ?? ''
+    console.log('userRole', userRole)
+    if ((await roleRepository.getByPrivilegeName('update-product')).map(r => r.name).includes(userRole)) {
+        res.sendStatus(403)
+        return
+    }
+
+    const { product, id } = req.body
+
+    if (!stringObjectId.required().isValidSync(id) || !productUpdateSchema.isValidSync(product)) {
+        res.sendStatus(400)
+        return
+    }
+
+    const result = await productRepository.update(id, productUpdateSchema.cast(product))
+
+    if (result === false || result.acknowledged !== true)
+        res.sendStatus(500)
+    else
+        res.status(201).json({ result })
+})
+
+products.patch('/update/immutables', authentication, async (req, res) => {
+    let userRole = (Jwt.decode(req.headers['authorization']!.replace('Bearer ', '')!) as Jwt.JwtPayload)?.payload?.role ?? ''
+    console.log('userRole', userRole)
+    if ((await roleRepository.getByPrivilegeName('update-immutables-product')).map(r => r.name).includes(userRole)) {
+        res.sendStatus(403)
+        return
+    }
+
+    const { product, id } = req.body
+
+    if (!stringObjectId.required().isValidSync(id) || !productImmutableSchema.isValidSync(product)) {
+        res.sendStatus(400)
+        return
+    }
+
+    const result = await productRepository.updateImmutables(id, productImmutableSchema.cast(product))
+
+    if (result === false || result.acknowledged !== true)
+        res.sendStatus(500)
+    else
+        res.status(201).json({ result })
+})
+
+products.delete('/delete', authentication, async (req, res) => {
+    let userRole = (Jwt.decode(req.headers['authorization']!.replace('Bearer ', '')!) as Jwt.JwtPayload)?.payload?.role ?? ''
+    console.log('userRole', userRole)
+    if ((await roleRepository.getByPrivilegeName('delete-product')).map(r => r.name).includes(userRole)) {
+        res.sendStatus(403)
+        return
+    }
+
+    const { id } = req.body
+
+    if (!stringObjectId.required().isValidSync(id)) {
+        res.sendStatus(400)
+        return
+    }
+
+    const result = await productRepository.delete(id)
+
+    if (result === false || result.acknowledged !== true)
+        res.sendStatus(500)
+    else
+        res.status(201).json({ result })
 })
 
 export { products }

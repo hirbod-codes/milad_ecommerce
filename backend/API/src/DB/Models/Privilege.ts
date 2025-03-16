@@ -1,5 +1,5 @@
-import { ObjectId } from "mongodb";
 import { InferType, lazy, mixed, number, object, string } from "yup";
+import { likeObjectId } from "./common_schemas";
 
 export const collectionName = 'privilege'
 
@@ -9,7 +9,7 @@ const localizedText = lazy(value => object().required().strict(true).shape(Objec
 
 export const privilegeSchema = object().required().noUnknown(true).strict(true).shape({
     schemaVersion: string().required().min(6).max(20),
-    _id: mixed<string | ObjectId>().required(),
+    _id: likeObjectId.required(),
     name: string().required(),
     displayName: localizedText,
     value: mixed<string | number | boolean>().required(),
@@ -21,7 +21,7 @@ export type Privilege = InferType<typeof privilegeSchema>
 export const privilegeInputSchema = privilegeSchema.required().noUnknown(true).strict(true).pick(['name', 'value', 'displayName'])
 export type PrivilegeInput = InferType<typeof privilegeInputSchema>
 
-export const privilegeCreateSchema = privilegeSchema.required().noUnknown(true).strict(true).omit(['_id']).shape({ _id: mixed<string | ObjectId>().optional() })
+export const privilegeCreateSchema = privilegeSchema.required().noUnknown(true).strict(true).omit(['_id']).shape({ _id: likeObjectId.optional() })
 export type PrivilegeCreate = InferType<typeof privilegeCreateSchema>
 
 export const privilegeUpdateSchema = privilegeSchema.required().noUnknown(true).strict(true).pick(['value'])

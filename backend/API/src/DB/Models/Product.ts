@@ -1,5 +1,5 @@
-import { ObjectId } from "mongodb";
-import { array, boolean, InferType, lazy, mixed, number, object, Schema, string } from "yup";
+import { array, boolean, InferType, lazy, number, object, Schema, string } from "yup";
+import { likeObjectId } from "./common_schemas";
 
 const price = lazy(value => object().required().strict(true).shape(Object.keys(value).reduce<{ [k: string]: Schema }>((prev, key) => ({ ...prev, [key]: number().strict(true).required().positive() }), {})))
 
@@ -11,7 +11,7 @@ export const schemaVersion = 'v1.0.0'
 
 export const productSchema = object().required().unknown(true).strict(true).shape({
     schemaVersion: string().required().min(6).max(20),
-    _id: mixed<string | ObjectId>().required(),
+    _id: likeObjectId.required(),
     tags: array().optional().of(string().required()),
     categories: array().optional().of(string().required()),
     name: localizedText,
@@ -30,10 +30,10 @@ export type Product = InferType<typeof productSchema>
 export const productInputSchema = productSchema.required().noUnknown(true).strict(true).pick(['tags', 'categories', 'name', 'description', 'price', 'isAvailable'])
 export type ProductInput = InferType<typeof productInputSchema>
 
-export const productCreateSchema = productSchema.required().noUnknown(true).strict(true).omit(['_id']).shape({ _id: mixed<string | ObjectId>().optional() })
+export const productCreateSchema = productSchema.required().noUnknown(true).strict(true).omit(['_id']).shape({ _id: likeObjectId.optional() })
 export type ProductCreate = InferType<typeof productCreateSchema>
 
-export const productUpdateSchema = productSchema.required().noUnknown(true).strict(true).pick(['name', 'description', 'tags', 'categories', 'price'])
+export const productUpdateSchema = productSchema.required().noUnknown(true).strict(true).pick(['name', 'description', 'tags', 'categories', 'price', 'isAvailable'])
 export type ProductUpdate = InferType<typeof productUpdateSchema>
 
 export const productImmutableSchema = productSchema.required().noUnknown(true).strict(true).pick(Object.keys(productSchema.fields).filter(f => !['_id', 'schemaVersion', 'createdAt', 'updatedAt'].concat(Object.keys(productUpdateSchema.fields)).includes(f)) as any)

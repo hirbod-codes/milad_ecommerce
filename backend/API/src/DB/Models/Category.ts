@@ -1,5 +1,5 @@
-import { ObjectId } from "mongodb";
-import { InferType, lazy, mixed, number, object, string } from "yup";
+import { InferType, lazy, number, object, string } from "yup";
+import { likeObjectId } from "./common_schemas";
 
 export const collectionName = 'category'
 
@@ -9,8 +9,8 @@ const localizedText = lazy(value => object().required().strict(true).shape(Objec
 
 export const categorySchema = object().required().noUnknown(true).strict(true).shape({
     schemaVersion: string().required().min(6).max(20),
-    _id: mixed<string | ObjectId>().required(),
-    parentCategory: mixed<string | ObjectId>().optional(),
+    _id: likeObjectId.required(),
+    parentCategory: likeObjectId.optional(),
     name: string().required(),
     displayName: localizedText,
     views: number().required(),
@@ -22,7 +22,7 @@ export type Category = InferType<typeof categorySchema>
 export const categoryInputSchema = categorySchema.required().noUnknown(true).strict(true).pick(['parentCategory', 'name', 'displayName'])
 export type CategoryInput = InferType<typeof categoryInputSchema>
 
-export const categoryCreateSchema = categorySchema.required().noUnknown(true).strict(true).omit(['_id']).shape({ _id: mixed<string | ObjectId>().optional() })
+export const categoryCreateSchema = categorySchema.required().noUnknown(true).strict(true).omit(['_id']).shape({ _id: likeObjectId.optional() })
 export type CategoryCreate = InferType<typeof categoryCreateSchema>
 
 export const categoryUpdateSchema = categorySchema.required().noUnknown(true).strict(true).pick(['views'])

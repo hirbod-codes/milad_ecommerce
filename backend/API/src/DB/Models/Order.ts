@@ -1,5 +1,5 @@
-import { ObjectId } from "mongodb";
-import { array, boolean, InferType, lazy, mixed, number, object, Schema, string } from "yup";
+import { array, boolean, InferType, lazy, number, object, Schema, string } from "yup";
+import { likeObjectId } from "./common_schemas";
 
 const cost = lazy(value => object().required().strict(true).shape(Object.keys(value).reduce<{ [k: string]: Schema }>((prev, key) => ({ ...prev, [key]: number().strict(true).required().positive() }), {})))
 
@@ -9,9 +9,9 @@ export const schemaVersion = 'v1.0.0'
 
 export const orderSchema = object().required().strict(true).shape({
     schemaVersion: string().required().min(6).max(20),
-    _id: mixed<string | ObjectId>().required(),
-    userId: mixed<string | ObjectId>().required(),
-    products: array().required().min(1).of(mixed<string | ObjectId>().required()),
+    _id: likeObjectId.required(),
+    userId: likeObjectId.required(),
+    products: array().required().min(1).of(likeObjectId.required()),
     cost,
     isPayed: boolean().required(),
     isSent: boolean().required(),
@@ -27,7 +27,7 @@ export type Order = InferType<typeof orderSchema>
 export const orderInputSchema = orderSchema.required().noUnknown(true).strict(true).pick(['address', 'products', 'userId'])
 export type OrderInput = InferType<typeof orderInputSchema>
 
-export const orderCreateSchema = orderSchema.required().noUnknown(true).strict(true).omit(['_id']).shape({ _id: mixed<string | ObjectId>().optional() })
+export const orderCreateSchema = orderSchema.required().noUnknown(true).strict(true).omit(['_id']).shape({ _id: likeObjectId.optional() })
 export type OrderCreate = InferType<typeof orderCreateSchema>
 
 export const orderUpdateSchema = orderSchema.required().noUnknown(true).strict(true).pick(['address'])

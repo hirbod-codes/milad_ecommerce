@@ -1,5 +1,5 @@
-import { ObjectId } from "mongodb";
-import { InferType, lazy, mixed, number, object, string } from "yup";
+import { InferType, lazy, number, object, string } from "yup";
+import { likeObjectId } from "./common_schemas";
 
 export const collectionName = 'tag'
 
@@ -9,7 +9,7 @@ const localizedText = lazy(value => object().required().strict(true).shape(Objec
 
 export const tagSchema = object().required().noUnknown(true).strict(true).shape({
     schemaVersion: string().required().min(6).max(20),
-    _id: mixed<string | ObjectId>().required(),
+    _id: likeObjectId.required(),
     name: string().required(),
     displayName: localizedText,
     views: number().required(),
@@ -21,7 +21,7 @@ export type Tag = InferType<typeof tagSchema>
 export const tagInputSchema = tagSchema.required().noUnknown(true).strict(true).pick(['name', 'displayName'])
 export type TagInput = InferType<typeof tagInputSchema>
 
-export const tagCreateSchema = tagSchema.required().noUnknown(true).strict(true).omit(['_id']).shape({ _id: mixed<string | ObjectId>().optional() })
+export const tagCreateSchema = tagSchema.required().noUnknown(true).strict(true).omit(['_id']).shape({ _id: likeObjectId.optional() })
 export type TagCreate = InferType<typeof tagCreateSchema>
 
 export const tagUpdateSchema = tagSchema.required().noUnknown(true).strict(true).pick(['views'])

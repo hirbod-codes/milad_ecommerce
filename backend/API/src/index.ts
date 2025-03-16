@@ -1,4 +1,4 @@
-import express, { RequestHandler } from "express";
+import express, { Response, Request, NextFunction } from "express";
 import dotenv from "dotenv";
 import { getBooleanEnv, getIntegerEnv, getStringEnv } from "./helpers";
 import cors from "cors";
@@ -74,7 +74,7 @@ export let productReviewsRepository: ProductReviewsRepository = undefined!
 export let roleRepository: RoleRepository = undefined!
 export let tagRepository: TagRepository = undefined!;
 
-export const authentication: RequestHandler = async (req, res, next) => {
+export async function authentication(req: Request, res: Response, next: NextFunction) {
     try {
         const header = req.headers['authorization']
         if (header === undefined) {
