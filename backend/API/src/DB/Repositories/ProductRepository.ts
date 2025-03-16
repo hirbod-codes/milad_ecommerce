@@ -1,6 +1,6 @@
 import { DateTime } from "luxon";
 import { Product, ProductInput, ProductCreate, schemaVersion, ProductUpdate, ProductImmutable } from "../Models/Product";
-import { Collection, DeleteResult, InsertOneResult, ObjectId, UpdateResult } from 'mongodb/mongodb'
+import { Collection, DeleteResult, Filter, InsertOneResult, ObjectId, SortDirection, UpdateResult } from 'mongodb/mongodb'
 
 export class ProductRepository {
     private collection: Collection<ProductCreate>
@@ -30,6 +30,17 @@ export class ProductRepository {
     async getByIds(ids: (string | ObjectId)[]): Promise<Product[] | undefined> {
         try { return await this.collection.find({ _id: { $in: ids.map(id => typeof id === 'string' ? ObjectId.createFromHexString(id) : id) } }).toArray() }
         catch (e) { console.error(e); return undefined }
+    }
+
+    async get(filter: Filter<Product>, sorts: [{ field: (keyof Product)[], direction: SortDirection }], limit: number, skip: number): Promise<Product[]> {
+        try {
+            let cursor = await this.collection.find(filter)
+
+            sorts.forEach(sort => cursor.sort(sort.field, sort.direction))
+
+            return await cursor.limit(limit).skip(skip).toArray()
+        }
+        catch (e) { console.error(e); return [] }
     }
 
     async getAvailableByIds(ids: (string | ObjectId)[]): Promise<Product[] | undefined> {
