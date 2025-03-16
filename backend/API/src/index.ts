@@ -1,11 +1,10 @@
-import dotenv from "dotenv";
 import express from "express";
+import dotenv from "dotenv";
+import { getBooleanEnv, getIntegerEnv, getStringEnv } from "./helpers";
+import cors from "cors";
 import { createClient, createCluster, RedisClientType, RedisClusterType, RedisDefaultModules } from "redis";
 import { MongoDB } from "./DB/mongodb";
-import { router } from "./router";
-import { getBooleanEnv, getIntegerEnv, getStringEnv } from "./helpers";
 import { UserRepository } from "./DB/Repositories/UserRepository";
-import cors from "cors";
 import { RoleRepository } from "./DB/Repositories/RoleRepository";
 import { TagRepository } from "./DB/Repositories/TagRepository";
 import { ProductReviewsRepository } from "./DB/Repositories/ProductReviewsRepository";
@@ -13,6 +12,10 @@ import { ProductRepository } from "./DB/Repositories/ProductRepository";
 import { OrderRepository } from "./DB/Repositories/OrderRepository";
 import { CategoryRepository } from "./DB/Repositories/CategoryRepository";
 import { PrivilegeRepository } from "./DB/Repositories/PrivilegeRepository";
+import { products } from './routes/products'
+import { orders } from './routes/orders'
+import { categories } from './routes/categories'
+import { tags } from './routes/tags'
 
 dotenv.config({ debug: process.env.DEBUG !== undefined ? Boolean(process.env.DEBUG) : undefined })
 
@@ -112,7 +115,10 @@ export let tagRepository: TagRepository = undefined!;
 
     app.use(express.json())
 
-    app.use(router)
+    app.use('/products', products)
+    app.use('/orders', orders)
+    app.use('/categories', categories)
+    app.use('/tags', tags)
 
     app.all('*', (req, res) => {
         res.sendStatus(404)
