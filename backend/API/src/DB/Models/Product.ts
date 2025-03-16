@@ -12,8 +12,8 @@ export const schemaVersion = 'v1.0.0'
 export const productSchema = object().required().unknown(true).strict(true).shape({
     schemaVersion: string().required().min(6).max(20),
     _id: mixed<string | ObjectId>().required(),
-    tags: array().optional().of(mixed<string | ObjectId>().required()),
-    categories: array().optional().of(mixed<string | ObjectId>().required()),
+    tags: array().optional().of(string().required()),
+    categories: array().optional().of(string().required()),
     name: localizedText,
     description: localizedText.optional(),
     price,
