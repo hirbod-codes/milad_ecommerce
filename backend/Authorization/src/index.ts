@@ -7,7 +7,8 @@ import cors from "cors";
 import { createClient, createCluster, RedisClientType, RedisClusterType, RedisDefaultModules } from "redis";
 import nodemailer from "nodemailer";
 import { UserRepository } from "./DB/Repositories/UserRepository";
-
+import { RoleRepository } from "./DB/Repositories/RoleRepository";
+import { PrivilegeRepository } from "./DB/Repositories/PrivilegeRepository";
 import { tokenRouter } from "./routes/Auth/tokens";
 import { emailRouter } from "./routes/Auth/email";
 import { phoneNumberRouter } from "./routes/Auth/phoneNumber";
@@ -78,7 +79,9 @@ export const dbConfig = {
 
 export const db = new MongoDB(dbConfig);
 
-export let userRepository: UserRepository = undefined!;
+export let userRepository: UserRepository = undefined!
+export let privilegeRepository: PrivilegeRepository = undefined!
+export let roleRepository: RoleRepository = undefined!;
 
 (async () => {
     let safety = 0
@@ -87,6 +90,8 @@ export let userRepository: UserRepository = undefined!;
         try {
             await db.initializeDb();
             userRepository = new UserRepository(await db.getUserCollection())
+            privilegeRepository = new PrivilegeRepository(await db.getPrivilegeCollection())
+            roleRepository = new RoleRepository(await db.getRoleCollection())
             break;
         }
         catch (e) { console.error(e) }

@@ -4,10 +4,8 @@ import { ConnectionError } from './Exceptions/ConnectionError'
 import { User, collectionName as userCollectionName } from './Models/User'
 import { CategoryCreate, collectionName as categoryCollectionName } from './Models/Category'
 import { OrderCreate, collectionName as orderCollectionName } from './Models/Order'
-import { PrivilegeCreate, collectionName as privilegeCollectionName } from './Models/Privilege'
 import { ProductCreate, collectionName as productCollectionName } from './Models/Product'
 import { ProductReviewCreate, collectionName as productReviewCollectionName } from './Models/ProductReview'
-import { RoleCreate, collectionName as roleCollectionName } from './Models/Role'
 import { TagCreate, collectionName as tagCollectionName } from './Models/Tag'
 
 export type MongodbConfig = {
@@ -179,10 +177,8 @@ export class MongoDB {
         await this.addUserCollection()
         await this.addCategoryCollection()
         await this.addOrderCollection()
-        await this.addPrivilegeCollection()
         await this.addProductCollection()
         await this.addProductReviewsCollection()
-        await this.addRoleCollection()
         await this.addTagCollection()
     }
 
@@ -255,28 +251,6 @@ export class MongoDB {
         return (db ?? (await this.getDb(client))).collection<OrderCreate>(orderCollectionName)
     }
 
-    private async addPrivilegeCollection() {
-        const db = await this.getDb();
-
-        if (!(await db.listCollections().toArray()).map(e => e.name).includes(privilegeCollectionName))
-            await db.createCollection(privilegeCollectionName)
-
-        const indexes = await db.collection(privilegeCollectionName).indexes()
-
-        if (indexes.find(i => i.name === 'unique-name') === undefined)
-            await db.createIndex(privilegeCollectionName, { name: 1 }, { unique: true, name: 'unique-name' })
-
-        if (indexes.find(i => i.name === 'createdAt') === undefined)
-            await db.createIndex(privilegeCollectionName, { createdAt: 1 }, { name: 'createdAt' })
-
-        if (indexes.find(i => i.name === 'updatedAt') === undefined)
-            await db.createIndex(privilegeCollectionName, { updatedAt: 1 }, { name: 'updatedAt' })
-    }
-
-    async getPrivilegeCollection(client?: MongoClient, db?: Db): Promise<Collection<PrivilegeCreate>> {
-        return (db ?? (await this.getDb(client))).collection<PrivilegeCreate>(privilegeCollectionName)
-    }
-
     private async addProductCollection() {
         const db = await this.getDb();
 
@@ -313,28 +287,6 @@ export class MongoDB {
 
     async getProductReviewsCollection(client?: MongoClient, db?: Db): Promise<Collection<ProductReviewCreate>> {
         return (db ?? (await this.getDb(client))).collection<ProductReviewCreate>(productReviewCollectionName)
-    }
-
-    private async addRoleCollection() {
-        const db = await this.getDb();
-
-        if (!(await db.listCollections().toArray()).map(e => e.name).includes(roleCollectionName))
-            await db.createCollection(roleCollectionName)
-
-        const indexes = await db.collection(roleCollectionName).indexes()
-
-        if (indexes.find(i => i.name === 'unique-name') === undefined)
-            await db.createIndex(roleCollectionName, { name: 1 }, { unique: true, name: 'unique-name' })
-
-        if (indexes.find(i => i.name === 'createdAt') === undefined)
-            await db.createIndex(roleCollectionName, { createdAt: 1 }, { name: 'createdAt' })
-
-        if (indexes.find(i => i.name === 'updatedAt') === undefined)
-            await db.createIndex(roleCollectionName, { updatedAt: 1 }, { name: 'updatedAt' })
-    }
-
-    async getRoleCollection(client?: MongoClient, db?: Db): Promise<Collection<RoleCreate>> {
-        return (db ?? (await this.getDb(client))).collection<RoleCreate>(roleCollectionName)
     }
 
     private async addTagCollection() {

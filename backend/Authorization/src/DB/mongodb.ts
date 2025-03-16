@@ -1,6 +1,8 @@
 import { ClientSession, Collection, Db, MongoClient } from 'mongodb'
 import { collectionName as userCollectionName, UserCreate } from './Models/User'
 import { RefreshTokenCreate, collectionName as refreshTokensCollectionName } from './Models/RefreshToken'
+import { PrivilegeCreate, collectionName as privilegeCollectionName } from './Models/Privilege'
+import { RoleCreate, collectionName as roleCollectionName } from './Models/Role'
 import { DbConfigurationError } from './Exceptions/DbConfigurationError'
 import { ConnectionError } from './Exceptions/ConnectionError'
 
@@ -172,6 +174,8 @@ export class MongoDB {
     async addCollections() {
         await this.addRefreshTokenCollection()
         await this.addUserCollection()
+        await this.addUserCollection()
+        await this.addRoleCollection()
     }
 
     private async addRefreshTokenCollection() {
@@ -193,6 +197,10 @@ export class MongoDB {
 
         if (indexes.find(i => i.name === 'createdAt') === undefined)
             await db.createIndex(refreshTokensCollectionName, { createdAt: 1 }, { name: 'createdAt' })
+    }
+
+    async getRefreshTokensCollection(client?: MongoClient, db?: Db): Promise<Collection<RefreshTokenCreate>> {
+        return (db ?? (await this.getDb(client))).collection<RefreshTokenCreate>(refreshTokensCollectionName)
     }
 
     private async addUserCollection() {
@@ -219,11 +227,52 @@ export class MongoDB {
             await db.createIndex(userCollectionName, { updatedAt: 1 }, { name: 'updatedAt' })
     }
 
-    async getRefreshTokensCollection(client?: MongoClient, db?: Db): Promise<Collection<RefreshTokenCreate>> {
-        return (db ?? (await this.getDb(client))).collection<RefreshTokenCreate>(refreshTokensCollectionName)
-    }
-
     async getUserCollection(client?: MongoClient, db?: Db): Promise<Collection<UserCreate>> {
         return (db ?? (await this.getDb(client))).collection<UserCreate>(userCollectionName)
+    }
+
+    private async addPrivilegeCollection() {
+        const db = await this.getDb();
+
+        if (!(await db.listCollections().toArray()).map(e => e.name).includes(privilegeCollectionName))
+            await db.createCollection(privilegeCollectionName)
+
+        const indexes = await db.collection(privilegeCollectionName).indexes()
+
+        if (indexes.find(i => i.name === 'unique-name') === undefined)
+            await db.createIndex(privilegeCollectionName, { name: 1 }, { unique: true, name: 'unique-name' })
+
+        if (indexes.find(i => i.name === 'createdAt') === undefined)
+            await db.createIndex(privilegeCollectionName, { createdAt: 1 }, { name: 'createdAt' })
+
+        if (indexes.find(i => i.name === 'updatedAt') === undefined)
+            await db.createIndex(privilegeCollectionName, { updatedAt: 1 }, { name: 'updatedAt' })
+    }
+
+    async getPrivilegeCollection(client?: MongoClient, db?: Db): Promise<Collection<PrivilegeCreate>> {
+        return (db ?? (await this.getDb(client))).collection<PrivilegeCreate>(privilegeCollectionName)
+    }
+
+
+    private async addRoleCollection() {
+        const db = await this.getDb();
+
+        if (!(await db.listCollections().toArray()).map(e => e.name).includes(roleCollectionName))
+            await db.createCollection(roleCollectionName)
+
+        const indexes = await db.collection(roleCollectionName).indexes()
+
+        if (indexes.find(i => i.name === 'unique-name') === undefined)
+            await db.createIndex(roleCollectionName, { name: 1 }, { unique: true, name: 'unique-name' })
+
+        if (indexes.find(i => i.name === 'createdAt') === undefined)
+            await db.createIndex(roleCollectionName, { createdAt: 1 }, { name: 'createdAt' })
+
+        if (indexes.find(i => i.name === 'updatedAt') === undefined)
+            await db.createIndex(roleCollectionName, { updatedAt: 1 }, { name: 'updatedAt' })
+    }
+
+    async getRoleCollection(client?: MongoClient, db?: Db): Promise<Collection<RoleCreate>> {
+        return (db ?? (await this.getDb(client))).collection<RoleCreate>(roleCollectionName)
     }
 }

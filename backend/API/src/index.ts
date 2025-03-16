@@ -1,4 +1,4 @@
-import express, { Response, Request, NextFunction } from "express";
+import express from "express";
 import dotenv from "dotenv";
 import { getBooleanEnv, getIntegerEnv, getStringEnv } from "./helpers";
 import cors from "cors";
@@ -11,14 +11,12 @@ import { ProductReviewsRepository } from "./DB/Repositories/ProductReviewsReposi
 import { ProductRepository } from "./DB/Repositories/ProductRepository";
 import { OrderRepository } from "./DB/Repositories/OrderRepository";
 import { CategoryRepository } from "./DB/Repositories/CategoryRepository";
-import { PrivilegeRepository } from "./DB/Repositories/PrivilegeRepository";
 import { products } from './routes/products'
 import { orders } from './routes/orders'
 import { categories } from './routes/categories'
 import { tags } from './routes/tags'
-import { RevokedAccessTokenManager } from "./RevokedAccessTokens/RevokedAccessTokenManager";
-import Jwt from 'jsonwebtoken'
 import { QueueManagement } from "./QueueManagement";
+import { exit } from "process";
 
 dotenv.config({ debug: process.env.DEBUG !== undefined ? Boolean(process.env.DEBUG) : undefined })
 
@@ -69,24 +67,24 @@ export const db = new MongoDB(dbConfig)
 export let userRepository: UserRepository = undefined!
 export let categoryRepository: CategoryRepository = undefined!
 export let orderRepository: OrderRepository = undefined!
-export let privilegeRepository: PrivilegeRepository = undefined!
 export let productRepository: ProductRepository = undefined!
 export let productReviewsRepository: ProductReviewsRepository = undefined!
-export let roleRepository: RoleRepository = undefined!
-export let tagRepository: TagRepository = undefined!;
+export let tagRepository: TagRepository = undefined!
+export let roleRepository: RoleRepository = undefined!;
 
 (async () => {
-    while (true) {
+    let safety = 0
+    while (safety <= 100) {
+        safety++
         try {
             await db.initializeDb();
             userRepository = new UserRepository(await db.getUserCollection())
             categoryRepository = new CategoryRepository(await db.getCategoryCollection())
             orderRepository = new OrderRepository(await db.getOrderCollection())
-            privilegeRepository = new PrivilegeRepository(await db.getPrivilegeCollection())
             productRepository = new ProductRepository(await db.getProductCollection())
             productReviewsRepository = new ProductReviewsRepository(await db.getProductReviewsCollection())
-            roleRepository = new RoleRepository(await db.getRoleCollection())
             tagRepository = new TagRepository(await db.getTagCollection())
+            roleRepository = new RoleRepository(await db.getRoleCollection())
             break;
         }
         catch (e) { console.error(e) }
@@ -96,6 +94,11 @@ export let tagRepository: TagRepository = undefined!;
                 setTimeout(() => { res() }, 5000)
             }))()
         }
+    }
+
+    if (safety > 100) {
+        console.log('safety reached!!')
+        exit(1)
     }
 
     await QueueManagement.subscribeConsumers()

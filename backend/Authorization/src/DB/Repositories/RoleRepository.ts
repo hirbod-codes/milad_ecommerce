@@ -11,6 +11,25 @@ export class RoleRepository {
         this.collection = collection
     }
 
+    async create(role: RoleInput): Promise<InsertOneResult | false> {
+        const ts = DateTime.utc().toUnixInteger()
+
+        let o: RoleCreate = {
+            ...role,
+            schemaVersion,
+            createdAt: ts,
+            updatedAt: ts,
+        }
+
+        try { return await this.collection.insertOne(o) }
+        catch (e) { console.error(e); return false }
+    }
+
+    async getById(id: string): Promise<Role | null | undefined> {
+        try { return await this.collection.findOne({ _id: ObjectId.createFromHexString(id) }) }
+        catch (e) { console.error(e); return undefined }
+    }
+
     async getRolesWithPrivileges(): Promise<RoleWithPrivileges[] | false> {
         if (!this.rolesWithPrivileges || this.rolesWithPrivileges.length === 0)
             return false
@@ -39,5 +58,15 @@ export class RoleRepository {
         this.rolesWithPrivileges = queriedRoles
 
         return this.rolesWithPrivileges
+    }
+
+    async updateById(id: string, role: RoleUpdate): Promise<UpdateResult | false> {
+        try { return await this.collection.updateOne({ _id: ObjectId.createFromHexString(id) }, { ...role, updatedAt: DateTime.utc().toUnixInteger() }) }
+        catch (e) { console.error(e); return false }
+    }
+
+    async delete(id: string): Promise<DeleteResult | false> {
+        try { return await this.collection.deleteOne({ _id: ObjectId.createFromHexString(id) }) }
+        catch (e) { console.error(e); return false }
     }
 }
