@@ -104,25 +104,20 @@ oauthGoogleRouter.post('/token', async (req, res) => {
 
         let r = undefined
         try {
-            if (!await userRepository.emailExists(userInfo.email)) {
-                const now = DateTime.utc().toUnixInteger()
+            if (!await userRepository.emailExists(userInfo.email))
                 r = await userRepository.createUser({
-                    schemaVersion: 'v0.0.0',
                     username: userInfo.email,
                     email: userInfo.email,
                     firstName: userInfo.given_name,
                     lastName: userInfo.family_name,
                     avatarUrl: userInfo.picture,
-                    createdAt: now,
-                    updatedAt: now,
                 })
-            }
         } catch (e) {
             console.error(e)
             throw new Error('system failed to create user')
         }
 
-        if (r !== undefined && r.acknowledged !== true)
+        if (r === false || (r !== undefined && r.acknowledged !== true))
             throw new Error('system failed to create user')
 
         res.status(r === undefined ? 200 : 201).json(tokens)
