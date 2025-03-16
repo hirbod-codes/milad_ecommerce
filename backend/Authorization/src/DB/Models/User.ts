@@ -7,7 +7,7 @@ export const schemaVersion = 'v1.0.0'
 
 export const userSchema = object().required().stripUnknown().strict(true).shape({
     schemaVersion: string().optional().min(6).max(10),
-    _id: mixed<string | ObjectId>().optional(),
+    _id: mixed<string | ObjectId>().required(),
     username: string().required(),
     password: string().optional(),
     passwordSalt: string().optional(),

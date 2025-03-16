@@ -92,19 +92,13 @@ oauthGoogleRouter.post('/token', async (req, res) => {
 
         console.log('userInfo', userInfo)
 
-        let tokens = undefined
-        try {
-            tokens = await authManager.generateTokens(userInfo.email)
-        } catch (e) {
-            console.error(e)
-            throw new Error('authorization service failed to create tokens')
-        }
-
-        console.log('tokens', tokens)
-
+        let userId: string = undefined!
         let r = undefined
         try {
-            if (!await userRepository.emailExists(userInfo.email))
+            let user = await userRepository.getUserByEmail(userInfo.email)
+            if (user)
+                userId = user._id.toString()
+            else {
                 r = await userRepository.createUser({
                     username: userInfo.email,
                     email: userInfo.email,
@@ -112,13 +106,24 @@ oauthGoogleRouter.post('/token', async (req, res) => {
                     lastName: userInfo.family_name,
                     avatarUrl: userInfo.picture,
                 })
+
+                if (r === false || (r !== undefined && r.acknowledged !== true))
+                    throw new Error('system failed to create user')
+
+                userId = r.insertedId.toString()
+            }
         } catch (e) {
             console.error(e)
             throw new Error('system failed to create user')
         }
 
-        if (r === false || (r !== undefined && r.acknowledged !== true))
-            throw new Error('system failed to create user')
+        let tokens = undefined
+        try { tokens = await authManager.generateTokens(userId, 'customer') }
+        catch (e) {
+            console.error(e)
+            throw new Error('authorization service failed to create tokens')
+        }
+        console.log('tokens', tokens)
 
         res.status(r === undefined ? 200 : 201).json(tokens)
     } catch (e) {

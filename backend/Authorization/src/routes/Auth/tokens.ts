@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { authManager } from "../../";
 import { string } from "yup";
+import { ObjectId } from "mongodb";
 
 const tokenRouter = Router()
 
@@ -8,19 +9,19 @@ tokenRouter.post('/retrieve-access-token', async (req, res) => {
     try {
         console.log('received request to /retrieve-access-token')
 
-        let { refreshToken, username } = req.body
+        let { refreshToken, userId } = req.body
 
         if (!string().required().max(2000).isValidSync(refreshToken)) {
             res.sendStatus(400)
             return
         }
 
-        if (!string().required().min(1).max(40).isValidSync(username)) {
+        if (typeof userId !== 'string' || !ObjectId.isValid(userId)) {
             res.sendStatus(400)
             return
         }
 
-        let token = await authManager.retrieveAccessToken(username, refreshToken)
+        let token = await authManager.retrieveAccessToken(userId, refreshToken)
 
         res.sendStatus(201).json({ token })
     } catch (e) {

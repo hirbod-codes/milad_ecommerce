@@ -1,18 +1,16 @@
 import { Router } from "express";
-import { authentication, productRepository, roleRepository } from "../";
+import { productRepository } from "../";
 import { validateFilters } from "../DB/helpers";
 import { productImmutableSchema, productInputSchema, productSchema, productUpdateSchema, readableFields } from "../DB/Models/Product";
 import { array, number, object, string, } from "yup";
-import Jwt from 'jsonwebtoken'
-import { likeObjectId, stringObjectId } from "src/DB/Models/common_schemas";
-import { ObjectId } from "mongodb";
+import { stringObjectId } from "src/DB/Models/common_schemas";
+import { authenticate } from "src/middlewares/authenticate";
+import { authorize } from "src/middlewares/authorize";
 
 const products = Router()
 
-products.post('/create', authentication, async (req, res) => {
-    let userRole = (Jwt.decode(req.headers['authorization']!.replace('Bearer ', '')!) as Jwt.JwtPayload)?.payload?.role ?? ''
-    console.log('userRole', userRole)
-    if ((await roleRepository.getByPrivilegeName('create-product')).map(r => r.name).includes(userRole)) {
+products.post('/create', authenticate, async (req, res) => {
+    if (await authorize(req, 'create-product') !== true) {
         res.sendStatus(403)
         return
     }
@@ -80,10 +78,8 @@ products.get('/query', async (req, res) => {
     res.status(200).json(await productRepository.get(filter, sortSchema.cast(sort) as any, limit, skip))
 })
 
-products.patch('/update', authentication, async (req, res) => {
-    let userRole = (Jwt.decode(req.headers['authorization']!.replace('Bearer ', '')!) as Jwt.JwtPayload)?.payload?.role ?? ''
-    console.log('userRole', userRole)
-    if ((await roleRepository.getByPrivilegeName('update-product')).map(r => r.name).includes(userRole)) {
+products.patch('/update', authenticate, async (req, res) => {
+    if (await authorize(req, 'update-product') !== true) {
         res.sendStatus(403)
         return
     }
@@ -103,10 +99,8 @@ products.patch('/update', authentication, async (req, res) => {
         res.status(201).json({ result })
 })
 
-products.patch('/update/immutables', authentication, async (req, res) => {
-    let userRole = (Jwt.decode(req.headers['authorization']!.replace('Bearer ', '')!) as Jwt.JwtPayload)?.payload?.role ?? ''
-    console.log('userRole', userRole)
-    if ((await roleRepository.getByPrivilegeName('update-immutables-product')).map(r => r.name).includes(userRole)) {
+products.patch('/update/immutables', authenticate, async (req, res) => {
+    if (await authorize(req, 'update-immutables-product') !== true) {
         res.sendStatus(403)
         return
     }
@@ -126,10 +120,8 @@ products.patch('/update/immutables', authentication, async (req, res) => {
         res.status(201).json({ result })
 })
 
-products.delete('/delete', authentication, async (req, res) => {
-    let userRole = (Jwt.decode(req.headers['authorization']!.replace('Bearer ', '')!) as Jwt.JwtPayload)?.payload?.role ?? ''
-    console.log('userRole', userRole)
-    if ((await roleRepository.getByPrivilegeName('delete-product')).map(r => r.name).includes(userRole)) {
+products.delete('/delete', authenticate, async (req, res) => {
+    if (await authorize(req, 'delete-product') !== true) {
         res.sendStatus(403)
         return
     }

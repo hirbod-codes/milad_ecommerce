@@ -19,40 +19,41 @@ export class AuthManager {
         this.refreshTokenExpiresIn = refreshTokenExpiresIn
     }
 
-    async generateToken(username: string, expiresIn: number | StringValue): Promise<string> {
+    async generateToken(id: string, role: string, expiresIn: number | StringValue): Promise<string> {
         return new Promise<string>((resolve) => {
-            let t = Jwt.sign({ username }, this.jwtSecret, { issuer: this.issuer, expiresIn, algorithm: this.algorithm });
+            let t = Jwt.sign({ id, role }, this.jwtSecret, { issuer: this.issuer, expiresIn, algorithm: this.algorithm });
             resolve(t)
         })
     }
 
-    async generateAccessToken(username: string): Promise<string> {
-        return await this.generateToken(username, this.accessTokenExpiresIn)
+    async generateAccessToken(id: string, role: string): Promise<string> {
+        return await this.generateToken(id, role, this.accessTokenExpiresIn)
     }
 
-    async generateRefreshToken(username: string): Promise<string> {
-        return await this.generateToken(username, this.refreshTokenExpiresIn)
+    async generateRefreshToken(id: string, role: string): Promise<string> {
+        return await this.generateToken(id, role, this.refreshTokenExpiresIn)
     }
 
-    async generateTokens(username: string): Promise<{
+    async generateTokens(userId: string, role: string): Promise<{
         accessToken: string,
         refreshToken: string,
     }> {
-        let refreshTokenDoc = await (await db.getRefreshTokensCollection()).findOne({ username })
+        let refreshTokenDoc = await (await db.getRefreshTokensCollection()).findOne({ userId, role })
 
         if (refreshTokenDoc)
             return {
-                accessToken: await this.generateAccessToken(username),
+                accessToken: await this.generateAccessToken(userId, role),
                 refreshToken: refreshTokenDoc.refreshToken,
             }
         else {
             let tokens = {
-                accessToken: await this.generateAccessToken(username),
-                refreshToken: await this.generateRefreshToken(username),
+                accessToken: await this.generateAccessToken(userId, role),
+                refreshToken: await this.generateRefreshToken(userId, role),
             }
 
             let r = await (await db.getRefreshTokensCollection()).insertOne({
-                username,
+                userId,
+                role,
                 refreshToken: tokens.refreshToken,
                 createdAt: DateTime.utc().toUnixInteger(),
                 expiresAt: DateTime.utc().plus({ seconds: refreshTokenExpiresIn }).toUnixInteger()
@@ -65,7 +66,7 @@ export class AuthManager {
         }
     }
 
-    async retrieveAccessToken(username: string, refreshToken: string): Promise<string> {
+    async retrieveAccessToken(userId: string, refreshToken: string): Promise<string> {
         return new Promise(async (resolve, reject) => {
             try {
                 try { Jwt.verify(refreshToken, this.jwtSecret, { issuer: this.issuer, algorithms: [this.algorithm] }) }
@@ -73,7 +74,7 @@ export class AuthManager {
 
                 let doc = (await (await db.getRefreshTokensCollection()).findOne({ refreshToken }))
 
-                if (!doc || doc.username !== username) {
+                if (!doc || doc.userId.toString() !== userId) {
                     reject()
                     return
                 }
@@ -81,15 +82,16 @@ export class AuthManager {
                 try { Jwt.verify(doc!.refreshToken, this.jwtSecret, { issuer: this.issuer, algorithms: [this.algorithm] }) }
                 catch (e) { reject(e); return }
 
-                resolve(await this.generateAccessToken(username))
+                resolve(await this.generateAccessToken(userId, doc.role))
             } catch (e) {
+                console.error(e)
                 reject(e)
             }
         });
     }
 
-    async revokeRefreshTokenByUsername(username: string) {
-        let r = await (await db.getRefreshTokensCollection()).deleteMany({ username })
+    async revokeRefreshTokenByUserId(userId: string) {
+        let r = await (await db.getRefreshTokensCollection()).deleteMany({ userId })
 
         if (!r.acknowledged)
             throw new DeletionFailure()

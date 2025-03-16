@@ -101,7 +101,6 @@ export let userRepository: UserRepository = undefined!;
     if (safety > 100) {
         console.log('safety reached!!')
         exit(1)
-        return
     }
 
     const app = express()

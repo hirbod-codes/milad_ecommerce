@@ -3,6 +3,7 @@ import { DateTime } from "luxon";
 import { authManager, otpProviderConfig, userRepository } from "../../";
 import { SessionManager } from "../../DB/Session/SessionManager";
 import { number, string } from "yup";
+import { User } from "src/DB/Models/User";
 
 const phoneNumberRouter = Router()
 
@@ -107,26 +108,31 @@ phoneNumberRouter.post('/authenticate', async (req, res) => {
             return
         }
 
-        let tokens = undefined
+        let userId: string = undefined!
         try {
-            tokens = await authManager.generateTokens(phoneNumber)
-            console.log('tokens', tokens)
-        } catch (e) {
-            console.error(e)
-            throw new Error('system failed to create tokens')
-        }
-
-        try {
-            if (!await userRepository.phoneNumberExists(phoneNumber)) {
+            let user = await userRepository.getUserByPhoneNumber(phoneNumber)
+            if (user)
+                userId = user._id.toString()
+            else {
                 let dbResponse = await userRepository.createUser({ username: phoneNumber, phoneNumber })
                 console.log('dbResponse', dbResponse)
                 if (dbResponse === false || dbResponse.acknowledged !== true)
                     throw new Error('system failed to create a user')
+
+                userId = dbResponse.insertedId.toString()
             }
         } catch (e) {
             console.error(e)
             throw new Error('system failed to create a user')
         }
+
+        let tokens = undefined
+        try { tokens = await authManager.generateTokens(userId, 'customer') }
+        catch (e) {
+            console.error(e)
+            throw new Error('system failed to create tokens')
+        }
+        console.log('tokens', tokens)
 
         res.status(201).json(tokens)
     } catch (e) {

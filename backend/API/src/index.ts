@@ -18,6 +18,7 @@ import { categories } from './routes/categories'
 import { tags } from './routes/tags'
 import { RevokedAccessTokenManager } from "./RevokedAccessTokens/RevokedAccessTokenManager";
 import Jwt from 'jsonwebtoken'
+import { QueueManagement } from "./QueueManagement";
 
 dotenv.config({ debug: process.env.DEBUG !== undefined ? Boolean(process.env.DEBUG) : undefined })
 
@@ -74,26 +75,6 @@ export let productReviewsRepository: ProductReviewsRepository = undefined!
 export let roleRepository: RoleRepository = undefined!
 export let tagRepository: TagRepository = undefined!;
 
-export async function authentication(req: Request, res: Response, next: NextFunction) {
-    try {
-        const header = req.headers['authorization']
-        if (header === undefined) {
-            res.status(401)
-            return
-        }
-
-        const token = header.replace('Bearer ', '')
-
-        if (Jwt.verify(token, jwtSecret) && !await RevokedAccessTokenManager.get(token)) {
-            res.status(401)
-            return
-        }
-
-        next()
-    }
-    catch (e) { console.error(e); res.sendStatus(401) }
-}
-
 (async () => {
     while (true) {
         try {
@@ -116,6 +97,8 @@ export async function authentication(req: Request, res: Response, next: NextFunc
             }))()
         }
     }
+
+    await QueueManagement.subscribeConsumers()
 
     const app = express()
 

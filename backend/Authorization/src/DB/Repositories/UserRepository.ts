@@ -3,9 +3,9 @@ import { schemaVersion, User, UserCreate, UserInput } from "../Models/User";
 import { Collection, InsertOneResult } from 'mongodb'
 
 export class UserRepository {
-    private collection: Collection<User>
+    private collection: Collection<UserCreate>
 
-    constructor(collection: Collection<User>) {
+    constructor(collection: Collection<UserCreate>) {
         this.collection = collection
     }
 
@@ -24,6 +24,11 @@ export class UserRepository {
 
     async getUserByEmail(email: string): Promise<User | null | undefined> {
         try { return await this.collection.findOne({ email }) }
+        catch (e) { console.error(e); return undefined }
+    }
+
+    async getUserByPhoneNumber(phoneNumber: string): Promise<User | null | undefined> {
+        try { return await this.collection.findOne({ phoneNumber }) }
         catch (e) { console.error(e); return undefined }
     }
 

@@ -98,14 +98,6 @@ emailRouter.post('/signup', async (req, res) => {
             return
         }
 
-        let tokens = undefined
-        try {
-            tokens = await authManager.generateTokens(email)
-        } catch (e) {
-            console.error(e)
-            throw new Error('system failed to create tokens')
-        }
-
         if (await userRepository.emailExists(email)) {
             res.sendStatus(500)
             return
@@ -124,6 +116,7 @@ emailRouter.post('/signup', async (req, res) => {
             })
         })()
 
+        let userId: string = undefined!
         try {
             let dbResponse = await userRepository.createUser({
                 username: email,
@@ -134,9 +127,18 @@ emailRouter.post('/signup', async (req, res) => {
             })
             if (dbResponse === false || dbResponse.acknowledged !== true)
                 throw new Error('system failed to create a user')
+
+            userId = dbResponse.insertedId.toString()
         } catch (e) {
             console.error(e)
             throw new Error('system failed to create a user')
+        }
+
+        let tokens = undefined
+        try { tokens = await authManager.generateTokens(userId, 'customer') }
+        catch (e) {
+            console.error(e)
+            throw new Error('system failed to create tokens')
         }
 
         res.status(201).json(tokens)
@@ -189,9 +191,8 @@ emailRouter.post('/login', async (req, res) => {
         }
 
         let tokens = undefined
-        try {
-            tokens = await authManager.generateTokens(email)
-        } catch (e) {
+        try { tokens = await authManager.generateTokens(user._id.toString(), 'customer') }
+        catch (e) {
             console.error(e)
             throw new Error('system failed to create tokens')
         }

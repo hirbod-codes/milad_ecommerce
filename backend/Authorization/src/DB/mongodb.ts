@@ -1,6 +1,6 @@
 import { ClientSession, Collection, Db, MongoClient } from 'mongodb'
-import { User, collectionName as userCollectionName } from './Models/User'
-import { RefreshToken, collectionName as refreshTokensCollectionName } from './Models/RefreshToken'
+import { collectionName as userCollectionName, UserCreate } from './Models/User'
+import { RefreshTokenCreate, collectionName as refreshTokensCollectionName } from './Models/RefreshToken'
 import { DbConfigurationError } from './Exceptions/DbConfigurationError'
 import { ConnectionError } from './Exceptions/ConnectionError'
 
@@ -219,11 +219,11 @@ export class MongoDB {
             await db.createIndex(userCollectionName, { updatedAt: 1 }, { name: 'updatedAt' })
     }
 
-    async getRefreshTokensCollection(client?: MongoClient, db?: Db): Promise<Collection<RefreshToken>> {
-        return (db ?? (await this.getDb(client))).collection<RefreshToken>(refreshTokensCollectionName)
+    async getRefreshTokensCollection(client?: MongoClient, db?: Db): Promise<Collection<RefreshTokenCreate>> {
+        return (db ?? (await this.getDb(client))).collection<RefreshTokenCreate>(refreshTokensCollectionName)
     }
 
-    async getUserCollection(client?: MongoClient, db?: Db): Promise<Collection<User>> {
-        return (db ?? (await this.getDb(client))).collection<User>(userCollectionName)
+    async getUserCollection(client?: MongoClient, db?: Db): Promise<Collection<UserCreate>> {
+        return (db ?? (await this.getDb(client))).collection<UserCreate>(userCollectionName)
     }
 }
