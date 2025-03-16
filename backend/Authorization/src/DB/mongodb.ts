@@ -174,7 +174,7 @@ export class MongoDB {
     async addCollections() {
         await this.addRefreshTokenCollection()
         await this.addUserCollection()
-        await this.addUserCollection()
+        await this.addPrivilegeCollection()
         await this.addRoleCollection()
     }
 
