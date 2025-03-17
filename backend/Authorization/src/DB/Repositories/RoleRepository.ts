@@ -5,7 +5,6 @@ import { collectionName } from '../Models/Privilege'
 
 export class RoleRepository {
     private collection: Collection<RoleCreate>
-    private rolesWithPrivileges: RoleWithPrivileges[] = []
 
     constructor(collection: Collection<RoleCreate>) {
         this.collection = collection
@@ -30,17 +29,19 @@ export class RoleRepository {
         catch (e) { console.error(e); return undefined }
     }
 
-    async getRolesWithPrivileges(): Promise<RoleWithPrivileges[] | false> {
-        if (!this.rolesWithPrivileges || this.rolesWithPrivileges.length === 0)
-            return false
-
-        return this.rolesWithPrivileges
+    async getByIds(ids: string[]): Promise<Role> {
+        try { return await this.collection.find({ _id: { $in: ids.map(id => ObjectId.createFromHexString(id)) } }).toArray() }
+        catch (e) { console.error(e); return [] }
     }
 
-    async fetchRolesWithPrivileges(): Promise<RoleWithPrivileges[] | false> {
-        let queriedRoles: RoleWithPrivileges[] = []
+    async getByNames(names: string[]): Promise<Role[]> {
+        try { return await this.collection.find({ name: { $in: names } }).toArray() }
+        catch (e) { console.error(e); return [] }
+    }
+
+    async getRolesWithPrivileges(): Promise<RoleWithPrivileges[] | false> {
         try {
-            queriedRoles = await this.collection.aggregate()
+            return await this.collection.aggregate()
                 .lookup({
                     from: collectionName,
                     localField: 'privileges',
@@ -50,14 +51,6 @@ export class RoleRepository {
                 .toArray() as RoleWithPrivileges[]
         }
         catch (e) { console.error(e); return false }
-
-        if (!queriedRoles || queriedRoles.length === 0)
-            return false
-
-        // In Memory cache
-        this.rolesWithPrivileges = queriedRoles
-
-        return this.rolesWithPrivileges
     }
 
     async updateById(id: string, role: RoleUpdate): Promise<UpdateResult | false> {
