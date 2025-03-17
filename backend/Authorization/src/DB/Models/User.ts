@@ -23,7 +23,7 @@ export const userSchema = object().required().stripUnknown().strict(true).shape(
 
 export type User = InferType<typeof userSchema>
 
-export const userInputSchema = userSchema.required().noUnknown(true).strict(true).omit(['schemaVersion', '_id', 'createdAt', 'updatedAt'])
+export const userInputSchema = userSchema.required().noUnknown(true).strict(true).omit(['schemaVersion', '_id', 'createdAt', 'updatedAt']).shape({ password: string().required().min(8).matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z\d]{8,}$/) })
 export type UserInput = InferType<typeof userInputSchema>
 
 export const userCreateSchema = userSchema.required().noUnknown(true).strict(true).omit(['_id']).shape({ _id: mixed<string | ObjectId>().optional() })

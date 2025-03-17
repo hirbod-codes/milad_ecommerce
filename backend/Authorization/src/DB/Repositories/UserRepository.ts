@@ -1,6 +1,6 @@
 import { DateTime } from "luxon";
 import { schemaVersion, User, UserCreate, UserInput, UserUpdate } from "../Models/User";
-import { Collection, InsertOneResult, ObjectId, UpdateResult } from 'mongodb'
+import { Collection, DeleteResult, InsertOneResult, ObjectId, UpdateResult } from 'mongodb'
 
 export class UserRepository {
     private collection: Collection<UserCreate>
@@ -77,8 +77,13 @@ export class UserRepository {
         catch (e) { console.error(e); return false }
     }
 
-    async updatePassword(id: string, password: string): Promise<UpdateResult | false> {
-        try { return await this.collection.updateOne({ _id: ObjectId.createFromHexString(id) }, { password, updateAt: DateTime.utc().toUnixInteger() }) }
+    async updatePassword(id: string, password: string, passwordSalt: string, passwordIteration: number): Promise<UpdateResult | false> {
+        try { return await this.collection.updateOne({ _id: ObjectId.createFromHexString(id) }, { password, passwordSalt, passwordIteration, updateAt: DateTime.utc().toUnixInteger() }) }
+        catch (e) { console.error(e); return false }
+    }
+
+    async delete(id: string): Promise<DeleteResult | false> {
+        try { return await this.collection.deleteOne({ _id: ObjectId.createFromHexString(id) }) }
         catch (e) { console.error(e); return false }
     }
 }

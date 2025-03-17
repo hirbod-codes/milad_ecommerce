@@ -7,9 +7,10 @@ import { authenticate } from "src/middlewares/authenticate"
 import { authorize } from "src/middlewares/authorize"
 import { array, string } from "yup"
 import Jwt from "jsonwebtoken";
-import { userUpdateSchema } from "src/DB/Models/User"
+import { userSchema, userUpdateSchema } from "src/DB/Models/User"
 import { SessionManager } from "src/DB/Session/SessionManager"
 import { DateTime } from "luxon"
+import crypto from "crypto";
 
 const users = Router()
 
@@ -314,7 +315,7 @@ users.patch('/user/email', authenticate, async (req, res) => {
             return
         }
 
-        if (!stringObjectId.isValidSync(userId) || !string().strict(true).required().email().isValidSync(email)) {
+        if (!stringObjectId.isValidSync(userId) || !userSchema.pick(['email']).required().isValidSync({ email })) {
             res.sendStatus(400)
             return
         }
@@ -338,6 +339,49 @@ users.patch('/user/phoneNumber', authenticate, async (req, res) => {
             res.sendStatus(403)
             return
         }
+
+        let userId = (Jwt.decode(req.headers['authorization']!.replace('Bearer ', '')!) as Jwt.JwtPayload)?.sub ?? ''
+
+        const { sessionId, phoneNumber, code } = req.body
+
+        if (!string().strict(true).required().isValidSync(sessionId) || !sessionId.includes('patch_phone_number')) {
+            res.sendStatus(400)
+            return
+        }
+
+        let json = undefined
+        try { json = await SessionManager.getSession(sessionId) }
+        catch (e) {
+            console.error(e)
+            throw new Error('session not found')
+        }
+
+        if (!json)
+            throw new Error('session not found')
+
+        let { code: inSessionCode, expiresAt: inSessionExpiresAt } = JSON.parse(json)
+        inSessionCode = Number(inSessionCode)
+        inSessionExpiresAt = Number(inSessionExpiresAt)
+
+        console.log('from redis', { inSessionCode, inSessionExpiresAt })
+
+        if (inSessionCode !== code || inSessionExpiresAt <= DateTime.utc().toUnixInteger()) {
+            res.sendStatus(400)
+            return
+        }
+
+        if (!stringObjectId.isValidSync(userId) || !userSchema.pick(['phoneNumber']).required().isValidSync({ phoneNumber })) {
+            res.sendStatus(400)
+            return
+        }
+
+        const r = await userRepository.updatePhoneNumber(userId, phoneNumber)
+        if (r === false || !r.acknowledged) {
+            res.sendStatus(500)
+            return
+        }
+
+        res.json(r)
     } catch (e) {
         console.error(e)
         res.sendStatus(500)
@@ -350,6 +394,49 @@ users.patch('/user/username', authenticate, async (req, res) => {
             res.sendStatus(403)
             return
         }
+
+        let userId = (Jwt.decode(req.headers['authorization']!.replace('Bearer ', '')!) as Jwt.JwtPayload)?.sub ?? ''
+
+        const { sessionId, username, code } = req.body
+
+        if (!string().strict(true).required().isValidSync(sessionId) || !sessionId.includes('patch_username')) {
+            res.sendStatus(400)
+            return
+        }
+
+        let json = undefined
+        try { json = await SessionManager.getSession(sessionId) }
+        catch (e) {
+            console.error(e)
+            throw new Error('session not found')
+        }
+
+        if (!json)
+            throw new Error('session not found')
+
+        let { code: inSessionCode, expiresAt: inSessionExpiresAt } = JSON.parse(json)
+        inSessionCode = Number(inSessionCode)
+        inSessionExpiresAt = Number(inSessionExpiresAt)
+
+        console.log('from redis', { inSessionCode, inSessionExpiresAt })
+
+        if (inSessionCode !== code || inSessionExpiresAt <= DateTime.utc().toUnixInteger()) {
+            res.sendStatus(400)
+            return
+        }
+
+        if (!stringObjectId.isValidSync(userId) || !userSchema.pick(['username']).required().isValidSync({ username })) {
+            res.sendStatus(400)
+            return
+        }
+
+        const r = await userRepository.updateUsername(userId, username)
+        if (r === false || !r.acknowledged) {
+            res.sendStatus(500)
+            return
+        }
+
+        res.json(r)
     } catch (e) {
         console.error(e)
         res.sendStatus(500)
@@ -362,6 +449,62 @@ users.patch('/user/password', authenticate, async (req, res) => {
             res.sendStatus(403)
             return
         }
+
+        let userId = (Jwt.decode(req.headers['authorization']!.replace('Bearer ', '')!) as Jwt.JwtPayload)?.sub ?? ''
+
+        const { sessionId, password, code } = req.body
+
+        if (!string().strict(true).required().isValidSync(sessionId) || !sessionId.includes('patch_password')) {
+            res.sendStatus(400)
+            return
+        }
+
+        let json = undefined
+        try { json = await SessionManager.getSession(sessionId) }
+        catch (e) {
+            console.error(e)
+            throw new Error('session not found')
+        }
+
+        if (!json)
+            throw new Error('session not found')
+
+        let { code: inSessionCode, expiresAt: inSessionExpiresAt } = JSON.parse(json)
+        inSessionCode = Number(inSessionCode)
+        inSessionExpiresAt = Number(inSessionExpiresAt)
+
+        console.log('from redis', { inSessionCode, inSessionExpiresAt })
+
+        if (inSessionCode !== code || inSessionExpiresAt <= DateTime.utc().toUnixInteger()) {
+            res.sendStatus(400)
+            return
+        }
+
+        if (!stringObjectId.isValidSync(userId) || !userSchema.pick(['password']).required().isValidSync({ password })) {
+            res.sendStatus(400)
+            return
+        }
+
+        let salt: string = undefined!, iterations: number = 10000
+        const hashedPassword: string = await (async () => {
+            return new Promise((resolve, reject) => {
+                salt = crypto.randomBytes(128).toString('base64')
+                crypto.pbkdf2(password, salt, iterations, 64, 'sha512', (err, derivedKey) => {
+                    if (err)
+                        reject(err)
+                    else
+                        resolve(derivedKey.toString('hex'))
+                })
+            })
+        })()
+
+        const r = await userRepository.updatePassword(userId, hashedPassword, salt, iterations)
+        if (r === false || !r.acknowledged) {
+            res.sendStatus(500)
+            return
+        }
+
+        res.json(r)
     } catch (e) {
         console.error(e)
         res.sendStatus(500)
@@ -374,6 +517,44 @@ users.delete('/user', authenticate, async (req, res) => {
             res.sendStatus(403)
             return
         }
+
+        let userId = (Jwt.decode(req.headers['authorization']!.replace('Bearer ', '')!) as Jwt.JwtPayload)?.sub ?? ''
+
+        const { sessionId, code } = req.body
+
+        if (!string().strict(true).required().isValidSync(sessionId) || !sessionId.includes('delete_user')) {
+            res.sendStatus(400)
+            return
+        }
+
+        let json = undefined
+        try { json = await SessionManager.getSession(sessionId) }
+        catch (e) {
+            console.error(e)
+            throw new Error('session not found')
+        }
+
+        if (!json)
+            throw new Error('session not found')
+
+        let { code: inSessionCode, expiresAt: inSessionExpiresAt } = JSON.parse(json)
+        inSessionCode = Number(inSessionCode)
+        inSessionExpiresAt = Number(inSessionExpiresAt)
+
+        console.log('from redis', { inSessionCode, inSessionExpiresAt })
+
+        if (inSessionCode !== code || inSessionExpiresAt <= DateTime.utc().toUnixInteger()) {
+            res.sendStatus(400)
+            return
+        }
+
+        const r = await userRepository.delete(userId)
+        if (r === false || !r.acknowledged) {
+            res.sendStatus(500)
+            return
+        }
+
+        res.json(r)
     } catch (e) {
         console.error(e)
         res.sendStatus(500)
