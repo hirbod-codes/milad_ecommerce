@@ -4,6 +4,7 @@ import { db, refreshTokenExpiresIn } from '.';
 import { DeletionFailure } from './DB/Exceptions/DeletionFailure';
 import { DateTime } from 'luxon';
 import { InsertionFailure } from './DB/Exceptions/InsertionFailure';
+import { RevokedAccessTokenManager } from './RevokedAccessTokens/RevokedAccessTokenManager';
 
 export class AuthManager {
     private jwtSecret: string
@@ -55,6 +56,7 @@ export class AuthManager {
                 userId,
                 role,
                 refreshToken: tokens.refreshToken,
+                accessToken: tokens.accessToken,
                 createdAt: DateTime.utc().toUnixInteger(),
                 expiresAt: DateTime.utc().plus({ seconds: refreshTokenExpiresIn }).toUnixInteger()
             })
@@ -82,6 +84,26 @@ export class AuthManager {
                 try { Jwt.verify(doc!.refreshToken, this.jwtSecret, { issuer: this.issuer, algorithms: [this.algorithm] }) }
                 catch (e) { reject(e); return }
 
+                let r = (await (await db.getRefreshTokensCollection()).deleteOne({ refreshToken, accessToken: doc.accessToken }))
+                if (!r.acknowledged) {
+                    reject()
+                    return
+                }
+
+                let payload = Jwt.decode(doc.accessToken, { json: true })
+                if (payload === null) {
+                    reject()
+                    return
+                }
+
+                const expirationTS = payload.exp
+                if (expirationTS === undefined) {
+                    reject()
+                    return
+                }
+
+                await RevokedAccessTokenManager.set(doc.accessToken, 'true', expirationTS)
+
                 resolve(await this.generateAccessToken(userId, doc.role))
             } catch (e) {
                 console.error(e)
@@ -102,5 +124,10 @@ export class AuthManager {
 
         if (!r.acknowledged)
             throw new DeletionFailure()
+    }
+
+    verify(token: string): Jwt.JwtPayload | false {
+        try { return Jwt.verify(token, this.jwtSecret, { issuer: this.issuer, algorithms: [this.algorithm] }) as Jwt.JwtPayload }
+        catch (e) { console.error(e); return false }
     }
 }

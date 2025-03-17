@@ -7,6 +7,7 @@ export const refreshTokenSchema = object().required().noUnknown(true).strict(tru
     schemaVersion: string().optional().min(6).max(10),
     _id: mixed<string | ObjectId>().optional(),
     refreshToken: string().required(),
+    accessToken: string().required(),
     userId: string().required(),
     role: string().required(),
     expiresAt: number().required(),
