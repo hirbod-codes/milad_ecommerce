@@ -1,7 +1,6 @@
 import { Router } from "express";
-import { authManager, jwtSecret } from "../../";
+import { authManager } from "../../";
 import { string } from "yup";
-import Jwt from 'jsonwebtoken';
 import { RevokedAccessTokenManager } from "src/RevokedAccessTokens/RevokedAccessTokenManager";
 import { stringObjectId } from "src/DB/Models/common_schemas";
 
