@@ -114,7 +114,7 @@ phoneNumberRouter.post('/authenticate', async (req, res) => {
             if (user)
                 userId = user._id.toString()
             else {
-                let dbResponse = await userRepository.createUser({ username: phoneNumber, phoneNumber })
+                let dbResponse = await userRepository.createUser({ username: phoneNumber, phoneNumber})
                 console.log('dbResponse', dbResponse)
                 if (dbResponse === false || dbResponse.acknowledged !== true)
                     throw new Error('system failed to create a user')

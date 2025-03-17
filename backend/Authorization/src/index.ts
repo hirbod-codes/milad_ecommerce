@@ -145,6 +145,8 @@ export let roleRepository: RoleRepository = undefined!;
     app.use('/auth/phone-number', phoneNumberRouter)
 
     app.use('/oauth/google', oauthGoogleRouter)
+    
+    app.use('/user', oauthGoogleRouter)
 
     app.all('*', (req, res) => {
         console.log('Not Found')

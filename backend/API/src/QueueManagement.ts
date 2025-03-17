@@ -2,7 +2,7 @@ import amqp from 'amqplib'
 import { roleRepository } from 'src';
 
 export class QueueManagement {
-    static readonly QUEUE_NAME: string = 'role_management'
+    static readonly QUEUE_NAMES: string[] = ['role_management']
 
     static async subscribeConsumers(url: string) {
         try {
@@ -10,25 +10,29 @@ export class QueueManagement {
 
             const channel = await connection.createChannel();
 
-            await channel.assertQueue(this.QUEUE_NAME, { durable: false });
+            for (const queueName of this.QUEUE_NAMES) {
+                await channel.assertQueue(queueName, { durable: false });
 
-            channel.consume(this.QUEUE_NAME, async (message) => {
-                if (message) {
-                    channel.ack(message)
+                if (queueName === 'role_management')
+                    channel.consume(queueName, async (data) => {
+                        if (data) {
+                            channel.ack(data)
 
-                    if (message.content.toString().includes('update')) {
-                        let safety = 0
-                        while (safety < 4) {
-                            safety++
+                            let message = data.content.toString()
+                            if (['update', 'delete', 'create'].includes(message)) {
+                                let safety = 0
+                                while (safety < 4) {
+                                    safety++
 
-                            try {
-                                if (await roleRepository.fetchRolesWithPrivileges() !== false)
-                                    break
-                            } catch (e) { console.error(e) }
+                                    try {
+                                        if (await roleRepository.fetchRolesWithPrivileges() !== false)
+                                            break
+                                    } catch (e) { console.error(e) }
+                                }
+                            }
                         }
-                    }
-                }
-            });
+                    });
+            }
         } catch (e) {
             console.error(e)
             throw e

@@ -1,5 +1,5 @@
 import { Router } from "express"
-import { privilegeRepository, roleRepository, userRepository } from "src"
+import { emailConfig, otpProviderConfig, privilegeRepository, queueUrl, roleRepository, transporter, userRepository } from "src"
 import { likeObjectId, stringObjectId } from "src/DB/Models/common_schemas"
 import { privilegeUpdateSchema } from "src/DB/Models/Privilege"
 import { roleInputSchema, roleUpdateSchema } from "src/DB/Models/Role"
@@ -11,6 +11,7 @@ import { userSchema, userUpdateSchema } from "src/DB/Models/User"
 import { SessionManager } from "src/DB/Session/SessionManager"
 import { DateTime } from "luxon"
 import crypto from "crypto";
+import { QueueManagement } from "src/QueueManagement"
 
 const users = Router()
 
@@ -35,6 +36,8 @@ users.post('/role', authenticate, async (req, res) => {
         }
 
         res.status(201).json({ id: r.insertedId })
+
+        await QueueManagement.send(queueUrl, 'create')
     } catch (e) {
         console.error(e)
         res.sendStatus(500)
@@ -98,12 +101,14 @@ users.patch('/role', authenticate, async (req, res) => {
         }
 
         let r = await roleRepository.update(id!, roleUpdateSchema.cast(roleUpdate))
-        if (r === false) {
+        if (r === false || !r.acknowledged) {
             res.sendStatus(500)
             return
         }
 
         res.json(r)
+
+        QueueManagement.send(queueUrl, 'update')
     } catch (e) {
         console.error(e)
         res.sendStatus(500)
@@ -131,6 +136,8 @@ users.delete('/role', authenticate, async (req, res) => {
         }
 
         res.json(r)
+
+        QueueManagement.send(queueUrl, 'delete')
     } catch (e) {
         console.error(e)
         res.sendStatus(500)
@@ -228,7 +235,7 @@ users.patch('/assign-role', authenticate, async (req, res) => {
     }
 })
 
-users.get('/user', authenticate, async (req, res) => {
+users.get('/', authenticate, async (req, res) => {
     try {
         if (await authorize(req, 'get-user-self') !== true) {
             res.sendStatus(403)
@@ -249,7 +256,7 @@ users.get('/user', authenticate, async (req, res) => {
     }
 })
 
-users.patch('/user', authenticate, async (req, res) => {
+users.patch('/', authenticate, async (req, res) => {
     try {
         if (await authorize(req, 'update-user-self') !== true) {
             res.sendStatus(403)
@@ -278,7 +285,60 @@ users.patch('/user', authenticate, async (req, res) => {
     }
 })
 
-users.patch('/user/email', authenticate, async (req, res) => {
+users.patch('/email-code', authenticate, async (req, res) => {
+    try {
+        if (await authorize(req, 'update-user-self-email') !== true) {
+            res.sendStatus(403)
+            return
+        }
+
+        const userId = (Jwt.decode(req.headers['authorization']!.replace('Bearer ', '')!) as Jwt.JwtPayload)?.sub ?? ''
+
+        const user = await userRepository.get(userId)
+
+        if (!user || !user.email) {
+            res.sendStatus(400)
+            return
+        }
+
+        const email = user.email
+
+        const code = Math.round((Math.random() * (999_999 - 100_000)) + 100_000)
+        console.log(code)
+
+        const text = `Your verification code is: ${code}
+
+from sender`
+
+        const mailOptions = {
+            from: emailConfig.user,
+            to: email,
+            subject: 'Verification code',
+            text,
+        }
+
+        try { await transporter.sendMail(mailOptions) }
+        catch (e) {
+            console.error(e)
+            throw new Error('system failed to send email')
+        }
+
+        const expiresAt = DateTime.utc().plus({ seconds: 60 }).toUnixInteger()
+        const sessionId = 'patch_email_' + crypto.randomBytes(128).toString('base64')
+        try { await SessionManager.setSession(sessionId, JSON.stringify({ code, expiresAt }), expiresAt, true) }
+        catch (e) {
+            console.error(e)
+            throw new Error('system failed to set session')
+        }
+
+        res.sendStatus(200)
+    } catch (e) {
+        console.error(e)
+        res.sendStatus(500)
+    }
+})
+
+users.patch('/email', authenticate, async (req, res) => {
     try {
         if (await authorize(req, 'update-user-self-email') !== true) {
             res.sendStatus(403)
@@ -333,9 +393,77 @@ users.patch('/user/email', authenticate, async (req, res) => {
     }
 })
 
-users.patch('/user/phoneNumber', authenticate, async (req, res) => {
+users.patch('/phone-number-code', authenticate, async (req, res) => {
     try {
-        if (await authorize(req, 'update-user-self') !== true) {
+        if (await authorize(req, 'update-user-self-phone-number') !== true) {
+            res.sendStatus(403)
+            return
+        }
+
+        const userId = (Jwt.decode(req.headers['authorization']!.replace('Bearer ', '')!) as Jwt.JwtPayload)?.sub ?? ''
+
+        const user = await userRepository.get(userId)
+
+        if (!user || !user.phoneNumber) {
+            res.sendStatus(400)
+            return
+        }
+
+        const phoneNumber = user.phoneNumber
+
+        const code = Math.round((Math.random() * (999_999 - 100_000)) + 100_000)
+        console.log(code)
+
+        const text = `Your verification code is: ${code}
+
+from sender`
+
+        const data = {
+            username: otpProviderConfig.otpProviderUsername,
+            password: otpProviderConfig.otpProviderPassword,
+            from: otpProviderConfig.otpProviderSenderNumber.toString(),
+            to: phoneNumber,
+            text
+        }
+        const json = JSON.stringify(data)
+
+        try {
+            let otpResponse = (await fetch(`https://rest.payamak-panel.com/api/SendSMS/SendSMS`, {
+                method: 'post',
+                body: json,
+                headers: [['Content-Type', 'application/json'], ['Accept', 'application/json']]
+            }))
+            console.log(otpResponse.status)
+
+            if (!otpResponse.ok)
+                throw new Error('system failed to send an otp message')
+
+            let responseStatus = Number((await otpResponse.json()).value)
+            if (responseStatus <= 35)
+                throw new Error('system failed to send an otp message')
+        } catch (e) {
+            console.error(e)
+            throw new Error('system failed to send an otp message')
+        }
+
+        const expiresAt = DateTime.utc().plus({ seconds: 60 }).toUnixInteger()
+        const sessionId = 'patch_phone_number_' + crypto.randomBytes(128).toString('base64')
+        try { await SessionManager.setSession(sessionId, JSON.stringify({ code, expiresAt }), expiresAt, true) }
+        catch (e) {
+            console.error(e)
+            throw new Error('system failed to set session')
+        }
+
+        res.sendStatus(200)
+    } catch (e) {
+        console.error(e)
+        res.sendStatus(500)
+    }
+})
+
+users.patch('/phone-number', authenticate, async (req, res) => {
+    try {
+        if (await authorize(req, 'update-user-self-phone-number') !== true) {
             res.sendStatus(403)
             return
         }
@@ -388,9 +516,94 @@ users.patch('/user/phoneNumber', authenticate, async (req, res) => {
     }
 })
 
-users.patch('/user/username', authenticate, async (req, res) => {
+users.patch('/username-code', authenticate, async (req, res) => {
     try {
-        if (await authorize(req, 'update-user-self') !== true) {
+        if (await authorize(req, 'update-user-self-username') !== true) {
+            res.sendStatus(403)
+            return
+        }
+
+        const userId = (Jwt.decode(req.headers['authorization']!.replace('Bearer ', '')!) as Jwt.JwtPayload)?.sub ?? ''
+
+        const user = await userRepository.get(userId)
+
+        if (!user || (!user.phoneNumber && !user.email)) {
+            res.sendStatus(400)
+            return
+        }
+
+        const code = Math.round((Math.random() * (999_999 - 100_000)) + 100_000)
+        console.log(code)
+
+        const text = `Your verification code is: ${code}
+
+from sender`
+
+        if (user.phoneNumber) {
+            const phoneNumber = user.phoneNumber
+
+            const data = {
+                username: otpProviderConfig.otpProviderUsername,
+                password: otpProviderConfig.otpProviderPassword,
+                from: otpProviderConfig.otpProviderSenderNumber.toString(),
+                to: phoneNumber,
+                text
+            }
+            const json = JSON.stringify(data)
+
+            try {
+                let otpResponse = (await fetch(`https://rest.payamak-panel.com/api/SendSMS/SendSMS`, {
+                    method: 'post',
+                    body: json,
+                    headers: [['Content-Type', 'application/json'], ['Accept', 'application/json']]
+                }))
+                console.log(otpResponse.status)
+
+                if (!otpResponse.ok)
+                    throw new Error('system failed to send an otp message')
+
+                let responseStatus = Number((await otpResponse.json()).value)
+                if (responseStatus <= 35)
+                    throw new Error('system failed to send an otp message')
+            } catch (e) {
+                console.error(e)
+                throw new Error('system failed to send an otp message')
+            }
+        } else {
+            const email = user.email
+
+            const mailOptions = {
+                from: emailConfig.user,
+                to: email,
+                subject: 'Verification code',
+                text,
+            }
+
+            try { await transporter.sendMail(mailOptions) }
+            catch (e) {
+                console.error(e)
+                throw new Error('system failed to send email')
+            }
+        }
+
+        const expiresAt = DateTime.utc().plus({ seconds: 60 }).toUnixInteger()
+        const sessionId = 'patch_phone_number_' + crypto.randomBytes(128).toString('base64')
+        try { await SessionManager.setSession(sessionId, JSON.stringify({ code, expiresAt }), expiresAt, true) }
+        catch (e) {
+            console.error(e)
+            throw new Error('system failed to set session')
+        }
+
+        res.sendStatus(200)
+    } catch (e) {
+        console.error(e)
+        res.sendStatus(500)
+    }
+})
+
+users.patch('/username', authenticate, async (req, res) => {
+    try {
+        if (await authorize(req, 'update-user-self-username') !== true) {
             res.sendStatus(403)
             return
         }
@@ -443,9 +656,9 @@ users.patch('/user/username', authenticate, async (req, res) => {
     }
 })
 
-users.patch('/user/password', authenticate, async (req, res) => {
+users.patch('/password', authenticate, async (req, res) => {
     try {
-        if (await authorize(req, 'update-user-self') !== true) {
+        if (await authorize(req, 'update-user-self-password') !== true) {
             res.sendStatus(403)
             return
         }
@@ -511,7 +724,7 @@ users.patch('/user/password', authenticate, async (req, res) => {
     }
 })
 
-users.delete('/user', authenticate, async (req, res) => {
+users.delete('/', authenticate, async (req, res) => {
     try {
         if (await authorize(req, 'delete-user-self') !== true) {
             res.sendStatus(403)
