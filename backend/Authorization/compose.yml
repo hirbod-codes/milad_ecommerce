@@ -17,6 +17,15 @@ services:
         networks:
             - base
 
+    ############################################################################################# revoked_access_tokens_redis
+    revoked_access_tokens_redis:
+        container_name: revoked_access_tokens_redis
+        image: redis:7.0
+        ports:
+            - 6379:6379
+        networks:
+            - base
+
     ############################################################################################# authorization
     authorization:
         container_name: authorization
@@ -33,8 +42,10 @@ services:
             - NODE_ENV=development
             - DB_SUPPORTS_TRANSACTION=false
             - DB_URL=mongodb://main_mongodb:27017
-            - REDIS_TYPE=single
-            - REDIS_INITIAL_NODE_URL=redis://authorization_redis:6379
+            - REVOKED_TOKENS_REDIS_TYPE=single
+            - REVOKED_TOKENS_REDIS_INITIAL_NODE_URL=redis://revoked_access_tokens_redis:6379
+            - SESSION_REDIS_TYPE=single
+            - SESSION_REDIS_INITIAL_NODE_URL=redis://authorization_redis:6379
         networks:
             - authorization
 

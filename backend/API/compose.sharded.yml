@@ -150,6 +150,7 @@ services:
         ports:
             - 7000:6379
         networks:
+            - base
             - revoked_access_tokens_redis
 
     revoked_access_tokens_redis_2:
@@ -164,6 +165,7 @@ services:
         ports:
             - 7001:6379
         networks:
+            - base
             - revoked_access_tokens_redis
 
     revoked_access_tokens_redis_3:
@@ -178,6 +180,7 @@ services:
         ports:
             - 7002:6379
         networks:
+            - base
             - revoked_access_tokens_redis
 
     revoked_access_tokens_redis_4:
@@ -192,6 +195,7 @@ services:
         ports:
             - 7003:6379
         networks:
+            - base
             - revoked_access_tokens_redis
 
     revoked_access_tokens_redis_5:
@@ -206,6 +210,7 @@ services:
         ports:
             - 7004:6379
         networks:
+            - base
             - revoked_access_tokens_redis
 
     revoked_access_tokens_redis_6:
@@ -220,6 +225,7 @@ services:
         ports:
             - 7005:6379
         networks:
+            - base
             - revoked_access_tokens_redis
 
     ############################################################################################# api
@@ -348,10 +354,12 @@ services:
             - /app/node_modules
         environment:
             - NODE_ENV=development
-            - REDIS_TYPE=cluster
-            - REDIS_INITIAL_NODE_URL=redis://authorization_redis_1:6379
             - DB_SUPPORTS_TRANSACTION=true
             - DB_URL=mongodb://main_mongodb_mongos1:27017,main_mongodb_mongos2:27017
+            - SESSION_REDIS_TYPE=cluster
+            - SESSION_REDIS_INITIAL_NODE_URL=redis://authorization_redis_1:6379
+            - REVOKED_TOKENS_REDIS_TYPE=cluster
+            - REVOKED_TOKENS_REDIS_INITIAL_NODE_URL=redis://revoked_access_tokens_redis_1:6379
         networks:
             - base
             - authorization
