@@ -26,6 +26,19 @@ services:
         networks:
             - base
 
+    ############################################################################################# rabbitmq
+    rabbitmq:
+        container_name: rabbitmq
+        image: rabbitmq:3-management
+        ports:
+            - "5672:5672"  # AMQP port
+            - "15672:15672" # Management UI port
+        environment:
+            RABBITMQ_DEFAULT_USER: admin
+            RABBITMQ_DEFAULT_PASS: password
+        networks:
+            - base
+
     ############################################################################################# authorization
     authorization:
         container_name: authorization
@@ -46,6 +59,7 @@ services:
             - REVOKED_TOKENS_REDIS_INITIAL_NODE_URL=redis://revoked_access_tokens_redis:6379
             - SESSION_REDIS_TYPE=single
             - SESSION_REDIS_INITIAL_NODE_URL=redis://authorization_redis:6379
+            - MESSAGE_BROKER_URL=amqp://admin:password@rabbitmq:5672
         networks:
             - authorization
 
