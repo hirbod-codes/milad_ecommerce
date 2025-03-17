@@ -3,7 +3,6 @@ import { DateTime } from "luxon";
 import { authManager, otpProviderConfig, userRepository } from "../../";
 import { SessionManager } from "../../DB/Session/SessionManager";
 import { number, string } from "yup";
-import { User } from "src/DB/Models/User";
 
 const phoneNumberRouter = Router()
 
