@@ -15,6 +15,9 @@ import { phoneNumberRouter } from "./routes/Auth/phoneNumber";
 import { oauthGoogleRouter } from "./routes/oauth/google";
 import { exit } from "process";
 import { QueueManagement } from "./QueueManagement";
+import { users } from "./routes/users";
+import { roles } from "./routes/roles";
+import { privileges } from "./routes/privileges";
 
 dotenv.config({ debug: process.env.DEBUG !== undefined ? Boolean(process.env.DEBUG) : undefined })
 
@@ -145,8 +148,12 @@ export let roleRepository: RoleRepository = undefined!;
     app.use('/auth/phone-number', phoneNumberRouter)
 
     app.use('/oauth/google', oauthGoogleRouter)
-    
-    app.use('/user', oauthGoogleRouter)
+
+    app.use('/users', users)
+
+    app.use('/roles', roles)
+
+    app.use('/privileges', privileges)
 
     app.all('*', (req, res) => {
         console.log('Not Found')
