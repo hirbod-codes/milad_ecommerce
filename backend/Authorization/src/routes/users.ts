@@ -8,6 +8,8 @@ import { authorize } from "src/middlewares/authorize"
 import { array, string } from "yup"
 import Jwt from "jsonwebtoken";
 import { userUpdateSchema } from "src/DB/Models/User"
+import { SessionManager } from "src/DB/Session/SessionManager"
+import { DateTime } from "luxon"
 
 const users = Router()
 
@@ -277,10 +279,53 @@ users.patch('/user', authenticate, async (req, res) => {
 
 users.patch('/user/email', authenticate, async (req, res) => {
     try {
-        if (await authorize(req, 'update-user-self') !== true) {
+        if (await authorize(req, 'update-user-self-email') !== true) {
             res.sendStatus(403)
             return
         }
+
+        let userId = (Jwt.decode(req.headers['authorization']!.replace('Bearer ', '')!) as Jwt.JwtPayload)?.sub ?? ''
+
+        const { sessionId, email, code } = req.body
+
+        if (!string().strict(true).required().isValidSync(sessionId) || !sessionId.includes('patch_email')) {
+            res.sendStatus(400)
+            return
+        }
+
+        let json = undefined
+        try { json = await SessionManager.getSession(sessionId) }
+        catch (e) {
+            console.error(e)
+            throw new Error('session not found')
+        }
+
+        if (!json)
+            throw new Error('session not found')
+
+        let { code: inSessionCode, expiresAt: inSessionExpiresAt } = JSON.parse(json)
+        inSessionCode = Number(inSessionCode)
+        inSessionExpiresAt = Number(inSessionExpiresAt)
+
+        console.log('from redis', { inSessionCode, inSessionExpiresAt })
+
+        if (inSessionCode !== code || inSessionExpiresAt <= DateTime.utc().toUnixInteger()) {
+            res.sendStatus(400)
+            return
+        }
+
+        if (!stringObjectId.isValidSync(userId) || !string().strict(true).required().email().isValidSync(email)) {
+            res.sendStatus(400)
+            return
+        }
+
+        const r = await userRepository.updateEmail(userId, email)
+        if (r === false || !r.acknowledged) {
+            res.sendStatus(500)
+            return
+        }
+
+        res.json(r)
     } catch (e) {
         console.error(e)
         res.sendStatus(500)
