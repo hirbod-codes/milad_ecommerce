@@ -1,10 +1,13 @@
 import { Router } from "express"
-import { roleRepository } from "src"
+import { privilegeRepository, roleRepository, userRepository } from "src"
 import { likeObjectId, stringObjectId } from "src/DB/Models/common_schemas"
-import { roleInputSchema } from "src/DB/Models/Role"
+import { privilegeUpdateSchema } from "src/DB/Models/Privilege"
+import { roleInputSchema, roleUpdateSchema } from "src/DB/Models/Role"
 import { authenticate } from "src/middlewares/authenticate"
 import { authorize } from "src/middlewares/authorize"
 import { array, string } from "yup"
+import Jwt from "jsonwebtoken";
+import { userUpdateSchema } from "src/DB/Models/User"
 
 const users = Router()
 
@@ -78,6 +81,26 @@ users.patch('/role', authenticate, async (req, res) => {
             res.sendStatus(403)
             return
         }
+
+        const { id, role: roleUpdate } = req.body
+
+        if (!stringObjectId.required().isValidSync(id)) {
+            res.sendStatus(400)
+            return
+        }
+
+        if (!roleUpdateSchema.isValidSync(roleUpdate)) {
+            res.sendStatus(400)
+            return
+        }
+
+        let r = await roleRepository.update(id!, roleUpdateSchema.cast(roleUpdate))
+        if (r === false) {
+            res.sendStatus(500)
+            return
+        }
+
+        res.json(r)
     } catch (e) {
         console.error(e)
         res.sendStatus(500)
@@ -90,6 +113,21 @@ users.delete('/role', authenticate, async (req, res) => {
             res.sendStatus(403)
             return
         }
+
+        const { id } = req.body
+
+        if (!stringObjectId.required().isValidSync(id)) {
+            res.sendStatus(400)
+            return
+        }
+
+        let r = await roleRepository.delete(id!)
+        if (r === false) {
+            res.sendStatus(500)
+            return
+        }
+
+        res.json(r)
     } catch (e) {
         console.error(e)
         res.sendStatus(500)
@@ -102,6 +140,26 @@ users.post('/privilege', authenticate, async (req, res) => {
             res.sendStatus(403)
             return
         }
+
+        const { id, privilege: privilegeUpdate } = req.body
+
+        if (!stringObjectId.required().isValidSync(id)) {
+            res.sendStatus(400)
+            return
+        }
+
+        if (!privilegeUpdateSchema.isValidSync(privilegeUpdate)) {
+            res.sendStatus(400)
+            return
+        }
+
+        let r = await privilegeRepository.update(id!, privilegeUpdateSchema.cast(privilegeUpdate))
+        if (r === false) {
+            res.sendStatus(500)
+            return
+        }
+
+        res.json(r)
     } catch (e) {
         console.error(e)
         res.sendStatus(500)
@@ -114,6 +172,21 @@ users.delete('/privilege', authenticate, async (req, res) => {
             res.sendStatus(403)
             return
         }
+
+        const { id } = req.body
+
+        if (!stringObjectId.required().isValidSync(id)) {
+            res.sendStatus(400)
+            return
+        }
+
+        let r = await privilegeRepository.delete(id!)
+        if (r === false) {
+            res.sendStatus(500)
+            return
+        }
+
+        res.json(r)
     } catch (e) {
         console.error(e)
         res.sendStatus(500)
@@ -126,6 +199,26 @@ users.patch('/assign-role', authenticate, async (req, res) => {
             res.sendStatus(403)
             return
         }
+
+        const { userId, role } = req.body
+
+        if (!stringObjectId.required().isValidSync(userId) || !string().strict(true).required().isValidSync(role)) {
+            res.sendStatus(400)
+            return
+        }
+
+        if ((await roleRepository.getByNames([role])).length === 0) {
+            res.sendStatus(400)
+            return
+        }
+
+        const r = await userRepository.updateRole(userId!, role)
+        if (r === false || !r.acknowledged) {
+            res.sendStatus(500)
+            return
+        }
+
+        res.json(r)
     } catch (e) {
         console.error(e)
         res.sendStatus(500)
@@ -138,6 +231,15 @@ users.get('/user', authenticate, async (req, res) => {
             res.sendStatus(403)
             return
         }
+
+        let userId = (Jwt.decode(req.headers['authorization']!.replace('Bearer ', '')!) as Jwt.JwtPayload)?.sub ?? ''
+
+        if (!stringObjectId.isValidSync(userId)) {
+            res.sendStatus(400)
+            return
+        }
+
+        res.json(await userRepository.get(userId))
     } catch (e) {
         console.error(e)
         res.sendStatus(500)
@@ -150,6 +252,23 @@ users.patch('/user', authenticate, async (req, res) => {
             res.sendStatus(403)
             return
         }
+
+        let userId = (Jwt.decode(req.headers['authorization']!.replace('Bearer ', '')!) as Jwt.JwtPayload)?.sub ?? ''
+
+        const { user } = req.body
+
+        if (!stringObjectId.isValidSync(userId) || !userUpdateSchema.isValidSync(user)) {
+            res.sendStatus(400)
+            return
+        }
+
+        const r = await userRepository.update(userId, userUpdateSchema.cast(user))
+        if (r === false || !r.acknowledged) {
+            res.sendStatus(500)
+            return
+        }
+
+        res.json(r)
     } catch (e) {
         console.error(e)
         res.sendStatus(500)

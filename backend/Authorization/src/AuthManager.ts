@@ -19,9 +19,9 @@ export class AuthManager {
         this.refreshTokenExpiresIn = refreshTokenExpiresIn
     }
 
-    async generateToken(id: string, role: string, expiresIn: number | StringValue): Promise<string> {
+    async generateToken(sub: string, role: string, expiresIn: number | StringValue): Promise<string> {
         return new Promise<string>((resolve) => {
-            let t = Jwt.sign({ id, role }, this.jwtSecret, { issuer: this.issuer, expiresIn, algorithm: this.algorithm });
+            let t = Jwt.sign({ sub, role }, this.jwtSecret, { issuer: this.issuer, expiresIn, algorithm: this.algorithm });
             resolve(t)
         })
     }

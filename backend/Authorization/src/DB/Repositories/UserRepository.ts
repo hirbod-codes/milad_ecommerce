@@ -1,6 +1,6 @@
 import { DateTime } from "luxon";
-import { schemaVersion, User, UserCreate, UserInput } from "../Models/User";
-import { Collection, InsertOneResult } from 'mongodb'
+import { schemaVersion, User, UserCreate, UserInput, UserUpdate } from "../Models/User";
+import { Collection, InsertOneResult, ObjectId, UpdateResult } from 'mongodb'
 
 export class UserRepository {
     private collection: Collection<UserCreate>
@@ -20,6 +20,11 @@ export class UserRepository {
         }
         try { return await this.collection.insertOne(u) }
         catch (e) { console.error(e); return false }
+    }
+
+    async get(id: string): Promise<User | null | undefined> {
+        try { return await this.collection.findOne({ _id: ObjectId.createFromHexString(id) }) }
+        catch (e) { console.error(e); return undefined }
     }
 
     async getUserByEmail(email: string): Promise<User | null | undefined> {
@@ -44,6 +49,16 @@ export class UserRepository {
 
     async emailExists(email: string): Promise<boolean> {
         try { return await this.collection.countDocuments({ email }) > 0 }
+        catch (e) { console.error(e); return false }
+    }
+
+    async updateRole(id: string, role: string): Promise<UpdateResult | false> {
+        try { return await this.collection.updateOne({ _id: ObjectId.createFromHexString(id) }, { role, updateAt: DateTime.utc().toUnixInteger() }) }
+        catch (e) { console.error(e); return false }
+    }
+
+    async update(id: string, user: UserUpdate): Promise<UpdateResult | false> {
+        try { return await this.collection.updateOne({ _id: ObjectId.createFromHexString(id) }, { user, updateAt: DateTime.utc().toUnixInteger() }) }
         catch (e) { console.error(e); return false }
     }
 }

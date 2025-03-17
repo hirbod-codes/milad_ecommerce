@@ -29,7 +29,7 @@ export class RoleRepository {
         catch (e) { console.error(e); return undefined }
     }
 
-    async getByIds(ids: string[]): Promise<Role> {
+    async getByIds(ids: string[]): Promise<Role[]> {
         try { return await this.collection.find({ _id: { $in: ids.map(id => ObjectId.createFromHexString(id)) } }).toArray() }
         catch (e) { console.error(e); return [] }
     }
@@ -53,7 +53,7 @@ export class RoleRepository {
         catch (e) { console.error(e); return false }
     }
 
-    async updateById(id: string, role: RoleUpdate): Promise<UpdateResult | false> {
+    async update(id: string, role: RoleUpdate): Promise<UpdateResult | false> {
         try { return await this.collection.updateOne({ _id: ObjectId.createFromHexString(id) }, { ...role, updatedAt: DateTime.utc().toUnixInteger() }) }
         catch (e) { console.error(e); return false }
     }

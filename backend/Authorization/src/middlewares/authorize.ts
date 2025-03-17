@@ -4,7 +4,7 @@ import { roleRepository } from "src";
 import { array, string } from "yup";
 
 export async function authorize(req: Request, privilegeNames: string | string[], privilegeValue: any = true): Promise<boolean> {
-    let userRole = (Jwt.decode(req.headers['authorization']!.replace('Bearer ', '')!) as Jwt.JwtPayload)?.payload?.role ?? ''
+    let userRole = (Jwt.decode(req.headers['authorization']!.replace('Bearer ', '')!) as Jwt.JwtPayload)?.role ?? ''
     if (!userRole)
         return false
 

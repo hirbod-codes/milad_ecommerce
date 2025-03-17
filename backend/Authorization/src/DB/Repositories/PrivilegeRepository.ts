@@ -28,7 +28,7 @@ export class PrivilegeRepository {
         catch (e) { console.error(e); return undefined }
     }
 
-    async updateById(id: string, privilege: PrivilegeUpdate): Promise<UpdateResult | false> {
+    async update(id: string, privilege: PrivilegeUpdate): Promise<UpdateResult | false> {
         try { return await this.collection.updateOne({ _id: ObjectId.createFromHexString(id) }, { ...privilege, updatedAt: DateTime.utc().toUnixInteger() }) }
         catch (e) { console.error(e); return false }
     }
