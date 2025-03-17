@@ -59,7 +59,10 @@ services:
             - REVOKED_TOKENS_REDIS_INITIAL_NODE_URL=redis://revoked_access_tokens_redis:6379
             - SESSION_REDIS_TYPE=single
             - SESSION_REDIS_INITIAL_NODE_URL=redis://authorization_redis:6379
-            - MESSAGE_BROKER_URL=amqp://admin:password@rabbitmq:5672
+            - MESSAGE_BROKER_TYPE=single
+            - MESSAGE_BROKER_URL=rabbitmq:5672
+            - MESSAGE_BROKER_USERNAME=admin
+            - MESSAGE_BROKER_PASSWORD=password
         networks:
             - authorization
 

@@ -18,29 +18,30 @@ import { QueueManagement } from "./QueueManagement";
 import { users } from "./routes/users";
 import { roles } from "./routes/roles";
 import { privileges } from "./routes/privileges";
+import { array, string } from "yup";
 
 dotenv.config({ debug: process.env.DEBUG !== undefined ? Boolean(process.env.DEBUG) : undefined })
 
-export const hostName = getStringEnv('HOST', 'The HOST environment variable is not provided')
-export const hostPort = getIntegerEnv('PORT', 'The PORT environment variable is not provided', (s) => s.min(1025))
+export const hostName = getStringEnv('HOST', 'The HOST environment variable is not provided')!
+export const hostPort = getIntegerEnv('PORT', 'The PORT environment variable is not provided', (s) => s.min(1025))!
 
-export const jwtSecret = getStringEnv('JWT_SECRET', 'The Jwt secret environment variable is not provided')
+export const jwtSecret = getStringEnv('JWT_SECRET', 'The Jwt secret environment variable is not provided')!
 
-export const accessTokenExpiresIn = getIntegerEnv('ACCESS_TOKEN_EXPIRES_IN', 'The Access token expires in environment variable is not provided')
+export const accessTokenExpiresIn = getIntegerEnv('ACCESS_TOKEN_EXPIRES_IN', 'The Access token expires in environment variable is not provided')!
 
-export const refreshTokenExpiresIn = getIntegerEnv('REFRESH_TOKEN_EXPIRES_IN', 'The Refresh token expires in environment variable is not provided')
+export const refreshTokenExpiresIn = getIntegerEnv('REFRESH_TOKEN_EXPIRES_IN', 'The Refresh token expires in environment variable is not provided')!
 
 export const authManager = new AuthManager(jwtSecret, 'HS512', accessTokenExpiresIn, refreshTokenExpiresIn)
 
 export const otpProviderConfig = {
-    otpProviderUsername: getStringEnv('OTP_PROVIDER_USERNAME', 'The Otp provider username environment variable is not provided'),
-    otpProviderPassword: getStringEnv('OTP_PROVIDER_PASSWORD', 'The Otp provider password environment variable is not provided'),
-    otpProviderSenderNumber: getStringEnv('OTP_PROVIDER_SENDER_NUMBER', 'The Otp provider sender number environment variable is not provided')
+    otpProviderUsername: getStringEnv('OTP_PROVIDER_USERNAME', 'The Otp provider username environment variable is not provided')!,
+    otpProviderPassword: getStringEnv('OTP_PROVIDER_PASSWORD', 'The Otp provider password environment variable is not provided')!,
+    otpProviderSenderNumber: getStringEnv('OTP_PROVIDER_SENDER_NUMBER', 'The Otp provider sender number environment variable is not provided')!
 }
 
 export const emailConfig = {
-    user: getStringEnv('EMAIL', 'The Email environment variable is not provided'),
-    pass: getStringEnv('EMAIL_PASSWORD', 'The Email password environment variable is not provided'),
+    user: getStringEnv('EMAIL', 'The Email environment variable is not provided')!,
+    pass: getStringEnv('EMAIL_PASSWORD', 'The Email password environment variable is not provided')!,
 }
 
 export const transporter = nodemailer.createTransport({
@@ -52,18 +53,31 @@ export const transporter = nodemailer.createTransport({
 })
 
 export const googleOAuth2Config = {
-    clientId: getStringEnv('GOOGLE_CLIENT_ID', 'The Google client environment variable is not provided'),
-    clientSecret: getStringEnv('GOOGLE_CLIENT_SECRET', 'The Google client secret environment variable is not provided'),
+    clientId: getStringEnv('GOOGLE_CLIENT_ID', 'The Google client environment variable is not provided')!,
+    clientSecret: getStringEnv('GOOGLE_CLIENT_SECRET', 'The Google client secret environment variable is not provided')!,
 }
 
 // Message Broker
-export const messageBrokerUrl = getStringEnv('MESSAGE_BROKER_URL', 'The Message broker url environment variable is not provided')
+export const messageBrokerUsername = getStringEnv('MESSAGE_BROKER_USERNAME', 'The Message broker username environment variable is not provided')!
+export const messageBrokerPassword = getStringEnv('MESSAGE_BROKER_PASSWORD', 'The Message broker password environment variable is not provided')!
+export const messageBrokerType = getStringEnv('MESSAGE_BROKER_TYPE', 'The Message broker type environment variable is not provided', undefined, e => ['single', 'cluster'].includes(e ?? ''))!
+export const messageBrokerManagementApiUrl = getStringEnv('MESSAGE_BROKER_MANAGEMENT_API_URL', 'The Message broker management api url environment variable is not provided', s => s.optional())
+export const messageBrokerSingleUrl = getStringEnv('MESSAGE_BROKER_URL', 'The Message broker url environment variable is not provided', s => s.optional())
+
+if ((messageBrokerType === 'single' && messageBrokerSingleUrl === undefined) || (messageBrokerType === 'cluster' && messageBrokerManagementApiUrl === undefined))
+    throw new Error('Invalid environment variables is provided for rabbitMQ cluster')
+
+let messageBrokerUrl: string = undefined!
+if (messageBrokerType === 'single')
+    messageBrokerUrl = `amqp://${messageBrokerUsername}:${messageBrokerPassword}@${messageBrokerSingleUrl}`
+else
+    messageBrokerUrl = messageBrokerManagementApiUrl!
 
 // Stores
-const sessionRedisType = getStringEnv('SESSION_REDIS_TYPE', 'The Session redis type environment variable is not provided')
-const sessionRedisInitialNodeUrl = getStringEnv('SESSION_REDIS_INITIAL_NODE_URL', 'The Session redis initial node url environment variable is not provided')
-const revokedTokensRedisType = getStringEnv('REVOKED_TOKENS_REDIS_TYPE', 'The Revoked tokens redis type environment variable is not provided')
-const revokedTokensRedisInitialNodeUrl = getStringEnv('REVOKED_TOKENS_REDIS_INITIAL_NODE_URL', 'The Revoked tokens redis initial node url environment variable is not provided')
+const sessionRedisType = getStringEnv('SESSION_REDIS_TYPE', 'The Session redis type environment variable is not provided')!
+const sessionRedisInitialNodeUrl = getStringEnv('SESSION_REDIS_INITIAL_NODE_URL', 'The Session redis initial node url environment variable is not provided')!
+const revokedTokensRedisType = getStringEnv('REVOKED_TOKENS_REDIS_TYPE', 'The Revoked tokens redis type environment variable is not provided')!
+const revokedTokensRedisInitialNodeUrl = getStringEnv('REVOKED_TOKENS_REDIS_INITIAL_NODE_URL', 'The Revoked tokens redis initial node url environment variable is not provided')!
 
 let sessionRedisClient: RedisClusterType<RedisDefaultModules> | RedisClientType<RedisDefaultModules> = undefined!
 if (sessionRedisType === 'single')
@@ -86,14 +100,16 @@ else if (revokedTokensRedisType === 'cluster')
 export { sessionRedisClient, revokedTokensRedisClient }
 
 export const dbConfig = {
-    databaseName: getStringEnv('DB_DATABASE_NAME', 'The Db database name environment variable is not provided'),
-    supportsTransaction: getBooleanEnv('DB_SUPPORTS_TRANSACTION', 'The Db supports transaction environment variable is not provided'),
-    url: getStringEnv('DB_URL', 'The Db url environment variable is not provided'),
+    databaseName: getStringEnv('DB_DATABASE_NAME', 'The Db database name environment variable is not provided')!,
+    supportsTransaction: getBooleanEnv('DB_SUPPORTS_TRANSACTION', 'The Db supports transaction environment variable is not provided')!,
+    url: getStringEnv('DB_URL', 'The Db url environment variable is not provided')!,
     auth: {
-        username: getStringEnv('MONGODB_USERNAME', 'The Mongodb username environment variable is not provided'),
-        password: getStringEnv('MONGODB_PASSWORD', 'The Mongodb password environment variable is not provided'),
+        username: getStringEnv('MONGODB_USERNAME', 'The Mongodb username environment variable is not provided')!,
+        password: getStringEnv('MONGODB_PASSWORD', 'The Mongodb password environment variable is not provided')!,
     }
 }
+
+export const queueManagement = new QueueManagement(messageBrokerUrl, messageBrokerUsername, messageBrokerPassword, messageBrokerType as any)
 
 export const db = new MongoDB(dbConfig);
 
@@ -126,7 +142,7 @@ export let roleRepository: RoleRepository = undefined!;
         exit(1)
     }
 
-    await QueueManagement.subscribeConsumers(messageBrokerUrl)
+    await queueManagement.subscribeConsumers(messageBrokerUrl)
 
     const app = express()
 

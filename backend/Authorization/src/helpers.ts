@@ -41,28 +41,28 @@ export function validateIntegerEnv(env?: number, message?: string, validate?: (s
         throw new Error(message ?? 'Invalid environment variable provided')
 }
 
-export function getStringEnv(key: string, message?: string, validate?: (schema: StringSchema) => StringSchema, manuallyValidate?: (env?: string) => boolean): string {
+export function getStringEnv(key: string, message?: string, validate?: (schema: StringSchema) => StringSchema, manuallyValidate?: (env?: string) => boolean): string | undefined {
     const env = process.env[key]
 
     validateStringEnv(env, message, validate, manuallyValidate)
 
-    return env!
+    return env
 }
 
-export function getIntegerEnv(key: string, message?: string, validate?: (schema: NumberSchema) => NumberSchema, manuallyValidate?: (env?: number) => boolean): number {
+export function getIntegerEnv(key: string, message?: string, validate?: (schema: NumberSchema) => NumberSchema, manuallyValidate?: (env?: number) => boolean): number | undefined {
     const env = Number(process.env[key])
 
     validateIntegerEnv(env, message, validate, manuallyValidate)
 
-    return env!
+    return env
 }
 
-export function getBooleanEnv(key: string, message?: string, validate?: (schema: BooleanSchema) => BooleanSchema, manuallyValidate?: (env?: boolean) => boolean): boolean {
+export function getBooleanEnv(key: string, message?: string, validate?: (schema: BooleanSchema) => BooleanSchema, manuallyValidate?: (env?: boolean) => boolean): boolean | undefined {
     const env = Boolean(process.env[key])
 
     validateBooleanEnv(env, message, validate, manuallyValidate)
 
-    return env!
+    return env
 }
 
 export async function httpRequest(options: http.RequestOptions, sendData?: string) {

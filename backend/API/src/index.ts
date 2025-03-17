@@ -27,7 +27,20 @@ export const hostPort = getIntegerEnv('PORT', 'The PORT environment variable is 
 export const jwtSecret = getStringEnv('JWT_SECRET', 'The Jwt secret environment variable is not provided')
 
 // Message Broker
-export const messageBrokerUrl = getStringEnv('MESSAGE_BROKER_URL', 'The Message broker url environment variable is not provided')
+export const messageBrokerUsername = getStringEnv('MESSAGE_BROKER_USERNAME', 'The Message broker username environment variable is not provided')!
+export const messageBrokerPassword = getStringEnv('MESSAGE_BROKER_PASSWORD', 'The Message broker password environment variable is not provided')!
+export const messageBrokerType = getStringEnv('MESSAGE_BROKER_TYPE', 'The Message broker type environment variable is not provided', undefined, e => ['single', 'cluster'].includes(e ?? ''))!
+export const messageBrokerManagementApiUrl = getStringEnv('MESSAGE_BROKER_MANAGEMENT_API_URL', 'The Message broker management api url environment variable is not provided', s => s.optional())
+export const messageBrokerSingleUrl = getStringEnv('MESSAGE_BROKER_URL', 'The Message broker url environment variable is not provided', s => s.optional())
+
+if ((messageBrokerType === 'single' && messageBrokerSingleUrl === undefined) || (messageBrokerType === 'cluster' && messageBrokerManagementApiUrl === undefined))
+    throw new Error('Invalid environment variables is provided for rabbitMQ cluster')
+
+let messageBrokerUrl: string = undefined!
+if (messageBrokerType === 'single')
+    messageBrokerUrl = `amqp://${messageBrokerUsername}:${messageBrokerPassword}@${messageBrokerSingleUrl}`
+else
+    messageBrokerUrl = messageBrokerManagementApiUrl
 
 // Stores
 const sessionRedisType = getStringEnv('SESSION_REDIS_TYPE', 'The Session redis type environment variable is not provided')
@@ -64,6 +77,8 @@ export const dbConfig = {
         password: getStringEnv('MONGODB_PASSWORD', 'The Mongodb password environment variable is not provided'),
     }
 }
+
+export const queueManagement = new QueueManagement(messageBrokerUrl, messageBrokerUsername, messageBrokerPassword, messageBrokerType as any)
 
 export const db = new MongoDB(dbConfig)
 
@@ -104,7 +119,7 @@ export let roleRepository: RoleRepository = undefined!;
         exit(1)
     }
 
-    await QueueManagement.subscribeConsumers(messageBrokerUrl)
+    await queueManagement.subscribeConsumers(messageBrokerUrl)
 
     const app = express()
 

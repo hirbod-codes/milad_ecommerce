@@ -1,11 +1,10 @@
 import { Router } from "express"
-import { messageBrokerUrl, roleRepository, userRepository } from "src"
+import { queueManagement, roleRepository, userRepository } from "src"
 import { likeObjectId, stringObjectId } from "src/DB/Models/common_schemas"
 import { roleInputSchema, roleUpdateSchema } from "src/DB/Models/Role"
 import { authenticate } from "src/middlewares/authenticate"
 import { authorize } from "src/middlewares/authorize"
 import { array, string } from "yup"
-import { QueueManagement } from "src/QueueManagement"
 
 const roles = Router()
 
@@ -31,7 +30,7 @@ roles.post('/', authenticate, async (req, res) => {
 
         res.status(201).json({ id: r.insertedId })
 
-        await QueueManagement.send(messageBrokerUrl, 'create')
+        await queueManagement.send('create')
     } catch (e) {
         console.error(e)
         res.sendStatus(500)
@@ -102,7 +101,7 @@ roles.patch('/', authenticate, async (req, res) => {
 
         res.json(r)
 
-        await QueueManagement.send(messageBrokerUrl, 'update')
+        await queueManagement.send('update')
     } catch (e) {
         console.error(e)
         res.sendStatus(500)
@@ -131,7 +130,7 @@ roles.delete('/', authenticate, async (req, res) => {
 
         res.json(r)
 
-        await QueueManagement.send(messageBrokerUrl, 'delete')
+        await queueManagement.send('delete')
     } catch (e) {
         console.error(e)
         res.sendStatus(500)

@@ -228,6 +228,67 @@ services:
             - base
             - revoked_access_tokens_redis
 
+    ############################################################################################# rabbitmq
+    rabbitmq1:
+        image: rabbitmq:3-management
+        container_name: rabbitmq1
+        hostname: rabbitmq1
+        entrypoint: /entrypoint.sh
+        ports:
+            - "5672:5672"  # AMQP port for node 1
+            - "15672:15672" # Management UI port for node 1
+        environment:
+            RABBITMQ_ERLANG_COOKIE: "secret_cookie" # Cluster cookie (must be the same for all nodes)
+            RABBITMQ_DEFAULT_USER: admin
+            RABBITMQ_DEFAULT_PASS: password
+        volumes:
+            - ./rabbitmq/cluster/init.sh:/entrypoint.sh # Mount the entrypoint script
+        networks:
+            - base
+            - rabbitmq_cluster
+
+    rabbitmq2:
+        image: rabbitmq:3-management
+        container_name: rabbitmq2
+        hostname: rabbitmq2
+        entrypoint: /entrypoint.sh
+        ports:
+            - "5673:5672"  # AMQP port for node 2
+            - "15673:15672" # Management UI port for node 2
+        environment:
+            RABBITMQ_ERLANG_COOKIE: "secret_cookie" # Cluster cookie (must be the same for all nodes)
+            RABBITMQ_DEFAULT_USER: admin
+            RABBITMQ_DEFAULT_PASS: password
+            CLUSTER_JOIN: rabbitmq1
+        volumes:
+            - ./rabbitmq/cluster/init.sh:/entrypoint.sh # Mount the entrypoint script
+        networks:
+            - base
+            - rabbitmq_cluster
+        depends_on:
+            - rabbitmq1
+
+    rabbitmq3:
+        image: rabbitmq:3-management
+        container_name: rabbitmq3
+        hostname: rabbitmq3
+        entrypoint: /entrypoint.sh
+        ports:
+            - "5674:5672"  # AMQP port for node 3
+            - "15674:15672" # Management UI port for node 3
+        environment:
+            RABBITMQ_ERLANG_COOKIE: "secret_cookie" # Cluster cookie (must be the same for all nodes)
+            RABBITMQ_DEFAULT_USER: admin
+            RABBITMQ_DEFAULT_PASS: password
+            CLUSTER_JOIN: rabbitmq1
+        volumes:
+            - ./rabbitmq/cluster/init.sh:/entrypoint.sh # Mount the entrypoint script
+        networks:
+            - base
+            - rabbitmq_cluster
+        depends_on:
+            - rabbitmq2
+
     ############################################################################################# api
     api:
         container_name: api
@@ -248,6 +309,10 @@ services:
             - SESSION_REDIS_INITIAL_NODE_URL=redis://api_redis_1:6379
             - REVOKED_TOKENS_REDIS_TYPE=cluster
             - REVOKED_TOKENS_REDIS_INITIAL_NODE_URL=redis://revoked_access_tokens_redis_1:6379
+            - MESSAGE_BROKER_TYPE=cluster
+            - MESSAGE_BROKER_MANAGEMENT_API_URL=rabbitmq1:15672
+            - MESSAGE_BROKER_USERNAME=admin
+            - MESSAGE_BROKER_PASSWORD=password
         networks:
             - base
             - api
@@ -360,6 +425,10 @@ services:
             - SESSION_REDIS_INITIAL_NODE_URL=redis://authorization_redis_1:6379
             - REVOKED_TOKENS_REDIS_TYPE=cluster
             - REVOKED_TOKENS_REDIS_INITIAL_NODE_URL=redis://revoked_access_tokens_redis_1:6379
+            - MESSAGE_BROKER_TYPE=cluster
+            - MESSAGE_BROKER_MANAGEMENT_API_URL=rabbitmq1:15672
+            - MESSAGE_BROKER_USERNAME=admin
+            - MESSAGE_BROKER_PASSWORD=password
         networks:
             - base
             - authorization
@@ -455,6 +524,7 @@ networks:
     base:
     main_mongodb:
     revoked_access_tokens_redis:
+    rabbitmq_cluster:
     authorization:
     authorization_redis:
     api:
