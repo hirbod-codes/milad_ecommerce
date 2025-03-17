@@ -27,7 +27,7 @@ export const hostPort = getIntegerEnv('PORT', 'The PORT environment variable is 
 export const jwtSecret = getStringEnv('JWT_SECRET', 'The Jwt secret environment variable is not provided')
 
 // Message Broker
-export const queueUrl = getStringEnv('QUEUE_URL', 'The Queue url environment variable is not provided')
+export const messageBrokerUrl = getStringEnv('MESSAGE_BROKER_URL', 'The Message broker url environment variable is not provided')
 
 // Stores
 const sessionRedisType = getStringEnv('SESSION_REDIS_TYPE', 'The Session redis type environment variable is not provided')
@@ -104,7 +104,7 @@ export let roleRepository: RoleRepository = undefined!;
         exit(1)
     }
 
-    await QueueManagement.subscribeConsumers(queueUrl)
+    await QueueManagement.subscribeConsumers(messageBrokerUrl)
 
     const app = express()
 
