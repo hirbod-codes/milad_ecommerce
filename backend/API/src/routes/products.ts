@@ -1,11 +1,13 @@
 import { Router } from "express";
-import { productRepository } from "../";
+import { productPictureRepository, productRepository } from "../";
 import { FilterManagement } from "../DB/FilterManagement";
 import { Product, productImmutableSchema, productInputSchema, productSchema, productUpdateSchema, readableFields } from "../DB/Models/Product";
 import { array, number, object, string, } from "yup";
 import { stringObjectId } from "src/DB/Models/common_schemas";
 import { authenticate } from "src/middlewares/authenticate";
 import { authorize } from "src/middlewares/authorize";
+import archiver from "archiver";
+import busboy from "busboy";
 
 const products = Router()
 
@@ -81,6 +83,135 @@ products.get('/', async (req, res) => {
         res.sendStatus(500)
     else
         res.status(200).json()
+})
+
+products.get('/pictures/:ids', async (req, res) => {
+    try {
+        const { ids: idsStr } = req.params
+
+        if (!idsStr) {
+            res.sendStatus(400)
+            return
+        }
+
+        const ids = idsStr.split(",");
+
+        if (!array().required().min(1).strict(true).of(stringObjectId.required()).isValidSync(ids)) {
+            res.sendStatus(400)
+            return
+        }
+
+        // Create a ZIP archive
+        const archive = archiver("zip", {
+            zlib: { level: 9 }, // Compression level
+        });
+
+        // Set the response headers
+        res.attachment("files.zip");
+        archive.pipe(res);
+
+        // Add each file to the archive
+        const files = await productPictureRepository.getFilesByProductId(ids)
+        files.forEach((file) => {
+            const readstream = productPictureRepository.getReadStream(file._id);
+            archive.append(readstream, { name: file.filename });
+        });
+
+        // Finalize the archive and send it
+        archive.finalize();
+    } catch (e) {
+        console.error(e)
+        res.sendStatus(500)
+    }
+})
+
+products.post('/pictures/:productId', authenticate, async (req, res) => {
+    try {
+        if (await authorize(req, 'update-product') !== true) {
+            res.sendStatus(403)
+            return
+        }
+
+        const { productId } = req.params
+        if (!stringObjectId.required().isValidSync(productId)) {
+            res.sendStatus(403)
+            return
+        }
+
+        const bb = busboy({ limits: {}, headers: req.headers });
+        const files: {
+            filename: string,
+            mimeType: string,
+            size: number,
+            buffer: Buffer,
+        }[] = [];
+        const maxFiles = 50; // Maximum number of files allowed
+        const maxFileSize = 5 * 1024 * 1024; // 5MB
+        const allowedTypes = ["image/jpeg", "image/png", "application/jpg"];
+
+        bb.on("file", (name, stream, { filename, mimeType, encoding }) => {
+            if (files.length >= maxFiles) {
+                stream.resume(); // Discard the file if the maximum number of files is reached
+                return;
+            }
+
+            const chunks: Uint8Array[] = [];
+            stream.on("data", (chunk) => {
+                chunks.push(chunk);
+            });
+
+            stream.on("end", () => {
+                const buffer = Buffer.concat(chunks);
+                const fileData = {
+                    filename,
+                    mimeType,
+                    size: buffer.length,
+                    buffer,
+                };
+
+                // Validate the file
+                if (fileData.size > maxFileSize)
+                    return res.status(400).json({ message: `File size exceeds valid range` })
+
+                if (!allowedTypes.includes(fileData.mimeType))
+                    return res.status(400).json({ message: `Invalid file extension` })
+
+                files.push(fileData);
+            });
+        });
+
+        bb.on("finish", () => {
+            if (files.length === 0)
+                return res.status(400).json({ message: "No files uploaded" });
+
+            const uploadedFiles: { filename: string, id: string }[] = [];
+
+            files.forEach((file) => {
+                const writeStream = productPictureRepository.getWriteStream(file.filename, productId, file.mimeType)
+
+                writeStream.on("finish", () => {
+                    uploadedFiles.push({ filename: file.filename, id: writeStream.id.toString() });
+
+                    if (uploadedFiles.length === files.length) {
+                        res.status(201).json(uploadedFiles);
+                    }
+                });
+
+                writeStream.on("error", (err) => {
+                    console.error("File upload failed:", err);
+                    res.status(500).json({ message: "File upload failed", error: err.message });
+                });
+
+                writeStream.write(file.buffer)
+                writeStream.end()
+            });
+        });
+
+        req.pipe(bb);
+    } catch (e) {
+        console.error(e)
+        res.sendStatus(500)
+    }
 })
 
 products.patch('/', authenticate, async (req, res) => {

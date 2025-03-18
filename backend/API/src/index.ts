@@ -17,6 +17,7 @@ import { categories } from './routes/categories'
 import { tags } from './routes/tags'
 import { QueueManagement } from "./QueueManagement";
 import { exit } from "process";
+import { ProductPictureRepository } from "./DB/Repositories/ProductPictureRepository";
 
 dotenv.config({ debug: process.env.DEBUG !== undefined ? Boolean(process.env.DEBUG) : undefined })
 
@@ -88,7 +89,9 @@ export let orderRepository: OrderRepository = undefined!
 export let productRepository: ProductRepository = undefined!
 export let productReviewsRepository: ProductReviewsRepository = undefined!
 export let tagRepository: TagRepository = undefined!
-export let roleRepository: RoleRepository = undefined!;
+export let roleRepository: RoleRepository = undefined!
+export let productPictureRepository: ProductPictureRepository = undefined!;
+
 
 (async () => {
     let safety = 0
@@ -103,6 +106,7 @@ export let roleRepository: RoleRepository = undefined!;
             productReviewsRepository = new ProductReviewsRepository(await db.getProductReviewsCollection())
             tagRepository = new TagRepository(await db.getTagCollection())
             roleRepository = new RoleRepository(await db.getRoleCollection())
+            productPictureRepository = new ProductPictureRepository(await db.getProductPictureBucket())
             break;
         }
         catch (e) { console.error(e) }
@@ -126,7 +130,7 @@ export let roleRepository: RoleRepository = undefined!;
     app.disable('x-powered-by')
 
     app.use((req, res, next) => {
-        console.log('hit!')
+        console.log('hit: ' + req.originalUrl + req.path)
         next()
     })
 
