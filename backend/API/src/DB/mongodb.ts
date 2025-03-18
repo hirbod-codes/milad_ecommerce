@@ -1,4 +1,4 @@
-import { ClientSession, Collection, Db, MongoClient } from 'mongodb'
+import { ClientSession, Collection, Db, GridFSBucket, MongoClient } from 'mongodb'
 import { DbConfigurationError } from './Exceptions/DbConfigurationError'
 import { ConnectionError } from './Exceptions/ConnectionError'
 import { User, collectionName as userCollectionName } from './Models/User'
@@ -8,6 +8,7 @@ import { OrderCreate, collectionName as orderCollectionName } from './Models/Ord
 import { ProductCreate, collectionName as productCollectionName } from './Models/Product'
 import { ProductReviewCreate, collectionName as productReviewCollectionName } from './Models/ProductReview'
 import { TagCreate, collectionName as tagCollectionName } from './Models/Tag'
+import { collectionName as productPictureCollectionName } from './Models/ProductPicture'
 
 export type MongodbConfig = {
     supportsTransaction: boolean;
@@ -322,5 +323,9 @@ export class MongoDB {
 
     async getRoleCollection(client?: MongoClient, db?: Db): Promise<Collection<RoleCreate>> {
         return (db ?? (await this.getDb(client))).collection<RoleCreate>(roleCollectionName)
+    }
+
+    async getProductPictureBucket(client?: MongoClient, db?: Db): Promise<GridFSBucket> {
+        return new GridFSBucket(db ?? (await this.getDb(client)), { bucketName: productPictureCollectionName });
     }
 }

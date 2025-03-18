@@ -9,6 +9,7 @@ import nodemailer from "nodemailer";
 import { UserRepository } from "./DB/Repositories/UserRepository";
 import { RoleRepository } from "./DB/Repositories/RoleRepository";
 import { PrivilegeRepository } from "./DB/Repositories/PrivilegeRepository";
+import { UserProfilePictureRepository } from "./DB/Repositories/UserProfilePictureRepository";
 import { tokenRouter } from "./routes/Auth/tokens";
 import { emailRouter } from "./routes/Auth/email";
 import { phoneNumberRouter } from "./routes/Auth/phoneNumber";
@@ -16,6 +17,7 @@ import { oauthGoogleRouter } from "./routes/oauth/google";
 import { exit } from "process";
 import { QueueManagement } from "./QueueManagement";
 import { users } from "./routes/users";
+import { user } from "./routes/user";
 import { roles } from "./routes/roles";
 import { privileges } from "./routes/privileges";
 
@@ -119,7 +121,8 @@ export const db = new MongoDB(dbConfig);
 
 export let userRepository: UserRepository = undefined!
 export let privilegeRepository: PrivilegeRepository = undefined!
-export let roleRepository: RoleRepository = undefined!;
+export let roleRepository: RoleRepository = undefined!
+export let userProfilePictureRepository: UserProfilePictureRepository = undefined!;
 
 (async () => {
     let safety = 0
@@ -130,6 +133,7 @@ export let roleRepository: RoleRepository = undefined!;
             userRepository = new UserRepository(await db.getUserCollection())
             privilegeRepository = new PrivilegeRepository(await db.getPrivilegeCollection())
             roleRepository = new RoleRepository(await db.getRoleCollection())
+            userProfilePictureRepository = new UserProfilePictureRepository(await db.getUserProfilePictureBucket())
             break;
         }
         catch (e) { console.error(e) }
@@ -174,6 +178,7 @@ export let roleRepository: RoleRepository = undefined!;
     app.use('/oauth/google', oauthGoogleRouter)
 
     app.use('/users', users)
+    app.use('/user', user)
 
     app.use('/roles', roles)
 

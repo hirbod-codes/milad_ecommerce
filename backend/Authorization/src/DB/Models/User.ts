@@ -1,5 +1,5 @@
-import { ObjectId } from "mongodb";
-import { InferType, mixed, number, object, string } from "yup";
+import { InferType, number, object, string } from "yup";
+import { likeObjectId } from "./common_schemas";
 
 export const collectionName = 'user'
 
@@ -7,7 +7,7 @@ export const schemaVersion = 'v1.0.0'
 
 export const userSchema = object().required().stripUnknown().strict(true).shape({
     schemaVersion: string().optional().min(6).max(10),
-    _id: mixed<string | ObjectId>().required(),
+    _id: likeObjectId.required(),
     role: string().required(),
     username: string().required(),
     password: string().optional(),
@@ -18,6 +18,7 @@ export const userSchema = object().required().stripUnknown().strict(true).shape(
     firstName: string().optional(),
     lastName: string().optional(),
     avatarUrl: string().optional(),
+    avatarFile: likeObjectId.optional(),
     createdAt: number().optional(),
     updatedAt: number().optional(),
 })
@@ -27,7 +28,7 @@ export type User = InferType<typeof userSchema>
 export const userInputSchema = userSchema.required().noUnknown(true).strict(true).omit(['schemaVersion', '_id', 'createdAt', 'updatedAt']).shape({ password: string().optional().min(8).matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z\d]{8,}$/) })
 export type UserInput = InferType<typeof userInputSchema>
 
-export const userCreateSchema = userSchema.required().noUnknown(true).strict(true).omit(['_id']).shape({ _id: mixed<string | ObjectId>().optional() })
+export const userCreateSchema = userSchema.required().noUnknown(true).strict(true).omit(['_id']).shape({ _id: likeObjectId.optional() })
 export type UserCreate = InferType<typeof userCreateSchema>
 
 export const userUpdateSchema = userSchema.required().noUnknown(true).strict(true).pick(['lastName', 'firstName', 'avatarUrl'])

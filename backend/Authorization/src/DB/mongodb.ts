@@ -1,10 +1,11 @@
-import { ClientSession, Collection, Db, MongoClient } from 'mongodb'
+import { ClientSession, Collection, Db, GridFSBucket, MongoClient } from 'mongodb'
 import { collectionName as userCollectionName, UserCreate } from './Models/User'
 import { RefreshTokenCreate, collectionName as refreshTokensCollectionName } from './Models/RefreshToken'
 import { PrivilegeCreate, collectionName as privilegeCollectionName } from './Models/Privilege'
 import { RoleCreate, collectionName as roleCollectionName } from './Models/Role'
 import { DbConfigurationError } from './Exceptions/DbConfigurationError'
 import { ConnectionError } from './Exceptions/ConnectionError'
+import { collectionName as userProfilePictureCollectionName } from './Models/UserProfilePicture'
 
 export type MongodbConfig = {
     supportsTransaction: boolean;
@@ -274,5 +275,9 @@ export class MongoDB {
 
     async getRoleCollection(client?: MongoClient, db?: Db): Promise<Collection<RoleCreate>> {
         return (db ?? (await this.getDb(client))).collection<RoleCreate>(roleCollectionName)
+    }
+
+    async getUserProfilePictureBucket(client?: MongoClient, db?: Db): Promise<GridFSBucket> {
+        return new GridFSBucket(db ?? (await this.getDb(client)), { bucketName: userProfilePictureCollectionName });
     }
 }
