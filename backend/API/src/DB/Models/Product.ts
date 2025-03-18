@@ -9,7 +9,7 @@ export const collectionName = 'product'
 
 export const schemaVersion = 'v1.0.0'
 
-export const productSchema = object().required().unknown(true).strict(true).shape({
+export const productSchema = object().required().strict(true).unknown(true).shape({
     schemaVersion: string().required().min(6).max(20),
     _id: likeObjectId.required(),
     tags: array().optional().of(string().required()),

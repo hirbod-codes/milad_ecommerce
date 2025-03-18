@@ -32,15 +32,31 @@ export class ProductRepository {
         catch (e) { console.error(e); return undefined }
     }
 
-    async get(filter: Filter<Product>, sorts: [{ field: (keyof Product)[], direction: SortDirection }], limit: number, skip: number): Promise<Product[]> {
+    async get(filter: Filter<Product>, sorts: [{ field: (keyof Product)[], direction: SortDirection }], limit: number, skip: number): Promise<Product[] | false> {
         try {
-            let cursor = await this.collection.find(filter)
+            let cursor = this.collection.find(filter)
 
             sorts.forEach(sort => cursor.sort(sort.field, sort.direction))
 
             return await cursor.limit(limit).skip(skip).toArray()
         }
-        catch (e) { console.error(e); return [] }
+        catch (e) { console.error(e); return false }
+    }
+
+    async sumPriceOfAvailable(productIds: string[], unit: string): Promise<number | false> {
+        try {
+            let products = await this.collection.find({ isAvailable: true, _id: { $in: productIds.map(id => ObjectId.createFromHexString(id)) } }).toArray()
+
+            let sum = 0
+            for (const product of products)
+                if (product?.price[unit] === undefined)
+                    return false
+                else
+                    sum += product?.price[unit]
+
+            return sum
+        }
+        catch (e) { console.error(e); return false }
     }
 
     async getAvailableByIds(ids: (string | ObjectId)[]): Promise<Product[] | undefined> {

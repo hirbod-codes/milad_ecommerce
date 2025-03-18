@@ -7,7 +7,7 @@ export const collectionName = 'order'
 
 export const schemaVersion = 'v1.0.0'
 
-export const orderSchema = object().required().strict(true).shape({
+export const orderSchema = object().required().strict(true).unknown(true).shape({
     schemaVersion: string().required().min(6).max(20),
     _id: likeObjectId.required(),
     userId: likeObjectId.required(),

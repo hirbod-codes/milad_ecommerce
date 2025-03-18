@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { productRepository } from "../";
-import { validateFilters } from "../DB/helpers";
-import { productImmutableSchema, productInputSchema, productSchema, productUpdateSchema, readableFields } from "../DB/Models/Product";
+import { FilterManagement } from "../DB/FilterManagement";
+import { Product, productImmutableSchema, productInputSchema, productSchema, productUpdateSchema, readableFields } from "../DB/Models/Product";
 import { array, number, object, string, } from "yup";
 import { stringObjectId } from "src/DB/Models/common_schemas";
 import { authenticate } from "src/middlewares/authenticate";
@@ -67,15 +67,20 @@ products.get('/query', async (req, res) => {
         return
     }
 
-    if (filter === undefined || validateFilters(filter, productSchema, readableFields) !== true) {
+    if (filter === undefined || FilterManagement.validateFilters<Product>(filter, productSchema, readableFields) !== true) {
         if (req.headers.accept?.includes('plain/text') ?? false)
             res.status(400).send('invalid filter provided')
         else
             res.status(400).json({ message: 'invalid filter provided' })
+
         return
     }
 
-    res.status(200).json(await productRepository.get(filter, sortSchema.cast(sort) as any, limit, skip))
+    const products = await productRepository.get(filter, sortSchema.cast(sort) as any, limit, skip)
+    if (products === false)
+        res.sendStatus(500)
+    else
+        res.status(200).json()
 })
 
 products.patch('/update', authenticate, async (req, res) => {
@@ -96,7 +101,7 @@ products.patch('/update', authenticate, async (req, res) => {
     if (result === false || result.acknowledged !== true)
         res.sendStatus(500)
     else
-        res.status(201).json({ result })
+        res.status(200).json({ result })
 })
 
 products.patch('/update/immutables', authenticate, async (req, res) => {
@@ -117,7 +122,7 @@ products.patch('/update/immutables', authenticate, async (req, res) => {
     if (result === false || result.acknowledged !== true)
         res.sendStatus(500)
     else
-        res.status(201).json({ result })
+        res.status(20).json({ result })
 })
 
 products.delete('/delete', authenticate, async (req, res) => {

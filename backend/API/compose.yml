@@ -18,101 +18,101 @@ services:
             - base
 
     ############################################################################################# revoked_access_tokens_redis
-    revoked_access_tokens_redis:
-        container_name: revoked_access_tokens_redis
-        image: redis:7.0
-        ports:
-            - 6379:6379
-        networks:
-            - base
+    # revoked_access_tokens_redis:
+    #     container_name: revoked_access_tokens_redis
+    #     image: redis:7.0
+    #     ports:
+    #         - 6379:6379
+    #     networks:
+    #         - base
 
-    ############################################################################################# rabbitmq
-    rabbitmq:
-        container_name: rabbitmq
-        image: rabbitmq:3-management
-        ports:
-            - "5672:5672"  # AMQP port
-            - "15672:15672" # Management UI port
-        environment:
-            RABBITMQ_DEFAULT_USER: admin
-            RABBITMQ_DEFAULT_PASS: password
-        networks:
-            - base
+    # ############################################################################################# rabbitmq
+    # rabbitmq:
+    #     container_name: rabbitmq
+    #     image: rabbitmq:3-management
+    #     ports:
+    #         - "5672:5672"  # AMQP port
+    #         - "15672:15672" # Management UI port
+    #     environment:
+    #         RABBITMQ_DEFAULT_USER: admin
+    #         RABBITMQ_DEFAULT_PASS: password
+    #     networks:
+    #         - base
 
-    ############################################################################################# api
-    api:
-        container_name: api
-        build:
-            context: .
-            dockerfile: Dockerfile
-            target: development
-        ports:
-            - 3000:3000
-        volumes:
-            - .:/app
-            - /app/node_modules
-        environment:
-            - NODE_ENV=development
-            - DB_SUPPORTS_TRANSACTION=false
-            - DB_URL=mongodb://main_mongodb:27017
-            - SESSION_REDIS_TYPE=single
-            - SESSION_REDIS_INITIAL_NODE_URL=redis://api_redis:6379
-            - REVOKED_TOKENS_REDIS_TYPE=single
-            - REVOKED_TOKENS_REDIS_INITIAL_NODE_URL=redis://revoked_access_tokens_redis:6379
-            - MESSAGE_BROKER_URL=rabbitmq:5672
-            - MESSAGE_BROKER_USERNAME=admin
-            - MESSAGE_BROKER_PASSWORD=password
-        networks:
-            - base
-            - api
-            - api_redis
+    # ############################################################################################# api
+    # api:
+    #     container_name: api
+    #     build:
+    #         context: .
+    #         dockerfile: Dockerfile
+    #         target: development
+    #     ports:
+    #         - 3000:3000
+    #     volumes:
+    #         - .:/app
+    #         - /app/node_modules
+    #     environment:
+    #         - NODE_ENV=development
+    #         - DB_SUPPORTS_TRANSACTION=false
+    #         - DB_URL=mongodb://main_mongodb:27017
+    #         - SESSION_REDIS_TYPE=single
+    #         - SESSION_REDIS_INITIAL_NODE_URL=redis://api_redis:6379
+    #         - REVOKED_TOKENS_REDIS_TYPE=single
+    #         - REVOKED_TOKENS_REDIS_INITIAL_NODE_URL=redis://revoked_access_tokens_redis:6379
+    #         - MESSAGE_BROKER_URL=rabbitmq:5672
+    #         - MESSAGE_BROKER_USERNAME=admin
+    #         - MESSAGE_BROKER_PASSWORD=password
+    #     networks:
+    #         - base
+    #         - api
+    #         - api_redis
 
-    ############################################################################################# api_redis
-    api_redis:
-        container_name: api_session_redis
-        image: redis:7.0
-        ports:
-            - 6380:6379
-        networks:
-            - api_redis
+    # ############################################################################################# api_redis
+    # api_redis:
+    #     container_name: api_session_redis
+    #     image: redis:7.0
+    #     ports:
+    #         - 6380:6379
+    #     networks:
+    #         - api_redis
 
-    ############################################################################################# authorization
-    authorization:
-        container_name: authorization
-        build: 
-            context: ../Authorization
-            dockerfile: Dockerfile
-            target: development
-        ports:
-            - 3001:3000
-        volumes:
-            - ../Authorization:/app
-            - /app/node_modules
-        environment:
-            - NODE_ENV=development
-            - DB_SUPPORTS_TRANSACTION=false
-            - DB_URL=mongodb://main_mongodb:27017
-            - SESSION_REDIS_TYPE=single
-            - SESSION_REDIS_INITIAL_NODE_URL=redis://authorization_redis:6379
-            - REVOKED_TOKENS_REDIS_TYPE=single
-            - REVOKED_TOKENS_REDIS_INITIAL_NODE_URL=redis://revoked_access_tokens_redis:6379
-            - MESSAGE_BROKER_TYPE=single
-            - MESSAGE_BROKER_URL=rabbitmq:5672
-            - MESSAGE_BROKER_USERNAME=admin
-            - MESSAGE_BROKER_PASSWORD=password
-        networks:
-            - base
-            - authorization
-            - authorization_redis
+    # ############################################################################################# authorization
+    # authorization:
+    #     container_name: authorization
+    #     build: 
+    #         context: ../Authorization
+    #         dockerfile: Dockerfile
+    #         target: development
+    #     ports:
+    #         - 3001:3000
+    #     volumes:
+    #         - ../Authorization:/app
+    #         - /app/node_modules
+    #     environment:
+    #         - NODE_ENV=development
+    #         - DB_SUPPORTS_TRANSACTION=false
+    #         - DB_URL=mongodb://main_mongodb:27017
+    #         - SESSION_REDIS_TYPE=single
+    #         - SESSION_REDIS_INITIAL_NODE_URL=redis://authorization_redis:6379
+    #         - REVOKED_TOKENS_REDIS_TYPE=single
+    #         - REVOKED_TOKENS_REDIS_INITIAL_NODE_URL=redis://revoked_access_tokens_redis:6379
+    #         - MESSAGE_BROKER_TYPE=single
+    #         - MESSAGE_BROKER_URL=rabbitmq:5672
+    #         - MESSAGE_BROKER_USERNAME=admin
+    #         - MESSAGE_BROKER_PASSWORD=password
+    #     networks:
+    #         - base
+    #         - authorization
+    #         - authorization_redis
 
-    ############################################################################################# authorization_redis
-    authorization_redis:
-        container_name: authorization_redis
-        image: redis:7.0
-        ports:
-            - 6381:6379
-        networks:
-            - authorization_redis
+    # ############################################################################################# authorization_redis
+    # authorization_redis:
+    #     container_name: authorization_redis
+    #     image: redis:7.0
+    #     ports:
+    #         - 6381:6379
+    #     networks:
+    #         - authorization_redis
 
 networks:
     base:

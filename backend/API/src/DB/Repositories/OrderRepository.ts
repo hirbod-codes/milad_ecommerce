@@ -1,5 +1,5 @@
-import { Collection, DeleteResult, InsertOneResult, ObjectId, UpdateResult } from 'mongodb'
-import { Order, OrderCreate, OrderInput, OrderUpdate, schemaVersion } from '../Models/Order'
+import { Collection, DeleteResult, Filter, InsertOneResult, ObjectId, SortDirection, UpdateResult } from 'mongodb'
+import { Order, OrderCreate, OrderImmutable, OrderInput, OrderUpdate, schemaVersion } from '../Models/Order'
 import { DateTime } from 'luxon'
 
 export class OrderRepository {
@@ -26,6 +26,17 @@ export class OrderRepository {
         catch (e) { console.error(e); return false }
     }
 
+    async get(filter: Filter<Order>, sorts: [{ field: (keyof Order)[], direction: SortDirection }], limit: number, skip: number, userId?: string): Promise<Order[] | false> {
+        try {
+            let cursor = this.collection.find(userId === undefined ? filter : { $and: [filter, { userId: ObjectId.createFromHexString(userId) }] })
+
+            sorts.forEach(sort => cursor.sort(sort.field, sort.direction))
+
+            return await cursor.limit(limit).skip(skip).toArray()
+        }
+        catch (e) { console.error(e); return false }
+    }
+
     async getById(id: string): Promise<Order | null | undefined> {
         try { return await this.collection.findOne({ _id: ObjectId.createFromHexString(id) }) }
         catch (e) {
@@ -34,8 +45,13 @@ export class OrderRepository {
         }
     }
 
-    async updateById(id: string, order: OrderUpdate): Promise<UpdateResult | false> {
+    async update(id: string, order: OrderUpdate): Promise<UpdateResult | false> {
         try { return await this.collection.updateOne({ _id: ObjectId.createFromHexString(id) }, { ...order, updatedAt: DateTime.utc().toUnixInteger() }) }
+        catch (e) { console.error(e); return false }
+    }
+
+    async updateImmutables(id: string, immutableFields: OrderImmutable): Promise<UpdateResult | false> {
+        try { return await this.collection.updateOne({ _id: ObjectId.createFromHexString(id) }, { ...immutableFields, updatedAt: DateTime.utc().toUnixInteger() }) }
         catch (e) { console.error(e); return false }
     }
 
