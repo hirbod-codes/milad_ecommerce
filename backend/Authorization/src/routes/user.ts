@@ -8,7 +8,7 @@ import { userSchema, userUpdateSchema } from "src/DB/Models/User"
 import { SessionManager } from "src/DB/Session/SessionManager"
 import { DateTime } from "luxon"
 import crypto from "crypto";
-import { string } from "yup"
+import { mixed, number, string } from "yup"
 
 const user = Router()
 
@@ -54,6 +54,59 @@ user.get('/avatar', authenticate, async (req, res) => {
         }
 
         await userProfilePictureRepository.downloadFile(res, fileId.toString())
+    } catch (e) {
+        console.error(e)
+        res.sendStatus(500)
+    }
+})
+
+user.post('/avatar', authenticate, async (req, res) => {
+    try {
+        if (await authorize(req, 'get-user-self') !== true) {
+            res.sendStatus(403)
+            return
+        }
+
+        let userId = (Jwt.decode(req.headers['authorization']!.replace('Bearer ', '')!) as Jwt.JwtPayload)?.sub ?? ''
+
+        if (!stringObjectId.isValidSync(userId)) {
+            res.sendStatus(400)
+            return
+        }
+
+        const allowedTypes = ["image/jpeg", "image/png", "application/jpg"];
+
+        const filename = req.headers["file-name"]
+        const fileType = req.headers["content-type"]
+        const fileSize = req.headers["content-length"]
+
+        if (!mixed().oneOf(allowedTypes).required().strict(true).isValidSync(fileType)) {
+            res.status(400).json({ message: "Bad file name or invalid extension" })
+            return
+        }
+
+        if (!string().required().strict(true).isValidSync(filename)) {
+            res.status(400).json({ message: "Bad file name or invalid extension" })
+            return
+        }
+
+        if (!number().positive().integer().max(5 * 1024 * 1024).isValidSync(fileSize)) {
+            res.status(400).json({ message: "File size exceeds the limit of 5MB" })
+            return
+        }
+
+        const writestream = userProfilePictureRepository.getWriteStream(filename, userId)
+
+        writestream.on("finish", () => {
+            res.status(201).json({ id: writestream.id.toString() })
+        })
+
+        writestream.on("error", (e) => {
+            console.error(e)
+            res.status(500).json({ message: "File upload failed" })
+        });
+
+        req.pipe(writestream)
     } catch (e) {
         console.error(e)
         res.sendStatus(500)
