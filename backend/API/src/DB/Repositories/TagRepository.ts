@@ -1,6 +1,6 @@
 import { Collection, DeleteResult, InsertOneResult, ObjectId, UpdateResult } from 'mongodb'
 import { DateTime } from 'luxon'
-import { Tag, TagCreate, TagInput, TagUpdate, schemaVersion } from '../Models/Tag'
+import { Tag, TagCreate, TagImmutable, TagInput, TagUpdate, schemaVersion } from '../Models/Tag'
 
 export class TagRepository {
     private collection: Collection<TagCreate>
@@ -24,13 +24,23 @@ export class TagRepository {
         catch (e) { console.error(e); return false }
     }
 
+    async get(): Promise<Tag[] | false> {
+        try { return await this.collection.find().toArray() }
+        catch (e) { console.error(e); return false }
+    }
+
     async getById(id: string): Promise<Tag | null | undefined> {
         try { return await this.collection.findOne({ _id: ObjectId.createFromHexString(id) }) }
         catch (e) { console.error(e); return undefined }
     }
 
-    async updateById(id: string, tag: TagUpdate): Promise<UpdateResult | false> {
+    async update(id: string, tag: TagUpdate): Promise<UpdateResult | false> {
         try { return await this.collection.updateOne({ _id: ObjectId.createFromHexString(id) }, { ...tag, updatedAt: DateTime.utc().toUnixInteger() }) }
+        catch (e) { console.error(e); return false }
+    }
+
+    async updateImmutables(id: string, immutableFields: TagImmutable): Promise<UpdateResult | false> {
+        try { return await this.collection.updateOne({ _id: ObjectId.createFromHexString(id) }, { ...immutableFields, updatedAt: DateTime.utc().toUnixInteger() }) }
         catch (e) { console.error(e); return false }
     }
 
