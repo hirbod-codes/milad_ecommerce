@@ -1,12 +1,46 @@
 import { DateTime } from "luxon";
 import { schemaVersion, User, UserCreate, UserInput, UserUpdate } from "../Models/User";
 import { Collection, DeleteResult, InsertOneResult, ObjectId, UpdateResult } from 'mongodb'
+import crypto from "crypto";
 
 export class UserRepository {
     private collection: Collection<UserCreate>
 
     constructor(collection: Collection<UserCreate>) {
         this.collection = collection
+    }
+
+    async initialize(adminUsername: string, adminPhoneNumber: string, adminEmail: string, adminPassword: string) {
+        if (await this.collection.estimatedDocumentCount() === 0) {
+            let nowTS = DateTime.utc().toUnixInteger()
+            let passwordSalt: string | undefined = undefined, iterations: number = 10000
+            const password: string = await (async () => {
+                return new Promise((resolve, reject) => {
+                    passwordSalt = crypto.randomBytes(128).toString('base64')
+                    crypto.pbkdf2(adminPassword, passwordSalt, iterations, 64, 'sha512', (err, derivedKey) => {
+                        if (err)
+                            reject(err)
+                        else
+                            resolve(derivedKey.toString('hex'))
+                    })
+                })
+            })()
+
+            let r = await this.collection.insertOne({
+                schemaVersion,
+                username: adminUsername,
+                role: 'admin',
+                email: adminEmail,
+                phoneNumber: adminPhoneNumber,
+                passwordIterations: 1000,
+                passwordSalt,
+                password,
+                createdAt: nowTS,
+                updatedAt: nowTS,
+            })
+            if (!r.acknowledged)
+                throw new Error('System failed to initialize users')
+        }
     }
 
     async createUser(user: UserInput): Promise<InsertOneResult | false> {

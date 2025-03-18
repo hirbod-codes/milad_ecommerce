@@ -120,6 +120,7 @@ emailRouter.post('/signup', async (req, res) => {
         try {
             let dbResponse = await userRepository.createUser({
                 username: email,
+                role: 'default',
                 email,
                 password: hashedPassword,
                 passwordSalt: salt,

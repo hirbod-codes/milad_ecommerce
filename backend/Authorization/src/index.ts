@@ -18,20 +18,22 @@ import { QueueManagement } from "./QueueManagement";
 import { users } from "./routes/users";
 import { roles } from "./routes/roles";
 import { privileges } from "./routes/privileges";
-import { array, string } from "yup";
 
 dotenv.config({ debug: process.env.DEBUG !== undefined ? Boolean(process.env.DEBUG) : undefined })
 
 export const hostName = getStringEnv('HOST', 'The HOST environment variable is not provided')!
 export const hostPort = getIntegerEnv('PORT', 'The PORT environment variable is not provided', (s) => s.min(1025))!
 
+export const adminUsername = getStringEnv('ADMIN_USERNAME', 'The Admin username environment variable is not provided')!
+export const adminPhoneNumber = getStringEnv('ADMIN_PHONE_NUMBER', 'The Admin phone number environment variable is not provided')!
+export const adminEmail = getStringEnv('ADMIN_EMAIL', 'The Admin email environment variable is not provided')!
+export const adminPassword = getStringEnv('ADMIN_PASSWORD', 'The Admin password environment variable is not provided')!
+
 export const jwtSecret = getStringEnv('JWT_SECRET', 'The Jwt secret environment variable is not provided')!
 
 export const accessTokenExpiresIn = getIntegerEnv('ACCESS_TOKEN_EXPIRES_IN', 'The Access token expires in environment variable is not provided')!
 
 export const refreshTokenExpiresIn = getIntegerEnv('REFRESH_TOKEN_EXPIRES_IN', 'The Refresh token expires in environment variable is not provided')!
-
-export const authManager = new AuthManager(jwtSecret, 'HS512', accessTokenExpiresIn, refreshTokenExpiresIn)
 
 export const otpProviderConfig = {
     otpProviderUsername: getStringEnv('OTP_PROVIDER_USERNAME', 'The Otp provider username environment variable is not provided')!,
@@ -43,14 +45,6 @@ export const emailConfig = {
     user: getStringEnv('EMAIL', 'The Email environment variable is not provided')!,
     pass: getStringEnv('EMAIL_PASSWORD', 'The Email password environment variable is not provided')!,
 }
-
-export const transporter = nodemailer.createTransport({
-    service: "Gmail",
-    auth: {
-        user: emailConfig.user,
-        pass: emailConfig.pass,
-    }
-})
 
 export const googleOAuth2Config = {
     clientId: getStringEnv('GOOGLE_CLIENT_ID', 'The Google client environment variable is not provided')!,
@@ -79,6 +73,28 @@ const sessionRedisInitialNodeUrl = getStringEnv('SESSION_REDIS_INITIAL_NODE_URL'
 const revokedTokensRedisType = getStringEnv('REVOKED_TOKENS_REDIS_TYPE', 'The Revoked tokens redis type environment variable is not provided')!
 const revokedTokensRedisInitialNodeUrl = getStringEnv('REVOKED_TOKENS_REDIS_INITIAL_NODE_URL', 'The Revoked tokens redis initial node url environment variable is not provided')!
 
+export const dbConfig = {
+    databaseName: getStringEnv('DB_DATABASE_NAME', 'The Db database name environment variable is not provided')!,
+    supportsTransaction: getBooleanEnv('DB_SUPPORTS_TRANSACTION', 'The Db supports transaction environment variable is not provided')!,
+    url: getStringEnv('DB_URL', 'The Db url environment variable is not provided')!,
+    auth: {
+        username: getStringEnv('MONGODB_USERNAME', 'The Mongodb username environment variable is not provided')!,
+        password: getStringEnv('MONGODB_PASSWORD', 'The Mongodb password environment variable is not provided')!,
+    }
+}
+
+export const transporter = nodemailer.createTransport({
+    service: "Gmail",
+    auth: {
+        user: emailConfig.user,
+        pass: emailConfig.pass,
+    }
+})
+
+export const authManager = new AuthManager(jwtSecret, 'HS512', accessTokenExpiresIn, refreshTokenExpiresIn)
+
+export const queueManagement = new QueueManagement(messageBrokerUrl, messageBrokerUsername, messageBrokerPassword, messageBrokerType as any)
+
 let sessionRedisClient: RedisClusterType<RedisDefaultModules> | RedisClientType<RedisDefaultModules> = undefined!
 if (sessionRedisType === 'single')
     sessionRedisClient = createClient({ url: sessionRedisInitialNodeUrl })
@@ -98,18 +114,6 @@ else if (revokedTokensRedisType === 'cluster')
     });
 
 export { sessionRedisClient, revokedTokensRedisClient }
-
-export const dbConfig = {
-    databaseName: getStringEnv('DB_DATABASE_NAME', 'The Db database name environment variable is not provided')!,
-    supportsTransaction: getBooleanEnv('DB_SUPPORTS_TRANSACTION', 'The Db supports transaction environment variable is not provided')!,
-    url: getStringEnv('DB_URL', 'The Db url environment variable is not provided')!,
-    auth: {
-        username: getStringEnv('MONGODB_USERNAME', 'The Mongodb username environment variable is not provided')!,
-        password: getStringEnv('MONGODB_PASSWORD', 'The Mongodb password environment variable is not provided')!,
-    }
-}
-
-export const queueManagement = new QueueManagement(messageBrokerUrl, messageBrokerUsername, messageBrokerPassword, messageBrokerType as any)
 
 export const db = new MongoDB(dbConfig);
 
@@ -141,6 +145,10 @@ export let roleRepository: RoleRepository = undefined!;
         console.log('safety reached!!')
         exit(1)
     }
+
+    await userRepository.initialize(adminUsername, adminPhoneNumber, adminEmail, adminPassword)
+    await privilegeRepository.initialize()
+    await roleRepository.initialize()
 
     await queueManagement.subscribeConsumers(messageBrokerUrl)
 

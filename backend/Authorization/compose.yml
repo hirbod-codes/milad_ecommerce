@@ -53,6 +53,10 @@ services:
             - /app/node_modules
         environment:
             - NODE_ENV=development
+            - ADMIN_USERNAME=username
+            - ADMIN_PHONE_NUMBER=phonenumber
+            - ADMIN_EMAIL=email
+            - ADMIN_PASSWORD=password
             - DB_SUPPORTS_TRANSACTION=false
             - DB_URL=mongodb://main_mongodb:27017
             - REVOKED_TOKENS_REDIS_TYPE=single

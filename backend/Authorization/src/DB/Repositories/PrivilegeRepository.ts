@@ -9,6 +9,23 @@ export class PrivilegeRepository {
         this.collection = collection
     }
 
+    async initialize() {
+        if (await this.collection.estimatedDocumentCount() === 0) {
+            let nowTS = DateTime.utc().toUnixInteger()
+
+            const names = ['']
+            let r = await this.collection.insertMany(names.map(name => ({
+                schemaVersion,
+                name,
+                value: true,
+                createdAt: nowTS,
+                updatedAt: nowTS,
+            })))
+            if (!r.acknowledged)
+                throw new Error('System failed to initialize roles')
+        }
+    }
+
     async create(privilege: PrivilegeInput): Promise<InsertOneResult | false> {
         const ts = DateTime.utc().toUnixInteger()
 
@@ -20,6 +37,11 @@ export class PrivilegeRepository {
         }
 
         try { return await this.collection.insertOne(o) }
+        catch (e) { console.error(e); return false }
+    }
+
+    async get(): Promise<Privilege[] | false> {
+        try { return await this.collection.find().toArray() }
         catch (e) { console.error(e); return false }
     }
 

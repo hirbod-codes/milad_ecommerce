@@ -6,7 +6,7 @@ export const collectionName = 'role'
 
 export const schemaVersion = 'v1.0.0'
 
-const localizedText = lazy(value => object().required().strict(true).shape(Object.keys(value).reduce((prev, key) => ({ ...prev, [key]: string().required() }), {})))
+const localizedText = lazy(value => object().required().strict(true).shape(Object.keys(value).reduce((prev, key) => ({ ...prev, [key]: string().required() }), {}))).optional()
 
 export const roleSchema = object().required().noUnknown(true).strict(true).shape({
     schemaVersion: string().required().min(6).max(20),

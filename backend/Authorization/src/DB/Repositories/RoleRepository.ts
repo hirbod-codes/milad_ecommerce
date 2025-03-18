@@ -2,12 +2,33 @@ import { Collection, DeleteResult, InsertOneResult, ObjectId, UpdateResult } fro
 import { DateTime } from 'luxon'
 import { Role, RoleCreate, RoleInput, RoleUpdate, RoleWithPrivileges, schemaVersion } from '../Models/Role'
 import { collectionName } from '../Models/Privilege'
+import { privilegeRepository } from 'src'
 
 export class RoleRepository {
     private collection: Collection<RoleCreate>
 
     constructor(collection: Collection<RoleCreate>) {
         this.collection = collection
+    }
+
+    async initialize() {
+        if (await this.collection.estimatedDocumentCount() === 0) {
+            let nowTS = DateTime.utc().toUnixInteger()
+            let privileges = await privilegeRepository.get()
+
+            if (privileges === false || privileges.length === 0)
+                throw new Error('System failed to initialize roles')
+
+            let r = await this.collection.insertOne({
+                schemaVersion,
+                name: 'admin',
+                privileges: privileges.map(p => p._id),
+                createdAt: nowTS,
+                updatedAt: nowTS,
+            })
+            if (!r.acknowledged)
+                throw new Error('System failed to initialize roles')
+        }
     }
 
     async create(role: RoleInput): Promise<InsertOneResult | false> {
