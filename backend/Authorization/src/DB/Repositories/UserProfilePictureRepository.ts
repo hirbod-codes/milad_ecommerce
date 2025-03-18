@@ -1,4 +1,4 @@
-import { GridFSBucket, GridFSBucketReadStream, GridFSFile, ObjectId } from "mongodb";
+import { GridFSBucket, GridFSBucketReadStream, GridFSBucketWriteStream, GridFSFile, ObjectId } from "mongodb";
 
 export class UserProfilePictureRepository {
     private collection: GridFSBucket
@@ -7,13 +7,44 @@ export class UserProfilePictureRepository {
         this.collection = collection
     }
 
+    getReadStream(fileId: string | ObjectId): GridFSBucketReadStream {
+        return this.collection.openDownloadStream(typeof fileId === 'string' ? ObjectId.createFromHexString(fileId) : fileId)
+    }
+
+    getWriteStream(fileName: string, userId: string | ObjectId): GridFSBucketWriteStream {
+        return this.collection.openUploadStream(fileName, { metadata: { userId: typeof userId === 'string' ? ObjectId.createFromHexString(userId) : userId } })
+    }
+
+    async uploadFile(userId: string, file: { fileName: string; bytes: Buffer | Uint8Array; }): Promise<string | undefined> {
+        console.log('uploading...');
+        console.log(userId);
+
+        const result = await (() => new Promise<string | undefined>(async (res, rej) => {
+            const upload = this.getWriteStream(file.fileName, userId)
+            upload
+                .on('close', () => { console.log('on close'); res(upload.id.toString()) })
+                .write(file.bytes, (e) => {
+                    console.log('write end')
+
+                    if (e) {
+                        console.error(e)
+                        res(undefined)
+                    }
+                    else
+                        upload.end()
+                })
+        }))()
+
+        return result
+    }
+
     async uploadFiles(userId: string, files: { fileName: string; bytes: Buffer | Uint8Array; }[]): Promise<boolean> {
         console.log('uploading...');
         console.log(userId, files.length);
 
         for (const file of files) {
             const result = await (() => new Promise<boolean>((res, rej) => {
-                const upload = this.collection.openUploadStream(file.fileName, { metadata: { userId: userId } })
+                const upload = this.getWriteStream(file.fileName, userId)
                 upload
                     .on('close', () => { console.log('on close'); res(true) })
                     .write(file.bytes, (e) => {
@@ -54,15 +85,11 @@ export class UserProfilePictureRepository {
         return await this.collection.find({ metadata: { userId: { $in: userIds.map(id => ObjectId.createFromHexString(id)) } } }).toArray();
     }
 
-    async getReadStream(fileId: string | ObjectId): Promise<GridFSBucketReadStream> {
-        return this.collection.openDownloadStream(typeof fileId === 'string' ? ObjectId.createFromHexString(fileId) : fileId)
-    }
-
     async downloadFile(writeStream: NodeJS.WritableStream, fileId: string): Promise<boolean> {
         console.log('downloading file...');
 
         return new Promise<boolean>(async (resolve, reject) => {
-            const readStream = await this.getReadStream(fileId)
+            const readStream = this.getReadStream(fileId)
 
             readStream
                 .on('close', async () => {
