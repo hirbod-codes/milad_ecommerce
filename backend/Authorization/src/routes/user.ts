@@ -62,7 +62,7 @@ user.get('/avatar', authenticate, async (req, res) => {
 
 user.post('/avatar', authenticate, async (req, res) => {
     try {
-        if (await authorize(req, 'get-user-self') !== true) {
+        if (await authorize(req, 'update-user-self') !== true) {
             res.sendStatus(403)
             return
         }
@@ -97,8 +97,12 @@ user.post('/avatar', authenticate, async (req, res) => {
 
         const writestream = userProfilePictureRepository.getWriteStream(filename, userId)
 
-        writestream.on("finish", () => {
-            res.status(201).json({ id: writestream.id.toString() })
+        writestream.on("finish", async () => {
+            let r = await userRepository.update(userId, { avatarFile: writestream.id })
+            if (r == false || !r.acknowledged)
+                res.status(500).json({ message: "File upload failed" })
+            else
+                res.status(201).json({ id: writestream.id.toString() })
         })
 
         writestream.on("error", (e) => {
