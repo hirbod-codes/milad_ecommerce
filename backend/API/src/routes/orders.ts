@@ -10,7 +10,7 @@ import Jwt from "jsonwebtoken";
 
 const orders = Router()
 
-orders.post('/create', authenticate, async (req, res) => {
+orders.post('/', authenticate, async (req, res) => {
     let { userId } = req.body
 
     if (await authorize(req, 'create-order') !== true) {
@@ -126,7 +126,7 @@ orders.get('/', authenticate, async (req, res) => {
         res.status(200).json()
 })
 
-orders.patch('/update', authenticate, async (req, res) => {
+orders.patch('/', authenticate, async (req, res) => {
     let { userId } = req.body
 
     if (await authorize(req, 'update-order') !== true) {
@@ -159,7 +159,7 @@ orders.patch('/update', authenticate, async (req, res) => {
         res.status(200).json({ result })
 })
 
-orders.patch('/update/immutables', authenticate, async (req, res) => {
+orders.patch('/immutables', authenticate, async (req, res) => {
     let { userId } = req.body
 
     if (await authorize(req, 'update-immutables-order') !== true) {
@@ -192,7 +192,7 @@ orders.patch('/update/immutables', authenticate, async (req, res) => {
         res.status(20).json({ result })
 })
 
-orders.delete('/delete', authenticate, async (req, res) => {
+orders.delete('/', authenticate, async (req, res) => {
     let { userId } = req.body
 
     if (await authorize(req, 'delete-order') !== true) {

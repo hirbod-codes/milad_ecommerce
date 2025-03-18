@@ -1,6 +1,6 @@
 import { Collection, DeleteResult, InsertOneResult, ObjectId, UpdateResult } from 'mongodb'
 import { DateTime } from 'luxon'
-import { Category, CategoryCreate, CategoryInput, CategoryUpdate, schemaVersion } from '../Models/Category'
+import { Category, CategoryCreate, CategoryImmutable, CategoryInput, CategoryUpdate, schemaVersion } from '../Models/Category'
 
 export class CategoryRepository {
     private collection: Collection<CategoryCreate>
@@ -24,13 +24,23 @@ export class CategoryRepository {
         catch (e) { console.error(e); return false }
     }
 
+    async get(): Promise<Category[] | false> {
+        try { return await this.collection.find().toArray() }
+        catch (e) { console.error(e); return false }
+    }
+
     async getById(id: string): Promise<Category | null | undefined> {
         try { return await this.collection.findOne({ _id: ObjectId.createFromHexString(id) }) }
         catch (e) { console.error(e); return undefined }
     }
 
-    async updateById(id: string, category: CategoryUpdate): Promise<UpdateResult | false> {
+    async update(id: string, category: CategoryUpdate): Promise<UpdateResult | false> {
         try { return await this.collection.updateOne({ _id: ObjectId.createFromHexString(id) }, { ...category, updatedAt: DateTime.utc().toUnixInteger() }) }
+        catch (e) { console.error(e); return false }
+    }
+
+    async updateImmutables(id: string, immutableFields: CategoryImmutable): Promise<UpdateResult | false> {
+        try { return await this.collection.updateOne({ _id: ObjectId.createFromHexString(id) }, { ...immutableFields, updatedAt: DateTime.utc().toUnixInteger() }) }
         catch (e) { console.error(e); return false }
     }
 

@@ -9,7 +9,7 @@ import { authorize } from "src/middlewares/authorize";
 
 const products = Router()
 
-products.post('/create', authenticate, async (req, res) => {
+products.post('/', authenticate, async (req, res) => {
     if (await authorize(req, 'create-product') !== true) {
         res.sendStatus(403)
         return
@@ -30,7 +30,7 @@ products.post('/create', authenticate, async (req, res) => {
         res.status(201).json({ id: r.insertedId })
 })
 
-products.get('/query', async (req, res) => {
+products.get('/', async (req, res) => {
     const { filter: filterJson, sort: sortJson, limit: limitStr, skip: skipStr } = req.query
 
     if (!filterJson || !sortJson || !limitStr || !skipStr) {
@@ -83,7 +83,7 @@ products.get('/query', async (req, res) => {
         res.status(200).json()
 })
 
-products.patch('/update', authenticate, async (req, res) => {
+products.patch('/', authenticate, async (req, res) => {
     if (await authorize(req, 'update-product') !== true) {
         res.sendStatus(403)
         return
@@ -104,7 +104,7 @@ products.patch('/update', authenticate, async (req, res) => {
         res.status(200).json({ result })
 })
 
-products.patch('/update/immutables', authenticate, async (req, res) => {
+products.patch('/immutables', authenticate, async (req, res) => {
     if (await authorize(req, 'update-immutables-product') !== true) {
         res.sendStatus(403)
         return
@@ -125,7 +125,7 @@ products.patch('/update/immutables', authenticate, async (req, res) => {
         res.status(20).json({ result })
 })
 
-products.delete('/delete', authenticate, async (req, res) => {
+products.delete('/', authenticate, async (req, res) => {
     if (await authorize(req, 'delete-product') !== true) {
         res.sendStatus(403)
         return
