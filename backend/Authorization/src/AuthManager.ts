@@ -68,24 +68,30 @@ export class AuthManager {
         }
     }
 
-    async retrieveAccessToken(userId: string, refreshToken: string): Promise<string> {
+    async retrieveAccessToken(refreshToken: string): Promise<string> {
         return new Promise(async (resolve, reject) => {
             try {
-                try { Jwt.verify(refreshToken, this.jwtSecret, { issuer: this.issuer, algorithms: [this.algorithm] }) }
-                catch (e) { reject(e); return }
+                let userId: string | undefined = undefined
+                try {
+                    let payload = this.verify(refreshToken)
 
-                let doc = (await (await db.getRefreshTokensCollection()).findOne({ refreshToken }))
+                    if (payload === false) {
+                        reject()
+                        return
+                    }
 
-                if (!doc || doc.userId.toString() !== userId) {
-                    reject()
-                    return
+                    userId = payload?.sub
+
+                    if (!userId) {
+                        reject()
+                        return
+                    }
                 }
-
-                try { Jwt.verify(doc!.refreshToken, this.jwtSecret, { issuer: this.issuer, algorithms: [this.algorithm] }) }
                 catch (e) { reject(e); return }
 
-                let r = (await (await db.getRefreshTokensCollection()).deleteOne({ refreshToken, accessToken: doc.accessToken }))
-                if (!r.acknowledged) {
+                // expired refresh tokens are automatically removed by MongoDB TTL index
+                let doc = (await (await db.getRefreshTokensCollection()).findOne({ refreshToken }))
+                if (!doc) {
                     reject()
                     return
                 }
@@ -102,7 +108,14 @@ export class AuthManager {
                     return
                 }
 
-                await RevokedAccessTokenManager.set(doc.accessToken, 'true', expirationTS)
+                if (DateTime.utc().toUnixInteger() < expirationTS)
+                    await RevokedAccessTokenManager.set(doc.accessToken, 'true', expirationTS)
+
+                let r = (await (await db.getRefreshTokensCollection()).deleteOne({ refreshToken }))
+                if (!r.acknowledged) {
+                    reject()
+                    return
+                }
 
                 resolve(await this.generateAccessToken(userId, doc.role))
             } catch (e) {
