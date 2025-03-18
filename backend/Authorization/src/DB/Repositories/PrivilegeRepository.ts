@@ -1,6 +1,7 @@
 import { Collection, DeleteResult, InsertOneResult, ObjectId, UpdateResult } from 'mongodb'
 import { DateTime } from 'luxon'
 import { Privilege, PrivilegeCreate, PrivilegeInput, PrivilegeUpdate, schemaVersion } from '../Models/Privilege'
+import { privilegeNames } from '../Models/privilegeNames'
 
 export class PrivilegeRepository {
     private collection: Collection<PrivilegeCreate>
@@ -13,8 +14,7 @@ export class PrivilegeRepository {
         if (await this.collection.estimatedDocumentCount() === 0) {
             let nowTS = DateTime.utc().toUnixInteger()
 
-            const names = ['']
-            let r = await this.collection.insertMany(names.map(name => ({
+            let r = await this.collection.insertMany(privilegeNames.map(name => ({
                 schemaVersion,
                 name,
                 value: true,

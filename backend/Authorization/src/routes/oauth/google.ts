@@ -100,6 +100,7 @@ oauthGoogleRouter.post('/token', async (req, res) => {
             else {
                 r = await userRepository.createUser({
                     username: userInfo.email,
+                    role: 'default',
                     email: userInfo.email,
                     firstName: userInfo.given_name,
                     lastName: userInfo.family_name,
