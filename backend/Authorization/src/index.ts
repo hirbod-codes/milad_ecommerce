@@ -124,23 +124,19 @@ export let privilegeRepository: PrivilegeRepository = undefined!
 export let roleRepository: RoleRepository = undefined!
 export let userProfilePictureRepository: UserProfilePictureRepository = undefined!;
 
-(async () => {
+async function tryAndWait(callback: CallableFunction, secondsToWaitForEachTry: number = 5) {
     let safety = 0
     while (safety <= 100) {
         safety++
         try {
-            await db.initializeDb();
-            userRepository = new UserRepository(await db.getUserCollection())
-            privilegeRepository = new PrivilegeRepository(await db.getPrivilegeCollection())
-            roleRepository = new RoleRepository(await db.getRoleCollection())
-            userProfilePictureRepository = new UserProfilePictureRepository(await db.getUserProfilePictureBucket())
+            await callback()
             break;
         }
         catch (e) { console.error(e) }
         finally {
             await (() => new Promise<void>((res, rej) => {
                 console.log('waiting for 5 seconds...')
-                setTimeout(() => { res() }, 5000)
+                setTimeout(() => { res() }, secondsToWaitForEachTry * 1000)
             }))()
         }
     }
@@ -149,12 +145,22 @@ export let userProfilePictureRepository: UserProfilePictureRepository = undefine
         console.log('safety reached!!')
         exit(1)
     }
+}
+
+(async () => {
+    await tryAndWait(async () => {
+        await db.initializeDb();
+        userRepository = new UserRepository(await db.getUserCollection())
+        privilegeRepository = new PrivilegeRepository(await db.getPrivilegeCollection())
+        roleRepository = new RoleRepository(await db.getRoleCollection())
+        userProfilePictureRepository = new UserProfilePictureRepository(await db.getUserProfilePictureBucket())
+    })
+
+    await tryAndWait(async () => await queueManagement.subscribeConsumers(messageBrokerUrl))
 
     await userRepository.initialize(adminUsername, adminPhoneNumber, adminEmail, adminPassword)
     await privilegeRepository.initialize()
     await roleRepository.initialize()
-
-    await queueManagement.subscribeConsumers(messageBrokerUrl)
 
     const app = express()
 
