@@ -34,6 +34,7 @@ services:
             - "5672:5672"  # AMQP port
             - "15672:15672" # Management UI port
         environment:
+            RABBITMQ_MANAGEMENT_DISABLE_METRICS_COLLECTOR: 'true'
             RABBITMQ_DEFAULT_USER: admin
             RABBITMQ_DEFAULT_PASS: password
         networks:

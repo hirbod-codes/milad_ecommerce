@@ -238,6 +238,7 @@ services:
             - "5672:5672"  # AMQP port for node 1
             - "15672:15672" # Management UI port for node 1
         environment:
+            RABBITMQ_MANAGEMENT_DISABLE_METRICS_COLLECTOR: 'true'
             RABBITMQ_ERLANG_COOKIE: "secret_cookie" # Cluster cookie (must be the same for all nodes)
             RABBITMQ_DEFAULT_USER: admin
             RABBITMQ_DEFAULT_PASS: password
@@ -256,6 +257,7 @@ services:
             - "5673:5672"  # AMQP port for node 2
             - "15673:15672" # Management UI port for node 2
         environment:
+            RABBITMQ_MANAGEMENT_DISABLE_METRICS_COLLECTOR: 'true'
             RABBITMQ_ERLANG_COOKIE: "secret_cookie" # Cluster cookie (must be the same for all nodes)
             RABBITMQ_DEFAULT_USER: admin
             RABBITMQ_DEFAULT_PASS: password
@@ -277,6 +279,7 @@ services:
             - "5674:5672"  # AMQP port for node 3
             - "15674:15672" # Management UI port for node 3
         environment:
+            RABBITMQ_MANAGEMENT_DISABLE_METRICS_COLLECTOR: 'true'
             RABBITMQ_ERLANG_COOKIE: "secret_cookie" # Cluster cookie (must be the same for all nodes)
             RABBITMQ_DEFAULT_USER: admin
             RABBITMQ_DEFAULT_PASS: password
