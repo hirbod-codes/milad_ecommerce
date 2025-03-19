@@ -92,28 +92,19 @@ export let tagRepository: TagRepository = undefined!
 export let roleRepository: RoleRepository = undefined!
 export let productPictureRepository: ProductPictureRepository = undefined!;
 
-
-(async () => {
+async function tryAndWait(callback: CallableFunction, secondsToWaitForEachTry: number = 5) {
     let safety = 0
     while (safety <= 100) {
         safety++
         try {
-            await db.initializeDb();
-            userRepository = new UserRepository(await db.getUserCollection())
-            categoryRepository = new CategoryRepository(await db.getCategoryCollection())
-            orderRepository = new OrderRepository(await db.getOrderCollection())
-            productRepository = new ProductRepository(await db.getProductCollection())
-            productReviewsRepository = new ProductReviewsRepository(await db.getProductReviewsCollection())
-            tagRepository = new TagRepository(await db.getTagCollection())
-            roleRepository = new RoleRepository(await db.getRoleCollection())
-            productPictureRepository = new ProductPictureRepository(await db.getProductPictureBucket())
+            await callback()
             break;
         }
         catch (e) { console.error(e) }
         finally {
             await (() => new Promise<void>((res, rej) => {
                 console.log('waiting for 5 seconds...')
-                setTimeout(() => { res() }, 5000)
+                setTimeout(() => { res() }, secondsToWaitForEachTry * 1000)
             }))()
         }
     }
@@ -122,8 +113,22 @@ export let productPictureRepository: ProductPictureRepository = undefined!;
         console.log('safety reached!!')
         exit(1)
     }
+}
 
-    await queueManagement.subscribeConsumers(messageBrokerUrl)
+(async () => {
+    await tryAndWait(async () => {
+        await db.initializeDb();
+        userRepository = new UserRepository(await db.getUserCollection())
+        categoryRepository = new CategoryRepository(await db.getCategoryCollection())
+        orderRepository = new OrderRepository(await db.getOrderCollection())
+        productRepository = new ProductRepository(await db.getProductCollection())
+        productReviewsRepository = new ProductReviewsRepository(await db.getProductReviewsCollection())
+        tagRepository = new TagRepository(await db.getTagCollection())
+        roleRepository = new RoleRepository(await db.getRoleCollection())
+        productPictureRepository = new ProductPictureRepository(await db.getProductPictureBucket())
+    })
+
+    await tryAndWait(async () => await queueManagement.subscribeConsumers(messageBrokerUrl))
 
     const app = express()
 
