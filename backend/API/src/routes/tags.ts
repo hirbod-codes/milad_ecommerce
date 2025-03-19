@@ -1,9 +1,9 @@
 import { Router } from "express";
-import { tagRepository } from "src";
-import { tagImmutableSchema, tagInputSchema, tagUpdateSchema } from "src/DB/Models/Tag";
-import { stringObjectId } from "src/DB/Models/common_schemas";
-import { authenticate } from "src/middlewares/authenticate";
-import { authorize } from "src/middlewares/authorize";
+import { tagRepository } from "@/src";
+import { tagImmutableSchema, tagInputSchema, tagUpdateSchema } from "@/src/DB/Models/Tag";
+import { stringObjectId } from "@/src/DB/Models/common_schemas";
+import { authenticate } from "@/src/middlewares/authenticate";
+import { authorize } from "@/src/middlewares/authorize";
 
 const tags = Router()
 

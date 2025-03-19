@@ -35,7 +35,7 @@ export const messageBrokerManagementApiUrl = getStringEnv('MESSAGE_BROKER_MANAGE
 export const messageBrokerSingleUrl = getStringEnv('MESSAGE_BROKER_URL', 'The Message broker url environment variable is not provided', s => s.optional())
 
 if ((messageBrokerType === 'single' && messageBrokerSingleUrl === undefined) || (messageBrokerType === 'cluster' && messageBrokerManagementApiUrl === undefined))
-    throw new Error('Invalid environment variables is provided for rabbitMQ cluster')
+    throw new Error('Invalid environment variables is not provided for rabbitMQ cluster')
 
 let messageBrokerUrl: string = undefined!
 if (messageBrokerType === 'single')

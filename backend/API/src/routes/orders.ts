@@ -1,11 +1,11 @@
 import { Router } from "express";
 import { orderRepository, productRepository } from "../";
-import { Order, orderImmutableSchema, orderInputSchema, orderSchema, orderUpdateSchema, readableFields } from "src/DB/Models/Order";
-import { authenticate } from "src/middlewares/authenticate";
-import { authorize } from "src/middlewares/authorize";
-import { FilterManagement } from "src/DB/FilterManagement";
+import { Order, orderImmutableSchema, orderInputSchema, orderSchema, orderUpdateSchema, readableFields } from "@/src/DB/Models/Order";
+import { authenticate } from "@/src/middlewares/authenticate";
+import { authorize } from "@/src/middlewares/authorize";
+import { FilterManagement } from "@/src/DB/FilterManagement";
 import { array, number, object, string } from "yup";
-import { stringObjectId } from "src/DB/Models/common_schemas";
+import { stringObjectId } from "@/src/DB/Models/common_schemas";
 import Jwt from "jsonwebtoken";
 
 const orders = Router()

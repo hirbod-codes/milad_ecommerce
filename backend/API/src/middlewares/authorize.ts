@@ -1,6 +1,6 @@
 import { Request } from "express";
 import Jwt from "jsonwebtoken";
-import { roleRepository } from "src";
+import { roleRepository } from "@/src";
 import { array, string } from "yup";
 
 export async function authorize(req: Request, privilegeNames: string | string[], privilegeValue: any = true): Promise<boolean> {

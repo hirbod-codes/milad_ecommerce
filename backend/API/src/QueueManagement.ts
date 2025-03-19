@@ -1,5 +1,5 @@
 import amqp from 'amqplib'
-import { roleRepository } from 'src';
+import { roleRepository } from '@/src';
 import { array, string } from 'yup';
 
 export class QueueManagement {

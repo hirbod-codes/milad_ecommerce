@@ -1,9 +1,9 @@
 import { Router } from "express";
-import { categoryRepository } from "src";
-import { categoryImmutableSchema, categoryInputSchema, categoryUpdateSchema } from "src/DB/Models/Category";
-import { stringObjectId } from "src/DB/Models/common_schemas";
-import { authenticate } from "src/middlewares/authenticate";
-import { authorize } from "src/middlewares/authorize";
+import { categoryRepository } from "@/src";
+import { categoryImmutableSchema, categoryInputSchema, categoryUpdateSchema } from "@/src/DB/Models/Category";
+import { stringObjectId } from "@/src/DB/Models/common_schemas";
+import { authenticate } from "@/src/middlewares/authenticate";
+import { authorize } from "@/src/middlewares/authorize";
 
 const categories = Router()
 

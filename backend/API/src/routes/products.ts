@@ -1,11 +1,11 @@
 import { Router } from "express";
 import { productPictureRepository, productRepository } from "../";
-import { FilterManagement } from "../DB/FilterManagement";
-import { Product, productImmutableSchema, productInputSchema, productSchema, productUpdateSchema, readableFields } from "../DB/Models/Product";
+import { FilterManagement } from "@/src/DB/FilterManagement";
+import { Product, productImmutableSchema, productInputSchema, productSchema, productUpdateSchema, readableFields } from "@/src/DB/Models/Product";
 import { array, number, object, string, } from "yup";
-import { stringObjectId } from "src/DB/Models/common_schemas";
-import { authenticate } from "src/middlewares/authenticate";
-import { authorize } from "src/middlewares/authorize";
+import { stringObjectId } from "@/src/DB/Models/common_schemas";
+import { authenticate } from "@/src/middlewares/authenticate";
+import { authorize } from "@/src/middlewares/authorize";
 import archiver from "archiver";
 import busboy from "busboy";
 
