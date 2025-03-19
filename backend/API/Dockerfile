@@ -6,9 +6,7 @@ COPY package*.json ./
 
 RUN npm install
 
-COPY ./src ./src
-COPY ./tsconfig.json ./tsconfig.json
-COPY ./.env ./.env
+COPY . .
 
 CMD npm run dev
 
@@ -20,8 +18,7 @@ COPY package*.json ./
 
 RUN npm install
 
-COPY ./src ./src
-COPY ./tsconfig.json ./tsconfig.json
+COPY . .
 
 RUN npm run build
 
@@ -43,4 +40,4 @@ EXPOSE 3000
 COPY ./convert_secret_to_env.sh /usr/local/bin/convert_secret_to_env.sh
 RUN chmod +x /usr/local/bin/convert_secret_to_env.sh
 
-CMD . /usr/local/bin/convert_secret_to_env.sh && node dist/index.js
+CMD . /usr/local/bin/convert_secret_to_env.sh && node -r ./bootstrap.js dist/index.js
