@@ -1,10 +1,10 @@
 import { Router } from "express";
 import { DateTime } from "luxon";
-import { authManager, emailConfig, transporter, userRepository } from "../../";
-import { SessionManager } from "../../DB/Session/SessionManager";
+import { authManager, emailConfig, transporter, userRepository } from "@/src/";
+import { SessionManager } from "@/src/DB/Session/SessionManager";
 import { number, string } from "yup";
 import crypto from "crypto";
-import { User } from "../../DB/Models/User";
+import { User } from "@/src/DB/Models/User";
 
 const emailRouter = Router()
 

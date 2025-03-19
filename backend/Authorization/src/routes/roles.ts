@@ -1,9 +1,9 @@
 import { Router } from "express"
-import { queueManagement, roleRepository, userRepository } from "src"
-import { likeObjectId, stringObjectId } from "src/DB/Models/common_schemas"
-import { roleInputSchema, roleUpdateSchema } from "src/DB/Models/Role"
-import { authenticate } from "src/middlewares/authenticate"
-import { authorize } from "src/middlewares/authorize"
+import { queueManagement, roleRepository, userRepository } from "@/src"
+import { likeObjectId, stringObjectId } from "@/src/DB/Models/common_schemas"
+import { roleInputSchema, roleUpdateSchema } from "@/src/DB/Models/Role"
+import { authenticate } from "@/src/middlewares/authenticate"
+import { authorize } from "@/src/middlewares/authorize"
 import { array, string } from "yup"
 
 const roles = Router()

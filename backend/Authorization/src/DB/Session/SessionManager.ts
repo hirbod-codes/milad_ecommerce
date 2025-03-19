@@ -1,4 +1,4 @@
-import { sessionRedisClient } from "../../";
+import { sessionRedisClient } from "@/src";
 import { SessionInsertionFailure } from "./Exceptions/SessionInsertionFailure";
 import { SessionRetrievalFailure } from "./Exceptions/SessionRetrievalFailure";
 

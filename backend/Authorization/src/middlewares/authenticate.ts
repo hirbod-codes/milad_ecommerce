@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from "express"
-import { jwtSecret } from "src"
-import { RevokedAccessTokenManager } from "src/RevokedAccessTokens/RevokedAccessTokenManager"
+import { jwtSecret } from "@/src"
+import { RevokedAccessTokenManager } from "@/src/RevokedAccessTokens/RevokedAccessTokenManager"
 import Jwt from "jsonwebtoken";
 
 export async function authenticate(req: Request, res: Response, next: NextFunction) {

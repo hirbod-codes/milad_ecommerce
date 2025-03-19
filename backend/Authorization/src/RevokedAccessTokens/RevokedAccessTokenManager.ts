@@ -1,4 +1,4 @@
-import { revokedTokensRedisClient } from "..";
+import { revokedTokensRedisClient } from "@/src";
 import { InsertionFailure } from "./Exceptions/InsertionFailure";
 import { RetrievalFailure } from "./Exceptions/RetrievalFailure";
 

@@ -1,11 +1,11 @@
 import { Router } from "express"
-import { emailConfig, otpProviderConfig, transporter, userProfilePictureRepository, userRepository } from "src"
-import { likeObjectId, stringObjectId } from "src/DB/Models/common_schemas"
-import { authenticate } from "src/middlewares/authenticate"
-import { authorize } from "src/middlewares/authorize"
+import { emailConfig, otpProviderConfig, transporter, userProfilePictureRepository, userRepository } from "@/src"
+import { likeObjectId, stringObjectId } from "@/src/DB/Models/common_schemas"
+import { authenticate } from "@/src/middlewares/authenticate"
+import { authorize } from "@/src/middlewares/authorize"
 import Jwt from "jsonwebtoken";
-import { userSchema, userUpdateSchema } from "src/DB/Models/User"
-import { SessionManager } from "src/DB/Session/SessionManager"
+import { userSchema, userUpdateSchema } from "@/src/DB/Models/User"
+import { SessionManager } from "@/src/DB/Session/SessionManager"
 import { DateTime } from "luxon"
 import crypto from "crypto";
 import { mixed, number, string } from "yup"

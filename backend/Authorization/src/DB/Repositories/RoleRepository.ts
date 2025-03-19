@@ -2,7 +2,7 @@ import { Collection, DeleteResult, InsertOneResult, ObjectId, UpdateResult } fro
 import { DateTime } from 'luxon'
 import { Role, RoleCreate, RoleInput, RoleUpdate, RoleWithPrivileges, schemaVersion } from '../Models/Role'
 import { collectionName } from '../Models/Privilege'
-import { privilegeRepository } from 'src'
+import { privilegeRepository } from '@/src'
 
 export class RoleRepository {
     private collection: Collection<RoleCreate>

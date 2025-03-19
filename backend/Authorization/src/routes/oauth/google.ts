@@ -1,6 +1,6 @@
 import { Router } from "express";
-import { authManager, googleOAuth2Config, userRepository } from "../../";
-import { httpsRequest } from "../../helpers";
+import { authManager, googleOAuth2Config, userRepository } from "@/src/";
+import { httpsRequest } from "@/src/helpers";
 import { string } from "yup";
 
 const oauthGoogleRouter = Router()

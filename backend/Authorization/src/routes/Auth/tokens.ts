@@ -1,8 +1,8 @@
 import { Router } from "express";
-import { authManager } from "../../";
+import { authManager } from "@/src/";
 import { string } from "yup";
-import { RevokedAccessTokenManager } from "src/RevokedAccessTokens/RevokedAccessTokenManager";
-import { stringObjectId } from "src/DB/Models/common_schemas";
+import { RevokedAccessTokenManager } from "@/src/RevokedAccessTokens/RevokedAccessTokenManager";
+import { stringObjectId } from "@/src/DB/Models/common_schemas";
 
 const tokenRouter = Router()
 

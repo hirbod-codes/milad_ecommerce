@@ -1,9 +1,9 @@
 import { Router } from "express"
-import { privilegeRepository } from "src"
-import { stringObjectId } from "src/DB/Models/common_schemas"
-import { privilegeUpdateSchema } from "src/DB/Models/Privilege"
-import { authenticate } from "src/middlewares/authenticate"
-import { authorize } from "src/middlewares/authorize"
+import { privilegeRepository } from "@/src"
+import { stringObjectId } from "@/src/DB/Models/common_schemas"
+import { privilegeUpdateSchema } from "@/src/DB/Models/Privilege"
+import { authenticate } from "@/src/middlewares/authenticate"
+import { authorize } from "@/src/middlewares/authorize"
 
 const privileges = Router()
 
