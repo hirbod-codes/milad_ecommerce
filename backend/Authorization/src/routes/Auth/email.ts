@@ -4,7 +4,7 @@ import { authManager, emailConfig, transporter, userRepository } from "@/src/";
 import { SessionManager } from "@/src/DB/Session/SessionManager";
 import { number, string } from "yup";
 import crypto from "crypto";
-import { User } from "@/src/DB/Models/User";
+import { User, userInputSchema } from "@/src/DB/Models/User";
 
 const emailRouter = Router()
 
@@ -15,7 +15,7 @@ emailRouter.post('/send-code', async (req, res) => {
         let { email } = req.body
 
         if (!string().required().email().isValidSync(email)) {
-            res.sendStatus(400)
+            res.status(400).json({ message: '' })
             return
         }
 
@@ -60,18 +60,19 @@ emailRouter.post('/signup', async (req, res) => {
 
         const { email, password, code } = req.body
 
-        if (!string().required().email().isValidSync(email)) {
-            res.sendStatus(400)
-            return
-        }
+        const badRequestErrors = []
 
-        if (!string().required().min(8).isValidSync(password)) {
-            res.sendStatus(400)
-            return
-        }
+        if (!userInputSchema.pick(['email']).required().isValidSync({ email }))
+            badRequestErrors.push('invalid email')
 
-        if (!number().required().min(100_000).max(999_999).isValidSync(code)) {
-            res.sendStatus(400)
+        if (!userInputSchema.pick(['password']).required().isValidSync({ password }))
+            badRequestErrors.push('invalid password')
+
+        if (!number().strict(true).required().min(100_000).max(999_999).isValidSync(code))
+            badRequestErrors.push('invalid code')
+
+        if (badRequestErrors.length !== 0) {
+            res.status(400).json({ errors: badRequestErrors })
             return
         }
 
@@ -81,7 +82,8 @@ emailRouter.post('/signup', async (req, res) => {
         try { json = await SessionManager.getSession(email) }
         catch (e) {
             console.error(e)
-            throw new Error('session not found')
+            res.status(400).json({ message: 'invalid or expired code' })
+            return
         }
 
         if (!json)
@@ -94,7 +96,7 @@ emailRouter.post('/signup', async (req, res) => {
         console.log('from redis', { inSessionCode, inSessionExpiresAt })
 
         if (inSessionCode !== code || inSessionExpiresAt <= DateTime.utc().toUnixInteger()) {
-            res.sendStatus(400)
+            res.status(400).json({ message: 'invalid or expired code' })
             return
         }
 
@@ -155,13 +157,16 @@ emailRouter.post('/login', async (req, res) => {
 
         const { email, password } = req.body
 
-        if (!string().required().email().isValidSync(email)) {
-            res.sendStatus(400)
-            return
-        }
+        const badRequestErrors = []
 
-        if (!string().required().min(8).isValidSync(password)) {
-            res.sendStatus(400)
+        if (!userInputSchema.pick(['email']).required().isValidSync({ email }))
+            badRequestErrors.push('invalid email')
+
+        if (!userInputSchema.pick(['password']).required().isValidSync({ password }))
+            badRequestErrors.push('invalid password')
+
+        if (badRequestErrors.length !== 0) {
+            res.status(400).json({ errors: ['invalid credentials'] })
             return
         }
 
@@ -170,7 +175,7 @@ emailRouter.post('/login', async (req, res) => {
         let user: User | undefined | null = await userRepository.getUserByEmail(email)
         console.log('user', user)
         if (!user) {
-            res.sendStatus(400)
+            res.status(400).json({ errors: ['invalid credentials '] })
             return
         }
 
@@ -187,7 +192,7 @@ emailRouter.post('/login', async (req, res) => {
         console.log('computedHash', computedHash)
 
         if (user.password !== computedHash) {
-            res.sendStatus(400)
+            res.status(400).json({ errors: ['invalid credentials'] })
             return
         }
 
