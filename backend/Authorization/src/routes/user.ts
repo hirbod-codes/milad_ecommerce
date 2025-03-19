@@ -186,7 +186,7 @@ from sender`
 
         const expiresAt = DateTime.utc().plus({ seconds: 60 }).toUnixInteger()
         const sessionId = 'patch_email_' + crypto.randomBytes(128).toString('base64')
-        try { await SessionManager.setSession(sessionId, JSON.stringify({ code, expiresAt }), expiresAt, true) }
+        try { await SessionManager.setSession(sessionId, JSON.stringify({ code, expiresAt }), expiresAt, 'update_email') }
         catch (e) {
             console.error(e)
             throw new Error('system failed to set session')
@@ -309,7 +309,7 @@ from sender`
 
         const expiresAt = DateTime.utc().plus({ seconds: 60 }).toUnixInteger()
         const sessionId = 'patch_phone_number_' + crypto.randomBytes(128).toString('base64')
-        try { await SessionManager.setSession(sessionId, JSON.stringify({ code, expiresAt }), expiresAt, true) }
+        try { await SessionManager.setSession(sessionId, JSON.stringify({ code, expiresAt }), expiresAt, 'update_phone_number') }
         catch (e) {
             console.error(e)
             throw new Error('system failed to set session')
@@ -449,7 +449,7 @@ from sender`
 
         const expiresAt = DateTime.utc().plus({ seconds: 60 }).toUnixInteger()
         const sessionId = 'patch_username_' + crypto.randomBytes(128).toString('base64')
-        try { await SessionManager.setSession(sessionId, JSON.stringify({ code, expiresAt }), expiresAt, true) }
+        try { await SessionManager.setSession(sessionId, JSON.stringify({ code, expiresAt }), expiresAt, 'update_username') }
         catch (e) {
             console.error(e)
             throw new Error('system failed to set session')
@@ -589,7 +589,7 @@ from sender`
 
         const expiresAt = DateTime.utc().plus({ seconds: 60 }).toUnixInteger()
         const sessionId = 'patch_password_' + crypto.randomBytes(128).toString('base64')
-        try { await SessionManager.setSession(sessionId, JSON.stringify({ code, expiresAt }), expiresAt, true) }
+        try { await SessionManager.setSession(sessionId, JSON.stringify({ code, expiresAt }), expiresAt, 'update_password') }
         catch (e) {
             console.error(e)
             throw new Error('system failed to set session')
@@ -742,7 +742,7 @@ from sender`
 
         const expiresAt = DateTime.utc().plus({ seconds: 60 }).toUnixInteger()
         const sessionId = 'delete_user_' + crypto.randomBytes(128).toString('base64')
-        try { await SessionManager.setSession(sessionId, JSON.stringify({ code, expiresAt }), expiresAt, true) }
+        try { await SessionManager.setSession(sessionId, JSON.stringify({ code, expiresAt }), expiresAt, 'delete_user_self') }
         catch (e) {
             console.error(e)
             throw new Error('system failed to set session')

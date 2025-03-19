@@ -3,15 +3,15 @@ import { SessionInsertionFailure } from "./Exceptions/SessionInsertionFailure";
 import { SessionRetrievalFailure } from "./Exceptions/SessionRetrievalFailure";
 
 export class SessionManager {
-    static async setSession(key: string, value: string, expiresAt?: number, ensureUniqueness = false): Promise<void> {
+    static async setSession(key: string, value: string, expiresAt?: number, uniquenessKey?: string): Promise<void> {
         try {
             await sessionRedisClient.connect()
 
-            if (ensureUniqueness) {
-                const redisKey = await sessionRedisClient.incr('uniqueKeyCounter')
+            if (uniquenessKey) {
+                const redisKey = await sessionRedisClient.incr(uniquenessKey)
                 key = redisKey + '_' + key
             }
-            let result = await sessionRedisClient.set(key, value, { NX: ensureUniqueness ? ensureUniqueness : undefined, EXAT: expiresAt })
+            let result = await sessionRedisClient.set(key, value, { NX: uniquenessKey ? true : undefined, EXAT: expiresAt })
 
             if (result === null || result === undefined)
                 throw new SessionInsertionFailure()
