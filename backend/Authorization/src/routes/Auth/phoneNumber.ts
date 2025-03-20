@@ -35,19 +35,19 @@ from sender`
         const json = JSON.stringify(data)
 
         try {
-            // let otpResponse = (await fetch(`https://rest.payamak-panel.com/api/SendSMS/SendSMS`, {
-            //     method: 'post',
-            //     body: json,
-            //     headers: [['Content-Type', 'application/json'], ['Accept', 'application/json']]
-            // }))
-            // console.log(otpResponse.status)
+            let otpResponse = (await fetch(`https://rest.payamak-panel.com/api/SendSMS/SendSMS`, {
+                method: 'post',
+                body: json,
+                headers: [['Content-Type', 'application/json'], ['Accept', 'application/json']]
+            }))
+            console.log(otpResponse.status)
 
-            // if (!otpResponse.ok)
-            //     throw new Error('system failed to send an otp message')
+            if (!otpResponse.ok)
+                throw new Error('system failed to send an otp message')
 
-            // let responseStatus = Number((await otpResponse.json()).value)
-            // if (responseStatus <= 35)
-            //     throw new Error('system failed to send an otp message')
+            let responseStatus = Number((await otpResponse.json()).value)
+            if (responseStatus <= 35)
+                throw new Error('system failed to send an otp message')
         } catch (e) {
             console.error(e)
             throw new Error('system failed to send an otp message')
