@@ -1,8 +1,6 @@
 import { Router } from "express";
 import { authManager } from "@/src/";
-import { string } from "yup";
 import { RevokedAccessTokenManager } from "@/src/RevokedAccessTokens/RevokedAccessTokenManager";
-import { stringObjectId } from "@/src/DB/Models/common_schemas";
 import { refreshTokenInputSchema } from "@/src/DB/Models/RefreshToken";
 
 const tokenRouter = Router()
@@ -27,7 +25,7 @@ tokenRouter.post('/retrieve-access-token', async (req, res) => {
 
         let token = await authManager.retrieveAccessToken(refreshToken)
 
-        res.sendStatus(201).json({ token })
+        res.status(201).json({ token })
     } catch (e) {
         console.error(e)
         res.sendStatus(500)

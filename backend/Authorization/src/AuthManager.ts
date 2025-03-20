@@ -111,13 +111,15 @@ export class AuthManager {
                 if (DateTime.utc().toUnixInteger() < expirationTS)
                     await RevokedAccessTokenManager.set(doc.accessToken, 'true', expirationTS)
 
-                let r = (await (await db.getRefreshTokensCollection()).deleteOne({ refreshToken }))
+                const accessToken = await this.generateAccessToken(userId, doc.role)
+
+                let r = (await (await db.getRefreshTokensCollection()).updateOne({ refreshToken }, { $set: { accessToken } }))
                 if (!r.acknowledged) {
                     reject()
                     return
                 }
 
-                resolve(await this.generateAccessToken(userId, doc.role))
+                resolve(accessToken)
             } catch (e) {
                 console.error(e)
                 reject(e)

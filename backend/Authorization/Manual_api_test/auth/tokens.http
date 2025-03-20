@@ -4,6 +4,6 @@ Content-Type: application/json
 Accept: application/json
 
 {
-    "refreshToken": "eyJhbGciOiJIUzUxMiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI2N2RiNjA5M2E4YWU0NWNjMDc3ODlkZjQiLCJyb2xlIjoiZGVmYXVsdCIsImlhdCI6MTc0MjQzMDM1NSwiZXhwIjoxNzQzMDM1MTU1LCJpc3MiOiJBdXRob3JpemF0aW9uIFNlcnZlciJ9.--KFNzh61-DMudJK-tlcoBnlaau5d1JxpjgVT2AKpAcjrwtyQkOFU3sEdzkOQrcoXRTV2vd3ylC_9G-Gy8WFUg",
-    "userId": "67db6093a8ae45cc07789df4"
+    "refreshToken": "eyJhbGciOiJIUzUxMiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI2N2RiZmFmNzNkM2Q1NDQzMjYwMTRkOTgiLCJyb2xlIjoiZGVmYXVsdCIsImlhdCI6MTc0MjQ3MDk3NCwiZXhwIjoxNzQzMDc1Nzc0LCJpc3MiOiJBdXRob3JpemF0aW9uIFNlcnZlciJ9.GbojEd8uP6SfO_Bwd2eMce4cwplv7lRzWiGhUAENEs_CH2RcfIoHUMI-sHNN2Hi_sSnpjLmQK3p37LsQBOOvnw",
+    "userId": "67dbfaf73d3d544326014d98"
 }

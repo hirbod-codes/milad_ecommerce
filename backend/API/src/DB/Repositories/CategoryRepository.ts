@@ -35,12 +35,12 @@ export class CategoryRepository {
     }
 
     async update(id: string, category: CategoryUpdate): Promise<UpdateResult | false> {
-        try { return await this.collection.updateOne({ _id: ObjectId.createFromHexString(id) }, { ...category, updatedAt: DateTime.utc().toUnixInteger() }) }
+        try { return await this.collection.updateOne({ _id: ObjectId.createFromHexString(id) }, { $set: { ...category, updatedAt: DateTime.utc().toUnixInteger() } }) }
         catch (e) { console.error(e); return false }
     }
 
     async updateImmutables(id: string, immutableFields: CategoryImmutable): Promise<UpdateResult | false> {
-        try { return await this.collection.updateOne({ _id: ObjectId.createFromHexString(id) }, { ...immutableFields, updatedAt: DateTime.utc().toUnixInteger() }) }
+        try { return await this.collection.updateOne({ _id: ObjectId.createFromHexString(id) }, { $set: { ...immutableFields, updatedAt: DateTime.utc().toUnixInteger() } }) }
         catch (e) { console.error(e); return false }
     }
 

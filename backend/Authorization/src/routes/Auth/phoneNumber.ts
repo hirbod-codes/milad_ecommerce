@@ -19,7 +19,7 @@ phoneNumberRouter.post('/send-code', async (req, res) => {
         }
 
         const code = Math.round((Math.random() * (999_999 - 100_000)) + 100_000)
-        console.log(code)
+        console.log('code', code)
 
         const text = `Your verification code is: ${code}
 
@@ -35,25 +35,26 @@ from sender`
         const json = JSON.stringify(data)
 
         try {
-            let otpResponse = (await fetch(`https://rest.payamak-panel.com/api/SendSMS/SendSMS`, {
-                method: 'post',
-                body: json,
-                headers: [['Content-Type', 'application/json'], ['Accept', 'application/json']]
-            }))
-            console.log(otpResponse.status)
+            // let otpResponse = (await fetch(`https://rest.payamak-panel.com/api/SendSMS/SendSMS`, {
+            //     method: 'post',
+            //     body: json,
+            //     headers: [['Content-Type', 'application/json'], ['Accept', 'application/json']]
+            // }))
+            // console.log(otpResponse.status)
 
-            if (!otpResponse.ok)
-                throw new Error('system failed to send an otp message')
+            // if (!otpResponse.ok)
+            //     throw new Error('system failed to send an otp message')
 
-            let responseStatus = Number((await otpResponse.json()).value)
-            if (responseStatus <= 35)
-                throw new Error('system failed to send an otp message')
+            // let responseStatus = Number((await otpResponse.json()).value)
+            // if (responseStatus <= 35)
+            //     throw new Error('system failed to send an otp message')
         } catch (e) {
             console.error(e)
             throw new Error('system failed to send an otp message')
         }
 
         const expiresAt = DateTime.utc().plus({ seconds: 60 }).toUnixInteger()
+        console.log('expiresAt', DateTime.utc(), DateTime.fromSeconds(expiresAt).toString())
 
         try {
             await SessionManager.setSession(phoneNumber, JSON.stringify({ code, expiresAt }), expiresAt)
