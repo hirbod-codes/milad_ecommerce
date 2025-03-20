@@ -1,6 +1,43 @@
 version: '3.8'
 
 services:
+    ############################################################################################# mongo_express
+    mongo_express:
+        container_name: mongo_express
+        image: mongo-express:latest
+        restart: always
+        environment:
+            - ME_CONFIG_MONGODB_SERVER=main_mongodb_mongos1
+            - ME_CONFIG_MONGODB_PORT=27017
+            - ME_CONFIG_MONGODB_ADMINUSERNAME=admin
+            - ME_CONFIG_MONGODB_ADMINPASSWORD=password
+            - ME_CONFIG_BASICAUTH_USERNAME=admin
+            - ME_CONFIG_BASICAUTH_PASSWORD=password
+        ports:
+            - 8081:8081
+        depends_on:
+            - main_mongodb_mongos1
+        networks:
+            - base
+
+    ############################################################################################# redis_commander
+    redis_commander:
+        container_name: redis_commander
+        hostname: redis_commander
+        user: redis
+        image: ghcr.io/joeferner/redis-commander:latest
+        restart: always
+        environment:
+            - REDIS_HOSTS=cluster1:revoked_access_tokens_redis_1:6379,cluster2:authorization_redis_1:6379
+        ports:
+            - 8082:8081
+        depends_on:
+            - revoked_access_tokens_redis_1
+            - authorization_redis_1
+        networks:
+            - base
+            - authorization_redis
+
     ############################################################################################# main_mongodb
     # Initialization Service
     main_mongodb_init:

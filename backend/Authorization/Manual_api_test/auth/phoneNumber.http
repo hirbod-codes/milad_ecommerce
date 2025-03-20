@@ -1,0 +1,19 @@
+###
+POST http://localhost:3001/auth/phone-number/send-code HTTP/1.1
+Content-Type: application/json
+Accept: application/json
+
+{
+    "phoneNumber": "09999999999"
+}
+
+###
+POST http://localhost:3001/auth/phone-number/authenticate HTTP/1.1
+Content-Type: application/json
+Accept: application/json
+
+{
+    "phoneNumber": "09999999999",
+    "code": 123546
+}
+

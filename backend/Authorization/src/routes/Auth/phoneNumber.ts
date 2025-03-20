@@ -3,6 +3,7 @@ import { DateTime } from "luxon";
 import { authManager, otpProviderConfig, userRepository } from "@/src/";
 import { SessionManager } from "@/src/DB/Session/SessionManager";
 import { number, string } from "yup";
+import { userInputSchema } from "@/src/DB/Models/User";
 
 const phoneNumberRouter = Router()
 
@@ -10,10 +11,10 @@ phoneNumberRouter.post('/send-code', async (req, res) => {
     try {
         console.log('received request to /send-code')
 
-        let { phoneNumber } = req.body
+        let { phoneNumber }: { phoneNumber: string } = req.body
 
-        if (!string().required().matches(/^09[0-9]{9}$/).isValidSync(phoneNumber)) {
-            res.sendStatus(400)
+        if (!userInputSchema.pick(['phoneNumber']).strict(true).required().isValidSync({ phoneNumber })) {
+            res.status(400).json({ message: 'invalid Phone number' })
             return
         }
 
@@ -72,15 +73,18 @@ phoneNumberRouter.post('/authenticate', async (req, res) => {
     try {
         console.log('received request to /authenticate')
 
-        let { phoneNumber, code } = req.body
+        let { phoneNumber, code }: { phoneNumber: string, code: number } = req.body
 
-        if (!string().required().matches(/^09[0-9]{9}$/).isValidSync(phoneNumber)) {
-            res.sendStatus(400)
-            return
-        }
+        const badRequestErrors = []
 
-        if (!number().required().min(100_000).max(999_999).isValidSync(code)) {
-            res.sendStatus(400)
+        if (!userInputSchema.pick(['phoneNumber']).strict(true).required().isValidSync({ phoneNumber }))
+            badRequestErrors.push('invalid Phone number')
+
+        if (!number().strict(true).required().min(100_000).max(999_999).isValidSync(code))
+            badRequestErrors.push('invalid email')
+
+        if (badRequestErrors.length !== 0) {
+            res.status(400).json(badRequestErrors)
             return
         }
 
@@ -103,7 +107,7 @@ phoneNumberRouter.post('/authenticate', async (req, res) => {
         console.log('from redis', { inSessionCode, inSessionExpiresAt })
 
         if (inSessionCode !== code || inSessionExpiresAt <= DateTime.utc().toUnixInteger()) {
-            res.sendStatus(400)
+            res.status(400).json({ message: 'invalid or expired code' })
             return
         }
 

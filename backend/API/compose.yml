@@ -1,6 +1,44 @@
 version: '3.8'
 
 services:
+    ############################################################################################# mongo_express
+    mongo_express:
+        container_name: mongo_express
+        image: mongo-express:latest
+        environment:
+            - ME_CONFIG_MONGODB_SERVER=main_mongodb
+            - ME_CONFIG_MONGODB_PORT=27017
+            - ME_CONFIG_MONGODB_ADMINUSERNAME=admin
+            - ME_CONFIG_MONGODB_ADMINPASSWORD=password
+            - ME_CONFIG_BASICAUTH_USERNAME=admin
+            - ME_CONFIG_BASICAUTH_PASSWORD=password
+        ports:
+            - 8081:8081
+        depends_on:
+            - main_mongodb
+        networks:
+            - base
+
+    ############################################################################################# redis_commander
+    redis_commander:
+        container_name: redis_commander
+        hostname: redis_commander
+        user: redis
+        image: ghcr.io/joeferner/redis-commander:latest
+        restart: always
+        environment:
+            - REDIS_HOSTS=local:revoked_access_tokens_redis:6379,local:api_redis:6379,local:authorization_redis:6379
+        ports:
+            - 8082:8081
+        depends_on:
+            - revoked_access_tokens_redis
+            - authorization_redis
+            - api_redis
+        networks:
+            - base
+            - api_redis
+            - authorization_redis
+
     ############################################################################################# main_mongodb
     main_mongodb:
         container_name: main_mongodb
@@ -9,7 +47,7 @@ services:
             dockerfile: mongodb/single/Dockerfile
             target: development
         ports:
-                - 8082:27017
+                - 8083:27017
         environment:
             MONGODB_USERNAME: admin
             MONGODB_PASSWORD: password

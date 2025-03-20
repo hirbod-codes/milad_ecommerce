@@ -3,22 +3,25 @@ import { authManager } from "@/src/";
 import { string } from "yup";
 import { RevokedAccessTokenManager } from "@/src/RevokedAccessTokens/RevokedAccessTokenManager";
 import { stringObjectId } from "@/src/DB/Models/common_schemas";
+import { refreshTokenInputSchema } from "@/src/DB/Models/RefreshToken";
 
 const tokenRouter = Router()
 
 tokenRouter.post('/retrieve-access-token', async (req, res) => {
     try {
-        console.log('received request to /retrieve-access-token')
 
         let { refreshToken, userId } = req.body
 
-        if (!string().required().max(350).isValidSync(refreshToken)) {
-            res.sendStatus(400)
-            return
-        }
+        const badRequestErrors = []
 
-        if (!stringObjectId.required().isValidSync(userId)) {
-            res.sendStatus(400)
+        if (!refreshTokenInputSchema.pick(['refreshToken']).required().isValidSync({ refreshToken }))
+            badRequestErrors.push('invalid refresh token')
+
+        if (!refreshTokenInputSchema.pick(['userId']).required().isValidSync({ userId }))
+            badRequestErrors.push('invalid user id')
+
+        if (badRequestErrors.length !== 0) {
+            res.status(400).json(badRequestErrors)
             return
         }
 
@@ -33,12 +36,10 @@ tokenRouter.post('/retrieve-access-token', async (req, res) => {
 
 tokenRouter.post('/revoke-access-token', async (req, res) => {
     try {
-        console.log('received request to /retrieve-access-token')
-
         let { accessToken } = req.body
 
-        if (!string().required().max(350).isValidSync(accessToken)) {
-            res.sendStatus(400)
+        if (!refreshTokenInputSchema.pick(['accessToken']).required().isValidSync({ accessToken })) {
+            res.status(400).json({ message: 'invalid Access token' })
             return
         }
 
@@ -46,18 +47,12 @@ tokenRouter.post('/revoke-access-token', async (req, res) => {
         try { payload = authManager.verify(accessToken) }
         catch (e) { console.error(e) }
 
-        if (payload === undefined || payload === false) {
-            res.sendStatus(400)
+        if (payload === undefined || payload === false || payload?.exp === undefined) {
+            res.status(400).json({ message: 'invalid Access token' })
             return
         }
 
-        const expirationTS = payload.exp
-        if (expirationTS === undefined) {
-            res.sendStatus(400)
-            return
-        }
-
-        await RevokedAccessTokenManager.set(accessToken, 'true', expirationTS)
+        await RevokedAccessTokenManager.set(accessToken, 'true', payload.exp)
 
         res.sendStatus(204)
     } catch (e) {

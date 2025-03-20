@@ -187,8 +187,8 @@ export class MongoDB {
 
         const indexes = await db.collection(refreshTokensCollectionName).indexes()
 
-        if (indexes.find(i => i.name === 'unique-username') === undefined)
-            await db.createIndex(refreshTokensCollectionName, { username: 1 }, { unique: true, name: 'unique-username' })
+        if (indexes.find(i => i.name === 'unique-userId') === undefined)
+            await db.createIndex(refreshTokensCollectionName, { userId: 1 }, { unique: true, name: 'unique-userId' })
 
         if (indexes.find(i => i.name === 'refreshToken') === undefined)
             await db.createIndex(refreshTokensCollectionName, { refreshToken: 1 }, { name: 'refreshToken' })

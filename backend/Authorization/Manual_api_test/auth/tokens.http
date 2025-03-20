@@ -1,0 +1,9 @@
+###
+POST http://localhost:3001/auth/tokens/retrieve-access-token HTTP/1.1
+Content-Type: application/json
+Accept: application/json
+
+{
+    "refreshToken": "eyJhbGciOiJIUzUxMiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI2N2RiNjA5M2E4YWU0NWNjMDc3ODlkZjQiLCJyb2xlIjoiZGVmYXVsdCIsImlhdCI6MTc0MjQzMDM1NSwiZXhwIjoxNzQzMDM1MTU1LCJpc3MiOiJBdXRob3JpemF0aW9uIFNlcnZlciJ9.--KFNzh61-DMudJK-tlcoBnlaau5d1JxpjgVT2AKpAcjrwtyQkOFU3sEdzkOQrcoXRTV2vd3ylC_9G-Gy8WFUg",
+    "userId": "67db6093a8ae45cc07789df4"
+}
