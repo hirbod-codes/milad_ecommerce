@@ -41,11 +41,9 @@ tokenRouter.post('/revoke-access-token', async (req, res) => {
             return
         }
 
-        let payload = undefined
-        try { payload = authManager.verify(accessToken) }
-        catch (e) { console.error(e) }
+        let payload = await authManager.verify(accessToken)
 
-        if (payload === undefined || payload === false || payload?.exp === undefined) {
+        if (payload === undefined || payload?.exp === undefined) {
             res.status(400).json({ message: 'invalid Access token' })
             return
         }

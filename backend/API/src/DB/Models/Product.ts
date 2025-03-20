@@ -1,9 +1,5 @@
-import { array, boolean, InferType, lazy, number, object, Schema, string } from "yup";
-import { likeObjectId } from "./common_schemas";
-
-const price = lazy(value => object().required().strict(true).shape(Object.keys(value).reduce<{ [k: string]: Schema }>((prev, key) => ({ ...prev, [key]: number().strict(true).required().positive() }), {})))
-
-const localizedText = lazy(value => object().required().strict(true).shape(Object.keys(value).reduce((prev, key) => ({ ...prev, [key]: string().required() }), {})))
+import { array, boolean, InferType, number, object, string } from "yup";
+import { likeObjectId, localizedText, price } from "./common_schemas";
 
 export const collectionName = 'product'
 
@@ -16,7 +12,7 @@ export const productSchema = object().required().strict(true).unknown(true).shap
     categories: array().optional().of(string().required()),
     name: localizedText,
     description: localizedText.optional(),
-    price,
+    price: price.required(),
     isAvailable: boolean().required(),
     thumbnail: likeObjectId.optional(),
     purchaseCount: number().positive().optional(),

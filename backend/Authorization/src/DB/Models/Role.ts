@@ -1,12 +1,10 @@
-import { array, InferType, lazy, mixed, number, object, string } from "yup";
+import { array, InferType, mixed, number, object, string } from "yup";
 import { Privilege } from "./Privilege";
-import { likeObjectId } from "./common_schemas";
+import { likeObjectId, localizedText } from "./common_schemas";
 
 export const collectionName = 'role'
 
 export const schemaVersion = 'v1.0.0'
-
-const localizedText = lazy(value => object().required().strict(true).shape(Object.keys(value).reduce((prev, key) => ({ ...prev, [key]: string().required() }), {}))).optional()
 
 export const roleSchema = object().required().noUnknown(true).strict(true).shape({
     schemaVersion: string().required().min(6).max(20),

@@ -1,0 +1,26 @@
+@accessToken=eyJhbGciOiJIUzUxMiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI2N2RiZmFmNzNkM2Q1NDQzMjYwMTRkOTgiLCJyb2xlIjoiZGVmYXVsdCIsImlhdCI6MTc0MjQ5MjA2OCwiZXhwIjoxNzQyNDkzODY4LCJpc3MiOiJBdXRob3JpemF0aW9uIFNlcnZlciJ9.4emKJ0jAGeF8K-XK1vjDJ09DK65PTpRiQwlb4ORWpm5pXuAhdtj_BaAZyHTzvS7c1YkdDB1HEaGKxDW8gE-Aiw
+###
+GET http://localhost:3001/privileges HTTP/1.1
+Authorization: Bearer {{accessToken}}
+Accept: application/json
+
+###
+POST http://localhost:3001/privileges HTTP/1.1
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+Accept: application/json
+
+{
+    "name": "test",
+    "value": true
+}
+
+###
+DELETE http://localhost:3001/privileges HTTP/1.1
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+Accept: application/json
+
+{
+    "id": "67dc537a2a85df5fbe5651dc"
+}

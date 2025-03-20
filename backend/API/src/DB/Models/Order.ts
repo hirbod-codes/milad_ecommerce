@@ -1,7 +1,5 @@
-import { array, boolean, InferType, lazy, number, object, Schema, string } from "yup";
-import { likeObjectId } from "./common_schemas";
-
-const cost = lazy(value => object().required().strict(true).shape(Object.keys(value).reduce<{ [k: string]: Schema }>((prev, key) => ({ ...prev, [key]: number().strict(true).required().positive() }), {})))
+import { array, boolean, InferType, number, object, Schema, string } from "yup";
+import { likeObjectId, price } from "./common_schemas";
 
 export const collectionName = 'order'
 
@@ -12,7 +10,7 @@ export const orderSchema = object().required().strict(true).unknown(true).shape(
     _id: likeObjectId.required(),
     userId: likeObjectId.required(),
     products: array().required().min(1).of(likeObjectId.required()),
-    cost,
+    cost: price.required(),
     isPayed: boolean().required(),
     isSent: boolean().required(),
     address: object().optional().shape({

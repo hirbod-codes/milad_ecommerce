@@ -1,11 +1,22 @@
 import { Router } from "express"
 import { privilegeRepository } from "@/src"
 import { stringObjectId } from "@/src/DB/Models/common_schemas"
-import { privilegeUpdateSchema } from "@/src/DB/Models/Privilege"
+import { privilegeCreateSchema, privilegeInputSchema, privilegeUpdateSchema } from "@/src/DB/Models/Privilege"
 import { authenticate } from "@/src/middlewares/authenticate"
 import { authorize } from "@/src/middlewares/authorize"
+import { AuthManager } from "../AuthManager"
+import { ValidationError } from "yup"
 
 const privileges = Router()
+
+privileges.get('/', authenticate, async (req, res) => {
+    try {
+        res.json(AuthManager.PRIVILEGE_NAMES)
+    } catch (e) {
+        console.error(e)
+        res.sendStatus(500)
+    }
+})
 
 privileges.post('/', authenticate, async (req, res) => {
     try {
@@ -14,19 +25,17 @@ privileges.post('/', authenticate, async (req, res) => {
             return
         }
 
-        const { id, privilege: privilegeUpdate } = req.body
+        const privilegeInput = req.body
 
-        if (!stringObjectId.required().isValidSync(id)) {
+        if (!privilegeInputSchema.isValidSync(privilegeInput)) {
+            try { privilegeInputSchema.validateSync(privilegeInput) }
+            catch (e) { console.error((e as ValidationError)) }
+
             res.sendStatus(400)
             return
         }
 
-        if (!privilegeUpdateSchema.isValidSync(privilegeUpdate)) {
-            res.sendStatus(400)
-            return
-        }
-
-        let r = await privilegeRepository.update(id!, privilegeUpdateSchema.cast(privilegeUpdate))
+        let r = await privilegeRepository.create(privilegeInputSchema.cast(privilegeInput))
         if (r === false) {
             res.sendStatus(500)
             return

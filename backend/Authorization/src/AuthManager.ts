@@ -5,8 +5,11 @@ import { DeletionFailure } from './DB/Exceptions/DeletionFailure';
 import { DateTime } from 'luxon';
 import { InsertionFailure } from './DB/Exceptions/InsertionFailure';
 import { RevokedAccessTokenManager } from './RevokedAccessTokens/RevokedAccessTokenManager';
+import { privilegeNames } from "@/src/DB/Models/privilegeNames"
 
 export class AuthManager {
+    static PRIVILEGE_NAMES: string[] = privilegeNames
+
     private jwtSecret: string
     private algorithm: Jwt.Algorithm
     private accessTokenExpiresIn: number | StringValue
@@ -73,9 +76,9 @@ export class AuthManager {
             try {
                 let userId: string | undefined = undefined
                 try {
-                    let payload = this.verify(refreshToken)
+                    let payload = await this.verify(refreshToken)
 
-                    if (payload === false) {
+                    if (payload === undefined) {
                         reject()
                         return
                     }
@@ -141,8 +144,18 @@ export class AuthManager {
             throw new DeletionFailure()
     }
 
-    verify(token: string): Jwt.JwtPayload | false {
-        try { return Jwt.verify(token, this.jwtSecret, { issuer: this.issuer, algorithms: [this.algorithm] }) as Jwt.JwtPayload }
-        catch (e) { console.error(e); return false }
+    verify(token: string): Promise<Jwt.JwtPayload | undefined> {
+        return new Promise<Jwt.JwtPayload | undefined>((resolve, reject) => {
+            Jwt.verify(token, this.jwtSecret, { complete: true, issuer: this.issuer, algorithms: [this.algorithm] }, (e, token) => {
+                if (e) {
+                    console.error(e)
+                    resolve(undefined)
+                } else if (typeof token?.payload === 'string') {
+                    console.error('invalid token payload type was returned: ' + token?.payload)
+                    resolve(undefined)
+                } else
+                    resolve(token?.payload)
+            })
+        })
     }
 }

@@ -1,11 +1,9 @@
-import { InferType, lazy, number, object, string } from "yup";
-import { likeObjectId } from "./common_schemas";
+import { InferType, number, object, string } from "yup";
+import { likeObjectId, localizedText } from "./common_schemas";
 
 export const collectionName = 'tag'
 
 export const schemaVersion = 'v1.0.0'
-
-const localizedText = lazy(value => object().required().strict(true).shape(Object.keys(value).reduce((prev, key) => ({ ...prev, [key]: string().required() }), {})))
 
 export const tagSchema = object().required().noUnknown(true).strict(true).shape({
     schemaVersion: string().required().min(6).max(20),
