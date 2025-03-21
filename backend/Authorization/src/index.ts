@@ -167,7 +167,7 @@ async function tryAndWait(callback: CallableFunction, secondsToWaitForEachTry: n
     app.disable('x-powered-by')
 
     app.use((req, res, next) => {
-        console.log('hit: ' + req.originalUrl + req.path)
+        console.log('hit: ' + req.path)
         next()
     })
 

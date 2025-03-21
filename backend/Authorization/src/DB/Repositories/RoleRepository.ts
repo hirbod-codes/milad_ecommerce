@@ -34,6 +34,8 @@ export class RoleRepository {
     async create(role: RoleInput): Promise<InsertOneResult | false> {
         const ts = DateTime.utc().toUnixInteger()
 
+        role.privileges = role.privileges.map(p => typeof p === 'string' ? ObjectId.createFromHexString(p) : p)
+
         let o: RoleCreate = {
             ...role,
             schemaVersion,
@@ -43,6 +45,11 @@ export class RoleRepository {
 
         try { return await this.collection.insertOne(o) }
         catch (e) { console.error(e); return false }
+    }
+
+    async get(): Promise<Role[]> {
+        try { return await this.collection.find().toArray() }
+        catch (e) { console.error(e); return [] }
     }
 
     async getById(id: string): Promise<Role | null | undefined> {

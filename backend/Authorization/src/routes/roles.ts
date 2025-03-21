@@ -15,7 +15,7 @@ roles.post('/', authenticate, async (req, res) => {
             return
         }
 
-        const { role: roleInput } = req.body
+        const roleInput = req.body
 
         if (!roleInputSchema.isValidSync(roleInput)) {
             res.sendStatus(400)
@@ -57,7 +57,7 @@ roles.get('/', authenticate, async (req, res) => {
             }
 
             res.json(await roleRepository.getByNames(array().required().strict(true).of(string().required().strict(true)).cast(names)))
-        } else {
+        } else if (ids !== undefined) {
             if (likeObjectId.required().isValidSync(ids))
                 ids = [ids]
 
@@ -67,7 +67,8 @@ roles.get('/', authenticate, async (req, res) => {
             }
 
             res.json(await roleRepository.getByIds(array().required().strict(true).of(stringObjectId.required().strict(true)).cast(ids)))
-        }
+        } else
+            res.json(await roleRepository.get())
     } catch (e) {
         console.error(e)
         res.sendStatus(500)
@@ -152,7 +153,7 @@ roles.patch('/assign', authenticate, async (req, res) => {
         }
 
         if ((await roleRepository.getByNames([role])).length === 0) {
-            res.sendStatus(400)
+            res.status(400).json({ errors: ['role not found'] })
             return
         }
 

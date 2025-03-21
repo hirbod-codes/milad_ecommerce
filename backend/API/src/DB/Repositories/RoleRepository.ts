@@ -36,6 +36,7 @@ export class RoleRepository {
 
         // In Memory cache
         this.rolesWithPrivileges = queriedRoles
+        console.log('this.rolesWithPrivileges', this.rolesWithPrivileges)
 
         return this.rolesWithPrivileges
     }

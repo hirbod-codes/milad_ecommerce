@@ -1,7 +1,7 @@
 import { Router } from "express"
 import { privilegeRepository } from "@/src"
 import { stringObjectId } from "@/src/DB/Models/common_schemas"
-import { privilegeCreateSchema, privilegeInputSchema, privilegeUpdateSchema } from "@/src/DB/Models/Privilege"
+import { privilegeInputSchema } from "@/src/DB/Models/Privilege"
 import { authenticate } from "@/src/middlewares/authenticate"
 import { authorize } from "@/src/middlewares/authorize"
 import { AuthManager } from "../AuthManager"

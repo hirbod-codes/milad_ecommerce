@@ -1,0 +1,54 @@
+@accessToken=eyJhbGciOiJIUzUxMiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI2N2RiZmFmNzNkM2Q1NDQzMjYwMTRkOTgiLCJyb2xlIjoiZGVmYXVsdCIsImlhdCI6MTc0MjUzOTg1NSwiZXhwIjoxNzQyNTQxNjU1LCJpc3MiOiJBdXRob3JpemF0aW9uIFNlcnZlciJ9.9TUJppYhSThm-TAcksHAacQOHKwFlXkrn2jaFHVGh7hQ7TzsBkz_aW7Q8CndM6jCNCg0lYPEVFTUGvaxWsznNQ
+
+###
+POST http://localhost:3001/roles HTTP/1.1
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+Accept: application/json
+
+{
+    "name": "test5",
+    "displayName":{
+        "fa": "تست5"
+    },
+    "privileges": ["67dbeb5eec4dfacd4c911f98"]
+}
+
+###
+GET http://localhost:3001/roles HTTP/1.1
+Authorization: Bearer {{accessToken}}
+Accept: application/json
+
+###
+PATCH http://localhost:3001/roles HTTP/1.1
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+Accept: application/json
+
+{
+    "id": "67dd0f7c11586bf8cf9b7199",
+    "role": {
+        "privileges": ["67dbeb5eec4dfacd4c911f97"]
+    }
+}
+
+###
+DELETE http://localhost:3001/roles HTTP/1.1
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+Accept: application/json
+
+{
+    "id": "67dd1204e681fa66dd321c38"
+}
+
+###
+PATCH http://localhost:3001/roles/assign HTTP/1.1
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+Accept: application/json
+
+{
+    "userId": "67dbfaf73d3d544326014d98",
+    "role": "test4"
+}
