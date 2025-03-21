@@ -69,23 +69,19 @@ export class UserProfilePictureRepository {
         return true
     }
 
-    async getFile(fileId: string): Promise<GridFSFile> {
-        return (await this.collection.find({ _id: ObjectId.createFromHexString(fileId) }).toArray())[0];
+    async getFile(fileId: string | ObjectId): Promise<GridFSFile> {
+        return (await this.collection.find({ _id: typeof fileId === 'string' ? ObjectId.createFromHexString(fileId) : fileId }).toArray())[0];
     }
 
-    async getFiles(fileIds: string[]): Promise<GridFSFile[]> {
-        return await this.collection.find({ userId: { $in: fileIds.map(id => ObjectId.createFromHexString(id)) } }).toArray();
+    async getFiles(fileIds: (string | ObjectId)[]): Promise<GridFSFile[]> {
+        return await this.collection.find({ userId: { $in: fileIds.map(id => typeof id === 'string' ? ObjectId.createFromHexString(id) : id) } }).toArray();
     }
 
-    async getFileByUserId(userId: string): Promise<GridFSFile[]> {
-        return await this.collection.find({ metadata: { userId: ObjectId.createFromHexString(userId) } }).toArray();
+    async getFileByUserId(userId: string | ObjectId): Promise<GridFSFile[]> {
+        return await this.collection.find({ 'metadata.userId': typeof userId === 'string' ? ObjectId.createFromHexString(userId) : userId }).toArray();
     }
 
-    async getFilesByUserId(userIds: string[]): Promise<GridFSFile[]> {
-        return await this.collection.find({ metadata: { userId: { $in: userIds.map(id => ObjectId.createFromHexString(id)) } } }).toArray();
-    }
-
-    async downloadFile(writeStream: NodeJS.WritableStream, fileId: string): Promise<boolean> {
+    async downloadFile(writeStream: NodeJS.WritableStream, fileId: string | ObjectId): Promise<boolean> {
         console.log('downloading file...');
 
         return new Promise<boolean>(async (resolve, reject) => {
@@ -102,17 +98,17 @@ export class UserProfilePictureRepository {
         })
     }
 
-    async deleteFiles(userId: string): Promise<boolean> {
-        const cursor = await this.collection.find({ metadata: { userId: userId } }).toArray()
+    async deleteFiles(userId: string | ObjectId): Promise<boolean> {
+        const docs = await this.collection.find({ 'metadata.userId': typeof userId === 'string' ? ObjectId.createFromHexString(userId) : userId }).toArray()
 
-        for (const doc of cursor)
-            await this.collection.delete(new ObjectId(doc._id))
+        for (const doc of docs)
+            await this.collection.delete(doc._id)
 
         return true
     }
 
-    async deleteFile(userId: string, fileId: string, filename: string): Promise<boolean> {
-        await this.collection.delete(ObjectId.createFromHexString(fileId))
+    async deleteFile(fileId: string | ObjectId): Promise<boolean> {
+        await this.collection.delete(typeof fileId === 'string' ? ObjectId.createFromHexString(fileId) : fileId)
 
         return true
     }

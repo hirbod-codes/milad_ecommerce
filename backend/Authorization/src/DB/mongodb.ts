@@ -177,6 +177,15 @@ export class MongoDB {
         await this.addUserCollection()
         await this.addPrivilegeCollection()
         await this.addRoleCollection()
+
+        await this.getUserProfilePictureBucket()
+        const db = await this.getDb();
+
+        const indexes = await db.collection(`${userProfilePictureCollectionName}.files`).indexes()
+
+        if (indexes.find(i => i.name === 'unique-userId') === undefined)
+            await db.createIndex(`${userProfilePictureCollectionName}.files`, { 'metadata.userId': 1 }, { unique: true, name: 'unique-userId' })
+
     }
 
     private async addRefreshTokenCollection() {

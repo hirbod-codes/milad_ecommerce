@@ -35,27 +35,31 @@ user.get('/', authenticate, async (req, res) => {
     }
 })
 
-user.get('/avatar', authenticate, async (req, res) => {
+user.get('/avatar', async (req, res) => {
     try {
-        if (await authorize(req, 'get-user-self') !== true) {
-            res.sendStatus(403)
-            return
-        }
+        // if (await authorize(req, 'get-user-self') !== true) {
+        //     res.sendStatus(403)
+        //     return
+        // }
 
-        let userId = (Jwt.decode(req.headers['authorization']!.replace('Bearer ', '')!) as Jwt.JwtPayload)?.sub ?? ''
+        // let userId = (Jwt.decode(req.headers['authorization']!.replace('Bearer ', '')!) as Jwt.JwtPayload)?.sub ?? ''
+        let userId = '67dd2c33f9cf6e137a6adde3'
 
         if (!stringObjectId.isValidSync(userId)) {
             res.sendStatus(400)
             return
         }
 
-        const fileId = (await userRepository.get(userId))?.avatarFile
-        if (!fileId || !likeObjectId.isValidSync(userId)) {
-            res.sendStatus(400)
+        const file = await userProfilePictureRepository.getFileByUserId(userId)
+        if (file.length === 0) {
+            res.sendStatus(404)
             return
         }
 
-        await userProfilePictureRepository.downloadFile(res, fileId.toString())
+        res.setHeader("Content-Disposition", `attachment;`);
+        res.setHeader("Content-Type", "application/octet-stream");
+
+        console.log('result', await userProfilePictureRepository.downloadFile(res, file[0]._id))
     } catch (e) {
         console.error(e)
         res.sendStatus(500)
@@ -73,6 +77,11 @@ user.post('/avatar', authenticate, async (req, res) => {
 
         if (!stringObjectId.isValidSync(userId)) {
             res.sendStatus(400)
+            return
+        }
+
+        if ((await userProfilePictureRepository.deleteFiles(userId)) !== true) {
+            res.sendStatus(500)
             return
         }
 
@@ -130,7 +139,7 @@ user.post('/avatar', authenticate, async (req, res) => {
             files.forEach((file) => {
                 const writeStream = userProfilePictureRepository.getWriteStream(file.filename, userId, file.mimeType)
 
-                writeStream.on("finish", () => {
+                writeStream.on("finish", async () => {
                     uploadedFiles.push({ filename: file.filename, id: writeStream.id.toString() });
 
                     if (uploadedFiles.length === files.length) {
@@ -149,6 +158,38 @@ user.post('/avatar', authenticate, async (req, res) => {
         });
 
         req.pipe(bb)
+    } catch (e) {
+        console.error(e)
+        res.sendStatus(500)
+    }
+})
+
+user.delete('/avatar', authenticate, async (req, res) => {
+    try {
+        if (await authorize(req, 'update-user-self') !== true) {
+            res.sendStatus(403)
+            return
+        }
+
+        let userId = (Jwt.decode(req.headers['authorization']!.replace('Bearer ', '')!) as Jwt.JwtPayload)?.sub ?? ''
+
+        if (!stringObjectId.isValidSync(userId)) {
+            res.sendStatus(400)
+            return
+        }
+
+        const file = await userProfilePictureRepository.getFileByUserId(userId)
+        if (file.length === 0) {
+            res.sendStatus(404)
+            return
+        }
+
+        if ((await userProfilePictureRepository.deleteFile(file[0]._id)) !== true) {
+            res.sendStatus(500)
+            return
+        }
+
+        res.sendStatus(200)
     } catch (e) {
         console.error(e)
         res.sendStatus(500)

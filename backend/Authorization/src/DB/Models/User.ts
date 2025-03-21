@@ -18,7 +18,6 @@ export const userSchema = object().required().stripUnknown().strict(true).shape(
     firstName: string().optional(),
     lastName: string().optional(),
     avatarUrl: string().optional(),
-    avatarFile: likeObjectId.optional(),
     createdAt: number().optional(),
     updatedAt: number().optional(),
 })
@@ -31,7 +30,7 @@ export type UserInput = InferType<typeof userInputSchema>
 export const userCreateSchema = userSchema.required().noUnknown(true).strict(true).omit(['_id']).shape({ _id: likeObjectId.optional() })
 export type UserCreate = InferType<typeof userCreateSchema>
 
-export const userUpdateSchema = userSchema.required().noUnknown(true).strict(true).pick(['lastName', 'firstName', 'avatarUrl', 'avatarFile'])
+export const userUpdateSchema = userSchema.required().noUnknown(true).strict(true).pick(['lastName', 'firstName', 'avatarUrl'])
 export type UserUpdate = InferType<typeof userUpdateSchema>
 
 export const userImmutableSchema = userSchema.required().noUnknown(true).strict(true).pick(Object.keys(userSchema.fields).filter(f => !['_id', 'schemaVersion', 'createdAt', 'updatedAt'].concat(Object.keys(userUpdateSchema.fields)).includes(f)) as any)

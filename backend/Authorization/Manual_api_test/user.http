@@ -1,4 +1,4 @@
-@accessToken=eyJhbGciOiJIUzUxMiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI2N2RiZmFmNzNkM2Q1NDQzMjYwMTRkOTgiLCJyb2xlIjoiZGVmYXVsdCIsImlhdCI6MTc0MjU0NjAzNCwiZXhwIjoxNzQyNTQ3ODM0LCJpc3MiOiJBdXRob3JpemF0aW9uIFNlcnZlciJ9.cwwpUATk6ASVKP2bHCulaf0osXRuBsMnAZFNeW1gFaULtbNNOGhqloxjVJaVlHZgLtQ7JWcCPjjZxOuAkaYZ1w
+@accessToken=eyJhbGciOiJIUzUxMiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI2N2RkMmMzM2Y5Y2Y2ZTEzN2E2YWRkZTMiLCJyb2xlIjoiZGVmYXVsdCIsImlhdCI6MTc0MjU2ODE4NywiZXhwIjoxNzQyNTY5OTg3LCJpc3MiOiJBdXRob3JpemF0aW9uIFNlcnZlciJ9.2qV30tZ8AiFEnJKI4R1i5sBMfD-f5tov32Gh4c1ktuZL_kxaeyD-YC_jaIL8mku5BV7_WNNUkaJqZEP5GudoJQ
 
 ###
 GET http://localhost:3001/user HTTP/1.1
@@ -8,7 +8,7 @@ Accept: application/json
 ###
 GET http://localhost:3001/user/avatar HTTP/1.1
 Authorization: Bearer {{accessToken}}
-Accept: application/json
+Accept: application/octet-stream
 
 ###
 POST http://localhost:3001/user/avatar HTTP/1.1
@@ -19,15 +19,16 @@ Content-Length: 2048
 Content-Type: multipart/form-data; boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW
 
 ------WebKitFormBoundary7MA4YWxkTrZu0gW
-Content-Disposition: form-data; name="image"; filename="1.png"
+Content-Disposition: form-data; name="image"; filename="testAvatar.png"
 Content-Type: image/png
 
 < ./testAvatar.png
 ------WebKitFormBoundary7MA4YWxkTrZu0gW--
 
-{
-    "firstName": "aaa"
-}
+###
+Delete http://localhost:3001/user/avatar HTTP/1.1
+Authorization: Bearer {{accessToken}}
+Accept: application/octet-stream
 
 ###
 PATCH http://localhost:3001/user HTTP/1.1
@@ -36,7 +37,7 @@ Content-Type: application/json
 Accept: application/json
 
 {
-    "firstName": "aaa"
+    "lastName": "aaa"
 }
 
 ###
