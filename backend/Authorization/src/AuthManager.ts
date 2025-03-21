@@ -42,7 +42,7 @@ export class AuthManager {
         accessToken: string,
         refreshToken: string,
     }> {
-        let refreshTokenDoc = await (await db.getRefreshTokensCollection()).findOne({ userId, role })
+        let refreshTokenDoc = await (await db.getRefreshTokensCollection()).findOne({ userId })
 
         if (refreshTokenDoc)
             return {

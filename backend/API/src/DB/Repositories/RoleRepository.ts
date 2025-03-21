@@ -11,8 +11,12 @@ export class RoleRepository {
     }
 
     async getRolesWithPrivileges(): Promise<RoleWithPrivileges[] | false> {
-        if (!this.rolesWithPrivileges || this.rolesWithPrivileges.length === 0)
-            return false
+        if (!this.rolesWithPrivileges || this.rolesWithPrivileges.length === 0) {
+            await this.fetchRolesWithPrivileges()
+
+            if (!this.rolesWithPrivileges || this.rolesWithPrivileges.length === 0)
+                return false
+        }
 
         return this.rolesWithPrivileges
     }
@@ -36,7 +40,6 @@ export class RoleRepository {
 
         // In Memory cache
         this.rolesWithPrivileges = queriedRoles
-        console.log('this.rolesWithPrivileges', this.rolesWithPrivileges)
 
         return this.rolesWithPrivileges
     }

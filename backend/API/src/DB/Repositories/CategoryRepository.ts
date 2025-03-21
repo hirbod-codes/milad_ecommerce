@@ -44,6 +44,11 @@ export class CategoryRepository {
         catch (e) { console.error(e); return false }
     }
 
+    async addViews(id: string | ObjectId, count: number): Promise<UpdateResult | false> {
+        try { return await this.collection.updateOne({ _id: typeof id === 'string' ? ObjectId.createFromHexString(id) : id }, { $inc: { views: count }, $set: { updatedAt: DateTime.utc().toUnixInteger() } }) }
+        catch (e) { console.error(e); return false }
+    }
+
     async delete(id: string): Promise<DeleteResult | false> {
         try { return await this.collection.deleteOne({ _id: ObjectId.createFromHexString(id) }) }
         catch (e) { console.error(e); return false }

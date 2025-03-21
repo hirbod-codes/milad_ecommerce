@@ -197,7 +197,7 @@ emailRouter.post('/login', async (req, res) => {
         }
 
         let tokens = undefined
-        try { tokens = await authManager.generateTokens(user._id.toString(), 'default') }
+        try { tokens = await authManager.generateTokens(user._id.toString(), user.role) }
         catch (e) {
             console.error(e)
             throw new Error('system failed to create tokens')

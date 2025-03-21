@@ -1,10 +1,17 @@
 import { jwtSecret, revokedTokensRedisClient } from "@/src"
 import { RevokedTokensRedisInsertionFailure } from "./Exceptions/RevokedTokensRedisInsertionFailure"
 import Jwt from 'jsonwebtoken'
-import { InvalidToken } from "./Exceptions/InvalidToken"
-import { DateTime } from "luxon"
 
 export class AuthManager {
+    private jwtSecret: string
+    private algorithm: Jwt.Algorithm
+    private issuer: string = 'Authorization Server'
+
+    constructor(jwtSecret: string, algorithm: Jwt.Algorithm) {
+        this.jwtSecret = jwtSecret
+        this.algorithm = algorithm
+    }
+
     static async isAccessTokenValid(accessToken: string): Promise<boolean> {
         try {
             Jwt.verify(accessToken, jwtSecret)
@@ -30,32 +37,18 @@ export class AuthManager {
         }
     }
 
-    static async revokeAccessToken(accessToken: string): Promise<void> {
-        try {
-            await revokedTokensRedisClient.connect()
-
-            let jwt = Jwt.decode(accessToken) as Jwt.Jwt
-
-            let ts: number | undefined
-            if (typeof jwt.payload === 'string')
-                ts = JSON.parse(jwt.payload)?.exp
-            else
-                ts = jwt.payload?.exp
-            if (!ts)
-                throw new InvalidToken('No Expiration timestamp')
-
-            if (ts <= DateTime.utc().toUnixInteger())
-                return
-
-            let result = await revokedTokensRedisClient.set(accessToken, '', { EXAT: DateTime.fromSeconds(ts).toUnixInteger() })
-
-            if (result === null || result === undefined)
-                throw new RevokedTokensRedisInsertionFailure()
-        } catch (e) {
-            console.error(e)
-            throw new RevokedTokensRedisInsertionFailure()
-        } finally {
-            await revokedTokensRedisClient.quit()
-        }
+    verify(token: string): Promise<Jwt.JwtPayload | undefined> {
+        return new Promise<Jwt.JwtPayload | undefined>((resolve, reject) => {
+            Jwt.verify(token, this.jwtSecret, { complete: true, issuer: this.issuer, algorithms: [this.algorithm] }, (e, token) => {
+                if (e) {
+                    console.error(e)
+                    resolve(undefined)
+                } else if (typeof token?.payload === 'string') {
+                    console.error('invalid token payload type was returned: ' + token?.payload)
+                    resolve(undefined)
+                } else
+                    resolve(token?.payload)
+            })
+        })
     }
 }

@@ -3,7 +3,7 @@ import { DateTime } from "luxon";
 import { authManager, otpProviderConfig, userRepository } from "@/src/";
 import { SessionManager } from "@/src/DB/Session/SessionManager";
 import { number, string } from "yup";
-import { userInputSchema } from "@/src/DB/Models/User";
+import { User, userInputSchema } from "@/src/DB/Models/User";
 
 const phoneNumberRouter = Router()
 
@@ -112,9 +112,9 @@ phoneNumberRouter.post('/authenticate', async (req, res) => {
             return
         }
 
-        let userId: string = undefined!
+        let userId: string = undefined!, user: User | undefined | null
         try {
-            let user = await userRepository.getUserByPhoneNumber(phoneNumber)
+            user = await userRepository.getUserByPhoneNumber(phoneNumber)
             if (user)
                 userId = user._id.toString()
             else {
@@ -131,7 +131,7 @@ phoneNumberRouter.post('/authenticate', async (req, res) => {
         }
 
         let tokens = undefined
-        try { tokens = await authManager.generateTokens(userId, 'default') }
+        try { tokens = await authManager.generateTokens(userId, user?.role ?? 'default') }
         catch (e) {
             console.error(e)
             throw new Error('system failed to create tokens')

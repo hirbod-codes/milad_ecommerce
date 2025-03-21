@@ -4,6 +4,7 @@ import { categoryImmutableSchema, categoryInputSchema, categoryUpdateSchema } fr
 import { stringObjectId } from "@/src/DB/Models/common_schemas";
 import { authenticate } from "@/src/middlewares/authenticate";
 import { authorize } from "@/src/middlewares/authorize";
+import { number } from "yup";
 
 const categories = Router()
 
@@ -13,7 +14,7 @@ categories.post('/', authenticate, async (req, res) => {
         return
     }
 
-    const { category } = req.body
+    const category = req.body
 
     if (!categoryInputSchema.isValidSync(category)) {
         res.sendStatus(400)
@@ -29,11 +30,6 @@ categories.post('/', authenticate, async (req, res) => {
 })
 
 categories.get('/', async (req, res) => {
-    if (await authorize(req, 'get-category') !== true) {
-        res.sendStatus(403)
-        return
-    }
-
     const result = await categoryRepository.get()
     if (result === false)
         res.sendStatus(500)
@@ -47,14 +43,14 @@ categories.patch('/', authenticate, async (req, res) => {
         return
     }
 
-    const { category, id } = req.body
+    const { id, addViews } = req.body
 
-    if (!stringObjectId.required().isValidSync(id) || !categoryUpdateSchema.isValidSync(category)) {
+    if (!stringObjectId.required().isValidSync(id) || !number().strict(true).required().integer().positive().isValidSync(addViews)) {
         res.sendStatus(400)
         return
     }
 
-    const result = await categoryRepository.update(id, categoryUpdateSchema.cast(category))
+    const result = await categoryRepository.addViews(id, addViews)
 
     if (result === false || result.acknowledged !== true)
         res.sendStatus(500)
@@ -80,7 +76,7 @@ categories.patch('/immutables', authenticate, async (req, res) => {
     if (result === false || result.acknowledged !== true)
         res.sendStatus(500)
     else
-        res.status(20).json({ result })
+        res.status(200).json({ result })
 })
 
 categories.delete('/', authenticate, async (req, res) => {
@@ -101,7 +97,7 @@ categories.delete('/', authenticate, async (req, res) => {
     if (result === false || result.acknowledged !== true)
         res.sendStatus(500)
     else
-        res.status(201).json({ result })
+        res.status(200).json({ result })
 })
 
 export { categories }

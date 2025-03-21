@@ -18,6 +18,7 @@ import { tags } from './routes/tags'
 import { QueueManagement } from "./QueueManagement";
 import { exit } from "process";
 import { ProductPictureRepository } from "./DB/Repositories/ProductPictureRepository";
+import { AuthManager } from "./Auth/AuthManager";
 
 dotenv.config({ debug: process.env.DEBUG !== undefined ? Boolean(process.env.DEBUG) : undefined })
 
@@ -78,6 +79,8 @@ export const dbConfig = {
         password: getStringEnv('MONGODB_PASSWORD', 'The Mongodb password environment variable is not provided'),
     }
 }
+
+export const authManager = new AuthManager(jwtSecret, 'HS512')
 
 export const queueManagement = new QueueManagement(messageBrokerUrl, messageBrokerUsername, messageBrokerPassword, messageBrokerType as any)
 
