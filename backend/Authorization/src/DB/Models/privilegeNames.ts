@@ -19,6 +19,8 @@ export const privilegeNames = [
     'delete-product',
     'create-order',
     'create-order-self',
+    'get-order',
+    'get-order-self',
     'update-order',
     'update-order-self',
     'update-immutables-order',
@@ -35,4 +37,19 @@ export const privilegeNames = [
     'update-tag',
     'update-immutables-tag',
     'delete-tag',
+]
+export const defaultRolePrivilegeNames = [
+    'get-user-self',
+    'update-user-self',
+    'update-user-self-email',
+    'update-user-self-phone-number',
+    'update-user-self-username',
+    'update-user-self-password',
+    'delete-user-self',
+    'create-order-self',
+    'get-order-self',
+    'update-order-self',
+    'delete-order-self',
+    'get-category',
+    'get-tag',
 ]

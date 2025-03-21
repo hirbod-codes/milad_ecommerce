@@ -54,8 +54,8 @@ orders.post('/', authenticate, async (req, res) => {
 orders.get('/', authenticate, async (req, res) => {
     let { userId } = req.query
 
-    if (await authorize(req, 'read-order') !== true) {
-        if (await authorize(req, 'read-order-self') !== true) {
+    if (await authorize(req, 'get-order') !== true) {
+        if (await authorize(req, 'get-order-self') !== true) {
             res.sendStatus(403)
             return
         }

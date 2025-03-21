@@ -11,8 +11,8 @@ export class UserProfilePictureRepository {
         return this.collection.openDownloadStream(typeof fileId === 'string' ? ObjectId.createFromHexString(fileId) : fileId)
     }
 
-    getWriteStream(fileName: string, userId: string | ObjectId): GridFSBucketWriteStream {
-        return this.collection.openUploadStream(fileName, { metadata: { userId: typeof userId === 'string' ? ObjectId.createFromHexString(userId) : userId } })
+    getWriteStream(fileName: string, userId: string | ObjectId, contentType?: string): GridFSBucketWriteStream {
+        return this.collection.openUploadStream(fileName, { metadata: { userId: typeof userId === 'string' ? ObjectId.createFromHexString(userId) : userId, contentType } })
     }
 
     async uploadFile(userId: string, file: { fileName: string; bytes: Buffer | Uint8Array; }): Promise<string | undefined> {

@@ -15,6 +15,7 @@
     },
     "dependencies": {
         "amqplib": "^0.10.5",
+        "busboy": "^1.6.0",
         "cors": "^2.8.5",
         "dotenv": "^16.4.7",
         "express": "^4.21.2",
@@ -28,6 +29,7 @@
     },
     "devDependencies": {
         "@types/amqplib": "^0.10.7",
+        "@types/busboy": "^1.5.4",
         "@types/cors": "^2.8.17",
         "@types/dotenv": "^8.2.3",
         "@types/express": "^5.0.0",

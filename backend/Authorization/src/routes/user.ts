@@ -1,5 +1,5 @@
 import { Router } from "express"
-import { emailConfig, otpProviderConfig, transporter, userProfilePictureRepository, userRepository } from "@/src"
+import { userProfilePictureRepository, userRepository } from "@/src"
 import { likeObjectId, stringObjectId } from "@/src/DB/Models/common_schemas"
 import { authenticate } from "@/src/middlewares/authenticate"
 import { authorize } from "@/src/middlewares/authorize"
@@ -8,7 +8,9 @@ import { userSchema, userUpdateSchema } from "@/src/DB/Models/User"
 import { SessionManager } from "@/src/DB/Session/SessionManager"
 import { DateTime } from "luxon"
 import crypto from "crypto";
-import { mixed, number, string } from "yup"
+import { string } from "yup"
+import { CommunicationManagement } from "../CommunicationManagement"
+import busboy from "busboy";
 
 const user = Router()
 
@@ -74,43 +76,79 @@ user.post('/avatar', authenticate, async (req, res) => {
             return
         }
 
+        const files: {
+            filename: string,
+            mimeType: string,
+            size: number,
+            buffer: Buffer,
+        }[] = [];
+        const maxFiles = 1; // Maximum number of files allowed
+        const maxFileSize = 5 * 1024 * 1024; // 5MB
         const allowedTypes = ["image/jpeg", "image/png", "application/jpg"];
 
-        const filename = req.headers["file-name"]
-        const fileType = req.headers["content-type"]
-        const fileSize = req.headers["content-length"]
+        const bb = busboy({ limits: { fileSize: maxFileSize, parts: maxFiles }, headers: req.headers });
 
-        if (!mixed().oneOf(allowedTypes).required().strict(true).isValidSync(fileType)) {
-            res.status(400).json({ message: "Bad file name or invalid extension" })
-            return
-        }
+        bb.on("file", (name, stream, { filename, mimeType, encoding }) => {
+            console.log('mimeType', mimeType)
 
-        if (!string().required().strict(true).isValidSync(filename)) {
-            res.status(400).json({ message: "Bad file name or invalid extension" })
-            return
-        }
+            if (files.length > maxFiles) {
+                stream.resume(); // Discard the file if the maximum number of files is reached
+                return;
+            }
 
-        if (!number().positive().integer().max(5 * 1024 * 1024).isValidSync(fileSize)) {
-            res.status(400).json({ message: "File size exceeds the limit of 5MB" })
-            return
-        }
+            const chunks: Uint8Array[] = [];
+            stream.on("data", (chunk) => {
+                chunks.push(chunk);
+            });
 
-        const writestream = userProfilePictureRepository.getWriteStream(filename, userId)
+            stream.on("end", () => {
+                const buffer = Buffer.concat(chunks);
+                const fileData = {
+                    filename,
+                    mimeType,
+                    size: buffer.length,
+                    buffer,
+                };
 
-        writestream.on("finish", async () => {
-            let r = await userRepository.update(userId, { avatarFile: writestream.id })
-            if (r == false || !r.acknowledged)
-                res.status(500).json({ message: "File upload failed" })
-            else
-                res.status(201).json({ id: writestream.id.toString() })
-        })
+                // Validate the file
+                if (fileData.size > maxFileSize)
+                    return res.status(400).json({ message: `File size exceeds valid range` })
 
-        writestream.on("error", (e) => {
-            console.error(e)
-            res.status(500).json({ message: "File upload failed" })
+                if (!allowedTypes.includes(fileData.mimeType))
+                    return res.status(400).json({ message: `Invalid file extension` })
+
+                files.push(fileData);
+            });
         });
 
-        req.pipe(writestream)
+        bb.on("finish", () => {
+            if (files.length !== 1)
+                return res.status(400).json({ errors: ['only one file is allowed'] })
+
+            const uploadedFiles: { filename: string, id: string }[] = [];
+
+            files.forEach((file) => {
+                const writeStream = userProfilePictureRepository.getWriteStream(file.filename, userId, file.mimeType)
+
+                writeStream.on("finish", () => {
+                    uploadedFiles.push({ filename: file.filename, id: writeStream.id.toString() });
+
+                    if (uploadedFiles.length === files.length) {
+                        res.status(201).json(uploadedFiles);
+                    }
+                });
+
+                writeStream.on("error", (err) => {
+                    console.error("File upload failed:", err);
+                    res.status(500).json({ message: "File upload failed", error: err.message });
+                });
+
+                writeStream.write(file.buffer)
+                writeStream.end()
+            });
+        });
+
+        req.pipe(bb)
     } catch (e) {
         console.error(e)
         res.sendStatus(500)
@@ -126,7 +164,7 @@ user.patch('/', authenticate, async (req, res) => {
 
         let userId = (Jwt.decode(req.headers['authorization']!.replace('Bearer ', '')!) as Jwt.JwtPayload)?.sub ?? ''
 
-        const { user } = req.body
+        const user = req.body
 
         if (!stringObjectId.isValidSync(userId) || !userUpdateSchema.isValidSync(user)) {
             res.sendStatus(400)
@@ -153,44 +191,21 @@ user.post('/email-code', authenticate, async (req, res) => {
             return
         }
 
+        const { usePhoneNumber } = req.body
+
         const userId = (Jwt.decode(req.headers['authorization']!.replace('Bearer ', '')!) as Jwt.JwtPayload)?.sub ?? ''
 
         const user = await userRepository.get(userId)
 
-        if (!user || !user.email) {
+        if (!user || (usePhoneNumber === true && !user.phoneNumber) || (usePhoneNumber !== true && !user.email)) {
             res.sendStatus(400)
             return
         }
 
-        const email = user.email
-
-        const code = Math.round((Math.random() * (999_999 - 100_000)) + 100_000)
-        console.log(code)
-
-        const text = `Your verification code is: ${code}
-
-from sender`
-
-        const mailOptions = {
-            from: emailConfig.user,
-            to: email,
-            subject: 'Verification code',
-            text,
-        }
-
-        try { await transporter.sendMail(mailOptions) }
-        catch (e) {
-            console.error(e)
-            throw new Error('system failed to send email')
-        }
-
-        const expiresAt = DateTime.utc().plus({ seconds: 60 }).toUnixInteger()
-        const sessionId = 'patch_email_' + crypto.randomBytes(128).toString('base64')
-        try { await SessionManager.setSession(sessionId, JSON.stringify({ code, expiresAt }), expiresAt, 'update_email') }
-        catch (e) {
-            console.error(e)
-            throw new Error('system failed to set session')
-        }
+        if (usePhoneNumber)
+            await CommunicationManagement.notifyAndRememberForVerificationCode('sms', user.phoneNumber!, 'update_email')
+        else
+            await CommunicationManagement.notifyAndRememberForVerificationCode('email', user.email!, 'update_email')
 
         res.sendStatus(200)
     } catch (e) {
@@ -261,59 +276,21 @@ user.post('/phone-number-code', authenticate, async (req, res) => {
             return
         }
 
+        const { usePhoneNumber } = req.body
+
         const userId = (Jwt.decode(req.headers['authorization']!.replace('Bearer ', '')!) as Jwt.JwtPayload)?.sub ?? ''
 
         const user = await userRepository.get(userId)
 
-        if (!user || !user.phoneNumber) {
+        if (!user || (usePhoneNumber === true && !user.phoneNumber) || (usePhoneNumber !== true && !user.email)) {
             res.sendStatus(400)
             return
         }
 
-        const phoneNumber = user.phoneNumber
-
-        const code = Math.round((Math.random() * (999_999 - 100_000)) + 100_000)
-        console.log(code)
-
-        const text = `Your verification code is: ${code}
-
-from sender`
-
-        const data = {
-            username: otpProviderConfig.otpProviderUsername,
-            password: otpProviderConfig.otpProviderPassword,
-            from: otpProviderConfig.otpProviderSenderNumber.toString(),
-            to: phoneNumber,
-            text
-        }
-        const json = JSON.stringify(data)
-
-        try {
-            let otpResponse = (await fetch(`https://rest.payamak-panel.com/api/SendSMS/SendSMS`, {
-                method: 'post',
-                body: json,
-                headers: [['Content-Type', 'application/json'], ['Accept', 'application/json']]
-            }))
-            console.log(otpResponse.status)
-
-            if (!otpResponse.ok)
-                throw new Error('system failed to send an otp message')
-
-            let responseStatus = Number((await otpResponse.json()).value)
-            if (responseStatus <= 35)
-                throw new Error('system failed to send an otp message')
-        } catch (e) {
-            console.error(e)
-            throw new Error('system failed to send an otp message')
-        }
-
-        const expiresAt = DateTime.utc().plus({ seconds: 60 }).toUnixInteger()
-        const sessionId = 'patch_phone_number_' + crypto.randomBytes(128).toString('base64')
-        try { await SessionManager.setSession(sessionId, JSON.stringify({ code, expiresAt }), expiresAt, 'update_phone_number') }
-        catch (e) {
-            console.error(e)
-            throw new Error('system failed to set session')
-        }
+        if (usePhoneNumber)
+            await CommunicationManagement.notifyAndRememberForVerificationCode('sms', user.phoneNumber!, 'update_phone_number')
+        else
+            await CommunicationManagement.notifyAndRememberForVerificationCode('email', user.email!, 'update_phone_number')
 
         res.sendStatus(200)
     } catch (e) {
@@ -384,76 +361,21 @@ user.post('/username-code', authenticate, async (req, res) => {
             return
         }
 
+        const { usePhoneNumber } = req.body
+
         const userId = (Jwt.decode(req.headers['authorization']!.replace('Bearer ', '')!) as Jwt.JwtPayload)?.sub ?? ''
 
         const user = await userRepository.get(userId)
 
-        if (!user || (!user.phoneNumber && !user.email)) {
+        if (!user || (usePhoneNumber === true && !user.phoneNumber) || (usePhoneNumber !== true && !user.email)) {
             res.sendStatus(400)
             return
         }
 
-        const code = Math.round((Math.random() * (999_999 - 100_000)) + 100_000)
-        console.log(code)
-
-        const text = `Your verification code is: ${code}
-
-from sender`
-
-        if (user.phoneNumber) {
-            const phoneNumber = user.phoneNumber
-
-            const data = {
-                username: otpProviderConfig.otpProviderUsername,
-                password: otpProviderConfig.otpProviderPassword,
-                from: otpProviderConfig.otpProviderSenderNumber.toString(),
-                to: phoneNumber,
-                text
-            }
-            const json = JSON.stringify(data)
-
-            try {
-                let otpResponse = (await fetch(`https://rest.payamak-panel.com/api/SendSMS/SendSMS`, {
-                    method: 'post',
-                    body: json,
-                    headers: [['Content-Type', 'application/json'], ['Accept', 'application/json']]
-                }))
-                console.log(otpResponse.status)
-
-                if (!otpResponse.ok)
-                    throw new Error('system failed to send an otp message')
-
-                let responseStatus = Number((await otpResponse.json()).value)
-                if (responseStatus <= 35)
-                    throw new Error('system failed to send an otp message')
-            } catch (e) {
-                console.error(e)
-                throw new Error('system failed to send an otp message')
-            }
-        } else {
-            const email = user.email
-
-            const mailOptions = {
-                from: emailConfig.user,
-                to: email,
-                subject: 'Verification code',
-                text,
-            }
-
-            try { await transporter.sendMail(mailOptions) }
-            catch (e) {
-                console.error(e)
-                throw new Error('system failed to send email')
-            }
-        }
-
-        const expiresAt = DateTime.utc().plus({ seconds: 60 }).toUnixInteger()
-        const sessionId = 'patch_username_' + crypto.randomBytes(128).toString('base64')
-        try { await SessionManager.setSession(sessionId, JSON.stringify({ code, expiresAt }), expiresAt, 'update_username') }
-        catch (e) {
-            console.error(e)
-            throw new Error('system failed to set session')
-        }
+        if (usePhoneNumber)
+            await CommunicationManagement.notifyAndRememberForVerificationCode('sms', user.phoneNumber!, 'update_username')
+        else
+            await CommunicationManagement.notifyAndRememberForVerificationCode('email', user.email!, 'update_username')
 
         res.sendStatus(200)
     } catch (e) {
@@ -524,76 +446,21 @@ user.post('/password-code', authenticate, async (req, res) => {
             return
         }
 
+        const { usePhoneNumber } = req.body
+
         const userId = (Jwt.decode(req.headers['authorization']!.replace('Bearer ', '')!) as Jwt.JwtPayload)?.sub ?? ''
 
         const user = await userRepository.get(userId)
 
-        if (!user || (!user.phoneNumber && !user.email)) {
+        if (!user || (usePhoneNumber === true && !user.phoneNumber) || (usePhoneNumber !== true && !user.email)) {
             res.sendStatus(400)
             return
         }
 
-        const code = Math.round((Math.random() * (999_999 - 100_000)) + 100_000)
-        console.log(code)
-
-        const text = `Your verification code is: ${code}
-
-from sender`
-
-        if (user.phoneNumber) {
-            const phoneNumber = user.phoneNumber
-
-            const data = {
-                username: otpProviderConfig.otpProviderUsername,
-                password: otpProviderConfig.otpProviderPassword,
-                from: otpProviderConfig.otpProviderSenderNumber.toString(),
-                to: phoneNumber,
-                text
-            }
-            const json = JSON.stringify(data)
-
-            try {
-                let otpResponse = (await fetch(`https://rest.payamak-panel.com/api/SendSMS/SendSMS`, {
-                    method: 'post',
-                    body: json,
-                    headers: [['Content-Type', 'application/json'], ['Accept', 'application/json']]
-                }))
-                console.log(otpResponse.status)
-
-                if (!otpResponse.ok)
-                    throw new Error('system failed to send an otp message')
-
-                let responseStatus = Number((await otpResponse.json()).value)
-                if (responseStatus <= 35)
-                    throw new Error('system failed to send an otp message')
-            } catch (e) {
-                console.error(e)
-                throw new Error('system failed to send an otp message')
-            }
-        } else {
-            const email = user.email
-
-            const mailOptions = {
-                from: emailConfig.user,
-                to: email,
-                subject: 'Verification code',
-                text,
-            }
-
-            try { await transporter.sendMail(mailOptions) }
-            catch (e) {
-                console.error(e)
-                throw new Error('system failed to send email')
-            }
-        }
-
-        const expiresAt = DateTime.utc().plus({ seconds: 60 }).toUnixInteger()
-        const sessionId = 'patch_password_' + crypto.randomBytes(128).toString('base64')
-        try { await SessionManager.setSession(sessionId, JSON.stringify({ code, expiresAt }), expiresAt, 'update_password') }
-        catch (e) {
-            console.error(e)
-            throw new Error('system failed to set session')
-        }
+        if (usePhoneNumber)
+            await CommunicationManagement.notifyAndRememberForVerificationCode('sms', user.phoneNumber!, 'update_password')
+        else
+            await CommunicationManagement.notifyAndRememberForVerificationCode('email', user.email!, 'update_password')
 
         res.sendStatus(200)
     } catch (e) {
@@ -677,76 +544,21 @@ user.post('/delete-code', authenticate, async (req, res) => {
             return
         }
 
+        const { usePhoneNumber } = req.body
+
         const userId = (Jwt.decode(req.headers['authorization']!.replace('Bearer ', '')!) as Jwt.JwtPayload)?.sub ?? ''
 
         const user = await userRepository.get(userId)
 
-        if (!user || (!user.phoneNumber && !user.email)) {
+        if (!user || (usePhoneNumber === true && !user.phoneNumber) || (usePhoneNumber !== true && !user.email)) {
             res.sendStatus(400)
             return
         }
 
-        const code = Math.round((Math.random() * (999_999 - 100_000)) + 100_000)
-        console.log(code)
-
-        const text = `Your verification code is: ${code}
-
-from sender`
-
-        if (user.phoneNumber) {
-            const phoneNumber = user.phoneNumber
-
-            const data = {
-                username: otpProviderConfig.otpProviderUsername,
-                password: otpProviderConfig.otpProviderPassword,
-                from: otpProviderConfig.otpProviderSenderNumber.toString(),
-                to: phoneNumber,
-                text
-            }
-            const json = JSON.stringify(data)
-
-            try {
-                let otpResponse = (await fetch(`https://rest.payamak-panel.com/api/SendSMS/SendSMS`, {
-                    method: 'post',
-                    body: json,
-                    headers: [['Content-Type', 'application/json'], ['Accept', 'application/json']]
-                }))
-                console.log(otpResponse.status)
-
-                if (!otpResponse.ok)
-                    throw new Error('system failed to send an otp message')
-
-                let responseStatus = Number((await otpResponse.json()).value)
-                if (responseStatus <= 35)
-                    throw new Error('system failed to send an otp message')
-            } catch (e) {
-                console.error(e)
-                throw new Error('system failed to send an otp message')
-            }
-        } else {
-            const email = user.email
-
-            const mailOptions = {
-                from: emailConfig.user,
-                to: email,
-                subject: 'Verification code',
-                text,
-            }
-
-            try { await transporter.sendMail(mailOptions) }
-            catch (e) {
-                console.error(e)
-                throw new Error('system failed to send email')
-            }
-        }
-
-        const expiresAt = DateTime.utc().plus({ seconds: 60 }).toUnixInteger()
-        const sessionId = 'delete_user_' + crypto.randomBytes(128).toString('base64')
-        try { await SessionManager.setSession(sessionId, JSON.stringify({ code, expiresAt }), expiresAt, 'delete_user_self') }
-        catch (e) {
-            console.error(e)
-            throw new Error('system failed to set session')
-        }
+        if (usePhoneNumber)
+            await CommunicationManagement.notifyAndRememberForVerificationCode('sms', user.phoneNumber!, 'delete_user_self')
+        else
+            await CommunicationManagement.notifyAndRememberForVerificationCode('email', user.email!, 'delete_user_self')
 
         res.sendStatus(200)
     } catch (e) {

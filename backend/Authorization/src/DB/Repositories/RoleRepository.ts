@@ -3,6 +3,7 @@ import { DateTime } from 'luxon'
 import { Role, RoleCreate, RoleInput, RoleUpdate, RoleWithPrivileges, schemaVersion } from '../Models/Role'
 import { collectionName } from '../Models/Privilege'
 import { privilegeRepository } from '@/src'
+import { defaultRolePrivilegeNames, privilegeNames } from '../Models/privilegeNames'
 
 export class RoleRepository {
     private collection: Collection<RoleCreate>
@@ -13,21 +14,27 @@ export class RoleRepository {
 
     async initialize() {
         if (await this.collection.estimatedDocumentCount() === 0) {
-            let nowTS = DateTime.utc().toUnixInteger()
             let privileges = await privilegeRepository.get()
 
             if (privileges === false || privileges.length === 0)
                 throw new Error('System failed to initialize roles')
 
-            let r = await this.collection.insertOne({
-                schemaVersion,
+            let r = await this.create({
                 name: 'admin',
-                privileges: privileges.map(p => p._id),
-                createdAt: nowTS,
-                updatedAt: nowTS,
+                privileges: privilegeNames,
             })
-            if (!r.acknowledged)
+            if (r === false || !r.acknowledged)
                 throw new Error('System failed to initialize roles')
+
+            r = false
+
+            r = await this.create({
+                name: 'default',
+                privileges: defaultRolePrivilegeNames,
+            })
+            if (r === false || !r.acknowledged)
+                throw new Error('System failed to initialize roles')
+
         }
     }
 

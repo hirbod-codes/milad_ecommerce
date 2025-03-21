@@ -138,7 +138,6 @@ products.post('/pictures/:productId', authenticate, async (req, res) => {
             return
         }
 
-        const bb = busboy({ limits: {}, headers: req.headers });
         const files: {
             filename: string,
             mimeType: string,
@@ -149,8 +148,10 @@ products.post('/pictures/:productId', authenticate, async (req, res) => {
         const maxFileSize = 5 * 1024 * 1024; // 5MB
         const allowedTypes = ["image/jpeg", "image/png", "application/jpg"];
 
+        const bb = busboy({ limits: { fileSize: maxFileSize, parts: maxFiles }, headers: req.headers });
+
         bb.on("file", (name, stream, { filename, mimeType, encoding }) => {
-            if (files.length >= maxFiles) {
+            if (files.length > maxFiles) {
                 stream.resume(); // Discard the file if the maximum number of files is reached
                 return;
             }
