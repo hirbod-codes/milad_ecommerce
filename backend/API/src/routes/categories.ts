@@ -9,95 +9,120 @@ import { number } from "yup";
 const categories = Router()
 
 categories.post('/', authenticate, async (req, res) => {
-    if (await authorize(req, 'create-category') !== true) {
-        res.sendStatus(403)
-        return
-    }
+    try {
+        if (await authorize(req, 'create-category') !== true) {
+            res.sendStatus(403)
+            return
+        }
 
-    const category = req.body
+        const category = req.body
 
-    if (!categoryInputSchema.isValidSync(category)) {
-        res.sendStatus(400)
-        return
-    }
+        if (!categoryInputSchema.isValidSync(category)) {
+            res.sendStatus(400)
+            return
+        }
 
-    const r = await categoryRepository.create(categoryInputSchema.cast(category))
+        const r = await categoryRepository.create(categoryInputSchema.cast(category))
 
-    if (r === false || r.acknowledged !== true)
+        if (r === false || r.acknowledged !== true)
+            res.sendStatus(500)
+        else
+            res.status(201).json({ id: r.insertedId })
+    } catch (e) {
+        console.error(e)
         res.sendStatus(500)
-    else
-        res.status(201).json({ id: r.insertedId })
+    }
 })
 
 categories.get('/', async (req, res) => {
-    const result = await categoryRepository.get()
-    if (result === false)
+    try {
+        const result = await categoryRepository.get()
+        if (result === false)
+            res.sendStatus(500)
+        else
+            res.status(200).json(result)
+    } catch (e) {
+        console.error(e)
         res.sendStatus(500)
-    else
-        res.status(200).json(result)
+    }
 })
 
 categories.patch('/', authenticate, async (req, res) => {
-    if (await authorize(req, 'update-category') !== true) {
-        res.sendStatus(403)
-        return
-    }
+    try {
+        if (await authorize(req, 'update-category') !== true) {
+            res.sendStatus(403)
+            return
+        }
 
-    const { id, addViews } = req.body
+        const { id, addViews } = req.body
 
-    if (!stringObjectId.required().isValidSync(id) || !number().strict(true).required().integer().positive().isValidSync(addViews)) {
-        res.sendStatus(400)
-        return
-    }
+        if (!stringObjectId.required().isValidSync(id) || !number().strict(true).required().integer().positive().isValidSync(addViews)) {
+            res.sendStatus(400)
+            return
+        }
 
-    const result = await categoryRepository.addViews(id, addViews)
+        const result = await categoryRepository.addViews(id, addViews)
 
-    if (result === false || result.acknowledged !== true)
+        if (result === false || result.acknowledged !== true)
+            res.sendStatus(500)
+        else
+            res.status(200).json({ result })
+    } catch (e) {
+        console.error(e)
         res.sendStatus(500)
-    else
-        res.status(200).json({ result })
+    }
 })
 
 categories.patch('/immutables', authenticate, async (req, res) => {
-    if (await authorize(req, 'update-immutables-category') !== true) {
-        res.sendStatus(403)
-        return
-    }
+    try {
+        if (await authorize(req, 'update-immutables-category') !== true) {
+            res.sendStatus(403)
+            return
+        }
 
-    const { category, id } = req.body
+        const { category, id } = req.body
 
-    if (!stringObjectId.required().isValidSync(id) || !categoryImmutableSchema.isValidSync(category)) {
-        res.sendStatus(400)
-        return
-    }
+        if (!stringObjectId.required().isValidSync(id) || !categoryImmutableSchema.isValidSync(category)) {
+            res.sendStatus(400)
+            return
+        }
 
-    const result = await categoryRepository.updateImmutables(id, categoryImmutableSchema.cast(category))
+        const result = await categoryRepository.updateImmutables(id, categoryImmutableSchema.cast(category))
 
-    if (result === false || result.acknowledged !== true)
+        if (result === false || result.acknowledged !== true)
+            res.sendStatus(500)
+        else
+            res.status(200).json({ result })
+    } catch (e) {
+        console.error(e)
         res.sendStatus(500)
-    else
-        res.status(200).json({ result })
+    }
 })
 
 categories.delete('/', authenticate, async (req, res) => {
-    if (await authorize(req, 'delete-category') !== true) {
-        res.sendStatus(403)
-        return
-    }
+    try {
+        if (await authorize(req, 'delete-category') !== true) {
+            res.sendStatus(403)
+            return
+        }
 
-    const { id } = req.body
+        const { id } = req.body
 
-    if (!stringObjectId.required().isValidSync(id)) {
-        res.sendStatus(400)
-        return
-    }
+        if (!stringObjectId.required().isValidSync(id)) {
+            res.sendStatus(400)
+            return
+        }
 
-    const result = await categoryRepository.delete(id)
+        const result = await categoryRepository.delete(id)
 
-    if (result === false || result.acknowledged !== true)
+        if (result === false || result.acknowledged !== true)
+            res.sendStatus(500)
+        else
+            res.status(200).json({ result })
+    } catch (e) {
+        console.error(e)
         res.sendStatus(500)
-    else
-        res.status(200).json({ result })
+    }
 })
 
 export { categories }
