@@ -1,4 +1,28 @@
-@accessToken=eyJhbGciOiJIUzUxMiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI2N2RlOWUzOTg0ZDQxODFjMmRjODNiOGMiLCJyb2xlIjoiZGVmYXVsdCIsImlhdCI6MTc0MjY0Mjc0NSwiZXhwIjoxNzQyNjQ0NTQ1LCJpc3MiOiJBdXRob3JpemF0aW9uIFNlcnZlciJ9.j_Geps6y5-s_2OEFdc-IYvAOMAtixXzSiFeWPpc2A6Nuap8AHHgywjNVyt6FzlDIKbj0zKOfR07ajSCwwY-YWg
+@accessToken=eyJhbGciOiJIUzUxMiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI2N2RlOWUzOTg0ZDQxODFjMmRjODNiOGMiLCJyb2xlIjoiYWRtaW4iLCJ0b2tlbk1vZGUiOiJhY2Nlc3NUb2tlbiIsImlhdCI6MTc0MjY0OTc2MiwiZXhwIjoxNzQyNjUxNTYyLCJpc3MiOiJBdXRob3JpemF0aW9uIFNlcnZlciJ9.rc9s-JpKSFHvEqSkRVw8xa2q3BPmrS6lloiRYqz0W6mR1dZn1_68mnKVCKry3ctMpHKB3ndfQX4vSnwJrAb2lg
+@productId=67deb9ae82aec5fe352caafc
+
+###
+POST http://localhost:3000/products HTTP/1.1
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+Accept: application/json
+
+{
+    "tags": ["tag1", "tag2"],
+    "categories": ["category1", "category2"],
+    "name": "name1",
+    "description": {
+        "en": "description1"
+    },
+    "price": {
+        "IRR": 5500000
+    },
+    "isAvailable": true
+}
+
+###
+GET http://localhost:3000/products/{{productId}} HTTP/1.1
+Accept: application/json
 
 ###
 GET http://localhost:3000/products HTTP/1.1

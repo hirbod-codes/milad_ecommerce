@@ -6,7 +6,7 @@ import { DateTime } from 'luxon';
 import { InsertionFailure } from './DB/Exceptions/InsertionFailure';
 import { RevokedAccessTokenManager } from './RevokedAccessTokens/RevokedAccessTokenManager';
 import { privilegeNames } from "@/src/DB/Models/privilegeNames"
-import { ObjectId } from 'mongodb';
+import { MongoServerError, ObjectId } from 'mongodb';
 import { RefreshToken } from './DB/Models/RefreshToken';
 
 export class AuthManager {
@@ -25,9 +25,9 @@ export class AuthManager {
         this.refreshTokenExpiresIn = refreshTokenExpiresIn
     }
 
-    async generateToken(sub: string, role: string, expiresIn: number | StringValue): Promise<string> {
+    async generateToken(sub: string, role: string, expiresIn: number | StringValue, tokenMode: 'accessToken' | 'refreshToken'): Promise<string> {
         return new Promise<string>((resolve) => {
-            let t = Jwt.sign({ sub, role }, this.jwtSecret, { issuer: this.issuer, expiresIn, algorithm: this.algorithm });
+            let t = Jwt.sign({ sub, role, tokenMode }, this.jwtSecret, { issuer: this.issuer, expiresIn, algorithm: this.algorithm });
             resolve(t)
         })
     }
@@ -36,14 +36,14 @@ export class AuthManager {
         if (typeof id !== 'string')
             id = id.toString()
 
-        return await this.generateToken(id, role, this.accessTokenExpiresIn)
+        return await this.generateToken(id, role, this.accessTokenExpiresIn, 'accessToken')
     }
 
     async generateRefreshToken(id: string | ObjectId, role: string): Promise<string> {
         if (typeof id !== 'string')
             id = id.toString()
 
-        return await this.generateToken(id, role, this.refreshTokenExpiresIn)
+        return await this.generateToken(id, role, this.refreshTokenExpiresIn, 'refreshToken')
     }
 
     async generateTokens(userId: string | ObjectId, role: string): Promise<{ accessToken: string, refreshToken: string }> {
@@ -63,17 +63,42 @@ export class AuthManager {
                 refreshToken: await this.generateRefreshToken(userId, role),
             }
 
-            let r = await (await db.getRefreshTokensCollection()).insertOne({
-                userId: ObjectId.createFromHexString(userId),
-                role,
-                refreshToken: tokens.refreshToken,
-                accessToken: tokens.accessToken,
-                createdAt: DateTime.utc().toUnixInteger(),
-                expiresAt: DateTime.utc().plus({ seconds: refreshTokenExpiresIn }).toUnixInteger()
-            })
+            const create = async () => {
+                let r = await (await db.getRefreshTokensCollection()).insertOne({
+                    userId: ObjectId.createFromHexString(userId),
+                    role,
+                    refreshToken: tokens.refreshToken,
+                    accessToken: tokens.accessToken,
+                    createdAt: DateTime.utc().toUnixInteger(),
+                    expiresAt: DateTime.utc().plus({ seconds: refreshTokenExpiresIn }).toUnixInteger()
+                })
+                console.log('r', r)
 
-            if (!r.acknowledged)
-                throw new InsertionFailure()
+                if (!r.acknowledged)
+                    throw new InsertionFailure()
+            }
+
+            try {
+                await create()
+            } catch (e) {
+                console.error(e)
+                // Duplicate key
+                if (e instanceof MongoServerError && e.code === 11000) {
+                    let r = await (await db.getRefreshTokensCollection()).updateOne({ userId: ObjectId.createFromHexString(userId) }, {
+                        $set: {
+                            role,
+                            refreshToken: tokens.refreshToken,
+                            accessToken: tokens.accessToken,
+                            expiresAt: DateTime.utc().plus({ seconds: refreshTokenExpiresIn }).toUnixInteger()
+                        }
+                    })
+                    console.log('r', r)
+
+                    if (!r.acknowledged)
+                        throw new InsertionFailure()
+                } else
+                    throw e
+            }
 
             return tokens
         }
@@ -84,7 +109,7 @@ export class AuthManager {
             try {
                 let userId: string | undefined = undefined
                 try {
-                    let payload = await this.verify(refreshToken)
+                    let payload = await this.verify(refreshToken, 'refreshToken')
 
                     if (payload === undefined) {
                         reject()
@@ -102,7 +127,7 @@ export class AuthManager {
 
                 // expired refresh tokens are automatically removed by MongoDB TTL index
                 let doc = (await (await db.getRefreshTokensCollection()).findOne({ refreshToken }))
-                if (!doc) {
+                if (!doc || (await this.verify(doc.refreshToken, 'refreshToken')) === undefined) {
                     reject()
                     return
                 }
@@ -148,15 +173,15 @@ export class AuthManager {
 
     async revokeRefreshToken(refreshToken: string | RefreshToken): Promise<boolean> {
         if (typeof refreshToken === 'string') {
-            let t = (await (await db.getRefreshTokensCollection()).findOne({ refreshToken }))
+            let t = await (await db.getRefreshTokensCollection()).findOne({ refreshToken })
             if (!t)
                 return false
             refreshToken = t
         }
 
         const res = await Promise.all([
-            await this.revokeToken(refreshToken.refreshToken),
-            await this.revokeToken(refreshToken.accessToken),
+            await this.revokeToken(refreshToken.refreshToken, 'refreshToken'),
+            await this.revokeToken(refreshToken.accessToken, 'accessToken'),
         ])
         if (res[0] === false || res[1] === false)
             return false
@@ -169,8 +194,8 @@ export class AuthManager {
         return true
     }
 
-    async revokeToken(token: string): Promise<boolean> {
-        let payload = await this.verify(token)
+    async revokeToken(token: string, tokenMode: 'accessToken' | 'refreshToken'): Promise<boolean> {
+        let payload = await this.verify(token, tokenMode)
 
         if (payload !== undefined && payload?.exp !== undefined)
             await RevokedAccessTokenManager.set(token, 'true', payload.exp)
@@ -178,17 +203,19 @@ export class AuthManager {
         return true
     }
 
-    verify(token: string): Promise<Jwt.JwtPayload | undefined> {
+    verify(token: string, tokenMode: 'accessToken' | 'refreshToken'): Promise<Jwt.JwtPayload | undefined> {
         return new Promise<Jwt.JwtPayload | undefined>((resolve, reject) => {
             Jwt.verify(token, this.jwtSecret, { complete: true, issuer: this.issuer, algorithms: [this.algorithm] }, (e, token) => {
                 if (e) {
                     console.error(e)
                     resolve(undefined)
-                } else if (typeof token?.payload === 'string') {
-                    console.error('invalid token payload type was returned: ' + token?.payload)
+                } else if (typeof token!.payload === 'string') {
+                    console.error('invalid token payload type was returned: ' + token!.payload)
                     resolve(undefined)
-                } else
-                    resolve(token?.payload)
+                } else if (token!.payload.tokenMode !== tokenMode)
+                    resolve(undefined)
+                else
+                    resolve(token!.payload)
             })
         })
     }

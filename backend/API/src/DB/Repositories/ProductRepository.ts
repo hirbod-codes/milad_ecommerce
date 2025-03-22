@@ -22,8 +22,8 @@ export class ProductRepository {
         return await this.collection.insertOne(p)
     }
 
-    async getById(id: string): Promise<Product | null | undefined> {
-        try { return await this.collection.findOne({ _id: ObjectId.createFromHexString(id) }) }
+    async getById(id: string | ObjectId): Promise<Product | null | undefined> {
+        try { return await this.collection.findOne({ _id: typeof id === 'string' ? ObjectId.createFromHexString(id) : id }) }
         catch (e) { console.error(e); return undefined }
     }
 

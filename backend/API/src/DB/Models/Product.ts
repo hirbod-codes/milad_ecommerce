@@ -10,7 +10,8 @@ export const productSchema = object().required().strict(true).unknown(true).shap
     _id: likeObjectId.required(),
     tags: array().optional().of(string().required()),
     categories: array().optional().of(string().required()),
-    name: localizedText,
+    name: string().required().strict(true).min(2).max(350),
+    displayName: localizedText,
     description: localizedText.optional(),
     price: price.required(),
     isAvailable: boolean().required(),
@@ -24,13 +25,13 @@ export const productSchema = object().required().strict(true).unknown(true).shap
 })
 export type Product = InferType<typeof productSchema>
 
-export const productInputSchema = productSchema.required().noUnknown(true).strict(true).pick(['tags', 'categories', 'name', 'description', 'price', 'isAvailable'])
+export const productInputSchema = productSchema.required().noUnknown(true).strict(true).pick(['tags', 'categories', 'name', 'displayName', 'description', 'price', 'isAvailable'])
 export type ProductInput = InferType<typeof productInputSchema>
 
 export const productCreateSchema = productSchema.required().noUnknown(true).strict(true).omit(['_id']).shape({ _id: likeObjectId.optional() })
 export type ProductCreate = InferType<typeof productCreateSchema>
 
-export const productUpdateSchema = productSchema.required().noUnknown(true).strict(true).pick(['name', 'description', 'tags', 'categories', 'price', 'isAvailable', 'thumbnail'])
+export const productUpdateSchema = productSchema.required().noUnknown(true).strict(true).pick(['name', 'displayName', 'description', 'tags', 'categories', 'price', 'isAvailable', 'thumbnail'])
 export type ProductUpdate = InferType<typeof productUpdateSchema>
 
 export const productImmutableSchema = productSchema.required().noUnknown(true).strict(true).pick(Object.keys(productSchema.fields).filter(f => !['_id', 'schemaVersion', 'createdAt', 'updatedAt'].concat(Object.keys(productUpdateSchema.fields)).includes(f)) as any)

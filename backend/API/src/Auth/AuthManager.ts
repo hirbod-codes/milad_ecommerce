@@ -12,16 +12,6 @@ export class AuthManager {
         this.algorithm = algorithm
     }
 
-    static async isAccessTokenValid(accessToken: string): Promise<boolean> {
-        try {
-            Jwt.verify(accessToken, jwtSecret)
-            return true
-        } catch (e) {
-            console.error(e)
-            return false
-        }
-    }
-
     static async isAccessTokenRevoked(accessToken: string): Promise<boolean> {
         try {
             await revokedTokensRedisClient.connect()
@@ -37,17 +27,19 @@ export class AuthManager {
         }
     }
 
-    verify(token: string): Promise<Jwt.JwtPayload | undefined> {
+    verify(token: string, tokenMode: 'accessToken' | 'refreshToken'): Promise<Jwt.JwtPayload | undefined> {
         return new Promise<Jwt.JwtPayload | undefined>((resolve, reject) => {
             Jwt.verify(token, this.jwtSecret, { complete: true, issuer: this.issuer, algorithms: [this.algorithm] }, (e, token) => {
                 if (e) {
                     console.error(e)
                     resolve(undefined)
-                } else if (typeof token?.payload === 'string') {
-                    console.error('invalid token payload type was returned: ' + token?.payload)
+                } else if (typeof token!.payload === 'string') {
+                    console.error('invalid token payload type was returned: ' + token!.payload)
                     resolve(undefined)
-                } else
-                    resolve(token?.payload)
+                } else if (token!.payload.tokenMode !== tokenMode)
+                    resolve(undefined)
+                else
+                    resolve(token!.payload)
             })
         })
     }

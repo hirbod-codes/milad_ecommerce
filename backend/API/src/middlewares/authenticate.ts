@@ -12,7 +12,7 @@ export async function authenticate(req: Request, res: Response, next: NextFuncti
 
         const token = header.replace('Bearer ', '')
 
-        if ((await authManager.verify(token)) === undefined || await RevokedAccessTokenManager.get(token) !== undefined) {
+        if ((await authManager.verify(token, 'accessToken')) === undefined || await RevokedAccessTokenManager.get(token) !== undefined) {
             res.sendStatus(401)
             return
         }

@@ -13,24 +13,48 @@ import { Filter, SortDirection } from "mongodb";
 const products = Router()
 
 products.post('/', authenticate, async (req, res) => {
-    if (await authorize(req, 'create-product') !== true) {
-        res.sendStatus(403)
-        return
-    }
+    try {
+        if (await authorize(req, 'create-product') !== true) {
+            res.sendStatus(403)
+            return
+        }
 
-    const { product } = req.body
+        const product = req.body
 
-    if (!productInputSchema.isValidSync(product)) {
-        res.sendStatus(400)
-        return
-    }
+        if (!productInputSchema.isValidSync(product)) {
+            res.sendStatus(400)
+            return
+        }
 
-    const r = await productRepository.create(productInputSchema.cast(product))
+        const r = await productRepository.create(productInputSchema.cast(product))
 
-    if (r === false || r.acknowledged !== true)
+        if (r === false || r.acknowledged !== true)
+            res.sendStatus(500)
+        else
+            res.status(201).json({ id: r.insertedId })
+    } catch (e) {
+        console.error(e)
         res.sendStatus(500)
-    else
-        res.status(201).json({ id: r.insertedId })
+    }
+})
+
+products.get('/:id', async (req, res) => {
+    try {
+        let { id } = req.params
+        if (!stringObjectId.required().isValidSync(id)) {
+            res.sendStatus(403)
+            return
+        }
+
+        const r = await productRepository.getById(id)
+        if (!r)
+            res.sendStatus(404)
+        else
+            res.json(r)
+    } catch (e) {
+        console.error(e)
+        res.sendStatus(500)
+    }
 })
 
 products.get('/', async (req, res) => {

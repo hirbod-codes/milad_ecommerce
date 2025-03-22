@@ -262,6 +262,9 @@ export class MongoDB {
 
         const indexes = await db.collection(productCollectionName).indexes()
 
+        if (indexes.find(i => i.name === 'unique-name') === undefined)
+            await db.createIndex(productCollectionName, { name: 1 }, { unique: true, name: 'unique-name' })
+
         if (indexes.find(i => i.name === 'createdAt') === undefined)
             await db.createIndex(productCollectionName, { createdAt: 1 }, { name: 'createdAt' })
 
@@ -280,6 +283,9 @@ export class MongoDB {
             await db.createCollection(productReviewCollectionName)
 
         const indexes = await db.collection(productReviewCollectionName).indexes()
+
+        if (indexes.find(i => i.name === 'uniqueness') === undefined)
+            await db.createIndex(productReviewCollectionName, { userId: 1, productId: 1 }, { unique: true, name: 'uniqueness' })
 
         if (indexes.find(i => i.name === 'createdAt') === undefined)
             await db.createIndex(productReviewCollectionName, { createdAt: 1 }, { name: 'createdAt' })
@@ -319,6 +325,17 @@ export class MongoDB {
 
         if (!(await db.listCollections().toArray()).map(e => e.name).includes(roleCollectionName))
             await db.createCollection(roleCollectionName)
+
+        const indexes = await db.collection(roleCollectionName).indexes()
+
+        if (indexes.find(i => i.name === 'unique-name') === undefined)
+            await db.createIndex(roleCollectionName, { name: 1 }, { unique: true, name: 'unique-name' })
+
+        if (indexes.find(i => i.name === 'createdAt') === undefined)
+            await db.createIndex(roleCollectionName, { createdAt: 1 }, { name: 'createdAt' })
+
+        if (indexes.find(i => i.name === 'updatedAt') === undefined)
+            await db.createIndex(roleCollectionName, { updatedAt: 1 }, { name: 'updatedAt' })
     }
 
     async getRoleCollection(client?: MongoClient, db?: Db): Promise<Collection<RoleCreate>> {

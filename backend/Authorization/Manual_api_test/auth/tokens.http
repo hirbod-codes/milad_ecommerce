@@ -7,3 +7,9 @@ Accept: application/json
     "refreshToken": "eyJhbGciOiJIUzUxMiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI2N2RkZWVhMmNiMTE3Y2Q0YmYyOGNmYTIiLCJyb2xlIjoiZGVmYXVsdCIsImlhdCI6MTc0MjU5Nzc5NCwiZXhwIjoxNzQzMjAyNTk0LCJpc3MiOiJBdXRob3JpemF0aW9uIFNlcnZlciJ9.SLoxGssxh8n_9lMfUWWwLyhsmICYYIfXbzZMTvmmzXe-OZ-j4pYNPWkC5nrvFPmDRxF5gl0Wg4m6w7nwSOvkog",
     "userId": "67dd2c33f9cf6e137a6adde3"
 }
+
+###
+POST http://localhost:3001/auth/tokens/revoke-tokens HTTP/1.1
+Authorization: Bearer eyJhbGciOiJIUzUxMiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI2N2RlOWUzOTg0ZDQxODFjMmRjODNiOGMiLCJyb2xlIjoiZGVmYXVsdCIsImlhdCI6MTc0MjY0NjAwNSwiZXhwIjoxNzQyNjQ3ODA1LCJpc3MiOiJBdXRob3JpemF0aW9uIFNlcnZlciJ9.6bcQbexzx61h3kVR8oChaqD_Dpd2C5HazvqwntWjEcLnD0-LJbC2i3tXqMzT9TvUH9HAr8TiaPpxrn4ZXBgXOg
+Content-Type: application/json
+Accept: application/json

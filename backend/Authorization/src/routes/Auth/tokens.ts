@@ -1,7 +1,9 @@
 import { Router } from "express";
 import { authManager } from "@/src/";
-import { RevokedAccessTokenManager } from "@/src/RevokedAccessTokens/RevokedAccessTokenManager";
 import { refreshTokenInputSchema } from "@/src/DB/Models/RefreshToken";
+import { authenticate } from "@/src/middlewares/authenticate";
+import { stringObjectId } from "@/src/DB/Models/common_schemas";
+import Jwt from "jsonwebtoken";
 
 const tokenRouter = Router()
 
@@ -32,16 +34,15 @@ tokenRouter.post('/retrieve-access-token', async (req, res) => {
     }
 })
 
-tokenRouter.post('/revoke-access-token', async (req, res) => {
+tokenRouter.post('/revoke-tokens', authenticate, async (req, res) => {
     try {
-        let { accessToken } = req.body
-
-        if (!refreshTokenInputSchema.pick(['accessToken']).required().isValidSync({ accessToken })) {
-            res.status(400).json({ message: 'invalid Access token' })
+        let userId = (Jwt.decode(req.headers['authorization']!.replace('Bearer ', '')!) as Jwt.JwtPayload)?.sub ?? ''
+        if (!stringObjectId.required().isValidSync(userId)) {
+            res.sendStatus(403)
             return
         }
 
-        if ((await authManager.revokeToken(accessToken)) === false) {
+        if ((await authManager.revokeRefreshTokenByUserId(userId)) === false) {
             res.sendStatus(400)
             return
         }
