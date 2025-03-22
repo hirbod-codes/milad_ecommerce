@@ -51,6 +51,7 @@ export class ProductRepository {
     async sumPriceOfAvailable(productIds: string[], unit: string): Promise<number | false> {
         try {
             let products = await this.collection.find({ isAvailable: true, _id: { $in: productIds.map(id => ObjectId.createFromHexString(id)) } }).toArray()
+            console.log('products', products)
 
             let sum = 0
             for (const product of products)

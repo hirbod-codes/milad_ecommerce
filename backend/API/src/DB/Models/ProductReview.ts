@@ -24,6 +24,9 @@ export const productReviewCreateSchema = productReviewSchema.required().noUnknow
 export type ProductReviewCreate = InferType<typeof productReviewCreateSchema>
 
 export const productReviewUpdateSchema = productReviewSchema.required().noUnknown(true).strict(true).pick(['content', 'rating'])
+for (const field in productReviewUpdateSchema.fields)
+    if (Object.prototype.hasOwnProperty.call(productReviewUpdateSchema.fields, field))
+        (productReviewUpdateSchema.fields as any)[field] = (productReviewUpdateSchema.fields as any)[field].optional()
 export type ProductReviewUpdate = InferType<typeof productReviewUpdateSchema>
 
 export const productReviewImmutableSchema = productReviewSchema.required().noUnknown(true).strict(true).pick(Object.keys(productReviewSchema.fields).filter(f => !['_id', 'schemaVersion', 'createdAt', 'updatedAt'].concat(Object.keys(productReviewUpdateSchema.fields)).includes(f)) as any)

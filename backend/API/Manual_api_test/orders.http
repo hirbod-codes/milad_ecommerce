@@ -1,4 +1,5 @@
-@accessToken=eyJhbGciOiJIUzUxMiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI2N2RkZWVhMmNiMTE3Y2Q0YmYyOGNmYTIiLCJyb2xlIjoiYWRtaW4iLCJpYXQiOjE3NDI2MDg0MjMsImV4cCI6MTc0MjYxMDIyMywiaXNzIjoiQXV0aG9yaXphdGlvbiBTZXJ2ZXIifQ.t6OjCqrbKUKIx1ecmKXe4ej48AfTFzwWQH3yfXE6hst2KKuJ33C_wLqxHZ7ahO5tW3NMMjG4Ihkc_D_KcdW-WA
+@accessToken=eyJhbGciOiJIUzUxMiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI2N2RlOWUzOTg0ZDQxODFjMmRjODNiOGMiLCJyb2xlIjoiYWRtaW4iLCJ0b2tlbk1vZGUiOiJhY2Nlc3NUb2tlbiIsImlhdCI6MTc0MjY1NDk1MiwiZXhwIjoxNzQyNjU2NzUyLCJpc3MiOiJBdXRob3JpemF0aW9uIFNlcnZlciJ9.BXBHZvVan7Uki4RPeefKa1t8IuO7HGzB4y3kHGr3fP3CEWpcRxnhfHnyq0C3_uxHAy6MSVbdd6ulkPiusJA-pQ
+@userId=67de9e3984d4181c2dc83b8c
 
 ###
 POST http://localhost:3000/orders HTTP/1.1
@@ -7,10 +8,10 @@ Content-Type: application/json
 Accept: application/json
 
 {
-    "userId": "67ddf007fecb6a00976af5e2",
+    "userId": "{{userId}}",
     "order": {
-        "userId": "67ddf007fecb6a00976af5e2",
-        "products": ["67ddf007fecb6a00976af5e2"]
+        "userId": "{{userId}}",
+        "products": ["67dec585b7254dd98395228b", "67dec58bb7254dd98395228c"]
     }
 }
 
@@ -25,7 +26,7 @@ Content-Type: application/json
 Accept: application/json
 
 {
-    "id": "67ddf007fecb6a00976af5e2",
+    "id": "{{userId}}",
     "addViews": 5
 }
 
@@ -36,7 +37,7 @@ Content-Type: application/json
 Accept: application/json
 
 {
-    "id": "67ddf007fecb6a00976af5e2",
+    "id": "{{userId}}",
     "category":{
         "name": "entertainment3"
     }
@@ -49,5 +50,5 @@ Content-Type: application/json
 Accept: application/json
 
 {
-    "id": "67ddf007fecb6a00976af5e2"
+    "id": "{{userId}}"
 }

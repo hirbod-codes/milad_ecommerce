@@ -1,4 +1,4 @@
-@accessToken=eyJhbGciOiJIUzUxMiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI2N2RlOWUzOTg0ZDQxODFjMmRjODNiOGMiLCJyb2xlIjoiYWRtaW4iLCJ0b2tlbk1vZGUiOiJhY2Nlc3NUb2tlbiIsImlhdCI6MTc0MjY1MjMyMCwiZXhwIjoxNzQyNjU0MTIwLCJpc3MiOiJBdXRob3JpemF0aW9uIFNlcnZlciJ9.mStngqIzmx6byXNFDu42QOUwELBULBQ7dYvjX7UqwQrg1dErTMf4v_J2KHj6qtDjxi1qDe7DOomLOropNZsNfw
+@accessToken=eyJhbGciOiJIUzUxMiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI2N2RlOWUzOTg0ZDQxODFjMmRjODNiOGMiLCJyb2xlIjoiYWRtaW4iLCJ0b2tlbk1vZGUiOiJhY2Nlc3NUb2tlbiIsImlhdCI6MTc0MjY1NDk1MiwiZXhwIjoxNzQyNjU2NzUyLCJpc3MiOiJBdXRob3JpemF0aW9uIFNlcnZlciJ9.BXBHZvVan7Uki4RPeefKa1t8IuO7HGzB4y3kHGr3fP3CEWpcRxnhfHnyq0C3_uxHAy6MSVbdd6ulkPiusJA-pQ
 @productId=67deb9ae82aec5fe352caafc
 
 ###
@@ -10,7 +10,7 @@ Accept: application/json
 {
     "tags": ["tag1", "tag2"],
     "categories": ["category1", "category2"],
-    "name": "name1",
+    "name": "name6",
     "description": {
         "en": "description1"
     },
@@ -26,6 +26,10 @@ Accept: application/json
 
 ###
 GET http://localhost:3000/products HTTP/1.1
+Accept: application/json
+
+###
+GET http://localhost:3000/products?filter={"$or":[{"name":"name1"},{"name":"name2"}]} HTTP/1.1
 Accept: application/json
 
 ###

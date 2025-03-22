@@ -24,6 +24,9 @@ export const categoryCreateSchema = categorySchema.required().noUnknown(true).st
 export type CategoryCreate = InferType<typeof categoryCreateSchema>
 
 export const categoryUpdateSchema = categorySchema.required().noUnknown(true).strict(true).pick(['views'])
+for (const field in categoryUpdateSchema.fields)
+    if (Object.prototype.hasOwnProperty.call(categoryUpdateSchema.fields, field))
+        (categoryUpdateSchema.fields as any)[field] = (categoryUpdateSchema.fields as any)[field].optional()
 export type CategoryUpdate = InferType<typeof categoryUpdateSchema>
 
 export const categoryImmutableSchema = categorySchema.required().noUnknown(true).strict(true).pick(Object.keys(categorySchema.fields).filter(f => !['_id', 'schemaVersion', 'createdAt', 'updatedAt'].concat(Object.keys(categoryUpdateSchema.fields)).includes(f)) as any)

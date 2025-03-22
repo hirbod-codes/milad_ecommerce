@@ -16,13 +16,14 @@ orders.post('/', authenticate, async (req, res) => {
             return
         }
 
-        let order = req.body
+        let { userId, order } = req.body
 
-        if (!orderInputSchema.isValidSync(order)) {
+        if (!stringObjectId.required().isValidSync(userId) || !orderInputSchema.isValidSync(order)) {
             res.sendStatus(400)
             return
         }
 
+        order.userId = userId
         order = orderInputSchema.cast(order)
 
         let cost: number | false = await productRepository.sumPriceOfAvailable(order.products, 'IRR')

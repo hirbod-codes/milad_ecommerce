@@ -20,6 +20,9 @@ export const refreshTokenInputSchema = refreshTokenSchema.required().noUnknown(t
 export type RefreshTokenInput = InferType<typeof refreshTokenInputSchema>
 
 export const refreshTokenCreateSchema = refreshTokenSchema.required().noUnknown(true).strict(true).omit(['_id']).shape({ _id: likeObjectId.optional() })
+for (const field in refreshTokenCreateSchema.fields)
+    if (Object.prototype.hasOwnProperty.call(refreshTokenCreateSchema.fields, field))
+        (refreshTokenCreateSchema.fields as any)[field] = (refreshTokenCreateSchema.fields as any)[field].optional()
 export type RefreshTokenCreate = InferType<typeof refreshTokenCreateSchema>
 
 export const fields: (keyof RefreshToken)[] = Object.keys(refreshTokenSchema.fields) as any

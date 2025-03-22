@@ -1,0 +1,52 @@
+@accessToken=eyJhbGciOiJIUzUxMiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI2N2RlOWUzOTg0ZDQxODFjMmRjODNiOGMiLCJyb2xlIjoiYWRtaW4iLCJ0b2tlbk1vZGUiOiJhY2Nlc3NUb2tlbiIsImlhdCI6MTc0MjY1NDk1MiwiZXhwIjoxNzQyNjU2NzUyLCJpc3MiOiJBdXRob3JpemF0aW9uIFNlcnZlciJ9.BXBHZvVan7Uki4RPeefKa1t8IuO7HGzB4y3kHGr3fP3CEWpcRxnhfHnyq0C3_uxHAy6MSVbdd6ulkPiusJA-pQ
+@tagId=67dece3ee04d892db35083c0
+
+###
+POST http://localhost:3000/tags HTTP/1.1
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+Accept: application/json
+
+{
+    "name": "name1"
+}
+
+###
+GET http://localhost:3000/tags HTTP/1.1
+Accept: application/json
+
+###
+PATCH http://localhost:3000/tags HTTP/1.1
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+Accept: application/json
+
+{
+    "id": "{{tagId}}",
+    "tag": {
+        "views": 15
+    }
+}
+
+###
+PATCH http://localhost:3000/tags/immutables HTTP/1.1
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+Accept: application/json
+
+{
+    "id": "{{tagId}}",
+    "tag": {
+        "views": 15
+    }
+}
+
+###
+DELETE http://localhost:3000/tags HTTP/1.1
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+Accept: application/json
+
+{
+    "id": "{{tagId}}"
+}
