@@ -461,6 +461,10 @@ services:
             - /app/node_modules
         environment:
             - NODE_ENV=development
+            - ADMIN_USERNAME=username
+            - ADMIN_PHONE_NUMBER=phonenumber
+            - ADMIN_EMAIL=email
+            - ADMIN_PASSWORD=password
             - DB_SUPPORTS_TRANSACTION=true
             - DB_URL=mongodb://main_mongodb_mongos1:27017,main_mongodb_mongos2:27017
             - SESSION_REDIS_TYPE=cluster

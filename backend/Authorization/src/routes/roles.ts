@@ -1,5 +1,5 @@
 import { Router } from "express"
-import { queueManagement, roleRepository, userRepository } from "@/src"
+import { authManager, queueManagement, roleRepository, userRepository } from "@/src"
 import { likeObjectId, stringObjectId } from "@/src/DB/Models/common_schemas"
 import { roleInputSchema, roleUpdateSchema } from "@/src/DB/Models/Role"
 import { authenticate } from "@/src/middlewares/authenticate"
@@ -154,6 +154,11 @@ roles.patch('/assign', authenticate, async (req, res) => {
 
         if ((await roleRepository.getByNames([role])).length === 0) {
             res.status(400).json({ errors: ['role not found'] })
+            return
+        }
+
+        if ((await authManager.revokeRefreshTokenByUserId(userId)) === false) {
+            res.sendStatus(400)
             return
         }
 

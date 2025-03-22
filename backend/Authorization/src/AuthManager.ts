@@ -6,6 +6,8 @@ import { DateTime } from 'luxon';
 import { InsertionFailure } from './DB/Exceptions/InsertionFailure';
 import { RevokedAccessTokenManager } from './RevokedAccessTokens/RevokedAccessTokenManager';
 import { privilegeNames } from "@/src/DB/Models/privilegeNames"
+import { ObjectId } from 'mongodb';
+import { RefreshToken } from './DB/Models/RefreshToken';
 
 export class AuthManager {
     static PRIVILEGE_NAMES: string[] = privilegeNames
@@ -30,18 +32,24 @@ export class AuthManager {
         })
     }
 
-    async generateAccessToken(id: string, role: string): Promise<string> {
+    async generateAccessToken(id: string | ObjectId, role: string): Promise<string> {
+        if (typeof id !== 'string')
+            id = id.toString()
+
         return await this.generateToken(id, role, this.accessTokenExpiresIn)
     }
 
-    async generateRefreshToken(id: string, role: string): Promise<string> {
+    async generateRefreshToken(id: string | ObjectId, role: string): Promise<string> {
+        if (typeof id !== 'string')
+            id = id.toString()
+
         return await this.generateToken(id, role, this.refreshTokenExpiresIn)
     }
 
-    async generateTokens(userId: string, role: string): Promise<{
-        accessToken: string,
-        refreshToken: string,
-    }> {
+    async generateTokens(userId: string | ObjectId, role: string): Promise<{ accessToken: string, refreshToken: string }> {
+        if (typeof userId !== 'string')
+            userId = userId.toString()
+
         let refreshTokenDoc = await (await db.getRefreshTokensCollection()).findOne({ userId })
 
         if (refreshTokenDoc)
@@ -56,7 +64,7 @@ export class AuthManager {
             }
 
             let r = await (await db.getRefreshTokensCollection()).insertOne({
-                userId,
+                userId: ObjectId.createFromHexString(userId),
                 role,
                 refreshToken: tokens.refreshToken,
                 accessToken: tokens.accessToken,
@@ -130,18 +138,44 @@ export class AuthManager {
         });
     }
 
-    async revokeRefreshTokenByUserId(userId: string) {
-        let r = await (await db.getRefreshTokensCollection()).deleteMany({ userId })
+    async revokeRefreshTokenByUserId(userId: string | ObjectId): Promise<boolean> {
+        let refreshToken = await (await db.getRefreshTokensCollection()).findOne({ userId: typeof userId === 'string' ? ObjectId.createFromHexString(userId) : userId })
+        if (!refreshToken)
+            return false
 
-        if (!r.acknowledged)
-            throw new DeletionFailure()
+        return await this.revokeRefreshToken(refreshToken)
     }
 
-    async revokeRefreshToken(refreshToken: string) {
-        let r = await (await db.getRefreshTokensCollection()).deleteMany({ refreshToken })
+    async revokeRefreshToken(refreshToken: string | RefreshToken): Promise<boolean> {
+        if (typeof refreshToken === 'string') {
+            let t = (await (await db.getRefreshTokensCollection()).findOne({ refreshToken }))
+            if (!t)
+                return false
+            refreshToken = t
+        }
+
+        const res = await Promise.all([
+            await this.revokeToken(refreshToken.refreshToken),
+            await this.revokeToken(refreshToken.accessToken),
+        ])
+        if (res[0] === false || res[1] === false)
+            return false
+
+        let r = await (await db.getRefreshTokensCollection()).deleteMany({ refreshToken: refreshToken.refreshToken })
 
         if (!r.acknowledged)
             throw new DeletionFailure()
+
+        return true
+    }
+
+    async revokeToken(token: string): Promise<boolean> {
+        let payload = await this.verify(token)
+
+        if (payload !== undefined && payload?.exp !== undefined)
+            await RevokedAccessTokenManager.set(token, 'true', payload.exp)
+
+        return true
     }
 
     verify(token: string): Promise<Jwt.JwtPayload | undefined> {

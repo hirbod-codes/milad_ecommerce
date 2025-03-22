@@ -1,4 +1,4 @@
-@accessToken=eyJhbGciOiJIUzUxMiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI2N2RiZmFmNzNkM2Q1NDQzMjYwMTRkOTgiLCJyb2xlIjoiZGVmYXVsdCIsImlhdCI6MTc0MjUzOTg1NSwiZXhwIjoxNzQyNTQxNjU1LCJpc3MiOiJBdXRob3JpemF0aW9uIFNlcnZlciJ9.9TUJppYhSThm-TAcksHAacQOHKwFlXkrn2jaFHVGh7hQ7TzsBkz_aW7Q8CndM6jCNCg0lYPEVFTUGvaxWsznNQ
+@accessToken=eyJhbGciOiJIUzUxMiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI2N2RkZWVhMmNiMTE3Y2Q0YmYyOGNmYTIiLCJyb2xlIjoiYWRtaW4iLCJpYXQiOjE3NDI2MDMwMjQsImV4cCI6MTc0MjYwNDgyNCwiaXNzIjoiQXV0aG9yaXphdGlvbiBTZXJ2ZXIifQ.I7NrGDk_iajXiQDzEck3FQl_TnWdbzUmuTUhi2whgq4s-5xNM6Kc5GRKW0R_FRSvlphIMn3c3EyJE3E39vzGcA
 
 ###
 POST http://localhost:3001/roles HTTP/1.1
@@ -49,6 +49,6 @@ Content-Type: application/json
 Accept: application/json
 
 {
-    "userId": "67dbfaf73d3d544326014d98",
-    "role": "test4"
+    "userId": "67ddeea2cb117cd4bf28cfa2",
+    "role": "default"
 }

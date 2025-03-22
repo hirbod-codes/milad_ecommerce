@@ -1,0 +1,53 @@
+@accessToken=eyJhbGciOiJIUzUxMiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI2N2RkZWVhMmNiMTE3Y2Q0YmYyOGNmYTIiLCJyb2xlIjoiYWRtaW4iLCJpYXQiOjE3NDI1OTc5ODUsImV4cCI6MTc0MjU5OTc4NSwiaXNzIjoiQXV0aG9yaXphdGlvbiBTZXJ2ZXIifQ.8wO67hvze3DJKt8pK14lghv4kBVbJz1DUt4mRIdgRT5hQ3BGG7orcrE5r2-U7G2salMDBpGhuo-0fE8hulGrog
+
+###
+POST http://localhost:3000/categories HTTP/1.1
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+Accept: application/json
+
+{
+    "name": "entertainment",
+    "displayName": {
+        "fa": "سرگرمی",
+        "en": "entertainment"
+    }
+}
+
+###
+GET http://localhost:3000/categories HTTP/1.1
+Accept: application/json
+
+###
+PATCH http://localhost:3000/categories HTTP/1.1
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+Accept: application/json
+
+{
+    "id": "67ddf007fecb6a00976af5e2",
+    "addViews": 5
+}
+
+###
+PATCH http://localhost:3000/categories/immutables HTTP/1.1
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+Accept: application/json
+
+{
+    "id": "67ddf007fecb6a00976af5e2",
+    "category":{
+        "name": "entertainment3"
+    }
+}
+
+###
+DELETE http://localhost:3000/categories HTTP/1.1
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+Accept: application/json
+
+{
+    "id": "67ddf007fecb6a00976af5e2"
+}
