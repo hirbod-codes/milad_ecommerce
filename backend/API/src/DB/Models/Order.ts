@@ -14,8 +14,8 @@ export const orderSchema = object().required().strict(true).unknown(true).shape(
     isPayed: boolean().required(),
     isSent: boolean().required(),
     address: object().optional().shape({
-        text: string().required().max(1000),
-        googleMap: string().required().url()
+        text: string().optional().max(1000),
+        googleMap: string().optional().url()
     }),
     createdAt: number().required(),
     updatedAt: number().required(),

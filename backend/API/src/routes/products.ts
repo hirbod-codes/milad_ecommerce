@@ -8,6 +8,7 @@ import { authenticate } from "@/src/middlewares/authenticate";
 import { authorize } from "@/src/middlewares/authorize";
 import archiver from "archiver";
 import busboy from "busboy";
+import { Filter, SortDirection } from "mongodb";
 
 const products = Router()
 
@@ -33,56 +34,69 @@ products.post('/', authenticate, async (req, res) => {
 })
 
 products.get('/', async (req, res) => {
-    const { filter: filterJson, sort: sortJson, limit: limitStr, skip: skipStr } = req.query
+    try {
+        const { filter: filterJson, sort: sortJson, limit: limitStr, skip: skipStr } = req.query
 
-    if (!filterJson || !sortJson || !limitStr || !skipStr) {
-        res.sendStatus(400)
-        return
-    }
+        if (!number().optional().positive().integer().isValidSync(limitStr)) {
+            res.status(400).json({ errors: ['invalid limit'] })
+            return
+        }
 
-    if (!number().required().positive().integer().isValidSync(limitStr) || !number().required().positive().integer().isValidSync(skipStr)) {
-        res.sendStatus(400)
-        return
-    }
+        if (!number().optional().positive().integer().isValidSync(skipStr)) {
+            res.status(400).json({ errors: ['invalid skip'] })
+            return
+        }
 
-    let limit = number().required().positive().integer().cast(limitStr)
-    let skip = number().required().positive().integer().cast(skipStr)
+        let limit = number().required().positive().integer().cast(limitStr ?? 25)
+        let skip = number().required().positive().integer().cast(skipStr ?? 0)
 
-    let filter: any = JSON.parse(filterJson.toString())
-    let sort = JSON.parse(sortJson.toString())
+        let sort: { field: keyof Product, direction: SortDirection }[] = []
+        if (sortJson) {
+            sort = JSON.parse(sortJson.toString())
 
-    const sortSchema = array().optional().strict(true).of(
-        object().required().noUnknown(true).strict(true).shape({
-            field: string().strict(true).required().oneOf(readableFields),
-            direction: string().strict(true).required().oneOf(['asc', 'desc', 'ascending', 'descending'])
-        })
-    )
-    if (!sortSchema.isValidSync(sort)) {
-        res.sendStatus(400)
-        return
-    }
+            const sortSchema = array().required().strict(true).of(
+                object().required().noUnknown(true).strict(true).shape({
+                    field: string().strict(true).required().oneOf(readableFields),
+                    direction: string().strict(true).required().oneOf(['asc', 'desc', 'ascending', 'descending'])
+                })
+            )
 
-    const filterSchema = array().optional().strict(true).of(object().required().strict(true))
+            if (!sortSchema.isValidSync(sort)) {
+                res.status(400).json({ errors: ['invalid sort'] })
+                return
+            }
+        }
 
-    if (!filterSchema.isValidSync(filter)) {
-        res.sendStatus(400)
-        return
-    }
+        let filter: Filter<Product> = {}
+        if (filterJson) {
+            filter = JSON.parse(filterJson.toString())
 
-    if (filter === undefined || FilterManagement.validateFilters<Product>(filter, productSchema, readableFields) !== true) {
-        if (req.headers.accept?.includes('plain/text') ?? false)
-            res.status(400).send('invalid filter provided')
+            const filterSchema = object().required().strict(true)
+
+            if (!filterSchema.isValidSync(filter)) {
+                res.status(400).json({ errors: ['invalid filter'] })
+                return
+            }
+
+            if (filter === undefined || FilterManagement.validateFilters<Product>(filter, productSchema, readableFields) !== true) {
+                if (req.headers.accept?.includes('plain/text') ?? false)
+                    res.status(400).send('invalid filter')
+                else
+                    res.status(400).json({ errors: ['invalid filter'] })
+
+                return
+            }
+        }
+
+        const products = await productRepository.get(filter, sort, limit, skip)
+        if (products === false)
+            res.sendStatus(500)
         else
-            res.status(400).json({ message: 'invalid filter provided' })
-
-        return
-    }
-
-    const products = await productRepository.get(filter, sortSchema.cast(sort) as any, limit, skip)
-    if (products === false)
+            res.status(200).json(products)
+    } catch (e) {
+        console.error(e)
         res.sendStatus(500)
-    else
-        res.status(200).json()
+    }
 })
 
 products.get('/pictures/:ids', async (req, res) => {

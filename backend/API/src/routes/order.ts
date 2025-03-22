@@ -1,17 +1,24 @@
 import { Router } from "express";
-import { orderRepository, productRepository } from "../";
+import { orderRepository, productRepository } from "..";
 import { Order, orderImmutableSchema, orderInputSchema, orderSchema, orderUpdateSchema, readableFields } from "@/src/DB/Models/Order";
 import { authenticate } from "@/src/middlewares/authenticate";
 import { authorize } from "@/src/middlewares/authorize";
 import { FilterManagement } from "@/src/DB/FilterManagement";
 import { array, number, object, string } from "yup";
 import { stringObjectId } from "@/src/DB/Models/common_schemas";
+import Jwt from "jsonwebtoken";
 
 const orders = Router()
 
 orders.post('/', authenticate, async (req, res) => {
     try {
-        if (await authorize(req, 'create-order') !== true) {
+        if (await authorize(req, 'create-order-self') !== true) {
+            res.sendStatus(403)
+            return
+        }
+
+        let userId = (Jwt.decode(req.headers['authorization']!.replace('Bearer ', '')!) as Jwt.JwtPayload)?.sub ?? ''
+        if (!stringObjectId.required().isValidSync(userId)) {
             res.sendStatus(403)
             return
         }
@@ -23,6 +30,7 @@ orders.post('/', authenticate, async (req, res) => {
             return
         }
 
+        order.userId = userId
         order = orderInputSchema.cast(order)
 
         let cost: number | false = await productRepository.sumPriceOfAvailable(order.products, 'IRR')
@@ -44,17 +52,18 @@ orders.post('/', authenticate, async (req, res) => {
 
 orders.get('/', authenticate, async (req, res) => {
     try {
-        if (await authorize(req, 'get-order') !== true) {
+        if (await authorize(req, 'get-order-self') !== true) {
             res.sendStatus(403)
             return
         }
 
-        const { userId, filter: filterJson, sort: sortJson, limit: limitStr, skip: skipStr } = req.query
-
-        if (!stringObjectId.isValidSync(userId)) {
-            res.sendStatus(400)
+        let userId = (Jwt.decode(req.headers['authorization']!.replace('Bearer ', '')!) as Jwt.JwtPayload)?.sub ?? ''
+        if (!stringObjectId.required().isValidSync(userId)) {
+            res.sendStatus(403)
             return
         }
+
+        const { filter: filterJson, sort: sortJson, limit: limitStr, skip: skipStr } = req.query
 
         if (!filterJson || !sortJson || !limitStr || !skipStr) {
             res.sendStatus(400)
@@ -112,14 +121,20 @@ orders.get('/', authenticate, async (req, res) => {
 
 orders.patch('/', authenticate, async (req, res) => {
     try {
-        if (await authorize(req, 'update-order') !== true) {
+        if (await authorize(req, 'update-order-self') !== true) {
             res.sendStatus(403)
             return
         }
 
-        const { userId, order } = req.body
+        let userId = (Jwt.decode(req.headers['authorization']!.replace('Bearer ', '')!) as Jwt.JwtPayload)?.sub ?? ''
+        if (!stringObjectId.required().isValidSync(userId)) {
+            res.sendStatus(403)
+            return
+        }
 
-        if (!stringObjectId.required().isValidSync(userId) || !orderUpdateSchema.isValidSync(order)) {
+        const order = req.body
+
+        if (!orderUpdateSchema.isValidSync(order)) {
             res.sendStatus(400)
             return
         }
@@ -138,14 +153,20 @@ orders.patch('/', authenticate, async (req, res) => {
 
 orders.patch('/immutables', authenticate, async (req, res) => {
     try {
-        if (await authorize(req, 'update-immutables-order') !== true) {
+        if (await authorize(req, 'update-immutables-order-self') !== true) {
             res.sendStatus(403)
             return
         }
 
-        const { userId, order } = req.body
+        let userId = (Jwt.decode(req.headers['authorization']!.replace('Bearer ', '')!) as Jwt.JwtPayload)?.sub ?? ''
+        if (!stringObjectId.required().isValidSync(userId)) {
+            res.sendStatus(403)
+            return
+        }
 
-        if (!stringObjectId.required().isValidSync(userId) || !orderImmutableSchema.isValidSync(order)) {
+        const order = req.body
+
+        if (!orderImmutableSchema.isValidSync(order)) {
             res.sendStatus(400)
             return
         }
@@ -164,20 +185,18 @@ orders.patch('/immutables', authenticate, async (req, res) => {
 
 orders.delete('/', authenticate, async (req, res) => {
     try {
-        if (await authorize(req, 'delete-order') !== true) {
+        if (await authorize(req, 'delete-order-self') !== true) {
             res.sendStatus(403)
             return
         }
 
-        const { userId } = req.body
-
+        let userId = (Jwt.decode(req.headers['authorization']!.replace('Bearer ', '')!) as Jwt.JwtPayload)?.sub ?? ''
         if (!stringObjectId.required().isValidSync(userId)) {
-            res.sendStatus(400)
+            res.sendStatus(403)
             return
         }
 
         const result = await orderRepository.delete(userId)
-
         if (result === false || result.acknowledged !== true)
             res.sendStatus(500)
         else

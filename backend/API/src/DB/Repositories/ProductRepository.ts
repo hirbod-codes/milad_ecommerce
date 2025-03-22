@@ -32,7 +32,7 @@ export class ProductRepository {
         catch (e) { console.error(e); return undefined }
     }
 
-    async get(filter: Filter<Product>, sorts: [{ field: (keyof Product)[], direction: SortDirection }], limit: number, skip: number): Promise<Product[] | false> {
+    async get(filter: Filter<Product>, sorts: { field: keyof Product, direction: SortDirection }[], limit: number, skip: number): Promise<Product[] | false> {
         try {
             let cursor = this.collection.find(filter)
 

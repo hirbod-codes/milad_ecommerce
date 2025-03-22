@@ -177,15 +177,6 @@ export class MongoDB {
         await this.addUserCollection()
         await this.addPrivilegeCollection()
         await this.addRoleCollection()
-
-        await this.getUserProfilePictureBucket()
-        const db = await this.getDb();
-
-        const indexes = await db.collection(`${userProfilePictureCollectionName}.files`).indexes()
-
-        if (indexes.find(i => i.name === 'unique-userId') === undefined)
-            await db.createIndex(`${userProfilePictureCollectionName}.files`, { 'metadata.userId': 1 }, { unique: true, name: 'unique-userId' })
-
     }
 
     private async addRefreshTokenCollection() {
@@ -287,6 +278,16 @@ export class MongoDB {
     }
 
     async getUserProfilePictureBucket(client?: MongoClient, db?: Db): Promise<GridFSBucket> {
-        return new GridFSBucket(db ?? (await this.getDb(client)), { bucketName: userProfilePictureCollectionName });
+        if (!db)
+            db = await this.getDb();
+
+        if ((await db.listCollections().toArray()).map(e => e.name).includes(userProfilePictureCollectionName)) {
+            const indexes = await db.collection(`${userProfilePictureCollectionName}.files`).indexes()
+
+            if (indexes.find(i => i.name === 'unique-userId') === undefined)
+                await db.createIndex(`${userProfilePictureCollectionName}.files`, { 'metadata.userId': 1 }, { unique: true, name: 'unique-userId' })
+        }
+
+        return new GridFSBucket(db, { bucketName: userProfilePictureCollectionName });
     }
 }

@@ -1,0 +1,5 @@
+@accessToken=eyJhbGciOiJIUzUxMiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI2N2RlOWUzOTg0ZDQxODFjMmRjODNiOGMiLCJyb2xlIjoiZGVmYXVsdCIsImlhdCI6MTc0MjY0Mjc0NSwiZXhwIjoxNzQyNjQ0NTQ1LCJpc3MiOiJBdXRob3JpemF0aW9uIFNlcnZlciJ9.j_Geps6y5-s_2OEFdc-IYvAOMAtixXzSiFeWPpc2A6Nuap8AHHgywjNVyt6FzlDIKbj0zKOfR07ajSCwwY-YWg
+
+###
+GET http://localhost:3000/products HTTP/1.1
+Accept: application/json
