@@ -40,6 +40,11 @@ export class PrivilegeRepository {
         catch (e) { console.error(e); return false }
     }
 
+    async isNameExist(name: string): Promise<boolean> {
+        try { return await this.collection.countDocuments({ name }) !== 0 }
+        catch (e) { console.error(e); return false }
+    }
+
     async get(): Promise<Privilege[] | false> {
         try { return await this.collection.find().toArray() }
         catch (e) { console.error(e); return false }

@@ -80,7 +80,7 @@ tags.patch('/immutables', authenticate, async (req, res) => {
     if (result === false || result.acknowledged !== true)
         res.sendStatus(500)
     else
-        res.status(20).json({ result })
+        res.status(200).json({ result })
 })
 
 tags.delete('/', authenticate, async (req, res) => {
@@ -101,7 +101,7 @@ tags.delete('/', authenticate, async (req, res) => {
     if (result === false || result.acknowledged !== true)
         res.sendStatus(500)
     else
-        res.status(201).json({ result })
+        res.status(200).json({ result })
 })
 
 export { tags }

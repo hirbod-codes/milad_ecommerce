@@ -38,15 +38,22 @@ products.post('/', authenticate, async (req, res) => {
     }
 })
 
-products.get('/:id', async (req, res) => {
+products.get('/:ids', async (req, res) => {
     try {
-        let { id } = req.params
-        if (!stringObjectId.required().isValidSync(id)) {
-            res.sendStatus(403)
+        const { ids: idsStr } = req.params
+
+        if (!string().required().strict(true).isValidSync(idsStr)) {
+            res.sendStatus(400)
             return
         }
 
-        const r = await productRepository.getById(id)
+        const ids = idsStr.split(',')
+        if (!array().required().min(1).strict(true).of(stringObjectId.required()).isValidSync(ids)) {
+            res.sendStatus(400)
+            return
+        }
+
+        const r = await productRepository.getByIds(ids)
         if (!r)
             res.sendStatus(404)
         else
@@ -254,66 +261,81 @@ products.post('/pictures/:productId', authenticate, async (req, res) => {
 })
 
 products.patch('/', authenticate, async (req, res) => {
-    if (await authorize(req, 'update-product') !== true) {
-        res.sendStatus(403)
-        return
-    }
+    try {
+        if (await authorize(req, 'update-product') !== true) {
+            res.sendStatus(403)
+            return
+        }
 
-    const { product, id } = req.body
+        const { product, id } = req.body
 
-    if (!stringObjectId.required().isValidSync(id) || !productUpdateSchema.isValidSync(product)) {
-        res.sendStatus(400)
-        return
-    }
+        if (!stringObjectId.required().isValidSync(id) || !productUpdateSchema.isValidSync(product)) {
+            res.sendStatus(400)
+            return
+        }
 
-    const result = await productRepository.update(id, productUpdateSchema.cast(product))
+        const result = await productRepository.update(id, productUpdateSchema.cast(product))
 
-    if (result === false || result.acknowledged !== true)
+        if (result === false || result.acknowledged !== true)
+            res.sendStatus(500)
+        else
+            res.status(200).json({ result })
+    } catch (e) {
+        console.error(e)
         res.sendStatus(500)
-    else
-        res.status(200).json({ result })
+    }
 })
 
 products.patch('/immutables', authenticate, async (req, res) => {
-    if (await authorize(req, 'update-immutables-product') !== true) {
-        res.sendStatus(403)
-        return
-    }
+    try {
+        if (await authorize(req, 'update-immutables-product') !== true) {
+            res.sendStatus(403)
+            return
+        }
 
-    const { product, id } = req.body
+        const { product, id } = req.body
 
-    if (!stringObjectId.required().isValidSync(id) || !productImmutableSchema.isValidSync(product)) {
-        res.sendStatus(400)
-        return
-    }
+        if (!stringObjectId.required().isValidSync(id) || !productImmutableSchema.isValidSync(product)) {
+            res.sendStatus(400)
+            return
+        }
 
-    const result = await productRepository.updateImmutables(id, productImmutableSchema.cast(product))
+        const result = await productRepository.updateImmutables(id, productImmutableSchema.cast(product))
 
-    if (result === false || result.acknowledged !== true)
+        if (result === false || result.acknowledged !== true)
+            res.sendStatus(500)
+        else
+            res.status(200).json({ result })
+    } catch (e) {
+        console.error(e)
         res.sendStatus(500)
-    else
-        res.status(20).json({ result })
+    }
 })
 
 products.delete('/', authenticate, async (req, res) => {
-    if (await authorize(req, 'delete-product') !== true) {
-        res.sendStatus(403)
-        return
-    }
+    try {
+        if (await authorize(req, 'delete-product') !== true) {
+            res.sendStatus(403)
+            return
+        }
 
-    const { id } = req.body
+        const { id } = req.body
 
-    if (!stringObjectId.required().isValidSync(id)) {
-        res.sendStatus(400)
-        return
-    }
+        if (!stringObjectId.required().isValidSync(id)) {
+            res.sendStatus(400)
+            return
+        }
 
-    const result = await productRepository.delete(id)
+        const result = await productRepository.delete(id)
 
-    if (result === false || result.acknowledged !== true)
+        if (result === false || result.acknowledged !== true)
+            res.sendStatus(500)
+        else
+            res.status(200).json({ result })
+    } catch (e) {
+        console.error(e)
         res.sendStatus(500)
-    else
-        res.status(201).json({ result })
+    }
 })
 
 export { products }

@@ -1,4 +1,4 @@
-@accessToken=eyJhbGciOiJIUzUxMiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI2N2RlOWUzOTg0ZDQxODFjMmRjODNiOGMiLCJyb2xlIjoiYWRtaW4iLCJ0b2tlbk1vZGUiOiJhY2Nlc3NUb2tlbiIsImlhdCI6MTc0MjY0OTc2MiwiZXhwIjoxNzQyNjUxNTYyLCJpc3MiOiJBdXRob3JpemF0aW9uIFNlcnZlciJ9.rc9s-JpKSFHvEqSkRVw8xa2q3BPmrS6lloiRYqz0W6mR1dZn1_68mnKVCKry3ctMpHKB3ndfQX4vSnwJrAb2lg
+@accessToken=eyJhbGciOiJIUzUxMiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI2N2RlOWUzOTg0ZDQxODFjMmRjODNiOGMiLCJyb2xlIjoiYWRtaW4iLCJ0b2tlbk1vZGUiOiJhY2Nlc3NUb2tlbiIsImlhdCI6MTc0MjY1MjMyMCwiZXhwIjoxNzQyNjU0MTIwLCJpc3MiOiJBdXRob3JpemF0aW9uIFNlcnZlciJ9.mStngqIzmx6byXNFDu42QOUwELBULBQ7dYvjX7UqwQrg1dErTMf4v_J2KHj6qtDjxi1qDe7DOomLOropNZsNfw
 @productId=67deb9ae82aec5fe352caafc
 
 ###
@@ -27,3 +27,41 @@ Accept: application/json
 ###
 GET http://localhost:3000/products HTTP/1.1
 Accept: application/json
+
+###
+PATCH http://localhost:3000/products HTTP/1.1
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+Accept: application/json
+
+{
+    "id": "{{productId}}",
+    "product": {
+        "description": {
+            "en": "description2"
+        }
+    }
+}
+
+###
+PATCH http://localhost:3000/products/immutables HTTP/1.1
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+Accept: application/json
+
+{
+    "id": "{{productId}}",
+    "product": {
+        "views": 15
+    }
+}
+
+###
+DELETE http://localhost:3000/products HTTP/1.1
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+Accept: application/json
+
+{
+    "id": "{{productId}}"
+}

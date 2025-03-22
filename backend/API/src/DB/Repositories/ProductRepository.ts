@@ -22,6 +22,11 @@ export class ProductRepository {
         return await this.collection.insertOne(p)
     }
 
+    async isNameExist(name: string): Promise<boolean> {
+        try { return await this.collection.countDocuments({ name }) !== 0 }
+        catch (e) { console.error(e); return false }
+    }
+
     async getById(id: string | ObjectId): Promise<Product | null | undefined> {
         try { return await this.collection.findOne({ _id: typeof id === 'string' ? ObjectId.createFromHexString(id) : id }) }
         catch (e) { console.error(e); return undefined }
