@@ -37,7 +37,7 @@ orders.post('/', authenticate, async (req, res) => {
             return
         }
 
-        const r = await orderRepository.create(order, { IRR: cost })
+        const r = await orderRepository.create(userId, order, { IRR: cost })
         if (r === false || r.acknowledged !== true)
             res.sendStatus(500)
         else

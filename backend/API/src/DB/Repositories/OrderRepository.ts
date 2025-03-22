@@ -9,17 +9,18 @@ export class OrderRepository {
         this.collection = collection
     }
 
-    async create(order: OrderInput, cost: { [k: string]: number }): Promise<InsertOneResult | false> {
+    async create(userId: string | ObjectId, order: OrderInput, cost: { [k: string]: number }): Promise<InsertOneResult | false> {
         const ts = DateTime.utc().toUnixInteger()
 
-        if (typeof order.userId === 'string')
-            order.userId = ObjectId.createFromHexString(order.userId)
+        if (typeof userId === 'string')
+            userId = ObjectId.createFromHexString(userId)
 
         order.products = order.products.map(p => typeof p === 'string' ? ObjectId.createFromHexString(p) : p)
 
         let o: OrderCreate = {
             ...order,
             schemaVersion,
+            userId,
             isPayed: false,
             isSent: false,
             cost,
@@ -62,6 +63,39 @@ export class OrderRepository {
 
     async delete(id: string): Promise<DeleteResult | false> {
         try { return await this.collection.deleteOne({ _id: ObjectId.createFromHexString(id) }) }
+        catch (e) { console.error(e); return false }
+    }
+
+    async updateForUser(userId: string | ObjectId, orderId: string | ObjectId, order: OrderUpdate): Promise<UpdateResult | false> {
+        if (typeof userId === 'string')
+            userId = ObjectId.createFromHexString(userId)
+    
+        if (typeof orderId === 'string')
+            orderId = ObjectId.createFromHexString(orderId)
+
+        try { return await this.collection.updateOne({ _id: orderId, userId }, { $set: { ...order, updatedAt: DateTime.utc().toUnixInteger() } }) }
+        catch (e) { console.error(e); return false }
+    }
+
+    async updateImmutablesForUser(userId: string | ObjectId, orderId: string | ObjectId, immutableFields: OrderImmutable): Promise<UpdateResult | false> {
+        if (typeof userId === 'string')
+            userId = ObjectId.createFromHexString(userId)
+    
+        if (typeof orderId === 'string')
+            orderId = ObjectId.createFromHexString(orderId)
+
+        try { return await this.collection.updateOne({ _id: orderId, userId }, { $set: { ...immutableFields, updatedAt: DateTime.utc().toUnixInteger() } }) }
+        catch (e) { console.error(e); return false }
+    }
+
+    async deleteForUser(userId: string | ObjectId, orderId: string | ObjectId): Promise<DeleteResult | false> {
+        if (typeof userId === 'string')
+            userId = ObjectId.createFromHexString(userId)
+    
+        if (typeof orderId === 'string')
+            orderId = ObjectId.createFromHexString(orderId)
+
+        try { return await this.collection.deleteOne({ _id: orderId, userId }) }
         catch (e) { console.error(e); return false }
     }
 }

@@ -1,15 +1,23 @@
-import { array, boolean, InferType, number, object, Schema, string } from "yup";
-import { likeObjectId, price } from "./common_schemas";
+import { addMethod, array, boolean, InferType, number, object, string } from "yup";
+import { likeObjectId, price, uniqueArrayTest } from "./common_schemas";
 
 export const collectionName = 'order'
 
 export const schemaVersion = 'v1.0.0'
 
+addMethod(array, 'uniqueArray', function (message) {
+    return this.test('unique-array', message, function (list) {
+        if (!list) return true
+        if (!Array.isArray(list)) return false
+        return list.length === new Set(list).size;
+    });
+})
+
 export const orderSchema = object().required().strict(true).unknown(true).shape({
     schemaVersion: string().required().min(6).max(20),
     _id: likeObjectId.required(),
     userId: likeObjectId.required(),
-    products: array().required().min(1).of(likeObjectId.required()),
+    products: array().required().min(1).of(likeObjectId.required()).test('unique-array', uniqueArrayTest),
     cost: price.required(),
     isPayed: boolean().required(),
     isSent: boolean().required(),
@@ -22,7 +30,7 @@ export const orderSchema = object().required().strict(true).unknown(true).shape(
 })
 export type Order = InferType<typeof orderSchema>
 
-export const orderInputSchema = orderSchema.required().noUnknown(true).strict(true).pick(['address', 'products', 'userId'])
+export const orderInputSchema = orderSchema.required().noUnknown(true).strict(true).pick(['address', 'products'])
 export type OrderInput = InferType<typeof orderInputSchema>
 
 export const orderCreateSchema = orderSchema.required().noUnknown(true).strict(true).omit(['_id']).shape({ _id: likeObjectId.optional() })

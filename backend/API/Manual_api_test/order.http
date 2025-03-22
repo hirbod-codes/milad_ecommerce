@@ -1,0 +1,55 @@
+@accessToken=eyJhbGciOiJIUzUxMiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI2N2RlOWUzOTg0ZDQxODFjMmRjODNiOGMiLCJyb2xlIjoiYWRtaW4iLCJ0b2tlbk1vZGUiOiJhY2Nlc3NUb2tlbiIsImlhdCI6MTc0MjY4MjU2MSwiZXhwIjoxNzQyNjg0MzYxLCJpc3MiOiJBdXRob3JpemF0aW9uIFNlcnZlciJ9.5AvKw14U07pxrE7lI9aPSMSwwSMBck5mtSpnqRAPBk8aDHb0-GvdcsRaOHxdPqQKdsjYohBvtMsJb0L8V984wg
+@orderId=67ded49d7c36281c3a01dd26
+
+###
+POST http://localhost:3000/order HTTP/1.1
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+Accept: application/json
+
+{
+    "products": ["67dec585b7254dd98395228b", "67dec58bb7254dd98395228c", "67dec58bb7254dd98395228c"]
+}
+
+###
+GET http://localhost:3000/order HTTP/1.1
+Authorization: Bearer {{accessToken}}
+Accept: application/json
+
+###
+PATCH http://localhost:3000/order HTTP/1.1
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+Accept: application/json
+
+{
+    "orderId": "{{orderId}}",
+    "order": {
+        "address": {
+            "text": "aaaaaaaaaaaaaaaaaaaa"
+        }
+    }
+}
+
+###
+PATCH http://localhost:3000/order/immutables HTTP/1.1
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+Accept: application/json
+
+{
+    "orderId": "{{orderId}}",
+    "order": {
+        "isSent": true
+    }
+}
+
+###
+DELETE http://localhost:3000/order HTTP/1.1
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+Accept: application/json
+
+{
+    "orderId": "{{orderId}}"
+}

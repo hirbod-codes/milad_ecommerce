@@ -1,6 +1,6 @@
 import { array, InferType, mixed, number, object, string } from "yup";
 import { Privilege } from "./Privilege";
-import { likeObjectId, localizedText } from "./common_schemas";
+import { likeObjectId, localizedText, uniqueArrayTest } from "./common_schemas";
 
 export const collectionName = 'role'
 
@@ -11,7 +11,7 @@ export const roleSchema = object().required().noUnknown(true).strict(true).shape
     _id: likeObjectId.required(),
     name: string().required(),
     displayName: localizedText,
-    privileges: array().required().min(0).of(likeObjectId.required()),
+    privileges: array().required().min(0).of(likeObjectId.required()).test('unique-array', uniqueArrayTest),
     createdAt: number().required(),
     updatedAt: number().required(),
 })

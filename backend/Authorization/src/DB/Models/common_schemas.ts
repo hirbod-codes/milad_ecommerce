@@ -23,3 +23,9 @@ export const localizedText = mixed<any>().optional().test((v: any) => {
 
     return true
 })
+
+export function uniqueArrayTest(list: any) {
+    if (!list) return true
+    if (!Array.isArray(list)) return false
+    return list.length === new Set(list).size;
+}

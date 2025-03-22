@@ -1,5 +1,5 @@
 import { array, boolean, InferType, number, object, string } from "yup";
-import { likeObjectId, localizedText, price } from "./common_schemas";
+import { likeObjectId, localizedText, price, uniqueArrayTest } from "./common_schemas";
 
 export const collectionName = 'product'
 
@@ -8,8 +8,8 @@ export const schemaVersion = 'v1.0.0'
 export const productSchema = object().required().strict(true).unknown(true).shape({
     schemaVersion: string().required().min(6).max(20),
     _id: likeObjectId.required(),
-    tags: array().optional().of(string().required()),
-    categories: array().optional().of(string().required()),
+    tags: array().optional().of(string().required()).test('unique-array', uniqueArrayTest),
+    categories: array().optional().of(string().required()).test('unique-array', uniqueArrayTest),
     name: string().required().strict(true).min(2).max(350),
     displayName: localizedText,
     description: localizedText.optional(),
