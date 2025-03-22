@@ -8,9 +8,9 @@ import { array, number, object, string } from "yup";
 import { stringObjectId } from "@/src/DB/Models/common_schemas";
 import Jwt from "jsonwebtoken";
 
-const orders = Router()
+const order = Router()
 
-orders.post('/', authenticate, async (req, res) => {
+order.post('/', authenticate, async (req, res) => {
     try {
         if (await authorize(req, 'create-order-self') !== true) {
             res.sendStatus(403)
@@ -50,7 +50,7 @@ orders.post('/', authenticate, async (req, res) => {
     }
 })
 
-orders.get('/', authenticate, async (req, res) => {
+order.get('/', authenticate, async (req, res) => {
     try {
         if (await authorize(req, 'get-order-self') !== true) {
             res.sendStatus(403)
@@ -119,7 +119,7 @@ orders.get('/', authenticate, async (req, res) => {
     }
 })
 
-orders.patch('/', authenticate, async (req, res) => {
+order.patch('/', authenticate, async (req, res) => {
     try {
         if (await authorize(req, 'update-order-self') !== true) {
             res.sendStatus(403)
@@ -151,7 +151,7 @@ orders.patch('/', authenticate, async (req, res) => {
     }
 })
 
-orders.patch('/immutables', authenticate, async (req, res) => {
+order.patch('/immutables', authenticate, async (req, res) => {
     try {
         if (await authorize(req, 'update-immutables-order-self') !== true) {
             res.sendStatus(403)
@@ -183,7 +183,7 @@ orders.patch('/immutables', authenticate, async (req, res) => {
     }
 })
 
-orders.delete('/', authenticate, async (req, res) => {
+order.delete('/', authenticate, async (req, res) => {
     try {
         if (await authorize(req, 'delete-order-self') !== true) {
             res.sendStatus(403)
@@ -207,4 +207,4 @@ orders.delete('/', authenticate, async (req, res) => {
     }
 })
 
-export { orders }
+export { order }

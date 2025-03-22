@@ -13,6 +13,7 @@ import { OrderRepository } from "./DB/Repositories/OrderRepository";
 import { CategoryRepository } from "./DB/Repositories/CategoryRepository";
 import { products } from './routes/products'
 import { orders } from './routes/orders'
+import { order } from './routes/order'
 import { categories } from './routes/categories'
 import { tags } from './routes/tags'
 import { QueueManagement } from "./QueueManagement";
@@ -155,6 +156,7 @@ async function tryAndWait(callback: CallableFunction, secondsToWaitForEachTry: n
 
     app.use('/products', products)
     app.use('/orders', orders)
+    app.use('/order', order)
     app.use('/categories', categories)
     app.use('/tags', tags)
 

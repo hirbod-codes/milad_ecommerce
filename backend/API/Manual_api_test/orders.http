@@ -1,5 +1,6 @@
-@accessToken=eyJhbGciOiJIUzUxMiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI2N2RlOWUzOTg0ZDQxODFjMmRjODNiOGMiLCJyb2xlIjoiYWRtaW4iLCJ0b2tlbk1vZGUiOiJhY2Nlc3NUb2tlbiIsImlhdCI6MTc0MjY1NDk1MiwiZXhwIjoxNzQyNjU2NzUyLCJpc3MiOiJBdXRob3JpemF0aW9uIFNlcnZlciJ9.BXBHZvVan7Uki4RPeefKa1t8IuO7HGzB4y3kHGr3fP3CEWpcRxnhfHnyq0C3_uxHAy6MSVbdd6ulkPiusJA-pQ
+@accessToken=eyJhbGciOiJIUzUxMiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI2N2RlOWUzOTg0ZDQxODFjMmRjODNiOGMiLCJyb2xlIjoiYWRtaW4iLCJ0b2tlbk1vZGUiOiJhY2Nlc3NUb2tlbiIsImlhdCI6MTc0MjY3ODgyMSwiZXhwIjoxNzQyNjgwNjIxLCJpc3MiOiJBdXRob3JpemF0aW9uIFNlcnZlciJ9.zic6Ltl3bdrpsFxUgqY-9bZj_z4o-9Gm8mUFH6Qw9iv2qHcI1xcabQAt4aJmU-bDtirS6dqcRzH6l3cSf33geg
 @userId=67de9e3984d4181c2dc83b8c
+@orderId=67ded49d7c36281c3a01dd26
 
 ###
 POST http://localhost:3000/orders HTTP/1.1
@@ -16,7 +17,8 @@ Accept: application/json
 }
 
 ###
-GET http://localhost:3000/orders HTTP/1.1
+GET http://localhost:3000/orders?userId={{userId}} HTTP/1.1
+Authorization: Bearer {{accessToken}}
 Accept: application/json
 
 ###
@@ -26,8 +28,12 @@ Content-Type: application/json
 Accept: application/json
 
 {
-    "id": "{{userId}}",
-    "addViews": 5
+    "orderId": "{{orderId}}",
+    "order": {
+        "address": {
+            "text": "aaaaaaaaaaaaaaaaaaaa"
+        }
+    }
 }
 
 ###
@@ -37,9 +43,9 @@ Content-Type: application/json
 Accept: application/json
 
 {
-    "id": "{{userId}}",
-    "category":{
-        "name": "entertainment3"
+    "orderId": "{{orderId}}",
+    "order": {
+        "isSent": true
     }
 }
 
@@ -50,5 +56,5 @@ Content-Type: application/json
 Accept: application/json
 
 {
-    "id": "{{userId}}"
+    "orderId": "{{orderId}}"
 }

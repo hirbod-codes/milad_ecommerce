@@ -12,6 +12,11 @@ export class OrderRepository {
     async create(order: OrderInput, cost: { [k: string]: number }): Promise<InsertOneResult | false> {
         const ts = DateTime.utc().toUnixInteger()
 
+        if (typeof order.userId === 'string')
+            order.userId = ObjectId.createFromHexString(order.userId)
+
+        order.products = order.products.map(p => typeof p === 'string' ? ObjectId.createFromHexString(p) : p)
+
         let o: OrderCreate = {
             ...order,
             schemaVersion,
@@ -26,7 +31,7 @@ export class OrderRepository {
         catch (e) { console.error(e); return false }
     }
 
-    async get(filter: Filter<Order>, sorts: [{ field: (keyof Order)[], direction: SortDirection }], limit: number, skip: number, userId?: string): Promise<Order[] | false> {
+    async get(filter: Filter<Order>, sorts: { field: keyof Order, direction: SortDirection }[], limit: number, skip: number, userId?: string): Promise<Order[] | false> {
         try {
             let cursor = this.collection.find(userId === undefined ? filter : { $and: [filter, { userId: ObjectId.createFromHexString(userId) }] })
 
