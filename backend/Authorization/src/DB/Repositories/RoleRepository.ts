@@ -79,9 +79,17 @@ export class RoleRepository {
         catch (e) { console.error(e); return [] }
     }
 
-    async getRolesWithPrivileges(): Promise<RoleWithPrivileges[] | false> {
+    async getRolesWithPrivileges(roles: string | string[]): Promise<RoleWithPrivileges[] | false> {
         try {
-            return await this.collection.aggregate()
+            if (roles && !Array.isArray(roles))
+                roles = [roles]
+
+            let aggregate = this.collection.aggregate()
+
+            if (roles)
+                aggregate = aggregate.match({ name: { $in: roles } })
+
+            return await aggregate
                 .lookup({
                     from: collectionName,
                     localField: 'privileges',
