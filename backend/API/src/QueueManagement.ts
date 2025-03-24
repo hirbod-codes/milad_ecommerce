@@ -1,6 +1,6 @@
 import amqp from 'amqplib'
-import { roleRepository } from '@/src';
 import { array, string } from 'yup';
+import { RoleRepository } from './DB/Repositories/RoleRepository';
 
 export class QueueManagement {
     private readonly QUEUE_NAMES: string[] = ['role_management']
@@ -73,6 +73,7 @@ export class QueueManagement {
                                     safety++
 
                                     try {
+                                        const roleRepository = await RoleRepository.getInstance()
                                         if (await roleRepository.fetchRolesWithPrivileges() !== false)
                                             break
                                     } catch (e) { console.error(e) }

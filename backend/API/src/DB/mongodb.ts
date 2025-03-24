@@ -9,6 +9,7 @@ import { ProductCreate, collectionName as productCollectionName } from './Models
 import { ProductReviewCreate, collectionName as productReviewCollectionName } from './Models/ProductReview'
 import { TagCreate, collectionName as tagCollectionName } from './Models/Tag'
 import { collectionName as productPictureCollectionName } from './Models/ProductPicture'
+import { dbConfig } from '..'
 
 export type MongodbConfig = {
     supportsTransaction: boolean;
@@ -21,17 +22,19 @@ export type MongodbConfig = {
 }
 
 export class MongoDB {
-    private static db: Db | null = null
+    static getDbInstance() {
+        return new MongoDB()
+    }
 
     private config: MongodbConfig
 
-    constructor(config: MongodbConfig) {
-        this.config = config
+    constructor() {
+        this.config = dbConfig
     }
 
     async checkConnectionHealth(): Promise<boolean> {
         try {
-            const db = await this.getDb(await this.getClient(), false)
+            const db = await this.getDb(await this.getClient())
             const stats = await db.stats()
             console.log({ stats })
             return stats.ok as boolean
@@ -137,13 +140,10 @@ export class MongoDB {
         }
     }
 
-    async getDb(client?: MongoClient, useCache = true): Promise<Db> {
+    async getDb(client?: MongoClient): Promise<Db> {
         console.group('getDb')
 
         try {
-            if (useCache && MongoDB.db)
-                return MongoDB.db
-
             let db
             if (!client) {
                 client = await this.getClient()
@@ -151,8 +151,6 @@ export class MongoDB {
             }
             else
                 db = client.db(this.config.databaseName)
-
-            MongoDB.db = db
 
             try {
                 const pingResult = await db.command({ ping: 1 })
@@ -171,23 +169,23 @@ export class MongoDB {
     }
 
     async initializeDb(): Promise<void> {
-        await this.getDb(undefined, false)
+        await this.getDb(undefined)
         await this.addCollections()
     }
 
     async addCollections() {
-        await this.addUserCollection()
-        await this.addCategoryCollection()
-        await this.addOrderCollection()
-        await this.addProductCollection()
-        await this.addProductReviewsCollection()
-        await this.addTagCollection()
-        await this.addRoleCollection()
+        const db = await this.getDb()
+
+        await this.addUserCollection(db)
+        await this.addCategoryCollection(db)
+        await this.addOrderCollection(db)
+        await this.addProductCollection(db)
+        await this.addProductReviewsCollection(db)
+        await this.addTagCollection(db)
+        await this.addRoleCollection(db)
     }
 
-    private async addUserCollection() {
-        const db = await this.getDb();
-
+    private async addUserCollection(db: Db) {
         if (!(await db.listCollections().toArray()).map(e => e.name).includes(userCollectionName))
             await db.createCollection(userCollectionName)
 
@@ -213,9 +211,7 @@ export class MongoDB {
         return (db ?? (await this.getDb(client))).collection<User>(userCollectionName)
     }
 
-    private async addCategoryCollection() {
-        const db = await this.getDb();
-
+    private async addCategoryCollection(db: Db) {
         if (!(await db.listCollections().toArray()).map(e => e.name).includes(categoryCollectionName))
             await db.createCollection(categoryCollectionName)
 
@@ -235,9 +231,7 @@ export class MongoDB {
         return (db ?? (await this.getDb(client))).collection<CategoryCreate>(categoryCollectionName)
     }
 
-    private async addOrderCollection() {
-        const db = await this.getDb();
-
+    private async addOrderCollection(db: Db) {
         if (!(await db.listCollections().toArray()).map(e => e.name).includes(orderCollectionName))
             await db.createCollection(orderCollectionName)
 
@@ -254,9 +248,7 @@ export class MongoDB {
         return (db ?? (await this.getDb(client))).collection<OrderCreate>(orderCollectionName)
     }
 
-    private async addProductCollection() {
-        const db = await this.getDb();
-
+    private async addProductCollection(db: Db) {
         if (!(await db.listCollections().toArray()).map(e => e.name).includes(productCollectionName))
             await db.createCollection(productCollectionName)
 
@@ -276,9 +268,7 @@ export class MongoDB {
         return (db ?? (await this.getDb(client))).collection<ProductCreate>(productCollectionName)
     }
 
-    private async addProductReviewsCollection() {
-        const db = await this.getDb();
-
+    private async addProductReviewsCollection(db: Db) {
         if (!(await db.listCollections().toArray()).map(e => e.name).includes(productReviewCollectionName))
             await db.createCollection(productReviewCollectionName)
 
@@ -298,9 +288,7 @@ export class MongoDB {
         return (db ?? (await this.getDb(client))).collection<ProductReviewCreate>(productReviewCollectionName)
     }
 
-    private async addTagCollection() {
-        const db = await this.getDb();
-
+    private async addTagCollection(db: Db) {
         if (!(await db.listCollections().toArray()).map(e => e.name).includes(tagCollectionName))
             await db.createCollection(tagCollectionName)
 
@@ -320,9 +308,7 @@ export class MongoDB {
         return (db ?? (await this.getDb(client))).collection<TagCreate>(tagCollectionName)
     }
 
-    private async addRoleCollection() {
-        const db = await this.getDb();
-
+    private async addRoleCollection(db: Db) {
         if (!(await db.listCollections().toArray()).map(e => e.name).includes(roleCollectionName))
             await db.createCollection(roleCollectionName)
 

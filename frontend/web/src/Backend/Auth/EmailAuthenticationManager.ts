@@ -34,8 +34,8 @@ export class EmailAuthenticationManager extends Auth {
             let r = await fetch(`${authApiUrl}/auth/email/login`, { method: 'post', headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' }, body: JSON.stringify(data) })
 
             if (r.ok && r.status === 200) {
-                let tokens = await r.json()
-                await this.login(tokens.accessToken!, tokens.refreshToken!)
+                let { token } = await r.json()
+                await this.login(token!)
                 return { success: true }
             }
             else
@@ -57,8 +57,8 @@ export class EmailAuthenticationManager extends Auth {
             let r = await fetch(`${authApiUrl}/auth/email/signup`, { method: 'post', headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' }, body: JSON.stringify(data) })
 
             if (r.ok && r.status === 201) {
-                let tokens = await r.json()
-                await this.login(tokens.accessToken!, tokens.refreshToken!)
+                let { token } = await r.json()
+                await this.login(token!)
                 return { success: true }
             }
             else

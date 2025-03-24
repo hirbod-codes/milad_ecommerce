@@ -1,12 +1,18 @@
 import { Collection, DeleteResult, InsertOneResult, ObjectId, UpdateResult } from 'mongodb'
 import { ProductReview, ProductReviewCreate, ProductReviewInput, ProductReviewUpdate, schemaVersion } from '../Models/ProductReview'
 import { DateTime } from 'luxon'
+import { MongoDB } from '../mongodb';
 
-export class ProductReviewsRepository {
+export class ProductReviewsRepository extends MongoDB {
     private collection: Collection<ProductReviewCreate>
 
     constructor(collection: Collection<ProductReviewCreate>) {
+        super();
         this.collection = collection
+    }
+
+    static async getInstance(): Promise<ProductReviewsRepository> {
+        return new ProductReviewsRepository(await MongoDB.getDbInstance().getProductReviewsCollection())
     }
 
     async create(order: ProductReviewInput): Promise<InsertOneResult | false> {

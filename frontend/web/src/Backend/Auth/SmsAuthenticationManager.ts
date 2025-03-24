@@ -34,8 +34,8 @@ export class SmsAuthenticationManager extends Auth {
             let r = await fetch(`${authApiUrl}/auth/phone-number/authenticate`, { method: 'post', headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' }, body: JSON.stringify(data) })
 
             if (r.ok && r.status === 201) {
-                let tokens = await r.json()
-                await this.login(tokens.accessToken!, tokens.refreshToken!)
+                let { token } = await r.json()
+                await this.login(token!)
                 return { success: true }
             } else
                 return { success: false }

@@ -1,12 +1,18 @@
 import { DateTime } from "luxon";
 import { Product, ProductInput, ProductCreate, schemaVersion, ProductUpdate, ProductImmutable } from "../Models/Product";
 import { Collection, DeleteResult, Filter, InsertOneResult, ObjectId, SortDirection, UpdateResult } from 'mongodb'
+import { MongoDB } from "../mongodb";
 
-export class ProductRepository {
+export class ProductRepository extends MongoDB {
     private collection: Collection<ProductCreate>
 
     constructor(collection: Collection<ProductCreate>) {
+        super();
         this.collection = collection
+    }
+
+    static async getInstance(): Promise<ProductRepository> {
+        return new ProductRepository(await MongoDB.getDbInstance().getProductCollection())
     }
 
     async create(product: ProductInput): Promise<InsertOneResult | false> {

@@ -1,12 +1,18 @@
 import { Collection, DeleteResult, Filter, InsertOneResult, ObjectId, SortDirection, UpdateResult } from 'mongodb'
 import { Order, OrderCreate, OrderImmutable, OrderInput, OrderUpdate, schemaVersion } from '../Models/Order'
 import { DateTime } from 'luxon'
+import { MongoDB } from '../mongodb';
 
-export class OrderRepository {
+export class OrderRepository extends MongoDB {
     private collection: Collection<OrderCreate>
 
     constructor(collection: Collection<OrderCreate>) {
+        super();
         this.collection = collection
+    }
+
+    static async getInstance(): Promise<OrderRepository> {
+        return new OrderRepository(await MongoDB.getDbInstance().getOrderCollection())
     }
 
     async create(userId: string | ObjectId, order: OrderInput, cost: { [k: string]: number }): Promise<InsertOneResult | false> {
@@ -69,7 +75,7 @@ export class OrderRepository {
     async updateForUser(userId: string | ObjectId, orderId: string | ObjectId, order: OrderUpdate): Promise<UpdateResult | false> {
         if (typeof userId === 'string')
             userId = ObjectId.createFromHexString(userId)
-    
+
         if (typeof orderId === 'string')
             orderId = ObjectId.createFromHexString(orderId)
 
@@ -80,7 +86,7 @@ export class OrderRepository {
     async updateImmutablesForUser(userId: string | ObjectId, orderId: string | ObjectId, immutableFields: OrderImmutable): Promise<UpdateResult | false> {
         if (typeof userId === 'string')
             userId = ObjectId.createFromHexString(userId)
-    
+
         if (typeof orderId === 'string')
             orderId = ObjectId.createFromHexString(orderId)
 
@@ -91,7 +97,7 @@ export class OrderRepository {
     async deleteForUser(userId: string | ObjectId, orderId: string | ObjectId): Promise<DeleteResult | false> {
         if (typeof userId === 'string')
             userId = ObjectId.createFromHexString(userId)
-    
+
         if (typeof orderId === 'string')
             orderId = ObjectId.createFromHexString(orderId)
 

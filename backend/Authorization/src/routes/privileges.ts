@@ -1,5 +1,4 @@
 import { Router } from "express"
-import { privilegeRepository, roleRepository } from "@/src"
 import { stringObjectId } from "@/src/DB/Models/common_schemas"
 import { privilegeInputSchema } from "@/src/DB/Models/Privilege"
 import { authenticate } from "@/src/middlewares/authenticate"
@@ -7,6 +6,8 @@ import { authorize } from "@/src/middlewares/authorize"
 import { AuthManager } from "../AuthManager"
 import { string, ValidationError } from "yup"
 import Jwt from "jsonwebtoken";
+import { RoleRepository } from "../DB/Repositories/RoleRepository"
+import { PrivilegeRepository } from "../DB/Repositories/PrivilegeRepository"
 
 const privileges = Router()
 
@@ -29,7 +30,7 @@ privileges.get('/', authenticate, async (req, res) => {
             return
         }
 
-        const roles = await roleRepository.getRolesWithPrivileges(role)
+        const roles = await (await RoleRepository.getInstance()).getRolesWithPrivileges(role)
         if (roles === false || roles.length !== 1)
             throw new Error('system failed get roles')
 
@@ -57,7 +58,7 @@ privileges.post('/', authenticate, async (req, res) => {
             return
         }
 
-        let r = await privilegeRepository.create(privilegeInputSchema.cast(privilegeInput))
+        let r = await (await PrivilegeRepository.getInstance()).create(privilegeInputSchema.cast(privilegeInput))
         if (r === false) {
             res.sendStatus(500)
             return
@@ -84,7 +85,7 @@ privileges.delete('/', authenticate, async (req, res) => {
             return
         }
 
-        let r = await privilegeRepository.delete(id!)
+        let r = await (await PrivilegeRepository.getInstance()).delete(id!)
         if (r === false) {
             res.sendStatus(500)
             return

@@ -1,9 +1,11 @@
 import { Router } from "express";
 import { DateTime } from "luxon";
-import { authManager, otpProviderConfig, userRepository } from "@/src/";
+import { otpProviderConfig } from "@/src/";
 import { SessionManager } from "@/src/DB/Session/SessionManager";
-import { number, string } from "yup";
+import { number } from "yup";
 import { User, userInputSchema } from "@/src/DB/Models/User";
+import { UserRepository } from "@/src/DB/Repositories/UserRepository";
+import { AuthManager } from "@/src/AuthManager";
 
 const phoneNumberRouter = Router()
 
@@ -114,6 +116,7 @@ phoneNumberRouter.post('/authenticate', async (req, res) => {
 
         let userId: string = undefined!, user: User | undefined | null
         try {
+            const userRepository = await UserRepository.getInstance()
             user = await userRepository.getUserByPhoneNumber(phoneNumber)
             if (user)
                 userId = user._id.toString()
@@ -131,7 +134,7 @@ phoneNumberRouter.post('/authenticate', async (req, res) => {
         }
 
         let tokens = undefined
-        try { tokens = await authManager.generateTokens(userId, user?.role ?? 'default') }
+        try { tokens = await AuthManager.getInstance().generateTokens(userId, user?.role ?? 'default') }
         catch (e) {
             console.error(e)
             throw new Error('system failed to create tokens')

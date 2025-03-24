@@ -1,5 +1,4 @@
 import { Router } from "express"
-import { userProfilePictureRepository, userRepository } from "@/src"
 import { likeObjectId, stringObjectId } from "@/src/DB/Models/common_schemas"
 import { authenticate } from "@/src/middlewares/authenticate"
 import { authorize } from "@/src/middlewares/authorize"
@@ -11,6 +10,8 @@ import crypto from "crypto";
 import { string } from "yup"
 import { CommunicationManagement } from "../CommunicationManagement"
 import busboy from "busboy";
+import { UserRepository } from "../DB/Repositories/UserRepository";
+import { UserProfilePictureRepository } from "../DB/Repositories/UserProfilePictureRepository";
 
 const user = Router()
 
@@ -28,6 +29,7 @@ user.get('/', authenticate, async (req, res) => {
             return
         }
 
+        const userRepository = await UserRepository.getInstance()
         res.json(await userRepository.get(userId))
     } catch (e) {
         console.error(e)
@@ -50,6 +52,7 @@ user.get('/avatar', async (req, res) => {
             return
         }
 
+        const userProfilePictureRepository = await UserProfilePictureRepository.getInstance()
         const file = await userProfilePictureRepository.getFileByUserId(userId)
         if (file.length === 0) {
             res.sendStatus(404)
@@ -80,6 +83,7 @@ user.post('/avatar', authenticate, async (req, res) => {
             return
         }
 
+        const userProfilePictureRepository = await UserProfilePictureRepository.getInstance()
         if ((await userProfilePictureRepository.deleteFiles(userId)) !== true) {
             res.sendStatus(500)
             return
@@ -136,7 +140,8 @@ user.post('/avatar', authenticate, async (req, res) => {
 
             const uploadedFiles: { filename: string, id: string }[] = [];
 
-            files.forEach((file) => {
+            files.forEach(async (file) => {
+                const userProfilePictureRepository = await UserProfilePictureRepository.getInstance()
                 const writeStream = userProfilePictureRepository.getWriteStream(file.filename, userId, file.mimeType)
 
                 writeStream.on("finish", async () => {
@@ -178,6 +183,7 @@ user.delete('/avatar', authenticate, async (req, res) => {
             return
         }
 
+        const userProfilePictureRepository = await UserProfilePictureRepository.getInstance()
         const file = await userProfilePictureRepository.getFileByUserId(userId)
         if (file.length === 0) {
             res.sendStatus(404)
@@ -212,6 +218,7 @@ user.patch('/', authenticate, async (req, res) => {
             return
         }
 
+        const userRepository = await UserRepository.getInstance()
         const r = await userRepository.update(userId, userUpdateSchema.cast(user))
         if (r === false || !r.acknowledged) {
             res.sendStatus(500)
@@ -236,6 +243,7 @@ user.post('/email-code', authenticate, async (req, res) => {
 
         const userId = (Jwt.decode(req.headers['authorization']!.replace('Bearer ', '')!) as Jwt.JwtPayload)?.sub ?? ''
 
+        const userRepository = await UserRepository.getInstance()
         const user = await userRepository.get(userId)
 
         if (!user || (usePhoneNumber === true && !user.phoneNumber) || (usePhoneNumber !== true && !user.email)) {
@@ -297,6 +305,7 @@ user.patch('/email', authenticate, async (req, res) => {
             return
         }
 
+        const userRepository = await UserRepository.getInstance()
         const r = await userRepository.updateEmail(userId, email)
         if (r === false || !r.acknowledged) {
             res.sendStatus(500)
@@ -321,6 +330,7 @@ user.post('/phone-number-code', authenticate, async (req, res) => {
 
         const userId = (Jwt.decode(req.headers['authorization']!.replace('Bearer ', '')!) as Jwt.JwtPayload)?.sub ?? ''
 
+        const userRepository = await UserRepository.getInstance()
         const user = await userRepository.get(userId)
 
         if (!user || (usePhoneNumber === true && !user.phoneNumber) || (usePhoneNumber !== true && !user.email)) {
@@ -382,6 +392,7 @@ user.patch('/phone-number', authenticate, async (req, res) => {
             return
         }
 
+        const userRepository = await UserRepository.getInstance()
         const r = await userRepository.updatePhoneNumber(userId, phoneNumber)
         if (r === false || !r.acknowledged) {
             res.sendStatus(500)
@@ -406,6 +417,7 @@ user.post('/username-code', authenticate, async (req, res) => {
 
         const userId = (Jwt.decode(req.headers['authorization']!.replace('Bearer ', '')!) as Jwt.JwtPayload)?.sub ?? ''
 
+        const userRepository = await UserRepository.getInstance()
         const user = await userRepository.get(userId)
 
         if (!user || (usePhoneNumber === true && !user.phoneNumber) || (usePhoneNumber !== true && !user.email)) {
@@ -467,6 +479,7 @@ user.patch('/username', authenticate, async (req, res) => {
             return
         }
 
+        const userRepository = await UserRepository.getInstance()
         const r = await userRepository.updateUsername(userId, username)
         if (r === false || !r.acknowledged) {
             res.sendStatus(500)
@@ -491,6 +504,7 @@ user.post('/password-code', authenticate, async (req, res) => {
 
         const userId = (Jwt.decode(req.headers['authorization']!.replace('Bearer ', '')!) as Jwt.JwtPayload)?.sub ?? ''
 
+        const userRepository = await UserRepository.getInstance()
         const user = await userRepository.get(userId)
 
         if (!user || (usePhoneNumber === true && !user.phoneNumber) || (usePhoneNumber !== true && !user.email)) {
@@ -565,6 +579,7 @@ user.patch('/password', authenticate, async (req, res) => {
             })
         })()
 
+        const userRepository = await UserRepository.getInstance()
         const r = await userRepository.updatePassword(userId, hashedPassword, salt, iterations)
         if (r === false || !r.acknowledged) {
             res.sendStatus(500)
@@ -589,6 +604,7 @@ user.post('/delete-code', authenticate, async (req, res) => {
 
         const userId = (Jwt.decode(req.headers['authorization']!.replace('Bearer ', '')!) as Jwt.JwtPayload)?.sub ?? ''
 
+        const userRepository = await UserRepository.getInstance()
         const user = await userRepository.get(userId)
 
         if (!user || (usePhoneNumber === true && !user.phoneNumber) || (usePhoneNumber !== true && !user.email)) {
@@ -645,6 +661,7 @@ user.delete('/', authenticate, async (req, res) => {
             return
         }
 
+        const userRepository = await UserRepository.getInstance()
         const r = await userRepository.delete(userId)
         if (r === false || !r.acknowledged) {
             res.sendStatus(500)

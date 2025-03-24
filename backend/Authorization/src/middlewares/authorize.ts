@@ -1,14 +1,14 @@
 import { Request } from "express";
 import Jwt from "jsonwebtoken";
-import { roleRepository } from "@/src";
 import { array, string } from "yup";
+import { RoleRepository } from "../DB/Repositories/RoleRepository";
 
 export async function authorize(req: Request, privilegeNames: string | string[], privilegeValue: any = true): Promise<boolean> {
     const userRole = Jwt.decode(req.headers['authorization']!.replace('Bearer ', '')!, { json: true })?.role ?? ''
     if (!userRole)
         return false
 
-    const roles = await roleRepository.getRolesWithPrivileges()
+    const roles = await (await RoleRepository.getInstance()).getRolesWithPrivileges()
     if (roles === false)
         return false
 

@@ -2,24 +2,34 @@ import { Collection, DeleteResult, InsertOneResult, ObjectId, UpdateResult } fro
 import { DateTime } from 'luxon'
 import { Role, RoleCreate, RoleInput, RoleUpdate, RoleWithPrivileges, schemaVersion } from '../Models/Role'
 import { collectionName } from '../Models/Privilege'
-import { privilegeRepository } from '@/src'
 import { defaultRolePrivilegeNames } from '../Models/privilegeNames'
+import { MongoDB } from '../mongodb'
+import { PrivilegeRepository } from './PrivilegeRepository'
 
-export class RoleRepository {
+export class RoleRepository extends MongoDB {
     private collection: Collection<RoleCreate>
 
     constructor(collection: Collection<RoleCreate>) {
+        super();
+
         this.collection = collection
     }
 
-    async initialize() {
-        if (await this.collection.estimatedDocumentCount() === 0) {
-            let privileges = await privilegeRepository.get()
+    static async getInstance(): Promise<RoleRepository> {
+        return new RoleRepository(await MongoDB.getDbInstance().getRoleCollection())
+    }
+
+    static async initialize() {
+        const collection = await MongoDB.getDbInstance().getRoleCollection()
+        const roleRepository = await RoleRepository.getInstance()
+
+        if ((await collection.estimatedDocumentCount()) === 0) {
+            let privileges = await (await PrivilegeRepository.getInstance()).get()
 
             if (privileges === false || privileges.length === 0)
                 throw new Error('System failed to initialize roles')
 
-            let r = await this.create({
+            let r = await roleRepository.create({
                 name: 'admin',
                 privileges: privileges.map(p => p._id),
             })
@@ -28,13 +38,12 @@ export class RoleRepository {
 
             r = false
 
-            r = await this.create({
+            r = await roleRepository.create({
                 name: 'default',
                 privileges: privileges.filter(f => defaultRolePrivilegeNames.includes(f.name)).map(p => p._id),
             })
             if (r === false || !r.acknowledged)
                 throw new Error('System failed to initialize roles')
-
         }
     }
 
@@ -107,7 +116,10 @@ export class RoleRepository {
     }
 
     async delete(id: string): Promise<DeleteResult | false> {
-        try { return await this.collection.deleteOne({ _id: ObjectId.createFromHexString(id) }) }
+        try {
+            await this.startTransaction()
+            return await this.collection.deleteOne({ $and: [{ _id: ObjectId.createFromHexString(id) }, { name: { $ne: 'default' } }] })
+        }
         catch (e) { console.error(e); return false }
     }
 }

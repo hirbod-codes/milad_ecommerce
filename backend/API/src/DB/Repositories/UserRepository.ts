@@ -1,11 +1,17 @@
 import { User } from "../Models/User";
 import { Collection, ObjectId } from 'mongodb'
+import { MongoDB } from "../mongodb";
 
-export class UserRepository {
+export class UserRepository extends MongoDB {
     private collection: Collection<User>
 
     constructor(collection: Collection<User>) {
+        super();
         this.collection = collection
+    }
+
+    static async getInstance(): Promise<UserRepository> {
+        return new UserRepository(await MongoDB.getDbInstance().getUserCollection())
     }
 
     async getById(id: string): Promise<User | null | undefined> {

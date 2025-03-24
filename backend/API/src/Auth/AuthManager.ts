@@ -3,13 +3,17 @@ import { RevokedTokensRedisInsertionFailure } from "./Exceptions/RevokedTokensRe
 import Jwt from 'jsonwebtoken'
 
 export class AuthManager {
+    static getInstance() {
+        return new AuthManager()
+    }
+
     private jwtSecret: string
     private algorithm: Jwt.Algorithm
     private issuer: string = 'Authorization Server'
 
-    constructor(jwtSecret: string, algorithm: Jwt.Algorithm) {
+    constructor() {
         this.jwtSecret = jwtSecret
-        this.algorithm = algorithm
+        this.algorithm = 'HS512'
     }
 
     static async isAccessTokenRevoked(accessToken: string): Promise<boolean> {

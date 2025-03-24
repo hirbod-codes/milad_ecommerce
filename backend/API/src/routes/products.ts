@@ -1,5 +1,4 @@
 import { Router } from "express";
-import { productPictureRepository, productRepository } from "../";
 import { FilterManagement } from "@/src/DB/FilterManagement";
 import { Product, productImmutableSchema, productInputSchema, productSchema, productUpdateSchema, readableFields } from "@/src/DB/Models/Product";
 import { array, number, object, string, } from "yup";
@@ -9,6 +8,8 @@ import { authorize } from "@/src/middlewares/authorize";
 import archiver from "archiver";
 import busboy from "busboy";
 import { Filter, SortDirection } from "mongodb";
+import { ProductRepository } from "../DB/Repositories/ProductRepository";
+import { ProductPictureRepository } from "../DB/Repositories/ProductPictureRepository";
 
 const products = Router()
 
@@ -26,6 +27,7 @@ products.post('/', authenticate, async (req, res) => {
             return
         }
 
+        const productRepository = await ProductRepository.getInstance()
         const r = await productRepository.create(productInputSchema.cast(product))
 
         if (r === false || r.acknowledged !== true)
@@ -53,6 +55,7 @@ products.get('/:ids', async (req, res) => {
             return
         }
 
+        const productRepository = await ProductRepository.getInstance()
         const r = await productRepository.getByIds(ids)
         if (!r)
             res.sendStatus(404)
@@ -119,6 +122,7 @@ products.get('/', async (req, res) => {
             }
         }
 
+        const productRepository = await ProductRepository.getInstance()
         const products = await productRepository.get(filter, sort, limit, skip)
         if (products === false)
             res.sendStatus(500)
@@ -156,6 +160,7 @@ products.get('/pictures/:ids', async (req, res) => {
         archive.pipe(res);
 
         // Add each file to the archive
+        const productPictureRepository = await ProductPictureRepository.getInstance()
         const files = await productPictureRepository.getFilesByProductId(ids)
         files.forEach((file) => {
             const readstream = productPictureRepository.getReadStream(file._id);
@@ -232,7 +237,8 @@ products.post('/pictures/:productId', authenticate, async (req, res) => {
 
             const uploadedFiles: { filename: string, id: string }[] = [];
 
-            files.forEach((file) => {
+            files.forEach(async (file) => {
+                const productPictureRepository = await ProductPictureRepository.getInstance()
                 const writeStream = productPictureRepository.getWriteStream(file.filename, productId, file.mimeType)
 
                 writeStream.on("finish", () => {
@@ -274,6 +280,7 @@ products.patch('/', authenticate, async (req, res) => {
             return
         }
 
+        const productRepository = await ProductRepository.getInstance()
         const result = await productRepository.update(id, productUpdateSchema.cast(product))
 
         if (result === false || result.acknowledged !== true)
@@ -300,6 +307,7 @@ products.patch('/immutables', authenticate, async (req, res) => {
             return
         }
 
+        const productRepository = await ProductRepository.getInstance()
         const result = await productRepository.updateImmutables(id, productImmutableSchema.cast(product))
 
         if (result === false || result.acknowledged !== true)
@@ -326,6 +334,7 @@ products.delete('/', authenticate, async (req, res) => {
             return
         }
 
+        const productRepository = await ProductRepository.getInstance()
         const result = await productRepository.delete(id)
 
         if (result === false || result.acknowledged !== true)

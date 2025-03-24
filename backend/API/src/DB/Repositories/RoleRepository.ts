@@ -1,13 +1,19 @@
 import { Collection } from 'mongodb'
 import { RoleWithPrivileges, RoleCreate } from '../Models/Role'
 import { collectionName } from '../Models/Privilege'
+import { MongoDB } from '../mongodb'
 
-export class RoleRepository {
+export class RoleRepository extends MongoDB {
     private collection: Collection<RoleCreate>
     private rolesWithPrivileges: RoleWithPrivileges[] = []
 
     constructor(collection: Collection<RoleCreate>) {
+        super();
         this.collection = collection
+    }
+
+    static async getInstance(): Promise<RoleRepository> {
+        return new RoleRepository(await MongoDB.getDbInstance().getRoleCollection())
     }
 
     async getRolesWithPrivileges(): Promise<RoleWithPrivileges[] | false> {

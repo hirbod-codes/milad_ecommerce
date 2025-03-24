@@ -1,10 +1,13 @@
 import { Router } from "express"
-import { authManager, queueManagement, roleRepository, userRepository } from "@/src"
+import { queueManagement } from "@/src"
 import { likeObjectId, stringObjectId } from "@/src/DB/Models/common_schemas"
 import { roleInputSchema, roleUpdateSchema } from "@/src/DB/Models/Role"
 import { authenticate } from "@/src/middlewares/authenticate"
 import { authorize } from "@/src/middlewares/authorize"
 import { array, string } from "yup"
+import { AuthManager } from "../AuthManager"
+import { RoleRepository } from "../DB/Repositories/RoleRepository"
+import { UserRepository } from "../DB/Repositories/UserRepository"
 
 const roles = Router()
 
@@ -22,6 +25,7 @@ roles.post('/', authenticate, async (req, res) => {
             return
         }
 
+        const roleRepository = await RoleRepository.getInstance()
         let r = await roleRepository.create(roleInputSchema.cast(roleInput))
         if (r === false || !r.acknowledged) {
             res.sendStatus(500)
@@ -47,6 +51,7 @@ roles.get('/', authenticate, async (req, res) => {
 
         let { names, ids } = req.query
 
+        const roleRepository = await RoleRepository.getInstance()
         if (names !== undefined) {
             if (string().required().strict(true).isValidSync(names))
                 names = [names]
@@ -94,6 +99,7 @@ roles.patch('/', authenticate, async (req, res) => {
             return
         }
 
+        const roleRepository = await RoleRepository.getInstance()
         let r = await roleRepository.update(id!, roleUpdateSchema.cast(roleUpdate))
         if (r === false || !r.acknowledged) {
             res.sendStatus(500)
@@ -119,6 +125,18 @@ roles.delete('/', authenticate, async (req, res) => {
         const { id } = req.body
 
         if (!stringObjectId.required().isValidSync(id)) {
+            res.sendStatus(400)
+            return
+        }
+
+        const roleRepository = await RoleRepository.getInstance()
+        const role = await roleRepository.getById(id)
+        if (!role) {
+            res.sendStatus(404)
+            return
+        }
+
+        if (role.name === 'default') {
             res.sendStatus(400)
             return
         }
@@ -152,16 +170,18 @@ roles.patch('/assign', authenticate, async (req, res) => {
             return
         }
 
+        const roleRepository = await RoleRepository.getInstance()
         if ((await roleRepository.getByNames([role])).length === 0) {
             res.status(400).json({ errors: ['role not found'] })
             return
         }
 
-        if ((await authManager.revokeRefreshTokenByUserId(userId)) === false) {
+        if ((await AuthManager.getInstance().revokeRefreshTokenByUserId(userId)) === false) {
             res.sendStatus(400)
             return
         }
 
+        const userRepository = await UserRepository.getInstance()
         const r = await userRepository.updateRole(userId!, role)
         if (r === false || !r.acknowledged) {
             res.sendStatus(500)

@@ -1,9 +1,9 @@
 import { Router } from "express";
-import { authManager } from "@/src/";
 import { refreshTokenInputSchema } from "@/src/DB/Models/RefreshToken";
 import { authenticate } from "@/src/middlewares/authenticate";
 import { stringObjectId } from "@/src/DB/Models/common_schemas";
 import Jwt from "jsonwebtoken";
+import { AuthManager } from "@/src/AuthManager";
 
 const tokenRouter = Router()
 
@@ -25,7 +25,7 @@ tokenRouter.post('/retrieve-access-token', async (req, res) => {
             return
         }
 
-        let token = await authManager.retrieveAccessToken(refreshToken)
+        let token = await AuthManager.getInstance().retrieveAccessToken(refreshToken)
 
         res.status(201).json({ token })
     } catch (e) {
@@ -42,7 +42,7 @@ tokenRouter.post('/revoke-tokens', authenticate, async (req, res) => {
             return
         }
 
-        if ((await authManager.revokeRefreshTokenByUserId(userId)) === false) {
+        if ((await AuthManager.getInstance().revokeRefreshTokenByUserId(userId)) === false) {
             res.sendStatus(400)
             return
         }

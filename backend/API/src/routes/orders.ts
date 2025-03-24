@@ -1,5 +1,4 @@
 import { Router } from "express";
-import { orderRepository, productRepository } from "../";
 import { Order, orderImmutableSchema, orderInputSchema, orderSchema, orderUpdateSchema, readableFields } from "@/src/DB/Models/Order";
 import { authenticate } from "@/src/middlewares/authenticate";
 import { authorize } from "@/src/middlewares/authorize";
@@ -7,6 +6,8 @@ import { FilterManagement } from "@/src/DB/FilterManagement";
 import { array, number, object, string } from "yup";
 import { stringObjectId } from "@/src/DB/Models/common_schemas";
 import { Filter, ObjectId, SortDirection } from "mongodb";
+import { ProductRepository } from "../DB/Repositories/ProductRepository";
+import { OrderRepository } from "../DB/Repositories/OrderRepository";
 
 const orders = Router()
 
@@ -31,12 +32,14 @@ orders.post('/', authenticate, async (req, res) => {
 
         order = orderInputSchema.cast(order)
 
+        const productRepository = await ProductRepository.getInstance()
         let cost: number | false = await productRepository.sumPriceOfAvailable(order.products, 'IRR')
         if (cost === false) {
             res.status(400).json({ errors: ['invalid product list'] })
             return
         }
 
+        const orderRepository = await OrderRepository.getInstance()
         const r = await orderRepository.create(userId, order, { IRR: cost })
         if (r === false || r.acknowledged !== true)
             res.sendStatus(500)
@@ -113,6 +116,7 @@ orders.get('/', authenticate, async (req, res) => {
             }
         }
 
+        const orderRepository = await OrderRepository.getInstance()
         const orders = await orderRepository.get(filter, sort, limit, skip, userId)
         if (orders === false)
             res.sendStatus(500)
@@ -138,6 +142,7 @@ orders.patch('/', authenticate, async (req, res) => {
             return
         }
 
+        const orderRepository = await OrderRepository.getInstance()
         const result = await orderRepository.update(orderId, orderUpdateSchema.cast(order))
 
         if (result === false || result.acknowledged !== true)
@@ -164,6 +169,7 @@ orders.patch('/immutables', authenticate, async (req, res) => {
             return
         }
 
+        const orderRepository = await OrderRepository.getInstance()
         const result = await orderRepository.updateImmutables(orderId, orderImmutableSchema.cast(order))
 
         if (result === false || result.acknowledged !== true)
@@ -190,6 +196,7 @@ orders.delete('/', authenticate, async (req, res) => {
             return
         }
 
+        const orderRepository = await OrderRepository.getInstance()
         const result = await orderRepository.delete(orderId)
 
         if (result === false || result.acknowledged !== true)

@@ -80,20 +80,7 @@ export const dbConfig = {
     }
 }
 
-export const authManager = new AuthManager(jwtSecret, 'HS512')
-
 export const queueManagement = new QueueManagement(messageBrokerUrl, messageBrokerUsername, messageBrokerPassword, messageBrokerType as any)
-
-export const db = new MongoDB(dbConfig)
-
-export let userRepository: UserRepository = undefined!
-export let categoryRepository: CategoryRepository = undefined!
-export let orderRepository: OrderRepository = undefined!
-export let productRepository: ProductRepository = undefined!
-export let productReviewsRepository: ProductReviewsRepository = undefined!
-export let tagRepository: TagRepository = undefined!
-export let roleRepository: RoleRepository = undefined!
-export let productPictureRepository: ProductPictureRepository = undefined!;
 
 async function tryAndWait(callback: CallableFunction, secondsToWaitForEachTry: number = 5) {
     let safety = 0
@@ -120,15 +107,7 @@ async function tryAndWait(callback: CallableFunction, secondsToWaitForEachTry: n
 
 (async () => {
     await tryAndWait(async () => {
-        await db.initializeDb();
-        userRepository = new UserRepository(await db.getUserCollection())
-        categoryRepository = new CategoryRepository(await db.getCategoryCollection())
-        orderRepository = new OrderRepository(await db.getOrderCollection())
-        productRepository = new ProductRepository(await db.getProductCollection())
-        productReviewsRepository = new ProductReviewsRepository(await db.getProductReviewsCollection())
-        tagRepository = new TagRepository(await db.getTagCollection())
-        roleRepository = new RoleRepository(await db.getRoleCollection())
-        productPictureRepository = new ProductPictureRepository(await db.getProductPictureBucket())
+        await MongoDB.getDbInstance().initializeDb();
     })
 
     await tryAndWait(async () => await queueManagement.subscribeConsumers(messageBrokerUrl))

@@ -1,12 +1,18 @@
 import { Collection, DeleteResult, InsertOneResult, ObjectId, UpdateResult } from 'mongodb'
 import { DateTime } from 'luxon'
 import { Category, CategoryCreate, CategoryImmutable, CategoryInput, CategoryUpdate, schemaVersion } from '../Models/Category'
+import { MongoDB } from '../mongodb';
 
-export class CategoryRepository {
+export class CategoryRepository extends MongoDB {
     private collection: Collection<CategoryCreate>
 
     constructor(collection: Collection<CategoryCreate>) {
+        super();
         this.collection = collection
+    }
+
+    static async getInstance(): Promise<CategoryRepository> {
+        return new CategoryRepository(await MongoDB.getDbInstance().getCategoryCollection())
     }
 
     async create(category: CategoryInput): Promise<InsertOneResult | false> {

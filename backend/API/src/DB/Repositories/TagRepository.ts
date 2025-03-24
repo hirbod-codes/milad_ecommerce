@@ -1,12 +1,18 @@
 import { Collection, DeleteResult, InsertOneResult, ObjectId, UpdateResult } from 'mongodb'
 import { DateTime } from 'luxon'
 import { Tag, TagCreate, TagImmutable, TagInput, TagUpdate, schemaVersion } from '../Models/Tag'
+import { MongoDB } from '../mongodb';
 
-export class TagRepository {
+export class TagRepository extends MongoDB {
     private collection: Collection<TagCreate>
 
     constructor(collection: Collection<TagCreate>) {
+        super();
         this.collection = collection
+    }
+
+    static async getInstance(): Promise<TagRepository> {
+        return new TagRepository(await MongoDB.getDbInstance().getTagCollection())
     }
 
     async create(tag: TagInput): Promise<InsertOneResult | false> {

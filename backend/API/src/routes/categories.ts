@@ -1,10 +1,10 @@
 import { Router } from "express";
-import { categoryRepository } from "@/src";
-import { categoryImmutableSchema, categoryInputSchema, categoryUpdateSchema } from "@/src/DB/Models/Category";
+import { categoryImmutableSchema, categoryInputSchema } from "@/src/DB/Models/Category";
 import { stringObjectId } from "@/src/DB/Models/common_schemas";
 import { authenticate } from "@/src/middlewares/authenticate";
 import { authorize } from "@/src/middlewares/authorize";
 import { number } from "yup";
+import { CategoryRepository } from "../DB/Repositories/CategoryRepository";
 
 const categories = Router()
 
@@ -22,6 +22,7 @@ categories.post('/', authenticate, async (req, res) => {
             return
         }
 
+        const categoryRepository = await CategoryRepository.getInstance()
         const r = await categoryRepository.create(categoryInputSchema.cast(category))
 
         if (r === false || r.acknowledged !== true)
@@ -36,6 +37,7 @@ categories.post('/', authenticate, async (req, res) => {
 
 categories.get('/', async (req, res) => {
     try {
+        const categoryRepository = await CategoryRepository.getInstance()
         const result = await categoryRepository.get()
         if (result === false)
             res.sendStatus(500)
@@ -61,6 +63,7 @@ categories.patch('/', authenticate, async (req, res) => {
             return
         }
 
+        const categoryRepository = await CategoryRepository.getInstance()
         const result = await categoryRepository.addViews(id, addViews)
 
         if (result === false || result.acknowledged !== true)
@@ -87,6 +90,7 @@ categories.patch('/immutables', authenticate, async (req, res) => {
             return
         }
 
+        const categoryRepository = await CategoryRepository.getInstance()
         const result = await categoryRepository.updateImmutables(id, categoryImmutableSchema.cast(category))
 
         if (result === false || result.acknowledged !== true)
@@ -113,6 +117,7 @@ categories.delete('/', authenticate, async (req, res) => {
             return
         }
 
+        const categoryRepository = await CategoryRepository.getInstance()
         const result = await categoryRepository.delete(id)
 
         if (result === false || result.acknowledged !== true)

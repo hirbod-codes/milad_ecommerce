@@ -81,21 +81,15 @@ export class GoogleAuthManager extends Auth {
             body: JSON.stringify({ code, codeVerifier, redirectUri: redirectUri }),
         });
 
-        const { accessToken, refreshToken } = await response.json();
-        console.log('accessToken', accessToken)
-        console.log('refreshToken', refreshToken)
+        const { token } = await response.json();
+        console.log('token', token)
 
-        if (!accessToken) {
-            console.error('no accessToken')
+        if (!token) {
+            console.error('no token')
             return false
         }
 
-        if (!refreshToken) {
-            console.error('no refreshToken')
-            return false
-        }
-
-        this.login(accessToken, refreshToken)
+        this.login(token)
 
         return true
     }

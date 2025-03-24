@@ -1,6 +1,6 @@
 import Jwt from 'jsonwebtoken'
 import type { StringValue } from "ms";
-import { db, refreshTokenExpiresIn } from '.';
+import { accessTokenExpiresIn, jwtSecret, refreshTokenExpiresIn } from '.';
 import { DeletionFailure } from './DB/Exceptions/DeletionFailure';
 import { DateTime } from 'luxon';
 import { InsertionFailure } from './DB/Exceptions/InsertionFailure';
@@ -8,8 +8,13 @@ import { RevokedAccessTokenManager } from './RevokedAccessTokens/RevokedAccessTo
 import { privilegeNames } from "@/src/DB/Models/privilegeNames"
 import { MongoServerError, ObjectId } from 'mongodb';
 import { RefreshToken } from './DB/Models/RefreshToken';
+import { MongoDB } from './DB/mongodb';
 
 export class AuthManager {
+    static getInstance() {
+        return new AuthManager()
+    }
+
     static PRIVILEGE_NAMES: string[] = privilegeNames
 
     private jwtSecret: string
@@ -18,9 +23,9 @@ export class AuthManager {
     private refreshTokenExpiresIn: number | StringValue
     private issuer: string = 'Authorization Server'
 
-    constructor(jwtSecret: string, algorithm: Jwt.Algorithm, accessTokenExpiresIn: number | StringValue, refreshTokenExpiresIn: number | StringValue) {
+    constructor() {
         this.jwtSecret = jwtSecret
-        this.algorithm = algorithm
+        this.algorithm = 'HS512'
         this.accessTokenExpiresIn = accessTokenExpiresIn
         this.refreshTokenExpiresIn = refreshTokenExpiresIn
     }
@@ -50,7 +55,7 @@ export class AuthManager {
         if (typeof userId !== 'string')
             userId = userId.toString()
 
-        let refreshTokenDoc = await (await db.getRefreshTokensCollection()).findOne({ userId })
+        let refreshTokenDoc = await (await MongoDB.getDbInstance().getRefreshTokensCollection()).findOne({ userId })
 
         if (refreshTokenDoc)
             return {
@@ -64,7 +69,7 @@ export class AuthManager {
             }
 
             const create = async () => {
-                let r = await (await db.getRefreshTokensCollection()).insertOne({
+                let r = await (await MongoDB.getDbInstance().getRefreshTokensCollection()).insertOne({
                     userId: ObjectId.createFromHexString(userId),
                     role,
                     refreshToken: tokens.refreshToken,
@@ -84,7 +89,7 @@ export class AuthManager {
                 console.error(e)
                 // Duplicate key
                 if (e instanceof MongoServerError && e.code === 11000) {
-                    let r = await (await db.getRefreshTokensCollection()).updateOne({ userId: ObjectId.createFromHexString(userId) }, {
+                    let r = await (await MongoDB.getDbInstance().getRefreshTokensCollection()).updateOne({ userId: ObjectId.createFromHexString(userId) }, {
                         $set: {
                             role,
                             refreshToken: tokens.refreshToken,
@@ -126,7 +131,7 @@ export class AuthManager {
                 catch (e) { reject(e); return }
 
                 // expired refresh tokens are automatically removed by MongoDB TTL index
-                let doc = (await (await db.getRefreshTokensCollection()).findOne({ refreshToken }))
+                let doc = (await (await MongoDB.getDbInstance().getRefreshTokensCollection()).findOne({ refreshToken }))
                 if (!doc || (await this.verify(doc.refreshToken, 'refreshToken')) === undefined) {
                     reject()
                     return
@@ -149,7 +154,7 @@ export class AuthManager {
 
                 const accessToken = await this.generateAccessToken(userId, doc.role)
 
-                let r = (await (await db.getRefreshTokensCollection()).updateOne({ refreshToken }, { $set: { accessToken } }))
+                let r = (await (await MongoDB.getDbInstance().getRefreshTokensCollection()).updateOne({ refreshToken }, { $set: { accessToken } }))
                 if (!r.acknowledged) {
                     reject()
                     return
@@ -164,7 +169,7 @@ export class AuthManager {
     }
 
     async revokeRefreshTokenByUserId(userId: string | ObjectId): Promise<boolean> {
-        let refreshToken = await (await db.getRefreshTokensCollection()).findOne({ userId: typeof userId === 'string' ? ObjectId.createFromHexString(userId) : userId })
+        let refreshToken = await (await MongoDB.getDbInstance().getRefreshTokensCollection()).findOne({ userId: typeof userId === 'string' ? ObjectId.createFromHexString(userId) : userId })
         if (!refreshToken)
             return false
 
@@ -173,7 +178,7 @@ export class AuthManager {
 
     async revokeRefreshToken(refreshToken: string | RefreshToken): Promise<boolean> {
         if (typeof refreshToken === 'string') {
-            let t = await (await db.getRefreshTokensCollection()).findOne({ refreshToken })
+            let t = await (await MongoDB.getDbInstance().getRefreshTokensCollection()).findOne({ refreshToken })
             if (!t)
                 return false
             refreshToken = t
@@ -186,7 +191,7 @@ export class AuthManager {
         if (res[0] === false || res[1] === false)
             return false
 
-        let r = await (await db.getRefreshTokensCollection()).deleteMany({ refreshToken: refreshToken.refreshToken })
+        let r = await (await MongoDB.getDbInstance().getRefreshTokensCollection()).deleteMany({ refreshToken: refreshToken.refreshToken })
 
         if (!r.acknowledged)
             throw new DeletionFailure()

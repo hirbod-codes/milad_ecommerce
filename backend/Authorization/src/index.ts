@@ -92,8 +92,6 @@ export const transporter = nodemailer.createTransport({
     }
 })
 
-export const authManager = new AuthManager(jwtSecret, 'HS512', accessTokenExpiresIn, refreshTokenExpiresIn)
-
 export const queueManagement = new QueueManagement(messageBrokerUrl, messageBrokerUsername, messageBrokerPassword, messageBrokerType as any)
 
 let sessionRedisClient: RedisClusterType<RedisDefaultModules> | RedisClientType<RedisDefaultModules> = undefined!
@@ -116,29 +114,18 @@ else if (revokedTokensRedisType === 'cluster')
 
 export { sessionRedisClient, revokedTokensRedisClient }
 
-export const db = new MongoDB(dbConfig);
-
-export let userRepository: UserRepository = undefined!
-export let privilegeRepository: PrivilegeRepository = undefined!
-export let roleRepository: RoleRepository = undefined!
-export let userProfilePictureRepository: UserProfilePictureRepository = undefined!;
-
 (async () => {
     if (!await tryAndWait(async () => {
-        await db.initializeDb();
-        userRepository = new UserRepository(await db.getUserCollection())
-        privilegeRepository = new PrivilegeRepository(await db.getPrivilegeCollection())
-        roleRepository = new RoleRepository(await db.getRoleCollection())
-        userProfilePictureRepository = new UserProfilePictureRepository(await db.getUserProfilePictureBucket())
+        await MongoDB.getDbInstance().initializeDb();
     }))
         exit(1)
 
     if (!await tryAndWait(async () => await queueManagement.subscribeConsumers(messageBrokerUrl)))
         exit(1)
 
-    await userRepository.initialize(adminUsername, adminPhoneNumber, adminEmail, adminPassword)
-    await privilegeRepository.initialize()
-    await roleRepository.initialize()
+    await UserRepository.initialize(adminUsername, adminPhoneNumber, adminEmail, adminPassword)
+    await PrivilegeRepository.initialize()
+    await RoleRepository.initialize()
 
     const app = express()
 

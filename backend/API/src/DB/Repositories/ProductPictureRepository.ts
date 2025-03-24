@@ -1,10 +1,16 @@
 import { GridFSBucket, GridFSBucketReadStream, GridFSBucketWriteStream, GridFSFile, ObjectId } from "mongodb";
+import { MongoDB } from "../mongodb";
 
-export class ProductPictureRepository {
+export class ProductPictureRepository extends MongoDB {
     private collection: GridFSBucket
 
     constructor(collection: GridFSBucket) {
+        super();
         this.collection = collection
+    }
+
+    static async getInstance(): Promise<ProductPictureRepository> {
+        return new ProductPictureRepository(await MongoDB.getDbInstance().getProductPictureBucket())
     }
 
     getReadStream(fileId: string | ObjectId): GridFSBucketReadStream {

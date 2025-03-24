@@ -2,6 +2,7 @@ import { DateTime } from "luxon";
 import { schemaVersion, User, UserCreate, UserInput, UserUpdate } from "../Models/User";
 import { Collection, DeleteResult, InsertOneResult, ObjectId, UpdateResult } from 'mongodb'
 import crypto from "crypto";
+import { MongoDB } from '../mongodb'
 
 export class UserRepository {
     private collection: Collection<UserCreate>
@@ -10,8 +11,14 @@ export class UserRepository {
         this.collection = collection
     }
 
-    async initialize(adminUsername: string, adminPhoneNumber: string, adminEmail: string, adminPassword: string) {
-        if (await this.collection.estimatedDocumentCount() === 0) {
+    static async getInstance(): Promise<UserRepository> {
+        return new UserRepository(await MongoDB.getDbInstance().getUserCollection())
+    }
+
+    static async initialize(adminUsername: string, adminPhoneNumber: string, adminEmail: string, adminPassword: string) {
+        const collection = await MongoDB.getDbInstance().getUserCollection()
+
+        if (await collection.estimatedDocumentCount() === 0) {
             let nowTS = DateTime.utc().toUnixInteger()
             let passwordSalt: string | undefined = undefined, iterations: number = 10000
             const password: string = await (async () => {
@@ -26,7 +33,7 @@ export class UserRepository {
                 })
             })()
 
-            let r = await this.collection.insertOne({
+            let r = await collection.insertOne({
                 schemaVersion,
                 username: adminUsername,
                 role: 'admin',

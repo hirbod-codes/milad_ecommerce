@@ -1,8 +1,10 @@
 import { Router } from "express";
-import { authManager, googleOAuth2Config, userRepository } from "@/src/";
+import { googleOAuth2Config } from "@/src/";
 import { httpsRequest } from "@/src/helpers";
 import { string } from "yup";
 import { User } from "@/src/DB/Models/User";
+import { UserRepository } from "@/src/DB/Repositories/UserRepository";
+import { AuthManager } from "@/src/AuthManager";
 
 const oauthGoogleRouter = Router()
 
@@ -95,6 +97,7 @@ oauthGoogleRouter.post('/token', async (req, res) => {
         let userId: string = undefined!, user: User | undefined | null
         let r = undefined
         try {
+            const userRepository = await UserRepository.getInstance()
             let user = await userRepository.getUserByEmail(userInfo.email)
             if (user)
                 userId = user._id.toString()
@@ -119,7 +122,7 @@ oauthGoogleRouter.post('/token', async (req, res) => {
         }
 
         let tokens = undefined
-        try { tokens = await authManager.generateTokens(userId, user?.role ?? 'default') }
+        try { tokens = await AuthManager.getInstance().generateTokens(userId, user?.role ?? 'default') }
         catch (e) {
             console.error(e)
             throw new Error('authorization service failed to create tokens')

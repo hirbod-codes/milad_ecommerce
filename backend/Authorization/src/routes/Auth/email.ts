@@ -1,10 +1,12 @@
 import { Router } from "express";
 import { DateTime } from "luxon";
-import { authManager, emailConfig, transporter, userRepository } from "@/src/";
+import {  emailConfig, transporter } from "@/src/";
 import { SessionManager } from "@/src/DB/Session/SessionManager";
 import { number, string } from "yup";
 import crypto from "crypto";
 import { User, userInputSchema } from "@/src/DB/Models/User";
+import { UserRepository } from "@/src/DB/Repositories/UserRepository";
+import { AuthManager } from "@/src/AuthManager";
 
 const emailRouter = Router()
 
@@ -100,6 +102,8 @@ emailRouter.post('/signup', async (req, res) => {
             return
         }
 
+        const userRepository = await UserRepository.getInstance()
+
         if (await userRepository.emailExists(email)) {
             res.sendStatus(500)
             return
@@ -138,7 +142,7 @@ emailRouter.post('/signup', async (req, res) => {
         }
 
         let tokens = undefined
-        try { tokens = await authManager.generateTokens(userId, 'default') }
+        try { tokens = await AuthManager.getInstance().generateTokens(userId, 'default') }
         catch (e) {
             console.error(e)
             throw new Error('system failed to create tokens')
@@ -179,6 +183,7 @@ emailRouter.post('/login', async (req, res) => {
 
         console.log('from user', { email, password })
 
+        const userRepository = await UserRepository.getInstance()
         let user: User | undefined | null = await userRepository.getUserByEmail(email)
         console.log('user', user)
         if (!user) {
@@ -204,7 +209,7 @@ emailRouter.post('/login', async (req, res) => {
         }
 
         let tokens = undefined
-        try { tokens = await authManager.generateTokens(user._id.toString(), user.role) }
+        try { tokens = await AuthManager.getInstance().generateTokens(user._id.toString(), user.role) }
         catch (e) {
             console.error(e)
             throw new Error('system failed to create tokens')

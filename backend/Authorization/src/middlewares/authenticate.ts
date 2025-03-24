@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from "express"
-import { authManager } from "@/src"
 import { RevokedAccessTokenManager } from "@/src/RevokedAccessTokens/RevokedAccessTokenManager"
+import { AuthManager } from "../AuthManager"
 
 export async function authenticate(req: Request, res: Response, next: NextFunction) {
     try {
@@ -12,7 +12,7 @@ export async function authenticate(req: Request, res: Response, next: NextFuncti
 
         const token = header.replace('Bearer ', '')
 
-        if ((await authManager.verify(token, 'accessToken')) === undefined || await RevokedAccessTokenManager.get(token) !== undefined) {
+        if ((await AuthManager.getInstance().verify(token, 'accessToken')) === undefined || await RevokedAccessTokenManager.get(token) !== undefined) {
             res.sendStatus(401)
             return
         }
