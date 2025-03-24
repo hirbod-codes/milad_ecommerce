@@ -73,18 +73,53 @@ export class RoleRepository extends MongoDB {
         catch (e) { console.error(e); return [] }
     }
 
-    async getById(id: string): Promise<Role | null | undefined> {
-        try { return await this.collection.findOne({ _id: ObjectId.createFromHexString(id) }) }
+    async getById(id: string | ObjectId): Promise<RoleWithPrivileges | null | undefined> {
+        try {
+            if (typeof id === 'string')
+                id = ObjectId.createFromHexString(id)
+
+            return (await this.collection.aggregate()
+                .match({ _id: id })
+                .lookup({
+                    from: collectionName,
+                    localField: 'privileges',
+                    foreignField: '_id',
+                    as: 'privileges'
+                })
+                .toArray() as RoleWithPrivileges[])[0]
+        }
         catch (e) { console.error(e); return undefined }
     }
 
-    async getByIds(ids: string[]): Promise<Role[]> {
-        try { return await this.collection.find({ _id: { $in: ids.map(id => ObjectId.createFromHexString(id)) } }).toArray() }
+    async getByIds(ids: (string | ObjectId)[]): Promise<RoleWithPrivileges[]> {
+        try {
+            ids = ids.map(id => typeof id === 'string' ? ObjectId.createFromHexString(id) : id)
+
+            return await this.collection.aggregate()
+                .match({ _id: { $in: ids } })
+                .lookup({
+                    from: collectionName,
+                    localField: 'privileges',
+                    foreignField: '_id',
+                    as: 'privileges'
+                })
+                .toArray() as RoleWithPrivileges[]
+        }
         catch (e) { console.error(e); return [] }
     }
 
-    async getByNames(names: string[]): Promise<Role[]> {
-        try { return await this.collection.find({ name: { $in: names } }).toArray() }
+    async getByNames(names: string[]): Promise<RoleWithPrivileges[]> {
+        try {
+            return await this.collection.aggregate()
+                .match({ name: { $in: names } })
+                .lookup({
+                    from: collectionName,
+                    localField: 'privileges',
+                    foreignField: '_id',
+                    as: 'privileges'
+                })
+                .toArray() as RoleWithPrivileges[]
+        }
         catch (e) { console.error(e); return [] }
     }
 
