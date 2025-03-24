@@ -1,7 +1,6 @@
 import express from "express";
 import dotenv from "dotenv";
 import { getBooleanEnv, getIntegerEnv, getStringEnv } from "./helpers";
-import cors from "cors";
 import { createClient, createCluster, RedisClientType, RedisClusterType, RedisDefaultModules } from "redis";
 import { MongoDB } from "./DB/mongodb";
 import { UserRepository } from "./DB/Repositories/UserRepository";
@@ -143,12 +142,16 @@ async function tryAndWait(callback: CallableFunction, secondsToWaitForEachTry: n
         next()
     })
 
-    app.use(cors({
-        origin: '*',
-        methods: ['*'],
-        allowedHeaders: ['*'],
-        credentials: true,
-    }));
+    app.use((req, res, next) => {
+        res.header('Access-Control-Allow-Origin', '*')
+        res.header('Access-Control-Allow-Method', '*')
+        res.header('Access-Control-Allow-Headers', '*,authorization,Authorization')
+
+        if (req.method === 'OPTIONS')
+            res.sendStatus(204)
+        else
+            next()
+    });
 
     // To Do: Add rate limiter middleware
 

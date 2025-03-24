@@ -3,7 +3,6 @@ import express from "express";
 import { AuthManager } from "./AuthManager";
 import { MongoDB } from "./DB/mongodb";
 import { getBooleanEnv, getIntegerEnv, getStringEnv } from "./helpers";
-import cors from "cors";
 import { createClient, createCluster, RedisClientType, RedisClusterType, RedisDefaultModules } from "redis";
 import nodemailer from "nodemailer";
 import { UserRepository } from "./DB/Repositories/UserRepository";
@@ -168,7 +167,6 @@ async function tryAndWait(callback: CallableFunction, secondsToWaitForEachTry: n
 
     app.use((req, res, next) => {
         console.log('hit: ' + req.path)
-        console.log('req.headers', req.headers)
         next()
     })
 
