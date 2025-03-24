@@ -79,7 +79,7 @@ export class RoleRepository {
         catch (e) { console.error(e); return [] }
     }
 
-    async getRolesWithPrivileges(roles: string | string[]): Promise<RoleWithPrivileges[] | false> {
+    async getRolesWithPrivileges(roles?: string | string[]): Promise<RoleWithPrivileges[] | false> {
         try {
             if (roles && !Array.isArray(roles))
                 roles = [roles]

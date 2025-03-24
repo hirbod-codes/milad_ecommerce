@@ -7,7 +7,7 @@ export default defineConfig({
     server: {
         allowedHosts: ['*'],
         cors: {
-            origin: ['*'],
+            origin: true,
             methods: ['*'],
             allowedHeaders: ['*'],
             credentials: true,

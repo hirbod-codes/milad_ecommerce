@@ -36,6 +36,7 @@ export const privilegeNames = [
     'update-immutables-tag',
     'delete-tag',
 ]
+
 export const defaultRolePrivilegeNames = [
     'get-user-self',
     'update-user-self',

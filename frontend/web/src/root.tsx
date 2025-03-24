@@ -7,7 +7,7 @@ import './Localization/i18next'
 
 createRoot(document.getElementById('root')!)
     .render(
-        <StrictMode>
+        // <StrictMode>
             <Main />
-        </StrictMode>,
+        // </StrictMode>,
     )

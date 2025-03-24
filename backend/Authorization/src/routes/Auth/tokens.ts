@@ -9,19 +9,19 @@ const tokenRouter = Router()
 
 tokenRouter.post('/retrieve-access-token', async (req, res) => {
     try {
-
-        let { refreshToken, userId } = req.body
+        let { refreshToken } = req.body
 
         const badRequestErrors = []
 
         if (!refreshTokenInputSchema.pick(['refreshToken']).required().isValidSync({ refreshToken }))
             badRequestErrors.push('invalid refresh token')
 
-        if (!refreshTokenInputSchema.pick(['userId']).required().isValidSync({ userId }))
+        let userId = Jwt.decode(refreshToken, { json: true })?.sub ?? ''
+        if (!stringObjectId.required().isValidSync(userId))
             badRequestErrors.push('invalid user id')
 
         if (badRequestErrors.length !== 0) {
-            res.status(400).json(badRequestErrors)
+            res.status(401).json(badRequestErrors)
             return
         }
 

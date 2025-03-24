@@ -1,10 +1,11 @@
 import { t } from 'i18next';
-import { memo, useContext, useRef, useState } from 'react';
+import { memo, useContext, useEffect, useRef, useState } from 'react';
 import { ConfigurationContext } from '../Contexts/Configuration/ConfigurationContext';
 import { useNavigate } from 'react-router-dom';
 import { HistoryIcon, HomeIcon, SettingsIcon, ShieldAlertIcon, TimerIcon, UsersIcon } from 'lucide-react';
 import { Button } from './Base/Button';
 import { motion } from 'framer-motion'
+import { Auth } from '../Backend/Auth/Auth';
 
 export const Navigation = memo(function Navigation() {
     const navigate = useNavigate();
@@ -16,12 +17,26 @@ export const Navigation = memo(function Navigation() {
     const [destination, setDestination] = useState<string | undefined>(undefined)
     const timer = useRef<any | undefined>(undefined)
 
-    const readsUsers = true
-    const readsRoles = true
-    const readsCategories = true
-    const readsTags = true
-    const readsProducts = true
-    const readsOrders = true
+    const [readsUsers, setReadsUsers] = useState(false)
+    const [readsRoles, setReadsRoles] = useState(false)
+    const [writesCategories, setWritesCategories] = useState(false)
+    const [writesTags, setWritesTags] = useState(false)
+
+    useEffect(() => {
+        Auth.getPrivileges()
+            .then(privileges => {
+                for (const privilege of privileges) {
+                    if (privilege === 'get-user')
+                        setReadsUsers(true)
+                    if (privilege === 'get-role')
+                        setReadsRoles(true)
+                    if (['create-category', 'update-category', 'delete-category'].includes(privilege))
+                        setWritesCategories(true)
+                    if (['create-tag', 'update-tag', 'delete-tag'].includes(privilege))
+                        setWritesTags(true)
+                }
+            })
+    }, [])
 
     console.log('Navigation', { configuration, openDrawer })
 
@@ -117,7 +132,7 @@ export const Navigation = memo(function Navigation() {
 
                 <div className='mb-2' />
 
-                {readsCategories &&
+                {writesCategories &&
                     <Button
                         variant='text'
                         fgColor={window.location.pathname !== '/Categories' ? 'surface-foreground' : 'primary'}
@@ -134,7 +149,7 @@ export const Navigation = memo(function Navigation() {
                         }
                     </Button>}
 
-                {readsTags &&
+                {writesTags &&
                     <Button
                         variant='text'
                         fgColor={window.location.pathname !== '/Tags' ? 'surface-foreground' : 'primary'}
@@ -151,54 +166,52 @@ export const Navigation = memo(function Navigation() {
                         }
                     </Button>}
 
-                {readsProducts &&
-                    <Button
-                        variant='text'
-                        fgColor={window.location.pathname !== '/Products' ? 'surface-foreground' : 'primary'}
-                        className='w-full justify-start rounded-none'
-                        onClick={() => { if (window.location.pathname !== '/Products') { setOpenDrawer(false); setDestination('/Products') } }}
-                    >
+                <Button
+                    variant='text'
+                    fgColor={window.location.pathname !== '/Products' ? 'surface-foreground' : 'primary'}
+                    className='w-full justify-start rounded-none'
+                    onClick={() => { if (window.location.pathname !== '/Products') { setOpenDrawer(false); setDestination('/Products') } }}
+                >
+                    <motion.div layout>
+                        <TimerIcon />
+                    </motion.div>
+                    {openDrawer &&
                         <motion.div layout>
-                            <TimerIcon />
+                            {t('Navigation.products')}
                         </motion.div>
-                        {openDrawer &&
-                            <motion.div layout>
-                                {t('Navigation.products')}
-                            </motion.div>
-                        }
-                    </Button>}
+                    }
+                </Button>
 
                 <div className='mb-2' />
 
-                {readsOrders &&
-                    <Button
-                        variant='text'
-                        fgColor={window.location.pathname !== '/Orders' ? 'surface-foreground' : 'primary'}
-                        className='w-full justify-start rounded-none'
-                        onClick={() => { if (window.location.pathname !== '/Orders') { setOpenDrawer(false); setDestination('/Orders') } }}
-                    >
+                <Button
+                    variant='text'
+                    fgColor={window.location.pathname !== '/Orders' ? 'surface-foreground' : 'primary'}
+                    className='w-full justify-start rounded-none'
+                    onClick={() => { if (window.location.pathname !== '/Orders') { setOpenDrawer(false); setDestination('/Orders') } }}
+                >
+                    <motion.div layout>
+                        <HistoryIcon />
+                    </motion.div>
+                    {openDrawer &&
                         <motion.div layout>
-                            <HistoryIcon />
+                            {t('Navigation.orders')}
                         </motion.div>
-                        {openDrawer &&
-                            <motion.div layout>
-                                {t('Navigation.orders')}
-                            </motion.div>
-                        }
-                    </Button>}
+                    }
+                </Button>
 
                 <Button
                     variant='text'
-                    fgColor={window.location.pathname !== '/General' ? 'surface-foreground' : 'primary'}
+                    fgColor={window.location.pathname !== '/Settings' ? 'surface-foreground' : 'primary'}
                     className='w-full justify-start rounded-none'
-                    onClick={() => { if (window.location.pathname !== '/General') { setOpenDrawer(false); setDestination('/General') } }}
+                    onClick={() => { if (window.location.pathname !== '/Settings') { setOpenDrawer(false); setDestination('/Settings') } }}
                 >
                     <motion.div layout>
                         <SettingsIcon />
                     </motion.div>
                     {openDrawer &&
                         <motion.div layout>
-                            {t("Navigation.general")}
+                            {t("Navigation.settings")}
                         </motion.div>
                     }
                 </Button>
