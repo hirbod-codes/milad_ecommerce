@@ -9,7 +9,7 @@ const tokenRouter = Router()
 
 tokenRouter.post('/retrieve-access-token', async (req, res) => {
     try {
-        let { refreshToken } = req.body
+        const refreshToken = req.cookies.refreshToken
 
         const badRequestErrors = []
 

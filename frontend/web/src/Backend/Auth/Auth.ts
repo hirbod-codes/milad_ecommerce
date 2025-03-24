@@ -3,22 +3,26 @@ import { StorageApi } from "../Storage/StorageApi"
 import { authFetch, getAuthApiUrl } from "../helpers";
 
 export class Auth {
+    private static token: string | undefined
+
     static isAuthenticated() {
         return localStorage.getItem('accessToken') !== null
     }
 
-    protected static async login(accessToken: string, refreshToken: string) {
-        (await StorageApi.getInstance()).setTokens({ accessToken, refreshToken })
+    static login(token: string) { this.token = token }
+
+    static logout() { this.token = undefined }
+
+    static getToken(): string | undefined { return this.token }
+
+    static getRole(): string | undefined {
+        const token = this.getToken()
+        if (token === undefined)
+            return undefined
+
+        try { return JSON.parse(atob(token.split('.')[1]))?.role }
+        catch (e) { console.error(e); return undefined }
     }
-
-    static async logout() {
-        (await StorageApi.getInstance()).unsetTokens()
-    }
-
-    static async getAccessToken(): Promise<string | undefined> { return (await (await StorageApi.getInstance()).getTokens())?.accessToken }
-    static async getRefreshToken(): Promise<string | undefined> { return (await (await StorageApi.getInstance()).getTokens())?.refreshToken }
-
-    static async setTokens(refreshToken: string, accessToken: string): Promise<void> { await (await StorageApi.getInstance()).setTokens({ refreshToken, accessToken }) }
 
     static async getPrivileges(): Promise<string[]> {
         try {

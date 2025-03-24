@@ -2,7 +2,7 @@ import { t } from 'i18next';
 import { memo, useContext, useEffect, useRef, useState } from 'react';
 import { ConfigurationContext } from '../Contexts/Configuration/ConfigurationContext';
 import { useNavigate } from 'react-router-dom';
-import { HistoryIcon, HomeIcon, SettingsIcon, ShieldAlertIcon, TimerIcon, UsersIcon } from 'lucide-react';
+import { HistoryIcon, SettingsIcon, ShieldAlertIcon, TimerIcon, UsersIcon } from 'lucide-react';
 import { Button } from './Base/Button';
 import { motion } from 'framer-motion'
 import { Auth } from '../Backend/Auth/Auth';
@@ -76,30 +76,12 @@ export const Navigation = memo(function Navigation() {
             >
                 <div className='mb-8' />
 
-                <Button
-                    variant='text'
-                    fgColor={window.location.pathname !== '/' ? 'surface-foreground' : 'primary'}
-                    className='w-full justify-start rounded-none'
-                    onClick={() => { if (window.location.pathname !== '/') { setOpenDrawer(false); setDestination('/') } }}
-                >
-                    <motion.div layout>
-                        <HomeIcon />
-                    </motion.div>
-                    {openDrawer &&
-                        <motion.div layout>
-                            {t('Navigation.home')}
-                        </motion.div>
-                    }
-                </Button>
-
-                <div className='mb-8' />
-
                 {readsUsers &&
                     <Button
                         variant='text'
-                        fgColor={window.location.pathname !== '/Users' ? 'surface-foreground' : 'primary'}
+                        fgColor={window.location.pathname !== '/Dashboard/Users' ? 'surface-foreground' : 'primary'}
                         className='w-full justify-start rounded-none'
-                        onClick={() => { if (window.location.pathname !== '/Users') { setOpenDrawer(false); setDestination('/Users') } }}
+                        onClick={() => { if (window.location.pathname !== '/Dashboard/Users') { setOpenDrawer(false); setDestination('/Dashboard/Users') } }}
                     >
                         <motion.div layout>
                             <UsersIcon />
@@ -116,9 +98,9 @@ export const Navigation = memo(function Navigation() {
                 {readsRoles &&
                     <Button
                         variant='text'
-                        fgColor={window.location.pathname !== '/Roles' ? 'surface-foreground' : 'primary'}
+                        fgColor={window.location.pathname !== '/Dashboard/Roles' ? 'surface-foreground' : 'primary'}
                         className='w-full justify-start rounded-none'
-                        onClick={() => { if (window.location.pathname !== '/Roles') { setOpenDrawer(false); setDestination('/Roles') } }}
+                        onClick={() => { if (window.location.pathname !== '/Dashboard/Roles') { setOpenDrawer(false); setDestination('/Dashboard/Roles') } }}
                     >
                         <motion.div layout>
                             <ShieldAlertIcon />
@@ -135,9 +117,9 @@ export const Navigation = memo(function Navigation() {
                 {writesCategories &&
                     <Button
                         variant='text'
-                        fgColor={window.location.pathname !== '/Categories' ? 'surface-foreground' : 'primary'}
+                        fgColor={window.location.pathname !== '/Dashboard/Categories' ? 'surface-foreground' : 'primary'}
                         className='w-full justify-start rounded-none'
-                        onClick={() => { if (window.location.pathname !== '/Categories') { setOpenDrawer(false); setDestination('/Categories') } }}
+                        onClick={() => { if (window.location.pathname !== '/Dashboard/Categories') { setOpenDrawer(false); setDestination('/Dashboard/Categories') } }}
                     >
                         <motion.div layout>
                             <TimerIcon />
@@ -152,9 +134,9 @@ export const Navigation = memo(function Navigation() {
                 {writesTags &&
                     <Button
                         variant='text'
-                        fgColor={window.location.pathname !== '/Tags' ? 'surface-foreground' : 'primary'}
+                        fgColor={window.location.pathname !== '/Dashboard/Tags' ? 'surface-foreground' : 'primary'}
                         className='w-full justify-start rounded-none'
-                        onClick={() => { if (window.location.pathname !== '/Tags') { setOpenDrawer(false); setDestination('/Tags') } }}
+                        onClick={() => { if (window.location.pathname !== '/Dashboard/Tags') { setOpenDrawer(false); setDestination('/Dashboard/Tags') } }}
                     >
                         <motion.div layout>
                             <TimerIcon />
@@ -168,9 +150,9 @@ export const Navigation = memo(function Navigation() {
 
                 <Button
                     variant='text'
-                    fgColor={window.location.pathname !== '/Products' ? 'surface-foreground' : 'primary'}
+                    fgColor={window.location.pathname !== '/Dashboard/Products' ? 'surface-foreground' : 'primary'}
                     className='w-full justify-start rounded-none'
-                    onClick={() => { if (window.location.pathname !== '/Products') { setOpenDrawer(false); setDestination('/Products') } }}
+                    onClick={() => { if (window.location.pathname !== '/Dashboard/Products') { setOpenDrawer(false); setDestination('/Dashboard/Products') } }}
                 >
                     <motion.div layout>
                         <TimerIcon />
@@ -186,9 +168,9 @@ export const Navigation = memo(function Navigation() {
 
                 <Button
                     variant='text'
-                    fgColor={window.location.pathname !== '/Orders' ? 'surface-foreground' : 'primary'}
+                    fgColor={window.location.pathname !== '/Dashboard/Orders' ? 'surface-foreground' : 'primary'}
                     className='w-full justify-start rounded-none'
-                    onClick={() => { if (window.location.pathname !== '/Orders') { setOpenDrawer(false); setDestination('/Orders') } }}
+                    onClick={() => { if (window.location.pathname !== '/Dashboard/Orders') { setOpenDrawer(false); setDestination('/Dashboard/Orders') } }}
                 >
                     <motion.div layout>
                         <HistoryIcon />
@@ -202,9 +184,9 @@ export const Navigation = memo(function Navigation() {
 
                 <Button
                     variant='text'
-                    fgColor={window.location.pathname !== '/Settings' ? 'surface-foreground' : 'primary'}
+                    fgColor={window.location.pathname !== '/Dashboard/Settings' ? 'surface-foreground' : 'primary'}
                     className='w-full justify-start rounded-none'
-                    onClick={() => { if (window.location.pathname !== '/Settings') { setOpenDrawer(false); setDestination('/Settings') } }}
+                    onClick={() => { if (window.location.pathname !== '/Dashboard/Settings') { setOpenDrawer(false); setDestination('/Dashboard/Settings') } }}
                 >
                     <motion.div layout>
                         <SettingsIcon />

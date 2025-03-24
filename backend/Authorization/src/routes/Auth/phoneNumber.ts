@@ -138,7 +138,14 @@ phoneNumberRouter.post('/authenticate', async (req, res) => {
         }
         console.log('tokens', tokens)
 
-        res.status(201).json(tokens)
+        res.cookie('token', tokens.refreshToken, {
+            httpOnly: true,
+            // secure: true, 
+            sameSite: true,
+            maxAge: 2 * 60 * 60 * 1000
+        })
+
+        res.status(200).json({ token: tokens.accessToken })
     } catch (e) {
         console.error(e)
         res.sendStatus(500)

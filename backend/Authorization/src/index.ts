@@ -2,7 +2,7 @@ import dotenv from "dotenv";
 import express from "express";
 import { AuthManager } from "./AuthManager";
 import { MongoDB } from "./DB/mongodb";
-import { getBooleanEnv, getIntegerEnv, getStringEnv } from "./helpers";
+import { getBooleanEnv, getIntegerEnv, getStringEnv, tryAndWait } from "./helpers";
 import { createClient, createCluster, RedisClientType, RedisClusterType, RedisDefaultModules } from "redis";
 import nodemailer from "nodemailer";
 import { UserRepository } from "./DB/Repositories/UserRepository";
@@ -123,39 +123,18 @@ export let privilegeRepository: PrivilegeRepository = undefined!
 export let roleRepository: RoleRepository = undefined!
 export let userProfilePictureRepository: UserProfilePictureRepository = undefined!;
 
-async function tryAndWait(callback: CallableFunction, secondsToWaitForEachTry: number = 5) {
-    let safety = 0
-    while (safety <= 100) {
-        safety++
-        try {
-            await callback()
-            break;
-        }
-        catch (e) { console.error(e) }
-        finally {
-            await (() => new Promise<void>((res, rej) => {
-                console.log('waiting for 5 seconds...')
-                setTimeout(() => { res() }, secondsToWaitForEachTry * 1000)
-            }))()
-        }
-    }
-
-    if (safety > 100) {
-        console.log('safety reached!!')
-        exit(1)
-    }
-}
-
 (async () => {
-    await tryAndWait(async () => {
+    if (!await tryAndWait(async () => {
         await db.initializeDb();
         userRepository = new UserRepository(await db.getUserCollection())
         privilegeRepository = new PrivilegeRepository(await db.getPrivilegeCollection())
         roleRepository = new RoleRepository(await db.getRoleCollection())
         userProfilePictureRepository = new UserProfilePictureRepository(await db.getUserProfilePictureBucket())
-    })
+    }))
+        exit(1)
 
-    await tryAndWait(async () => await queueManagement.subscribeConsumers(messageBrokerUrl))
+    if (!await tryAndWait(async () => await queueManagement.subscribeConsumers(messageBrokerUrl)))
+        exit(1)
 
     await userRepository.initialize(adminUsername, adminPhoneNumber, adminEmail, adminPassword)
     await privilegeRepository.initialize()

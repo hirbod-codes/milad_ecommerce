@@ -144,7 +144,14 @@ emailRouter.post('/signup', async (req, res) => {
             throw new Error('system failed to create tokens')
         }
 
-        res.status(201).json(tokens)
+        res.cookie('token', tokens.refreshToken, {
+            httpOnly: true,
+            // secure: true, 
+            sameSite: true,
+            maxAge: 2 * 60 * 60 * 1000
+        })
+
+        res.status(200).json({ token: tokens.accessToken })
     } catch (e) {
         console.error(e)
         res.sendStatus(500)
@@ -203,7 +210,14 @@ emailRouter.post('/login', async (req, res) => {
             throw new Error('system failed to create tokens')
         }
 
-        res.status(200).json(tokens)
+        res.cookie('token', tokens.refreshToken, {
+            httpOnly: true,
+            // secure: true, 
+            sameSite: true,
+            maxAge: 2 * 60 * 60 * 1000
+        })
+
+        res.status(200).json({ token: tokens.accessToken })
     } catch (e) {
         console.error(e)
         res.sendStatus(500)

@@ -15,5 +15,9 @@ export type Local = {
 export type Config = {
     local: Local,
     themeOptions: ThemeOptions,
+    columnPinningModels?: { [k: string]: ColumnPinningState },
+    columnVisibilityModels?: { [k: string]: VisibilityState },
+    columnOrderModels?: { [k: string]: string[] },
+    tableDensity?: { [k: string]: Density }
 }
 
