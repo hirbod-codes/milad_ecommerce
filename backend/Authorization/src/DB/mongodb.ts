@@ -187,7 +187,7 @@ export class MongoDB {
             await db.createIndex(refreshTokensCollectionName, { userId: 1 }, { unique: true, name: 'unique-userId' })
 
         if (indexes.find(i => i.name === 'refreshToken') === undefined)
-            await db.createIndex(refreshTokensCollectionName, { refreshToken: 1 }, { name: 'refreshToken' })
+            await db.createIndex(refreshTokensCollectionName, { refreshToken: 1 }, { unique: true, name: 'refreshToken' })
 
         if (indexes.find(i => i.name === 'expiresAt') === undefined)
             await db.createIndex(refreshTokensCollectionName, { expiresAt: 1 }, { expireAfterSeconds: 0, name: 'expiresAt' })

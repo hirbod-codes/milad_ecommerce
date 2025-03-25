@@ -49,9 +49,6 @@ export class RoleRepository extends MongoDB {
     }
 
     async create(role: RoleInput): Promise<InsertOneResult | false> {
-        if (role.name === 'default')
-            return false
-
         const ts = DateTime.utc().toUnixInteger()
 
         role.privileges = role.privileges.map(p => typeof p === 'string' ? ObjectId.createFromHexString(p) : p)

@@ -7,6 +7,7 @@ import { AuthModal } from "../Auth/AuthModal";
 import { Auth } from "@/src/Backend/Auth/Auth";
 import { dispatch } from "@/src/Lib/Events";
 import { LAYOUT_RERENDER } from "@/src/Pages/Layout";
+import { getAuthApiUrl } from "@/src/Backend/helpers";
 
 export function AppBar() {
     console.log('AppBar')
@@ -18,6 +19,24 @@ export function AppBar() {
             <Stack stackProps={{ className: 'items-center p-4' }}>
                 <SiteLogo />
                 <div className="flex-grow">
+                    <Button
+                        onClick={async () => {
+                            let r = await fetch(`${getAuthApiUrl()}/auth/tokens/retrieve-access-token`, {
+                                method: 'post',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'Accept': 'application/json'
+                                },
+                                credentials: 'include',
+                                mode: 'cors',
+                                cache: 'no-cache'
+                            })
+
+                            console.log('r', r, await r.json())
+                        }}
+                    >
+                        aaaa
+                    </Button>
                 </div>
                 {Auth.isAuthenticated() === false
                     ? <Stack stackProps={{ className: 'items-center' }}>

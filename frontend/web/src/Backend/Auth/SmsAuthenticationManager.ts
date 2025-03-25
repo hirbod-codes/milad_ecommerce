@@ -31,7 +31,15 @@ export class SmsAuthenticationManager extends Auth {
             if (!string().required().isValidSync(authApiUrl))
                 throw new Error('VITE_AUTH_API_URL environment variable is not provided')
 
-            let r = await fetch(`${authApiUrl}/auth/phone-number/authenticate`, { method: 'post', headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' }, body: JSON.stringify(data) })
+            let r = await fetch(`${authApiUrl}/auth/phone-number/authenticate`, {
+                credentials: 'include',
+                method: 'post',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify(data)
+            })
 
             if (r.ok && r.status === 201) {
                 let { token } = await r.json()

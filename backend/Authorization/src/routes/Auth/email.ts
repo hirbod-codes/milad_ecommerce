@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { DateTime } from "luxon";
-import {  emailConfig, transporter } from "@/src/";
+import { allowedOrigins, emailConfig, transporter } from "@/src/";
 import { SessionManager } from "@/src/DB/Session/SessionManager";
 import { number, string } from "yup";
 import crypto from "crypto";
@@ -215,14 +215,16 @@ emailRouter.post('/login', async (req, res) => {
             throw new Error('system failed to create tokens')
         }
 
-        res.cookie('token', tokens.refreshToken, {
-            httpOnly: true,
-            // secure: true, 
-            sameSite: true,
-            maxAge: 2 * 60 * 60 * 1000
-        })
-
-        res.status(200).json({ token: tokens.accessToken })
+        res
+            .cookie('token', tokens.refreshToken, {
+                secure: true,
+                maxAge: 604800000, // One Week
+                // partitioned: true,
+                sameSite: 'strict',
+                domain: 'authorization'
+            })
+            .status(200)
+            .json({ token: tokens.accessToken })
     } catch (e) {
         console.error(e)
         res.sendStatus(500)

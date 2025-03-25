@@ -52,113 +52,84 @@ export class AuthManager {
     }
 
     async generateTokens(userId: string | ObjectId, role: string): Promise<{ accessToken: string, refreshToken: string }> {
-        if (typeof userId !== 'string')
-            userId = userId.toString()
+        if (typeof userId === 'string')
+            userId = ObjectId.createFromHexString(userId)
 
-        let refreshTokenDoc = await (await MongoDB.getDbInstance().getRefreshTokensCollection()).findOne({ userId })
+        const accessToken = await this.generateAccessToken(userId, role)
 
-        if (refreshTokenDoc)
+        let docs = await (await MongoDB.getDbInstance().getRefreshTokensCollection()).aggregate([
+            {
+                $match: {
+                    userId: userId,
+                }
+            },
+            {
+                $set: {
+                    accessToken
+                }
+            }
+        ])
+            .toArray()
+
+        if (docs.length === 1)
             return {
-                accessToken: await this.generateAccessToken(userId, role),
-                refreshToken: refreshTokenDoc.refreshToken,
-            }
-        else {
-            let tokens = {
-                accessToken: await this.generateAccessToken(userId, role),
-                refreshToken: await this.generateRefreshToken(userId, role),
+                refreshToken: docs[0].refreshToken,
+                accessToken: docs[0].accessToken,
             }
 
-            const create = async () => {
-                let r = await (await MongoDB.getDbInstance().getRefreshTokensCollection()).insertOne({
-                    userId: ObjectId.createFromHexString(userId),
-                    role,
-                    refreshToken: tokens.refreshToken,
-                    accessToken: tokens.accessToken,
-                    createdAt: DateTime.utc().toUnixInteger(),
-                    expiresAt: DateTime.utc().plus({ seconds: refreshTokenExpiresIn }).toUnixInteger()
-                })
-                console.log('r', r)
-
-                if (!r.acknowledged)
-                    throw new InsertionFailure()
-            }
-
-            try {
-                await create()
-            } catch (e) {
-                console.error(e)
-                // Duplicate key
-                if (e instanceof MongoServerError && e.code === 11000) {
-                    let r = await (await MongoDB.getDbInstance().getRefreshTokensCollection()).updateOne({ userId: ObjectId.createFromHexString(userId) }, {
-                        $set: {
-                            role,
-                            refreshToken: tokens.refreshToken,
-                            accessToken: tokens.accessToken,
-                            expiresAt: DateTime.utc().plus({ seconds: refreshTokenExpiresIn }).toUnixInteger()
-                        }
-                    })
-                    console.log('r', r)
-
-                    if (!r.acknowledged)
-                        throw new InsertionFailure()
-                } else
-                    throw e
-            }
-
-            return tokens
+        let tokens = {
+            accessToken: await this.generateAccessToken(userId, role),
+            refreshToken: await this.generateRefreshToken(userId, role),
         }
+
+        let createResult = await (await MongoDB.getDbInstance().getRefreshTokensCollection()).insertOne({
+            userId: userId,
+            refreshToken: tokens.refreshToken,
+            accessToken: tokens.accessToken,
+            expiresAt: DateTime.utc().plus({ seconds: refreshTokenExpiresIn }).toUnixInteger(),
+            createdAt: DateTime.utc().toUnixInteger(),
+        })
+        console.log('createResult', createResult)
+
+        if (!createResult.acknowledged)
+            throw new InsertionFailure()
+
+        return tokens
     }
 
     async retrieveAccessToken(refreshToken: string): Promise<string> {
         return new Promise(async (resolve, reject) => {
             try {
-                let userId: string | undefined = undefined
+                let userId: string = undefined!
+                let role: string = undefined!
                 try {
                     let payload = await this.verify(refreshToken, 'refreshToken')
 
-                    if (payload === undefined) {
-                        reject()
-                        return
-                    }
+                    if (payload === undefined)
+                        throw new Error('Invalid refresh token')
+
+                    if (!payload?.sub)
+                        throw new Error('no userId')
+
+                    if (!payload?.role)
+                        throw new Error('no role')
+
 
                     userId = payload?.sub
-
-                    if (!userId) {
-                        reject()
-                        return
-                    }
+                    role = payload?.role
                 }
                 catch (e) { reject(e); return }
 
-                // expired refresh tokens are automatically removed by MongoDB TTL index
-                let doc = (await (await MongoDB.getDbInstance().getRefreshTokensCollection()).findOne({ refreshToken }))
-                if (!doc || (await this.verify(doc.refreshToken, 'refreshToken')) === undefined) {
-                    reject()
-                    return
-                }
+                const accessToken = await this.generateAccessToken(userId, role)
+
+                let doc = await (await MongoDB.getDbInstance().getRefreshTokensCollection()).findOneAndUpdate({ userId }, { $set: { accessToken } })
+                // .updateOne({ refreshToken }, { $set: { accessToken } }))
+                if (!doc)
+                    throw new Error('system failed to update refresh token in db')
 
                 let payload = Jwt.decode(doc.accessToken, { json: true })
-                if (payload === null) {
-                    reject()
-                    return
-                }
-
-                const expirationTS = payload.exp
-                if (expirationTS === undefined) {
-                    reject()
-                    return
-                }
-
-                if (DateTime.utc().toUnixInteger() < expirationTS)
-                    await RevokedAccessTokenManager.set(doc.accessToken, 'true', expirationTS)
-
-                const accessToken = await this.generateAccessToken(userId, doc.role)
-
-                let r = (await (await MongoDB.getDbInstance().getRefreshTokensCollection()).updateOne({ refreshToken }, { $set: { accessToken } }))
-                if (!r.acknowledged) {
-                    reject()
-                    return
-                }
+                if (payload && payload?.exp !== undefined && DateTime.utc().toUnixInteger() < payload.exp)
+                    await RevokedAccessTokenManager.set(doc.accessToken, 'true', payload.exp)
 
                 resolve(accessToken)
             } catch (e) {

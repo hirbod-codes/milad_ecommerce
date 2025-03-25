@@ -19,6 +19,7 @@ import { users } from "./routes/users";
 import { user } from "./routes/user";
 import { roles } from "./routes/roles";
 import { privileges } from "./routes/privileges";
+import cookieParser from "cookie-parser";
 
 dotenv.config({ debug: process.env.DEBUG !== undefined ? Boolean(process.env.DEBUG) : undefined })
 
@@ -30,6 +31,7 @@ export const adminPhoneNumber = getStringEnv('ADMIN_PHONE_NUMBER', 'The Admin ph
 export const adminEmail = getStringEnv('ADMIN_EMAIL', 'The Admin email environment variable is not provided')!
 export const adminPassword = getStringEnv('ADMIN_PASSWORD', 'The Admin password environment variable is not provided')!
 
+export const allowedOrigins = getStringEnv('ALLOWED_ORIGINS', 'The Allowed origins environment variable is not provided')!
 export const jwtSecret = getStringEnv('JWT_SECRET', 'The Jwt secret environment variable is not provided')!
 
 export const accessTokenExpiresIn = getIntegerEnv('ACCESS_TOKEN_EXPIRES_IN', 'The Access token expires in environment variable is not provided')!
@@ -123,9 +125,12 @@ export { sessionRedisClient, revokedTokensRedisClient }
     if (!await tryAndWait(async () => await queueManagement.subscribeConsumers(messageBrokerUrl)))
         exit(1)
 
-    await UserRepository.initialize(adminUsername, adminPhoneNumber, adminEmail, adminPassword)
-    await PrivilegeRepository.initialize()
-    await RoleRepository.initialize()
+    if (!await tryAndWait(async () => {
+        await UserRepository.initialize(adminUsername, adminPhoneNumber, adminEmail, adminPassword)
+        await PrivilegeRepository.initialize()
+        await RoleRepository.initialize()
+    }))
+        exit(1)
 
     const app = express()
 
@@ -137,9 +142,10 @@ export { sessionRedisClient, revokedTokensRedisClient }
     })
 
     app.use((req, res, next) => {
-        res.header('Access-Control-Allow-Origin', '*')
-        res.header('Access-Control-Allow-Method', '*')
-        res.header('Access-Control-Allow-Headers', '*,authorization,Authorization')
+        res.header('Access-Control-Allow-Origin', allowedOrigins)
+        res.header('Access-Control-Allow-Method', 'GET,HEAD,POST,PATCH,DELETE,OPTIONS')
+        res.header('Access-Control-Allow-Headers', 'authorization,content-type,content-length,accept')
+        res.header('Access-Control-Allow-Credentials', 'true')
 
         if (req.method === 'OPTIONS')
             res.sendStatus(204)
@@ -150,6 +156,7 @@ export { sessionRedisClient, revokedTokensRedisClient }
     // To Do: Add rate limiter middleware
 
     app.use(express.json())
+    app.use(cookieParser())
 
     app.use('/auth/tokens', tokenRouter)
     app.use('/auth/email', emailRouter)

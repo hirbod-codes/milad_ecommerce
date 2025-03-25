@@ -9,7 +9,6 @@ export const refreshTokenSchema = object().required().noUnknown(true).strict(tru
     refreshToken: string().required().max(350),
     accessToken: string().required().max(350),
     userId: likeObjectId.required(),
-    role: string().required(),
     expiresAt: number().required(),
     createdAt: number().optional(),
 })

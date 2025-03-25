@@ -1,11 +1,12 @@
 import { Outlet, useOutlet } from "react-router";
 import { ConfigurationContextWrapper } from "../../Contexts/Configuration/ConfigurationContextWrapper";
 import { AppBar } from "@/src/Components/AppBar";
-import { memo, useMemo, useReducer } from "react";
+import { memo, useEffect, useMemo, useReducer } from "react";
 import { FeedbackWrapper } from "@/src/Contexts/Feedback/FeedbackWrapper";
 import { Stack } from "@/src/Components/Base/Stack";
 import { subscribe } from "@/src/Lib/Events";
 import { Auth } from "@/src/Backend/Auth/Auth";
+import { getAuthApiUrl } from "@/src/Backend/helpers";
 
 export const LAYOUT_RERENDER = 'layout_rerender'
 
@@ -30,6 +31,24 @@ export function Layout() {
             </Stack>
         </FeedbackWrapper>
         , [x])
+
+    useEffect(() => {
+        if (!Auth.isAuthenticated())
+            fetch(`${getAuthApiUrl()}/auth/tokens/retrieve-access-token`, {
+                method: 'post',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                }
+            })
+                .then(async r => {
+                    if (r.ok && r.headers.get('content-type')?.includes('application/json')) {
+                        const { token } = await r.json()
+                        Auth.login(token)
+                        rerender()
+                    }
+                })
+    }, [])
 
     return (
         <ConfigurationContextWrapper key={x}>

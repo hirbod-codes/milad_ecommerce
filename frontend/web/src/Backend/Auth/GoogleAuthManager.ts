@@ -73,6 +73,7 @@ export class GoogleAuthManager extends Auth {
             throw new Error('VITE_REDIRECT_URI environment variable is not provided')
 
         const response = await fetch(`${authApiUrl}/oauth/google/token`, {
+            credentials: 'include',
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
