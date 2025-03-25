@@ -26,7 +26,9 @@ tokenRouter.post('/retrieve-access-token', async (req, res) => {
             return
         }
 
-        let token = await AuthManager.getInstance().retrieveAccessToken(refreshToken)
+        let token
+        try { token = await AuthManager.getInstance().retrieveAccessToken(refreshToken) }
+        catch (e) { console.error(e); res.sendStatus(401); return }
 
         res.status(201).json({ token })
     } catch (e) {

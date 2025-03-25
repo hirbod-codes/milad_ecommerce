@@ -57,35 +57,25 @@ export class AuthManager {
 
         const accessToken = await this.generateAccessToken(userId, role)
 
-        let docs = await (await MongoDB.getDbInstance().getRefreshTokensCollection()).aggregate([
-            {
-                $match: {
-                    userId: userId,
-                }
-            },
-            {
-                $set: {
-                    accessToken
-                }
-            }
-        ])
-            .toArray()
+        let doc = await (await MongoDB.getDbInstance().getRefreshTokensCollection()).findOneAndUpdate({ userId }, { $set: { accessToken } })
 
-        if (docs.length === 1)
+        if (doc) {
+            let payload = Jwt.decode(doc.accessToken, { json: true })
+            if (payload && payload?.exp !== undefined && DateTime.utc().toUnixInteger() < payload.exp)
+                await RevokedAccessTokenManager.set(doc.accessToken, 'true', payload.exp)
+
             return {
-                refreshToken: docs[0].refreshToken,
-                accessToken: docs[0].accessToken,
+                refreshToken: doc.refreshToken,
+                accessToken,
             }
-
-        let tokens = {
-            accessToken: await this.generateAccessToken(userId, role),
-            refreshToken: await this.generateRefreshToken(userId, role),
         }
+
+        const refreshToken = await this.generateRefreshToken(userId, role)
 
         let createResult = await (await MongoDB.getDbInstance().getRefreshTokensCollection()).insertOne({
             userId: userId,
-            refreshToken: tokens.refreshToken,
-            accessToken: tokens.accessToken,
+            refreshToken,
+            accessToken,
             expiresAt: DateTime.utc().plus({ seconds: refreshTokenExpiresIn }).toUnixInteger(),
             createdAt: DateTime.utc().toUnixInteger(),
         })
@@ -94,7 +84,10 @@ export class AuthManager {
         if (!createResult.acknowledged)
             throw new InsertionFailure()
 
-        return tokens
+        return {
+            refreshToken,
+            accessToken,
+        }
     }
 
     async retrieveAccessToken(refreshToken: string): Promise<string> {
@@ -123,9 +116,8 @@ export class AuthManager {
                 const accessToken = await this.generateAccessToken(userId, role)
 
                 let doc = await (await MongoDB.getDbInstance().getRefreshTokensCollection()).findOneAndUpdate({ userId }, { $set: { accessToken } })
-                // .updateOne({ refreshToken }, { $set: { accessToken } }))
                 if (!doc)
-                    throw new Error('system failed to update refresh token in db')
+                    throw new Error('Refresh token not found in db')
 
                 let payload = Jwt.decode(doc.accessToken, { json: true })
                 if (payload && payload?.exp !== undefined && DateTime.utc().toUnixInteger() < payload.exp)
