@@ -5,15 +5,12 @@ services:
     gateway:
         container_name: gateway
         image: nginx:alpine
-        # build:
-        #     context: ../../frontend/web
-        #     dockerfile: Dockerfile
-        #     target: development
         volumes:
             - ../../frontend/web/dist/:/usr/share/nginx/html/
             - ../../frontend/web/nginx.development.conf:/etc/nginx/conf.d/default.conf
+            - ../../frontend/web/https/:/etc/ngonx/ssl/
         ports:
-            - 8080:80
+            - 443:443
         depends_on:
             - api
             - authorization

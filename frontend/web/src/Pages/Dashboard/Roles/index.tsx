@@ -98,6 +98,8 @@ export function Roles({ privileges }: { privileges?: string[] }) {
     }
 
     const init = async () => {
+        console.log('init')
+
         setLoading(true)
         try {
             if (!privileges) {
@@ -121,7 +123,9 @@ export function Roles({ privileges }: { privileges?: string[] }) {
             }
 
             const data = await authFetchData(`${getAuthApiUrl()}/roles`, { method: 'get', headers: { 'Accept': 'application/json' } })
-            setRows(data)
+            console.log('data', data)
+            if (array().required().strict(true).isValidSync(data))
+                setRows(data)
         } finally {
             setLoading(false)
         }

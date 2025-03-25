@@ -7,6 +7,10 @@ import { AuthManager } from "@/src/AuthManager";
 
 const tokenRouter = Router()
 
+tokenRouter.get('/logout', (req, res) => {
+    res.clearCookie('token').sendStatus(200)
+})
+
 tokenRouter.post('/retrieve-access-token', async (req, res) => {
     try {
         console.log('req?.cookies', req?.cookies)

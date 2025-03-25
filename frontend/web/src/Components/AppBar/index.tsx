@@ -21,8 +21,8 @@ export function AppBar() {
                 <div className="flex-grow">
                     <Button
                         onClick={async () => {
-                            let r = await fetch(`${getAuthApiUrl()}/auth/tokens/retrieve-access-token`, {
-                                method: 'post',
+                            let r = await fetch(`${getAuthApiUrl()}/auth/tokens/logout`, {
+                                method: 'get',
                                 headers: {
                                     'Content-Type': 'application/json',
                                     'Accept': 'application/json'

@@ -155,7 +155,15 @@ emailRouter.post('/signup', async (req, res) => {
             maxAge: 2 * 60 * 60 * 1000
         })
 
-        res.status(200).json({ token: tokens.accessToken })
+        res
+            .cookie('token', tokens.refreshToken, {
+                httpOnly: true,
+                secure: true,
+                maxAge: 604800000, // One Week
+                sameSite: 'strict',
+            })
+            .status(200)
+            .json({ token: tokens.accessToken })
     } catch (e) {
         console.error(e)
         res.sendStatus(500)
@@ -218,10 +226,9 @@ emailRouter.post('/login', async (req, res) => {
         res
             .cookie('token', tokens.refreshToken, {
                 httpOnly: true,
-                secure: isProduction,
+                secure: true,
                 maxAge: 604800000, // One Week
-                sameSite: isProduction ? 'strict' : 'lax',
-                domain: isProduction ? 'authorization' : undefined,
+                sameSite: 'strict',
             })
             .status(200)
             .json({ token: tokens.accessToken })

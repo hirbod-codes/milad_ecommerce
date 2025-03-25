@@ -141,14 +141,15 @@ phoneNumberRouter.post('/authenticate', async (req, res) => {
         }
         console.log('tokens', tokens)
 
-        res.cookie('token', tokens.refreshToken, {
-            httpOnly: true,
-            // secure: true, 
-            sameSite: true,
-            maxAge: 2 * 60 * 60 * 1000
-        })
-
-        res.status(200).json({ token: tokens.accessToken })
+        res
+            .cookie('token', tokens.refreshToken, {
+                httpOnly: true,
+                secure: true,
+                maxAge: 604800000, // One Week
+                sameSite: 'strict',
+            })
+            .status(200)
+            .json({ token: tokens.accessToken })
     } catch (e) {
         console.error(e)
         res.sendStatus(500)
