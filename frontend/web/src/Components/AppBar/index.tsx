@@ -5,8 +5,12 @@ import { SiteLogo } from "../SiteLogo";
 import { t } from "i18next";
 import { AuthModal } from "../Auth/AuthModal";
 import { Auth } from "@/src/Backend/Auth/Auth";
+import { dispatch } from "@/src/Lib/Events";
+import { LAYOUT_RERENDER } from "@/src/Pages/Layout";
 
 export function AppBar() {
+    console.log('AppBar')
+
     const [authModalOpen, setAuthModalOpen] = useState<boolean>(false)
 
     return (
@@ -19,11 +23,11 @@ export function AppBar() {
                     ? <Stack stackProps={{ className: 'items-center' }}>
                         <Button variant="outline" size='sm' onClick={() => setAuthModalOpen(true)}>{t('common.login')}/{t('common.signup')}</Button>
                     </Stack>
-                    : <Button variant="outline" size='sm' onClick={() => { Auth.logout(); window.location.reload() }}>{t('common.logout')}</Button>
+                    : <Button variant="outline" size='sm' onClick={() => { Auth.logout(); dispatch(LAYOUT_RERENDER) }}>{t('common.logout')}</Button>
                 }
             </Stack>
 
-            <AuthModal open={authModalOpen} onClose={() => setAuthModalOpen(false)} />
+            <AuthModal open={authModalOpen} onClose={() => { setAuthModalOpen(false); dispatch(LAYOUT_RERENDER, Auth.getToken()) }} />
         </>
     )
 }

@@ -6,8 +6,10 @@ import { HistoryIcon, SettingsIcon, ShieldAlertIcon, TimerIcon, UsersIcon } from
 import { Button } from './Base/Button';
 import { motion } from 'framer-motion'
 import { Auth } from '../Backend/Auth/Auth';
+import { FeedbackContext } from '../Contexts/Feedback/FeedbackContext';
 
 export const Navigation = memo(function Navigation() {
+    const feedback = useContext(FeedbackContext)
     const navigate = useNavigate();
 
     const configuration = useContext(ConfigurationContext)!
@@ -25,6 +27,13 @@ export const Navigation = memo(function Navigation() {
     useEffect(() => {
         Auth.getPrivileges()
             .then(privileges => {
+                if (privileges === undefined) {
+                    feedback.push({
+                        node: t('privileges.getFailure')
+                    })
+                    return
+                }
+
                 for (const privilege of privileges) {
                     if (privilege === 'get-user')
                         setReadsUsers(true)

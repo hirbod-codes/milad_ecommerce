@@ -6,17 +6,17 @@ export class Auth {
     private static token: string | undefined
 
     static isAuthenticated() {
-        return localStorage.getItem('accessToken') !== null
+        return Auth.token !== undefined
     }
 
-    static login(token: string) { this.token = token }
+    static login(token: string) { Auth.token = token }
 
-    static logout() { this.token = undefined }
+    static logout() { Auth.token = undefined }
 
-    static getToken(): string | undefined { return this.token }
+    static getToken(): string | undefined { return Auth.token }
 
     static getRole(): string | undefined {
-        const token = this.getToken()
+        const token = Auth.getToken()
         if (token === undefined)
             return undefined
 
@@ -24,7 +24,7 @@ export class Auth {
         catch (e) { console.error(e); return undefined }
     }
 
-    static async getPrivileges(): Promise<string[]> {
+    static async getPrivileges(): Promise<string[] | undefined> {
         try {
             console.log('getPrivileges()')
 
@@ -38,13 +38,13 @@ export class Auth {
             console.log('\tr', r)
 
             if (!r || !r.headers.get('content-type')?.includes('application/json'))
-                throw new Error('invalid respond from auth server from /privileges endpoint')
+                return undefined
 
             const data = await r.json()
             console.log('\tdata', data)
 
             if (!array().required().strict(true).isValidSync(data))
-                throw new Error('invalid respond from auth server from /privileges endpoint')
+                return undefined
 
             return data
         }
@@ -53,7 +53,7 @@ export class Auth {
 
     static async isPrivilegeExists(privilege: string): Promise<boolean> {
         try {
-            return (await this.getPrivileges()).find(f => f === privilege) !== undefined
+            return (await Auth.getPrivileges()).find(f => f === privilege) !== undefined
         }
         catch (e) { console.error(e); return false }
     }

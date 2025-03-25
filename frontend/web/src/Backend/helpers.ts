@@ -38,10 +38,9 @@ class AuthState {
 export async function authFetch(input: string | URL | globalThis.Request, init?: RequestInit): Promise<Response | undefined> {
     console.log('authFetch()')
 
-    const accessToken = await Auth.getToken()
+    const accessToken = Auth.getToken()
     if (!accessToken)
         return undefined
-    console.log('\ttokens', accessToken)
 
     const setAuthHeader = (init: RequestInit, token: string) => {
         if (init.headers)

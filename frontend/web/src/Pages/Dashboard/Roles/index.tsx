@@ -16,6 +16,8 @@ import { useNavigate } from "react-router";
 import { array, string } from "yup";
 
 export function Roles({ privileges }: { privileges?: string[] }) {
+    console.log('Roles')
+
     const feedback = useContext(FeedbackContext)!
     const configuration = useContext(ConfigurationContext)!
     const themeOptions = configuration.themeOptions
@@ -138,12 +140,11 @@ export function Roles({ privileges }: { privileges?: string[] }) {
             <DataGrid
                 configName='roles'
                 containerProps={{ stackProps: { style: { backgroundImage: `linear-gradient(to bottom right, ${dataGridGradientColor.toHex()} , transparent)` } } }}
-                data={rows}
+                data={rows.map(row => Object.fromEntries(Object.entries(row).filter(f => f[0] !== 'privileges')))}
                 // overWriteColumns={columns}
                 loading={loading}
                 defaultColumnOrderModel={['actions']}
                 additionalColumns={additionalColumns}
-                
                 appendHeaderNodes={[
                     <Button variant='outline' onClick={async () => await refresh()}><RefreshCwIcon />{t('Roles.Refresh')}</Button>,
                     createsRole &&

@@ -35,7 +35,7 @@ export class SmsAuthenticationManager extends Auth {
 
             if (r.ok && r.status === 201) {
                 let { token } = await r.json()
-                await this.login(token!)
+                this.login(token!)
                 return { success: true }
             } else
                 return { success: false }

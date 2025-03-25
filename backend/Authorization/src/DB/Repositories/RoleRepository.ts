@@ -5,6 +5,7 @@ import { collectionName } from '../Models/Privilege'
 import { defaultRolePrivilegeNames } from '../Models/privilegeNames'
 import { MongoDB } from '../mongodb'
 import { PrivilegeRepository } from './PrivilegeRepository'
+import { UserRepository } from './UserRepository'
 
 export class RoleRepository extends MongoDB {
     private collection: Collection<RoleCreate>
@@ -48,6 +49,9 @@ export class RoleRepository extends MongoDB {
     }
 
     async create(role: RoleInput): Promise<InsertOneResult | false> {
+        if (role.name === 'default')
+            return false
+
         const ts = DateTime.utc().toUnixInteger()
 
         role.privileges = role.privileges.map(p => typeof p === 'string' ? ObjectId.createFromHexString(p) : p)
@@ -150,10 +154,35 @@ export class RoleRepository extends MongoDB {
         catch (e) { console.error(e); return false }
     }
 
-    async delete(id: string): Promise<DeleteResult | false> {
+    async delete(id: string | ObjectId): Promise<DeleteResult | false> {
         try {
+            if (typeof id === 'string')
+                id = ObjectId.createFromHexString(id)
+
             await this.startTransaction()
-            return await this.collection.deleteOne({ $and: [{ _id: ObjectId.createFromHexString(id) }, { name: { $ne: 'default' } }] })
+
+            const role = await this.collection.findOne({ _id: id })
+            if (!role || role.name === 'default') {
+                await this.abortTransaction()
+                return false
+            }
+
+            const deleteResult = await this.collection.deleteOne({ $and: [{ _id: id }, { name: { $ne: 'default' } }] });
+
+            const updateResult = await (await this.getUserCollection()).updateMany({ role: role.name }, { $set: { role: 'default' } })
+            if (!updateResult.acknowledged) {
+                await this.abortTransaction()
+                return false
+            }
+
+            if (!deleteResult.acknowledged) {
+                await this.abortTransaction()
+                return false
+            }
+
+            await this.commitTransaction()
+
+            return deleteResult
         }
         catch (e) { console.error(e); return false }
     }
