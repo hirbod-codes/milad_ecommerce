@@ -23,6 +23,8 @@ import cookieParser from "cookie-parser";
 
 dotenv.config({ debug: process.env.DEBUG !== undefined ? Boolean(process.env.DEBUG) : undefined })
 
+export const isProduction = getStringEnv('NODE_ENV', 'The Node env environment variable is not provided')! === 'production'
+
 export const hostName = getStringEnv('HOST', 'The HOST environment variable is not provided')!
 export const hostPort = getIntegerEnv('PORT', 'The PORT environment variable is not provided', (s) => s.min(1025))!
 

@@ -93,7 +93,7 @@ export class AuthManager {
     async retrieveAccessToken(refreshToken: string): Promise<string> {
         return new Promise(async (resolve, reject) => {
             try {
-                let userId: string = undefined!
+                let userId: string | ObjectId = undefined!
                 let role: string = undefined!
                 try {
                     let payload = await this.verify(refreshToken, 'refreshToken')
@@ -112,6 +112,9 @@ export class AuthManager {
                     role = payload?.role
                 }
                 catch (e) { reject(e); return }
+
+                if (typeof userId === 'string')
+                    userId = ObjectId.createFromHexString(userId)
 
                 const accessToken = await this.generateAccessToken(userId, role)
 

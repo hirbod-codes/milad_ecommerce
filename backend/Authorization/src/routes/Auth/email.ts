@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { DateTime } from "luxon";
-import { allowedOrigins, emailConfig, transporter } from "@/src/";
+import { allowedOrigins, emailConfig, isProduction, transporter } from "@/src/";
 import { SessionManager } from "@/src/DB/Session/SessionManager";
 import { number, string } from "yup";
 import crypto from "crypto";
@@ -217,11 +217,11 @@ emailRouter.post('/login', async (req, res) => {
 
         res
             .cookie('token', tokens.refreshToken, {
-                secure: true,
+                httpOnly: true,
+                secure: isProduction,
                 maxAge: 604800000, // One Week
-                // partitioned: true,
-                sameSite: 'strict',
-                domain: 'authorization'
+                sameSite: isProduction ? 'strict' : 'lax',
+                domain: isProduction ? 'authorization' : undefined,
             })
             .status(200)
             .json({ token: tokens.accessToken })
