@@ -24,8 +24,8 @@ export function EmailLogin({ goToSignup, done }: { goToSignup?: () => void, done
     const [loading, setLoading] = useState<boolean>(false)
 
     const submit = async () => {
-        // if (!isPasswordValid(password) || !isEmailValid(email))
-        //     return
+        if (!isPasswordValid(password) || !isEmailValid(email))
+            return
 
         setLoading(true)
 

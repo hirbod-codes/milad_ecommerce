@@ -69,8 +69,17 @@ export class RoleRepository extends MongoDB {
         catch (e) { console.error(e); return false }
     }
 
-    async get(): Promise<Role[]> {
-        try { return await this.collection.find().toArray() }
+    async get(): Promise<RoleWithPrivileges[]> {
+        try {
+            return await this.collection.aggregate()
+                .lookup({
+                    from: collectionName,
+                    localField: 'privileges',
+                    foreignField: '_id',
+                    as: 'privileges'
+                })
+                .toArray() as RoleWithPrivileges[]
+        }
         catch (e) { console.error(e); return [] }
     }
 

@@ -81,8 +81,12 @@ export function Roles({ privileges }: { privileges?: string[] }) {
                                     await deleteRole(row.original._id);
                                     await refresh()
                                     if (Auth.getRole() === row.original.name) {
-                                        await Auth.logout()
-                                        navigate('/')
+                                        const r = await Auth.logout()
+
+                                        if (!r)
+                                            feedback.push({ node: t('common.logoutFailed') })
+                                        else
+                                            navigate('/')
                                     }
                                 }}
                             >

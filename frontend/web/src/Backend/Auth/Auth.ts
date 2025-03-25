@@ -1,5 +1,4 @@
 import { array } from "yup";
-import { StorageApi } from "../Storage/StorageApi"
 import { authFetch, getAuthApiUrl } from "../helpers";
 
 export class Auth {
@@ -11,7 +10,25 @@ export class Auth {
 
     static login(token: string) { Auth.token = token }
 
-    static logout() { Auth.token = undefined }
+    static async logout() {
+        Auth.token = undefined
+
+        const r = await fetch(`${getAuthApiUrl()}/auth/tokens/logout`, {
+            method: 'get',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            },
+            credentials: 'include',
+            mode: 'cors',
+            cache: 'no-cache'
+        })
+
+        if (!r.ok)
+            return false
+
+        return true
+    }
 
     static getToken(): string | undefined { return Auth.token }
 
