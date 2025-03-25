@@ -72,7 +72,7 @@ export function EmailLogin({ goToSignup, done }: { goToSignup?: () => void, done
                 />
 
                 <Button
-                    // disabled={loading || isPasswordValid(password) === false || isEmailValid(email) === false}
+                    disabled={loading || isPasswordValid(password) === false || isEmailValid(email) === false}
                     onClick={submit}
                 >
                     {loading ? <CircularLoadingIcon /> : t('common.next')}
