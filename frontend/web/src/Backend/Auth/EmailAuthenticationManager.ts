@@ -25,9 +25,7 @@ export class EmailAuthenticationManager extends Auth {
 
     static async authenticate(email: string, password: string): Promise<Response<void>> {
         try {
-            // let data = { email, password }
-
-            let data = { email: 'example@domain.com', password: 'Pass99%aa' }
+            let data = { email, password }
 
             const authApiUrl = import.meta.env.VITE_AUTH_API_URL;
             if (!string().required().isValidSync(authApiUrl))
