@@ -118,7 +118,6 @@ export function SmsAuth({ done }: { done?: () => void }) {
                                 <CheckBox
                                     inputProps={{ checked: hasConsent, onChange: (e) => setHasConsent(e.target.checked), className: hasConsent ? undefined : 'border border-error' }}
                                     label={<><div className="text-xs inline">{t('SmsAuth.consent')}</div><div className="ml-1 inline hover:underline text-primary text-xs">{t('SmsAuth.consentLink')}</div></>}
-                                    labelFirst={false}
                                     rippleEffect={true}
                                 />
                             </Stack>

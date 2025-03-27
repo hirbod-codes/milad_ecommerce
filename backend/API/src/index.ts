@@ -142,6 +142,10 @@ async function tryAndWait(callback: CallableFunction, secondsToWaitForEachTry: n
     app.use('/categories', categories)
     app.use('/tags', tags)
 
+    app.get('/languages', (req, res) => {
+        res.json(['fa', 'en'])
+    })
+
     app.all('*', (req, res) => {
         res.sendStatus(404)
     })

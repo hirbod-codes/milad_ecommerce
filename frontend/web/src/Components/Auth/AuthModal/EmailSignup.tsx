@@ -149,7 +149,6 @@ export function EmailSignup({ goToLogin, done }: { goToLogin?: () => void, done?
                         <CheckBox
                             inputProps={{ checked: hasConsent, onChange: (e) => setHasConsent(e.target.checked), className: hasConsent ? undefined : 'border border-error' }}
                             label={<><div className="text-xs inline">{t('authModal.consent')}</div><div className="ml-1 inline hover:underline text-primary text-xs">{t('authModal.consentLink')}</div></>}
-                            labelFirst={false}
                             rippleEffect={true}
                         />
 

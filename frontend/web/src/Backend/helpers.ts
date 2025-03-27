@@ -35,21 +35,26 @@ class AuthState {
  * @param init
  * @returns
  */
-export async function authFetch(input: string | URL | globalThis.Request, init?: RequestInit): Promise<Response | undefined> {
+export async function authFetch(input: string | URL | globalThis.Request, init?: RequestInit, json: boolean = true): Promise<Response | undefined> {
     console.log('authFetch()')
 
     const accessToken = Auth.getToken()
     if (!accessToken)
         return undefined
 
-    const setAuthHeader = (init: RequestInit, token: string) => {
-        if (init.headers)
-            init.headers['Authorization'] = `Bearer ${token}`
-        else
-            init.headers = { Authorization: `Bearer ${token}` }
+    if (!init)
+        init = {}
+
+    if (!init.headers)
+        init.headers = {}
+
+    init.headers['Authorization'] = `Bearer ${accessToken}`
+
+    if (json) {
+        init.headers['Accept'] = 'application/json'
+        init.headers['Content-Type'] = 'application/json'
     }
 
-    setAuthHeader(init ?? {}, accessToken)
     let res = await fetch(input, init)
 
     if (res.status !== 401)
@@ -69,7 +74,7 @@ export async function authFetch(input: string | URL | globalThis.Request, init?:
 
         if (AuthState.AuthSucceeded === true) {
             const accessToken = await Auth.getToken()
-            setAuthHeader(init ?? {}, accessToken)
+            init.headers['Authorization'] = `Bearer ${accessToken}`
             return await fetch(input, init)
         }
     }
@@ -110,7 +115,7 @@ export async function authFetch(input: string | URL | globalThis.Request, init?:
         AuthState.AuthSucceeded = true
     } finally { AuthState.Authenticating = false }
 
-    setAuthHeader(init ?? {}, accessToken)
+    init.headers['Authorization'] = `Bearer ${accessToken}`
     return await fetch(input, init)
 }
 
@@ -122,8 +127,8 @@ export async function authFetch(input: string | URL | globalThis.Request, init?:
  * @param init
  * @returns
  */
-export async function authFetchData(input: string | URL | globalThis.Request, init?: RequestInit): Promise<{ response: Response, data: any }> {
-    const response = await authFetch(input, init)
+export async function authFetchData(input: string | URL | globalThis.Request, init?: RequestInit, json: boolean = true): Promise<{ response?: Response, data: any }> {
+    const response = await authFetch(input, init, json)
     if (response?.headers?.get('content-type')?.includes('application/json'))
         return { response, data: response && response?.ok ? await response.json() : undefined }
     else

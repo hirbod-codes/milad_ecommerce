@@ -14,7 +14,7 @@ import { EditIcon, PlusIcon, RefreshCwIcon, Trash2Icon } from "lucide-react";
 import { useContext, useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 import { array, string } from "yup";
-import { CreateRole } from "./ManageRole";
+import { CreateRole } from "./CreateRole";
 
 export function Roles({ privileges }: { privileges?: string[] }) {
     console.log('Roles')

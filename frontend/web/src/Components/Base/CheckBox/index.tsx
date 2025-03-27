@@ -21,7 +21,7 @@ export type CheckBoxProps = {
 export const CheckBox = memo(function CheckBox({
     size = 'md',
     label,
-    labelFirst = true,
+    labelFirst = false,
     inputId,
     rippleEffect = true,
     color,

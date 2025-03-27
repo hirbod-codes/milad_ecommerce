@@ -13,7 +13,11 @@ const privileges = Router()
 
 privileges.get('/all', async (req, res) => {
     try {
-        res.json(AuthManager.PRIVILEGE_NAMES)
+        const ps = await (await PrivilegeRepository.getInstance()).get()
+        if (ps === false)
+            res.sendStatus(500)
+        else
+            res.json(ps)
     } catch (e) {
         console.error(e)
         res.sendStatus(500)
