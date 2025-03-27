@@ -56,16 +56,3 @@ export function Layout() {
         </ConfigurationContextWrapper>
     )
 }
-
-const App = memo(function App() {
-    console.log('App')
-
-    return (
-        <Stack direction='vertical' stackProps={{ className: 'h-screen w-screen overflow-hidden mx-0 p-2' }}>
-            <AppBar />
-            <div className="flex-grow h-0">
-                <Outlet />
-            </div>
-        </Stack>
-    )
-})

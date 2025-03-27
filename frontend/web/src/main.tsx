@@ -5,6 +5,7 @@ import { Home } from "./Pages/Home"
 import { Error } from "./Pages/Error"
 import { NotFound } from "./Pages/NotFound"
 import { Dashboard } from "./Pages/Dashboard"
+import { Layout as DashboardLayout } from "./Pages/Dashboard/Layout"
 import { Users } from "./Pages/Dashboard/Users"
 import { Roles } from "./Pages/Dashboard/Roles"
 import { Categories } from "./Pages/Dashboard/Categories"
@@ -16,6 +17,7 @@ import { Settings } from "./Pages/Dashboard/Settings"
 export function Main() {
     console.log('Main')
 
+    const dashboardLayout = useMemo(() => <DashboardLayout />, [])
     const dashboardHome = useMemo(() => <Dashboard />, [])
     const dashboardUsers = useMemo(() => <Users />, [])
     const dashboardRoles = useMemo(() => <Roles />, [])
@@ -40,36 +42,38 @@ export function Main() {
                     element: home
                 },
                 {
-                    path: "/Dashboard/Home",
-                    element: dashboardHome,
-                },
-                {
-                    path: "/Dashboard/Users",
-                    element: dashboardUsers,
-                },
-                {
-                    path: "/Dashboard/Roles",
-                    element: dashboardRoles,
-                },
-                {
-                    path: "/Dashboard/Categories",
-                    element: dashboardCategories,
-                },
-                {
-                    path: "/Dashboard/Tags",
-                    element: dashboardTags,
-                },
-                {
-                    path: "/Dashboard/Products",
-                    element: dashboardProducts,
-                },
-                {
-                    path: "/Dashboard/Order",
-                    element: dashboardOrder,
-                },
-                {
-                    path: "/Dashboard/Settings",
-                    element: dashboardSettings,
+                    path: "Dashboard",
+                    element: dashboardLayout,
+                    children: [
+                        {
+                            path: "Users",
+                            element: dashboardUsers,
+                        },
+                        {
+                            path: "Roles",
+                            element: dashboardRoles,
+                        },
+                        {
+                            path: "Categories",
+                            element: dashboardCategories,
+                        },
+                        {
+                            path: "Tags",
+                            element: dashboardTags,
+                        },
+                        {
+                            path: "Products",
+                            element: dashboardProducts,
+                        },
+                        {
+                            path: "Order",
+                            element: dashboardOrder,
+                        },
+                        {
+                            path: "Settings",
+                            element: dashboardSettings,
+                        },
+                    ]
                 },
                 {
                     path: "error",
