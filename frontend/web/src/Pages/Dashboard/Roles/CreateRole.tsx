@@ -38,7 +38,7 @@ export function CreateRole({ onFinish }: { onFinish?: (shouldRefresh?: boolean) 
                 if (onFinish)
                     onFinish(true)
             } else
-                feedback.push({ node: t('CreateRole.creationFailure') })
+                feedback.push({ node: t('CreateRole.creationFailure'), color: { fgColor: 'error' } })
         } finally { setSubmitting(false) }
     }
 

@@ -27,7 +27,7 @@ export function Category({ category, allCategories, refresh }: { category: Categ
                 if (refresh)
                     refresh()
             } else
-                feedback.push({ node: t('Category.deletionFailure') })
+                feedback.push({ node: t('Category.deletionFailure'), color: { fgColor: 'error' } })
         } finally { setDeleting(false) }
     }
 
@@ -55,9 +55,7 @@ export function Category({ category, allCategories, refresh }: { category: Categ
                             <Category key={i} category={child} allCategories={allCategories} />
                         )}
 
-                        <div className="text-center">
-                            <Button isIcon variant="text" fgColor="success" onClick={() => setOpenCreateCategoryModal(true)}><PlusIcon /></Button>
-                        </div>
+                        <Button isIcon variant="text" fgColor="success" onClick={() => setOpenCreateCategoryModal(true)}><PlusIcon /></Button>
                     </AccordionContent>
                 </AccordionItem>
             </Accordion>

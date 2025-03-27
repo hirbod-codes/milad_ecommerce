@@ -49,18 +49,18 @@ export function CreateCategory({ parentCategoryId, onFinish }: { parentCategoryI
                 if (onFinish)
                     onFinish(true)
             } else
-                feedback.push({ node: t('CreateCategory.creationFailure') })
+                feedback.push({ node: t('CreateCategory.creationFailure'), color: { fgColor: 'error' } })
         } finally { setSubmitting(false) }
     }
 
     return (
         <>
             <Stack direction="vertical">
-                <h5 className="text-center text-xl">{t('CreateCategory.createRole')}</h5>
+                <h5 className="text-center text-xl">{t('CreateCategory.createTag')}</h5>
 
                 <Separator />
 
-                {/* Role name */}
+                {/* Tag name */}
                 <Input value={name ?? ''} label={t('CreateCategory.name')} labelId={t('CreateCategory.name')} onChange={(e) => setName(e.target.value)} />
 
                 {!loading && languages &&

@@ -51,7 +51,7 @@ export function Roles({ privileges }: { privileges?: string[] }) {
         try {
             const r = await authFetchData(`${getAuthApiUrl()}/roles`, { method: 'delete', body: JSON.stringify({ id }), headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' } })
             if (!r.response?.ok) {
-                feedback.push({ node: t('Roles.DeletionFailure') })
+                feedback.push({ node: t('Roles.DeletionFailure'), color: { fgColor: 'error' } })
                 return
             }
 
@@ -61,7 +61,7 @@ export function Roles({ privileges }: { privileges?: string[] }) {
                 const r = await Auth.logout()
 
                 if (!r)
-                    feedback.push({ node: t('common.logoutFailed') })
+                    feedback.push({ node: t('common.logoutFailed'), color: { fgColor: 'error' } })
                 else
                     navigate('/')
             }
