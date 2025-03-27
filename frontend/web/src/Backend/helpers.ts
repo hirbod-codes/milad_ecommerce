@@ -119,16 +119,31 @@ export async function authFetch(input: string | URL | globalThis.Request, init?:
     return await fetch(input, init)
 }
 
-
-/**
- * if undefined is returned, authentication must have been failed.
- * if null is returned, request has not been successful.
- * @param input
- * @param init
- * @returns
- */
 export async function authFetchData(input: string | URL | globalThis.Request, init?: RequestInit, json: boolean = true): Promise<{ response?: Response, data: any }> {
+    console.log('authFetch()')
+
     const response = await authFetch(input, init, json)
+    if (response?.headers?.get('content-type')?.includes('application/json'))
+        return { response, data: response && response?.ok ? await response.json() : undefined }
+    else
+        return { response, data: response && response?.ok ? await response.text() : undefined }
+}
+
+export async function fetchData(input: string | URL | globalThis.Request, init?: RequestInit, json: boolean = true): Promise<{ response?: Response, data: any }> {
+    console.log('fetchData()')
+
+    if (!init)
+        init = {}
+
+    if (!init.headers)
+        init.headers = {}
+
+    if (json) {
+        init.headers['Accept'] = 'application/json'
+        init.headers['Content-Type'] = 'application/json'
+    }
+
+    let response = await fetch(input, init)
     if (response?.headers?.get('content-type')?.includes('application/json'))
         return { response, data: response && response?.ok ? await response.json() : undefined }
     else

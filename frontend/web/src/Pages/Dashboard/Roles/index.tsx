@@ -11,11 +11,12 @@ import { ColorStatic } from "@/src/Lib/Colors/ColorStatic";
 import { ColumnDef } from "@tanstack/react-table";
 import { t } from "i18next";
 import { EditIcon, PlusIcon, RefreshCwIcon, Trash2Icon } from "lucide-react";
-import { useContext, useEffect, useState } from "react";
+import { ComponentProps, useContext, useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 import { array, string } from "yup";
 import { CreateRole } from "./CreateRole";
 import { UpdateRole } from "./UpdateRole";
+import { Ask } from "@/src/Components/Ask";
 
 export function Roles({ privileges }: { privileges?: string[] }) {
     console.log('Roles')
@@ -42,6 +43,7 @@ export function Roles({ privileges }: { privileges?: string[] }) {
     const [openCreateRoleModal, setOpenCreateRoleModal] = useState(false)
     const [openUpdateRoleModal, setOpenUpdateRoleModal] = useState(false)
 
+    const [ask, setAsk] = useState<ComponentProps<typeof Ask>>(undefined)
 
     const [deletingRole, setDeletingRole] = useState<string | undefined>(undefined)
     const deleteRole = async (id, name) => {
@@ -96,12 +98,12 @@ export function Roles({ privileges }: { privileges?: string[] }) {
                                 isIcon
                                 variant='text'
                                 fgColor='error'
-                                onClick={() => deleteRole(row.original._id, row.original.name)}
+                                onClick={() => setAsk({ open: true, title: t('Roles.deletionTitle'), content: t('Roles.deletionContent'), successAction: () => deleteRole(row.original._id, row.original.name), failureAction: () => setAsk({ ...ask, open: false }) })}
                             >
                                 {deletingRole === undefined || deletingRole !== row.original._id ? <Trash2Icon /> : <CircularLoadingIcon />}
                             </Button>
                         }
-                    </Stack>
+                    </Stack >
             }
         ]
 
@@ -169,6 +171,8 @@ export function Roles({ privileges }: { privileges?: string[] }) {
                     </Button>
                 ]}
             />
+
+            <Ask {...ask} onClose={() => setAsk({ ...ask, open: false })} />
 
             <Modal
                 onClose={() => { setOpenCreateRoleModal(false) }}
