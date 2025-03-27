@@ -15,6 +15,7 @@ import { useContext, useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 import { array, string } from "yup";
 import { CreateRole } from "./CreateRole";
+import { UpdateRole } from "./UpdateRole";
 
 export function Roles({ privileges }: { privileges?: string[] }) {
     console.log('Roles')
@@ -38,7 +39,9 @@ export function Roles({ privileges }: { privileges?: string[] }) {
     const [rows, setRows] = useState([])
 
     const [editingRole, setEditingRole] = useState<string | undefined>(undefined)
-    const [openManageRoleModal, setOpenCreateRoleModal] = useState(false)
+    const [openCreateRoleModal, setOpenCreateRoleModal] = useState(false)
+    const [openUpdateRoleModal, setOpenUpdateRoleModal] = useState(false)
+
 
     const [deletingRole, setDeletingRole] = useState<string | undefined>(undefined)
     const deleteRole = async (id, name) => {
@@ -80,9 +83,8 @@ export function Roles({ privileges }: { privileges?: string[] }) {
                                 isIcon
                                 variant='text'
                                 onClick={() => {
+                                    setOpenUpdateRoleModal(true)
                                     setEditingRole(row.original._id)
-                                    setOpenCreateRoleModal(true)
-                                    setEditingRole(rows.find(u => u._id === row.original._id))
                                 }}
                             >
                                 {editingRole === undefined || editingRole !== row.original._id ? <EditIcon /> : <CircularLoadingIcon />}
@@ -173,13 +175,29 @@ export function Roles({ privileges }: { privileges?: string[] }) {
             />
 
             <Modal
-                onClose={() => { setOpenCreateRoleModal(false); setEditingRole(undefined) }}
-                open={openManageRoleModal}
+                onClose={() => { setOpenCreateRoleModal(false) }}
+                open={openCreateRoleModal}
             >
                 <CreateRole
                     onFinish={async (shouldRefresh = true) => {
                         setOpenCreateRoleModal(false)
-                        await refresh()
+                        if (shouldRefresh)
+                            await refresh()
+                    }}
+                />
+            </Modal>
+
+            <Modal
+                onClose={() => { setOpenUpdateRoleModal(false); setEditingRole(undefined) }}
+                open={openUpdateRoleModal}
+            >
+                <UpdateRole
+                    editingRoleId={editingRole}
+                    onFinish={async (shouldRefresh = true) => {
+                        setOpenUpdateRoleModal(false)
+                        setEditingRole(undefined)
+                        if (shouldRefresh)
+                            await refresh()
                     }}
                 />
             </Modal>

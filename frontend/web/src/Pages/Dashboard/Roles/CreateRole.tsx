@@ -25,6 +25,8 @@ export function CreateRole({ onFinish }: { onFinish?: (shouldRefresh?: boolean) 
     const [loading, setLoading] = useState<boolean>(true)
     const [submitting, setSubmitting] = useState<boolean>(false)
 
+    console.log('CreateRole', { privileges, selectedPrivilegeIds, roleName, displayName, languages, loading, submitting, })
+
     const submit = async () => {
         if (!roleName || roleName.trim() === '')
             return
@@ -73,7 +75,7 @@ export function CreateRole({ onFinish }: { onFinish?: (shouldRefresh?: boolean) 
 
                         {languages.map(l =>
                             <Stack direction="vertical">
-                                <Input placeholder={l} onChange={(e) => setDisplayName({ ...displayName, [l]: e.target.value })} />
+                                <Input placeholder={l} value={displayName ? displayName[l] ?? '' : ''} onChange={(e) => setDisplayName({ ...displayName, [l]: e.target.value })} />
                             </Stack>
                         )}
                     </Stack>
