@@ -1,18 +1,19 @@
 import { Stack } from "@/src/Components/Base/Stack"
 import { Navigation } from "@/src/Components/Navigation"
+import { useEffect, useRef } from "react"
 import { Outlet } from "react-router"
 
 export function Layout() {
-    console.log('Dashboard')
-
     return (
-        <Stack stackProps={{ className: 'size-full' }}>
+        <Stack stackProps={{ className: 'size-full', }}>
             <div className="w-[64px] h-full">
                 <Navigation />
             </div>
 
-            <Outlet />
-        </Stack>
+            <div className="flex-grow h-full">
+                <Outlet />
+            </div>
+        </Stack >
     )
 }
 
