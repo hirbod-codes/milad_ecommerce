@@ -149,10 +149,6 @@ export function Roles({ privileges }: { privileges?: string[] }) {
 
     return (
         <>
-            {/* <div className="w-[64px] h-full">
-                <Navigation />
-            </div> */}
-
             <DataGrid
                 configName='roles'
                 containerProps={{ stackProps: { style: { backgroundImage: `linear-gradient(to bottom right, ${dataGridGradientColor.toHex()} , transparent)` } } }}
