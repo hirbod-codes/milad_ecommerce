@@ -136,7 +136,7 @@ roles.delete('/', authenticate, async (req, res) => {
             return
         }
 
-        if (role.name === 'default') {
+        if (role.name === 'default' || role.name === 'admin') {
             res.sendStatus(400)
             return
         }

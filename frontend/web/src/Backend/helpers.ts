@@ -122,18 +122,12 @@ export async function authFetch(input: string | URL | globalThis.Request, init?:
  * @param init
  * @returns
  */
-export async function authFetchData(input: string | URL | globalThis.Request, init?: RequestInit): Promise<any | null | undefined> {
-    const res = await authFetch(input, init)
-    if (res === undefined)
-        return undefined
-
-    if (!res.ok)
-        return null
-
-    if (res.headers.get('content-type')?.includes('application/json'))
-        return await res.json()
+export async function authFetchData(input: string | URL | globalThis.Request, init?: RequestInit): Promise<{ response: Response, data: any }> {
+    const response = await authFetch(input, init)
+    if (response?.headers?.get('content-type')?.includes('application/json'))
+        return { response, data: response && response?.ok ? await response.json() : undefined }
     else
-        return await res.text()
+        return { response, data: response && response?.ok ? await response.text() : undefined }
 }
 
 export async function tryAndWait(callback: CallableFunction, secondsToWaitForEachTry: number = 5): Promise<boolean> {

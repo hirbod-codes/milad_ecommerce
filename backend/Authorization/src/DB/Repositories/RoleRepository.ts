@@ -168,12 +168,12 @@ export class RoleRepository extends MongoDB {
             await this.startTransaction()
 
             const role = await this.collection.findOne({ _id: id })
-            if (!role || role.name === 'default') {
+            if (!role || role.name === 'default' || role.name === 'admin') {
                 await this.abortTransaction()
                 return false
             }
 
-            const deleteResult = await this.collection.deleteOne({ $and: [{ _id: id }, { name: { $ne: 'default' } }] });
+            const deleteResult = await this.collection.deleteOne({ $and: [{ _id: id }, { name: { $nin: ['default', 'admin'] } }] });
 
             const updateResult = await (await this.getUserCollection()).updateMany({ role: role.name }, { $set: { role: 'default' } })
             if (!updateResult.acknowledged) {

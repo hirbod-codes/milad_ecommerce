@@ -1,10 +1,10 @@
 import { Auth } from "@/src/Backend/Auth/Auth";
-import { authFetchData, getAuthApiUrl } from "@/src/Backend/helpers";
+import { authFetch, authFetchData, getAuthApiUrl } from "@/src/Backend/helpers";
 import { Button } from "@/src/Components/Base/Button";
 import { CircularLoadingIcon } from "@/src/Components/Base/CircularLoadingIcon";
+import { Modal } from "@/src/Components/Base/Modal";
 import { Stack } from "@/src/Components/Base/Stack";
 import { DataGrid } from "@/src/Components/DataGrid";
-import { Navigation } from "@/src/Components/Navigation";
 import { ConfigurationContext } from "@/src/Contexts/Configuration/ConfigurationContext";
 import { FeedbackContext } from "@/src/Contexts/Feedback/FeedbackContext";
 import { ColorStatic } from "@/src/Lib/Colors/ColorStatic";
@@ -14,6 +14,7 @@ import { EditIcon, PlusIcon, RefreshCwIcon, Trash2Icon } from "lucide-react";
 import { useContext, useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 import { array, string } from "yup";
+import { CreateRole } from "./ManageRole";
 
 export function Roles({ privileges }: { privileges?: string[] }) {
     console.log('Roles')
@@ -37,13 +38,29 @@ export function Roles({ privileges }: { privileges?: string[] }) {
     const [rows, setRows] = useState([])
 
     const [editingRole, setEditingRole] = useState<string | undefined>(undefined)
-    const [openManageRoleModal, setOpenManageRoleModal] = useState(false)
+    const [openManageRoleModal, setOpenCreateRoleModal] = useState(false)
 
     const [deletingRole, setDeletingRole] = useState<string | undefined>(undefined)
-    const deleteRole = async (id) => {
+    const deleteRole = async (id, name) => {
         setDeletingRole(id)
-        try { }
-        finally {
+        try {
+            const r = await authFetchData(`${getAuthApiUrl()}/roles`, { method: 'delete', body: JSON.stringify({ id }), headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' } })
+            if (!r.response?.ok) {
+                feedback.push({ node: t('Roles.DeletionFailure') })
+                return
+            }
+
+            await refresh()
+
+            if (Auth.getRole() === name) {
+                const r = await Auth.logout()
+
+                if (!r)
+                    feedback.push({ node: t('common.logoutFailed') })
+                else
+                    navigate('/')
+            }
+        } finally {
             setDeletingRole(undefined)
         }
 
@@ -64,7 +81,7 @@ export function Roles({ privileges }: { privileges?: string[] }) {
                                 variant='text'
                                 onClick={() => {
                                     setEditingRole(row.original._id)
-                                    setOpenManageRoleModal(true)
+                                    setOpenCreateRoleModal(true)
                                     setEditingRole(rows.find(u => u._id === row.original._id))
                                 }}
                             >
@@ -77,18 +94,7 @@ export function Roles({ privileges }: { privileges?: string[] }) {
                                 isIcon
                                 variant='text'
                                 fgColor='error'
-                                onClick={async () => {
-                                    await deleteRole(row.original._id);
-                                    await refresh()
-                                    if (Auth.getRole() === row.original.name) {
-                                        const r = await Auth.logout()
-
-                                        if (!r)
-                                            feedback.push({ node: t('common.logoutFailed') })
-                                        else
-                                            navigate('/')
-                                    }
-                                }}
+                                onClick={() => deleteRole(row.original._id, row.original.name)}
                             >
                                 {deletingRole === undefined || deletingRole !== row.original._id ? <Trash2Icon /> : <CircularLoadingIcon />}
                             </Button>
@@ -107,15 +113,15 @@ export function Roles({ privileges }: { privileges?: string[] }) {
         setLoading(true)
         try {
             if (!privileges) {
-                const data = await authFetchData(`${getAuthApiUrl()}/privileges`, { method: 'get', headers: { 'Accept': 'application/json' } })
-                if (!array().required().strict(true).of(string().required().strict(true)).isValidSync(data)) {
+                const r = await authFetchData(`${getAuthApiUrl()}/privileges`, { method: 'get', headers: { 'Accept': 'application/json' } })
+                if (!r.response?.ok || !array().required().strict(true).of(string().required().strict(true)).isValidSync(r?.data)) {
                     feedback.push({
                         node: t('privileges.getFailure')
                     })
                     return
                 }
 
-                for (const privilege of data)
+                for (const privilege of r.data)
                     if (privilege === 'create-role')
                         setCreatesRole(true)
                     else if (privilege === 'update-role')
@@ -126,10 +132,10 @@ export function Roles({ privileges }: { privileges?: string[] }) {
                         setAssignsRole(true)
             }
 
-            const data = await authFetchData(`${getAuthApiUrl()}/roles`, { method: 'get', headers: { 'Accept': 'application/json' } })
-            console.log('data', data)
-            if (array().required().strict(true).isValidSync(data))
-                setRows(data)
+            const r = await authFetchData(`${getAuthApiUrl()}/roles`, { method: 'get', headers: { 'Accept': 'application/json' } })
+            console.log('data', r.data)
+            if (r.response.ok && array().required().strict(true).isValidSync(r.data))
+                setRows(r.data)
         } finally {
             setLoading(false)
         }
@@ -159,12 +165,24 @@ export function Roles({ privileges }: { privileges?: string[] }) {
                     <Button
                         fgColor="success"
                         variant='outline'
-                        onClick={() => { setOpenManageRoleModal(true) }}
+                        onClick={() => { setOpenCreateRoleModal(true) }}
                     >
                         {editingRole === undefined ? <PlusIcon /> : <CircularLoadingIcon />}{t('Roles.Create')}
                     </Button>
                 ]}
             />
+
+            <Modal
+                onClose={() => { setOpenCreateRoleModal(false); setEditingRole(undefined) }}
+                open={openManageRoleModal}
+            >
+                <CreateRole
+                    onFinish={async (shouldRefresh = true) => {
+                        setOpenCreateRoleModal(false)
+                        await refresh()
+                    }}
+                />
+            </Modal>
         </>
     )
 }
