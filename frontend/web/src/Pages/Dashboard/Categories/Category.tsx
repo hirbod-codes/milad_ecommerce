@@ -10,6 +10,7 @@ import { t } from 'i18next'
 import { Ask } from '@/src/Components/Ask'
 import { authFetchData, getApiUrl } from '@/src/Backend/helpers'
 import { FeedbackContext } from '@/src/Contexts/Feedback/FeedbackContext'
+import { CircularLoading } from '@/src/Components/Base/CircularLoading'
 
 export function Category({ category, allCategories, refresh }: { category: CategoryType, allCategories: CategoryType[], refresh?: () => void }) {
     const feedback = useContext(FeedbackContext)
@@ -46,7 +47,7 @@ export function Category({ category, allCategories, refresh }: { category: Categ
                                 size='xs'
                                 onClick={(e) => { e.stopPropagation(); setAsk({ open: true, title: t('Category.deletionTitle'), content: t('Category.deletionContent'), successAction: () => deleteCategory(category._id), failureAction: () => setAsk({ ...ask, open: false }) }) }}
                             >
-                                <Trash2Icon />
+                                {deleting ? <CircularLoading /> : <Trash2Icon />}
                             </Button>
                         </Stack>
                     </AccordionTrigger>

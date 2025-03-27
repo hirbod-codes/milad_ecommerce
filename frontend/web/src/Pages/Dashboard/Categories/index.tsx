@@ -44,7 +44,7 @@ export function Categories() {
 
     return (
         <>
-            <Stack direction="vertical" stackProps={{ className: "border rounded-lg size-full p-2" }}>
+            <Stack direction="vertical" stackProps={{ className: "border rounded-lg size-full p-2 size-full overflow-y-auto" }}>
                 {loading
                     ? <Stack stackProps={{ className: 'size-full items-center justify-center' }}><CircularLoading size='lg' /></Stack>
                     : categories.filter(c => !c.parentCategory).map((c, i) =>

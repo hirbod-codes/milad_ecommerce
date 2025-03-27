@@ -30,7 +30,7 @@ export function CreateCategory({ parentCategoryId, onFinish }: { parentCategoryI
                 if (r[0].response && r[0]?.response?.ok && array().required().isValidSync(r[0].data))
                     setLanguages(r[0].data)
 
-                setLoading(true)
+                setLoading(false)
             })
     }
 

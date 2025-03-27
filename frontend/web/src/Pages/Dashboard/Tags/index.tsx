@@ -1,14 +1,13 @@
 import { authFetchData, fetchData, getApiUrl } from "@/src/Backend/helpers"
 import { Button } from "@/src/Components/Base/Button"
 import { CircularLoading } from "@/src/Components/Base/CircularLoading"
-import { CircularLoadingIcon } from "@/src/Components/Base/CircularLoadingIcon"
 import { Input } from "@/src/Components/Base/Input"
 import { Modal } from "@/src/Components/Base/Modal"
 import { Stack } from "@/src/Components/Base/Stack"
 import { FeedbackContext } from "@/src/Contexts/Feedback/FeedbackContext"
 import { Separator } from "@/src/shadcn/components/ui/separator"
 import { t } from "i18next"
-import { EditIcon, PlusIcon, Trash2Icon } from "lucide-react"
+import { PlusIcon, Trash2Icon } from "lucide-react"
 import { useContext, useEffect, useState } from "react"
 import { array } from "yup"
 
@@ -50,7 +49,7 @@ export function Tags() {
     const deleteTag = async (id: string) => {
         setDeletingId(id)
         try {
-            const r = await authFetchData(`${getApiUrl()}/tags`, { method: 'delete' })
+            const r = await authFetchData(`${getApiUrl()}/tags`, { method: 'delete', body: JSON.stringify({ id }) })
             if (!r.response || !r.response?.ok)
                 feedback.push({ node: t('Tags.deletionFailure'), color: { fgColor: 'error' } })
         } finally { setDeletingId(undefined); init() }
@@ -67,7 +66,7 @@ export function Tags() {
 
     return (
         <>
-            <Stack direction="vertical" stackProps={{ className: 'border rounded-lg p-4 justify-start' }}>
+            <Stack direction="vertical" stackProps={{ className: 'border rounded-lg p-4 justify-start size-full overflow-y-auto' }}>
                 <Button size='md' variant="text" fgColor='success' onClick={() => setOpenCreateTagModal(true)} className="w-fit">
                     {t('Tags.Create')}
                     <PlusIcon />
