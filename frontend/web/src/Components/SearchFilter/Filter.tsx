@@ -1,4 +1,4 @@
-import { Fragment } from "react"
+import { Fragment, memo } from "react"
 import { Filter as FilterType, operators } from "./index.d"
 import { Stack } from "../Base/Stack"
 import { Input } from "../Base/Input"
@@ -8,7 +8,9 @@ import { Separator } from "@/src/shadcn/components/ui/separator"
 import { Button } from "../Base/Button"
 import { Trash2Icon } from "lucide-react"
 
-export function Filter({ fields, filter, setFilter, unsetFilter }: { fields: { [k: string]: string }, filter: FilterType, setFilter: (v: FilterType) => void, unsetFilter: () => void }) {
+export const Filter = memo(function Filter({ fields, filter, setFilter, unsetFilter }: { fields: { [k: string]: string }, filter: FilterType, setFilter: (v: FilterType) => void, unsetFilter: (id: number) => void }) {
+    console.log('Filter', { fields, filter })
+
     return (
         <Stack>
             <Select
@@ -55,7 +57,7 @@ export function Filter({ fields, filter, setFilter, unsetFilter }: { fields: { [
 
             <Input placeholder={t('Filter.value')} type={fields[filter.field] === 'number' ? 'number' : 'text'} value={filter.value} onChange={(e) => setFilter({ ...filter, value: e.target.value })} />
 
-            <Button isIcon variant="text" fgColor="error" onClick={unsetFilter}><Trash2Icon /></Button>
+            <Button isIcon variant="text" fgColor="error" onClick={() => unsetFilter(filter.id)}><Trash2Icon /></Button>
         </Stack>
     )
-}
+})

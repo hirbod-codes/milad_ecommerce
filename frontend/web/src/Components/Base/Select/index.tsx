@@ -7,7 +7,7 @@ import { Input } from "../Input"
 import { CircularLoadingIcon } from "../CircularLoadingIcon"
 import { cn } from "@/src/shadcn/lib/utils"
 
-const SelectContext = createContext<{ updateSelection: ({ value, displayValue }: { value: string, displayValue: string }) => void } | undefined>(undefined)
+const SelectContext = createContext<{ stopPropagation?: boolean, updateSelection: ({ value, displayValue }: { value: string, displayValue: string }) => void } | undefined>(undefined)
 
 export type SelectProps = {
     defaultValue?: string
@@ -20,9 +20,10 @@ export type SelectProps = {
     inputProps?: ComponentProps<typeof Input>
     canDropdownMenuWidthGrow?: boolean
     listContainerProps?: ComponentProps<typeof Stack>
+    stopPropagation?: boolean
 }
 
-export function Select({ defaultValue, defaultDisplayValue, id, label, onValueChange, children, loading = false, inputProps, canDropdownMenuWidthGrow = true, listContainerProps }: SelectProps) {
+export function Select({ defaultValue, defaultDisplayValue, id, label, onValueChange, children, loading = false, inputProps, canDropdownMenuWidthGrow = true, listContainerProps, stopPropagation }: SelectProps) {
     const [value, setValue] = useState(defaultValue)
     const [displayValue, setDisplayValue] = useState(defaultDisplayValue)
     const [open, setOpen] = useState(false)
@@ -57,7 +58,7 @@ export function Select({ defaultValue, defaultDisplayValue, id, label, onValueCh
                     {...inputProps}
                     endIcon={inputProps?.endIcon ?? (open ? <ChevronUp /> : <ChevronDown />)}
                     className={cn('cursor-pointer', inputProps?.className)}
-                    containerProps={{ ...inputProps?.containerProps, className: cn('cursor-pointer', inputProps?.containerProps?.className), onClick: (e) => { setOpen(!open); if (inputProps?.containerProps?.onClick) inputProps.containerProps.onClick(e) } }}
+                    containerProps={{ ...inputProps?.containerProps, className: cn('cursor-pointer', inputProps?.containerProps?.className), onClick: (e) => { if (stopPropagation) e.stopPropagation(); setOpen(!open); if (inputProps?.containerProps?.onClick) inputProps.containerProps.onClick(e) } }}
                 />
             }
 
@@ -75,7 +76,8 @@ export function Select({ defaultValue, defaultDisplayValue, id, label, onValueCh
                             setOpen(false)
                             if (onValueChange)
                                 onValueChange(value)
-                        }
+                        },
+                        stopPropagation
                     }}>
                         <Stack
                             direction="vertical"
@@ -102,7 +104,15 @@ Select.Item = ({ children, value, displayValue, containerProps }: { children: Re
         displayValue = value
 
     return (
-        <div {...containerProps} onClick={(e) => { c?.updateSelection({ value, displayValue }); if (containerProps?.onClick) containerProps.onClick(e) }} className={cn("cursor-pointer", containerProps?.className)}>
+        <div {...containerProps} onClick={(e) => {
+            if (c?.stopPropagation === true)
+                e.stopPropagation()
+
+            c?.updateSelection({ value, displayValue })
+
+            if (containerProps?.onClick)
+                containerProps.onClick(e)
+        }} className={cn("cursor-pointer", containerProps?.className)}>
             {children}
         </div>
     )
