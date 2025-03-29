@@ -1,4 +1,4 @@
-import { InferType, number, object, string } from "yup";
+import { array, InferType, number, object, string } from "yup";
 import { likeObjectId, localizedText } from "./common_schemas";
 
 export const collectionName = 'category'
@@ -10,20 +10,21 @@ export const categorySchema = object().required().noUnknown(true).strict(true).s
     _id: likeObjectId.required(),
     parentCategory: likeObjectId.optional(),
     name: string().required(),
-    displayName: localizedText,
+    displayName: localizedText.required(),
+    recommendedProductProperties: array().strict(true).optional().of(object({ name: string().required(), display: localizedText.required() }).strict(true).noUnknown(true).required()),
     views: number().required(),
     createdAt: number().required(),
     updatedAt: number().required(),
 })
 export type Category = InferType<typeof categorySchema>
 
-export const categoryInputSchema = categorySchema.required().noUnknown(true).strict(true).pick(['parentCategory', 'name', 'displayName'])
+export const categoryInputSchema = categorySchema.required().noUnknown(true).strict(true).pick(['parentCategory', 'name', 'displayName', 'recommendedProductProperties'])
 export type CategoryInput = InferType<typeof categoryInputSchema>
 
 export const categoryCreateSchema = categorySchema.required().noUnknown(true).strict(true).omit(['_id']).shape({ _id: likeObjectId.optional() })
 export type CategoryCreate = InferType<typeof categoryCreateSchema>
 
-export const categoryUpdateSchema = categorySchema.required().noUnknown(true).strict(true).pick(['views'])
+export const categoryUpdateSchema = categorySchema.required().noUnknown(true).strict(true).pick(['recommendedProductProperties'])
 for (const field in categoryUpdateSchema.fields)
     if (Object.prototype.hasOwnProperty.call(categoryUpdateSchema.fields, field))
         (categoryUpdateSchema.fields as any)[field] = (categoryUpdateSchema.fields as any)[field].optional()

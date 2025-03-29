@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { categoryImmutableSchema, categoryInputSchema } from "@/src/DB/Models/Category";
+import { categoryImmutableSchema, categoryInputSchema, categoryUpdateSchema } from "@/src/DB/Models/Category";
 import { stringObjectId } from "@/src/DB/Models/common_schemas";
 import { authenticate } from "@/src/middlewares/authenticate";
 import { authorize } from "@/src/middlewares/authorize";
@@ -56,20 +56,34 @@ categories.patch('/', authenticate, async (req, res) => {
             return
         }
 
-        const { id, addViews } = req.body
+        const { id, addViews, recommendedProductProperties } = req.body
 
-        if (!stringObjectId.required().isValidSync(id) || !number().strict(true).required().integer().positive().isValidSync(addViews)) {
-            res.sendStatus(400)
-            return
+        let result
+        if (addViews !== undefined) {
+            if (!stringObjectId.required().isValidSync(id) || !number().strict(true).required().integer().positive().isValidSync(addViews)) {
+                res.sendStatus(400)
+                return
+            }
+
+            const categoryRepository = await CategoryRepository.getInstance()
+            result = await categoryRepository.addViews(id, addViews)
+
+            if (result === false || result.acknowledged !== true)
+                res.sendStatus(500)
+        } else {
+            if (!stringObjectId.required().isValidSync(id) || !categoryUpdateSchema.pick(['recommendedProductProperties']).required().strict(true).isValidSync({ recommendedProductProperties })) {
+                res.sendStatus(400)
+                return
+            }
+
+            const categoryRepository = await CategoryRepository.getInstance()
+            result = await categoryRepository.update(id, categoryUpdateSchema.pick(['recommendedProductProperties']).cast({ recommendedProductProperties }))
+
+            if (result === false || result.acknowledged !== true)
+                res.sendStatus(500)
         }
 
-        const categoryRepository = await CategoryRepository.getInstance()
-        const result = await categoryRepository.addViews(id, addViews)
-
-        if (result === false || result.acknowledged !== true)
-            res.sendStatus(500)
-        else
-            res.status(200).json({ result })
+        res.status(200).json({ result })
     } catch (e) {
         console.error(e)
         res.sendStatus(500)

@@ -5,12 +5,14 @@ import { ComponentProps, useContext, useState } from 'react'
 import { CreateCategory } from './CreateCategory'
 import { Stack } from '@/src/Components/Base/Stack'
 import { Button } from '@/src/Components/Base/Button'
-import { PlusIcon, Trash2Icon } from 'lucide-react'
+import { EditIcon, EyeIcon, PlusIcon, Trash2Icon } from 'lucide-react'
 import { t } from 'i18next'
 import { Ask } from '@/src/Components/Ask'
 import { authFetchData, getApiUrl } from '@/src/Backend/helpers'
 import { FeedbackContext } from '@/src/Contexts/Feedback/FeedbackContext'
 import { CircularLoading } from '@/src/Components/Base/CircularLoading'
+import { UpdateCategory } from './UpdateCategory'
+import { ReadCategory } from './ReadCategory'
 
 export function Category({ category, allCategories, refresh }: { category: CategoryType, allCategories: CategoryType[], refresh?: () => void }) {
     const feedback = useContext(FeedbackContext)
@@ -18,7 +20,23 @@ export function Category({ category, allCategories, refresh }: { category: Categ
     const [ask, setAsk] = useState<ComponentProps<typeof Ask>>(undefined)
 
     const [openCreateCategoryModal, setOpenCreateCategoryModal] = useState(false)
+    const [openReadCategoryModal, setOpenReadCategoryModal] = useState(false)
+    const [openUpdateCategoryModal, setOpenUpdateCategoryModal] = useState(false)
+    const [updating, setUpdating] = useState(false)
+    const [customProperties, setCustomProperties] = useState(false)
     const [deleting, setDeleting] = useState(false)
+
+    const updateCategory = async (id: string) => {
+        setDeleting(true)
+        try {
+            const r = await authFetchData(`${getApiUrl()}/categories`, { method: 'delete', body: JSON.stringify({ id }) })
+            if (r.response && r.response.ok) {
+                if (refresh)
+                    refresh()
+            } else
+                feedback.push({ node: t('Category.deletionFailure'), color: { fgColor: 'error' } })
+        } finally { setDeleting(false) }
+    }
 
     const deleteCategory = async (id: string) => {
         setDeleting(true)
@@ -40,15 +58,35 @@ export function Category({ category, allCategories, refresh }: { category: Categ
                         <Stack stackProps={{ className: 'items-center justify-between w-full' }}>
                             {category.name}
 
-                            <Button
-                                isIcon
-                                variant="text"
-                                fgColor="error"
-                                size='xs'
-                                onClick={(e) => { e.stopPropagation(); setAsk({ open: true, title: t('Category.deletionTitle'), content: t('Category.deletionContent'), successAction: () => deleteCategory(category._id), failureAction: () => setAsk({ ...ask, open: false }) }) }}
-                            >
-                                {deleting ? <CircularLoading /> : <Trash2Icon />}
-                            </Button>
+                            <Stack>
+                                <Button
+                                    isIcon
+                                    variant="text"
+                                    size='xs'
+                                    onClick={(e) => { e.stopPropagation(); setOpenReadCategoryModal(true) }}
+                                >
+                                    {updating ? <CircularLoading /> : <EyeIcon />}
+                                </Button>
+
+                                <Button
+                                    isIcon
+                                    variant="text"
+                                    size='xs'
+                                    onClick={(e) => { e.stopPropagation(); setOpenUpdateCategoryModal(true) }}
+                                >
+                                    {updating ? <CircularLoading /> : <EditIcon />}
+                                </Button>
+
+                                <Button
+                                    isIcon
+                                    variant="text"
+                                    fgColor="error"
+                                    size='xs'
+                                    onClick={(e) => { e.stopPropagation(); setAsk({ open: true, title: t('Category.deletionTitle'), content: t('Category.deletionContent'), successAction: () => deleteCategory(category._id), failureAction: () => setAsk({ ...ask, open: false }) }) }}
+                                >
+                                    {deleting ? <CircularLoading /> : <Trash2Icon />}
+                                </Button>
+                            </Stack>
                         </Stack>
                     </AccordionTrigger>
                     <AccordionContent>
@@ -60,8 +98,6 @@ export function Category({ category, allCategories, refresh }: { category: Categ
                     </AccordionContent>
                 </AccordionItem>
             </Accordion>
-
-            <Ask {...ask} onClose={() => setAsk({ ...ask, open: false })} />
 
             <Modal
                 onClose={() => { setOpenCreateCategoryModal(false) }}
@@ -76,6 +112,29 @@ export function Category({ category, allCategories, refresh }: { category: Categ
                     }}
                 />
             </Modal>
+
+            <Modal
+                onClose={() => { setOpenReadCategoryModal(false) }}
+                open={openReadCategoryModal}
+            >
+                <ReadCategory category={category} />
+            </Modal>
+
+            <Modal
+                onClose={() => { setOpenUpdateCategoryModal(false) }}
+                open={openUpdateCategoryModal}
+            >
+                <UpdateCategory
+                    categoryId={category._id}
+                    onFinish={async (shouldRefresh = true) => {
+                        setOpenUpdateCategoryModal(false)
+                        if (shouldRefresh)
+                            refresh()
+                    }}
+                />
+            </Modal>
+
+            <Ask {...ask} onClose={() => setAsk({ ...ask, open: false })} />
         </div>
     )
 }
