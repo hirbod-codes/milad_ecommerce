@@ -75,8 +75,8 @@ export function CreateCategory({ parentCategoryId, onFinish }: { parentCategoryI
                     <Stack direction='vertical' stackProps={{ className: "border rounded-lg shadow-lg p-2" }}>
                         <div className="text-lg">{t('CreateCategory.DisplayNameTitle')}</div>
 
-                        {languages.map(l =>
-                            <Stack direction="vertical">
+                        {languages.map((l, i) =>
+                            <Stack key={i} direction="vertical">
                                 <Input placeholder={l} value={displayName ? displayName[l] ?? '' : ''} onChange={(e) => setDisplayName({ ...displayName, [l]: e.target.value })} />
                             </Stack>
                         )}

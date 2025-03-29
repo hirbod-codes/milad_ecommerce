@@ -10,32 +10,24 @@ import { cn } from "@/src/shadcn/lib/utils"
 const SelectContext = createContext<{ stopPropagation?: boolean, updateSelection: ({ value, displayValue }: { value: string, displayValue: string }) => void } | undefined>(undefined)
 
 export type SelectProps = {
-    defaultValue?: string
-    defaultDisplayValue?: string
+    children: ReactElement[]
+    onValueSelect: (v) => void | Promise<void>
     id?: string
     label?: string
-    onValueChange: (v) => void | Promise<void>
-    children: ReactElement[]
     loading?: boolean
     inputProps?: ComponentProps<typeof Input>
+    readOnly?: boolean
     canDropdownMenuWidthGrow?: boolean
     listContainerProps?: ComponentProps<typeof Stack>
     stopPropagation?: boolean
 }
 
-export function Select({ defaultValue, defaultDisplayValue, id, label, onValueChange, children, loading = false, inputProps, canDropdownMenuWidthGrow = true, listContainerProps, stopPropagation }: SelectProps) {
-    const [value, setValue] = useState(defaultValue)
-    const [displayValue, setDisplayValue] = useState(defaultDisplayValue)
+export function Select({ children, onValueSelect, id, label, loading = false, inputProps, canDropdownMenuWidthGrow = true, listContainerProps, stopPropagation, readOnly = false }: SelectProps) {
     const [open, setOpen] = useState(false)
 
     const [width, setWidth] = useState('auto')
 
     const inputRef = useRef<HTMLInputElement>(null)
-
-    useEffect(() => {
-        if (defaultDisplayValue === undefined && defaultValue !== undefined)
-            setDisplayValue(defaultValue)
-    }, [])
 
     useEffect(() => {
         if (inputRef?.current)
@@ -53,8 +45,7 @@ export function Select({ defaultValue, defaultDisplayValue, id, label, onValueCh
                     label={label}
                     labelId={label}
                     id={id ?? label}
-                    value={displayValue ?? ''}
-                    readOnly
+                    readOnly={readOnly}
                     {...inputProps}
                     endIcon={inputProps?.endIcon ?? (open ? <ChevronUp /> : <ChevronDown />)}
                     className={cn('cursor-pointer', inputProps?.className)}
@@ -71,11 +62,9 @@ export function Select({ defaultValue, defaultDisplayValue, id, label, onValueCh
                 <div style={canDropdownMenuWidthGrow ? { minWidth: width } : { width }}>
                     <SelectContext.Provider value={{
                         updateSelection: ({ value, displayValue }) => {
-                            setValue(value)
-                            setDisplayValue(displayValue)
                             setOpen(false)
-                            if (onValueChange)
-                                onValueChange(value)
+                            if (onValueSelect)
+                                onValueSelect(value)
                         },
                         stopPropagation
                     }}>

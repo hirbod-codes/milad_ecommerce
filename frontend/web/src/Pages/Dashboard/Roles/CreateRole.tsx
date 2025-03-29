@@ -69,17 +69,15 @@ export function CreateRole({ onFinish }: { onFinish?: (shouldRefresh?: boolean) 
             <Input value={roleName ?? ''} label={t('CreateRole.roleName')} labelId={t('CreateRole.roleName')} onChange={(e) => setRoleName(e.target.value)} />
 
             {languages &&
-                <>
-                    <Stack direction='vertical' stackProps={{ className: "border rounded-lg shadow-lg p-2" }}>
-                        <div className="text-lg">{t('CreateRole.DisplayNameTitle')}</div>
+                <Stack direction='vertical' stackProps={{ className: "border rounded-lg shadow-lg p-2" }}>
+                    <div className="text-lg">{t('CreateRole.DisplayNameTitle')}</div>
 
-                        {languages.map(l =>
-                            <Stack direction="vertical">
-                                <Input placeholder={l} value={displayName ? displayName[l] ?? '' : ''} onChange={(e) => setDisplayName({ ...displayName, [l]: e.target.value })} />
-                            </Stack>
-                        )}
-                    </Stack>
-                </>
+                    {languages.map((l, i) =>
+                        <Stack key={i} direction="vertical">
+                            <Input placeholder={l} value={displayName ? displayName[l] ?? '' : ''} onChange={(e) => setDisplayName({ ...displayName, [l]: e.target.value })} />
+                        </Stack>
+                    )}
+                </Stack>
             }
 
             <Stack direction="vertical" size={1} stackProps={{ className: "border rounded-lg shadow-xl h-[10cm] overflow-y-auto px-2" }}>

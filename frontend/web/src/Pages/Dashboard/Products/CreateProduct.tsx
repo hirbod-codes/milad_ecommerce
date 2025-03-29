@@ -1,4 +1,4 @@
-import { useContext, useEffect, useRef, useState } from "react";
+import { Fragment, useContext, useEffect, useRef, useState } from "react";
 import { authFetchData, fetchData, getApiUrl } from "@/src/Backend/helpers";
 import { Button } from "@/src/Components/Base/Button";
 import { t } from "i18next";
@@ -11,16 +11,18 @@ import { CircularLoading } from "@/src/Components/Base/CircularLoading";
 import { Separator } from "@/src/shadcn/components/ui/separator";
 import { Input } from "@/src/Components/Base/Input";
 import { Textarea } from "@/src/shadcn/components/ui/textarea";
+import { Category } from "../Categories/index.d";
+import { Select } from "@/src/Components/Base/Select";
 
 export function CreateProduct({ onFinish }: { onFinish?: (shouldRefresh: boolean) => void }) {
     const feedback = useContext(FeedbackContext)
 
     const [languages, setLanguages] = useState([])
-    const [categories, setCategories] = useState<{ _id: string, name: string }[]>([])
+    const [categories, setCategories] = useState<Category[]>([])
     const [tags, setTags] = useState<{ _id: string, name: string }[]>([])
 
     const [selectedTags, setSelectedTags] = useState<{ _id: string, name: string }[]>([])
-    const [selectedCategories, setSelectedCategories] = useState<{ _id: string, name: string }[]>([])
+    const [selectedCategories, setSelectedCategories] = useState<Category[]>([])
 
     const [name, setName] = useState(undefined)
     const [displayName, setDisplayName] = useState<{ [k: string]: string } | undefined>(undefined)
@@ -35,6 +37,7 @@ export function CreateProduct({ onFinish }: { onFinish?: (shouldRefresh: boolean
         return id.current
     }
     const [customProperties, setCustomProperties] = useState<{ id: number, key: string, value: string }[]>([])
+    const [suggestedProperties, setSuggestedProperties] = useState<string[]>([])
 
     const [loading, setLoading] = useState(true)
     const [submitting, setSubmitting] = useState(false)
@@ -201,8 +204,35 @@ export function CreateProduct({ onFinish }: { onFinish?: (shouldRefresh: boolean
                 <Stack direction="vertical" stackProps={{ className: 'max-h-[10cm] overflow-y-auto' }}>
                     {customProperties.map(cp =>
                         <Stack key={cp.id} stackProps={{ className: 'items-center justify-between' }}>
-                            <Input containerProps={{ className: "flex-grow" }} placeholder={t('CreateProduct.Field')} value={cp.key ?? ''} onChange={(e) => { cp.key = e.target.value; setCustomProperties([...customProperties]) }} />
+                            {selectedCategories.find(c => c?.recommendedProductProperties?.length > 0) === undefined
+                                ? <Input containerProps={{ className: "flex-grow" }} placeholder={t('CreateProduct.Field')} value={cp.key ?? ''} onChange={(e) => { cp.key = e.target.value; setCustomProperties([...customProperties]) }} />
+                                : <Select
+                                    onValueSelect={(e: '$and' | '$or') => { cp.key = e; setCustomProperties([...customProperties]) }}
+                                    inputProps={{
+                                        containerProps: { className: "flex-grow" },
+                                        labelContainerProps: { stackProps: { className: 'w-full justify-between' } },
+                                        value: cp.key ?? '',
+                                        onChange: (e) => {
+                                            cp.key = e.target.value.trim()
+                                            setCustomProperties([...customProperties])
+                                            setSuggestedProperties(selectedCategories.reduce((p, c) => p.concat(c.recommendedProductProperties.filter(f => f.name.includes(cp.key)).map(m => m.name) ?? []), []))
+                                        }
+                                    }}
+                                    stopPropagation={true}
+                                >
+                                    {...suggestedProperties.map((s, i) =>
+                                        <Fragment key={i}>
+                                            <Select.Item value={s} displayValue={s}>
+                                                {s}
+                                            </Select.Item>
+                                            <Separator />
+                                        </Fragment>
+                                    )}
+                                </Select>
+                            }
+
                             <Input containerProps={{ className: "flex-grow" }} placeholder={t('CreateProduct.Value')} value={cp.value ?? ''} onChange={(e) => { cp.value = e.target.value; setCustomProperties([...customProperties]) }} />
+
                             <Button isIcon variant="text" fgColor="error" onClick={() => setCustomProperties([...customProperties.filter(f => f.id !== cp.id)])}><Trash2Icon /></Button>
                         </Stack>
                     )}

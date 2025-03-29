@@ -7,7 +7,7 @@ import { Separator } from "@/src/shadcn/components/ui/separator"
 import { Button } from "../Base/Button"
 import { PlusIcon, Trash2Icon } from "lucide-react"
 import { Filter } from "./Filter"
-import { memo, useRef } from "react"
+import { memo, useRef, useState } from "react"
 
 export const Filters = memo(function Filters({ fields, filters, setFilters, unsetFilters }: { fields: { [k: string]: string }, filters?: FiltersType, setFilters: (v: FiltersType) => void, unsetFilters?: (id) => void }) {
     const lastId = useRef(0)
@@ -19,7 +19,7 @@ export const Filters = memo(function Filters({ fields, filters, setFilters, unse
     if (filters === undefined)
         filters = { $and: [] }
 
-    const key = Object.keys(filters).filter(f => f !== 'id')[0]
+    const [key, setKey] = useState<string>(Object.keys(filters).filter(f => f !== 'id')[0] ?? '$and')
 
     console.log('Filters', { fields, filters, lastId: lastId.current })
 
@@ -29,10 +29,12 @@ export const Filters = memo(function Filters({ fields, filters, setFilters, unse
                 <AccordionTrigger>
                     <Stack stackProps={{ className: 'w-full justify-between' }}>
                         <Select
-                            defaultDisplayValue={t('Filters.$and')}
-                            defaultValue={'$and'}
-                            onValueChange={(e: '$and' | '$or') => setFilters({ id: filters?.id, [e]: filters[key] })}
-                            inputProps={{ labelContainerProps: { stackProps: { className: 'w-full justify-between' } } }}
+                            onValueSelect={(e: '$and' | '$or') => setFilters({ id: filters?.id, [e]: filters[key] })}
+                            inputProps={{
+                                labelContainerProps: { stackProps: { className: 'w-full justify-between' } },
+                                value: key,
+                                onChange: e => { setKey(e.target.value.trim()); if (['$and', '$or'].includes(e.target.value)) setFilters({ id: filters?.id, [e.target.value]: filters[key] }) }
+                            }}
                             stopPropagation={true}
                         >
                             <Select.Item value={'$and'} displayValue={t('Filters.$and')}>
