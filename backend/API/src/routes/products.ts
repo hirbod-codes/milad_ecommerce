@@ -71,18 +71,18 @@ products.get('/', async (req, res) => {
     try {
         const { filter: filterJson, sort: sortJson, limit: limitStr, skip: skipStr } = req.query
 
-        if (!number().optional().positive().integer().isValidSync(limitStr)) {
+        if (!number().optional().min(0).integer().isValidSync(limitStr)) {
             res.status(400).json({ errors: ['invalid limit'] })
             return
         }
 
-        if (!number().optional().positive().integer().isValidSync(skipStr)) {
+        if (!number().optional().min(0).integer().isValidSync(skipStr)) {
             res.status(400).json({ errors: ['invalid skip'] })
             return
         }
 
-        let limit = number().required().positive().integer().cast(limitStr ?? 25)
-        let skip = number().required().positive().integer().cast(skipStr ?? 0)
+        let limit = number().required().min(0).integer().cast(limitStr ?? 25)
+        let skip = number().required().min(0).integer().cast(skipStr ?? 0)
 
         let sort: { field: keyof Product, direction: SortDirection }[] = []
         if (sortJson) {

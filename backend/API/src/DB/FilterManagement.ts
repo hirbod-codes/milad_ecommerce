@@ -15,30 +15,38 @@ export class FilterManagement {
             if (level === 0) {
                 this.fields = []
                 this.filterCount = 0
-            } else if (level > 3)
+            }
+
+            if (level > 3)
                 return false
-            else if (array().required().strict(true).isValidSync(filter)) {
+
+            if (array().required().strict(true).isValidSync(filter)) {
                 for (const f of filter)
                     if (this.validate(f, schema, validFields, level++) !== true)
                         return false
             } else if (object().required().strict(true).isValidSync(filter)) {
                 let entries = Object.entries(filter)
+                if (entries.length !== 1)
+                    return false
+
                 for (const kv of entries)
                     if (['$and', '$or'].includes(kv[0])) {
-                        if (!array().strict(true).required().isValidSync(kv[1]))
+                        if (!array().strict(true).required().min(1).isValidSync(kv[1]))
                             return false
-                        else if (this.validate(kv[1], schema, validFields, level++) !== true)
+
+                        if (this.validate(kv[1], schema, validFields, level++) !== true)
                             return false
                     } else {
                         if (this.fields.length >= 6)
                             return false
-                        else if (!this.fields.includes(kv[0]))
+
+                        if (!this.fields.includes(kv[0]))
                             this.fields.push(kv[0])
 
                         if (this.filterCount >= 10)
                             return false
-                        else
-                            this.filterCount++
+
+                        this.filterCount++
 
                         if (validFields && !validFields.includes(kv[0]))
                             return false

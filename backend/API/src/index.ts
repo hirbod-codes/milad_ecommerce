@@ -19,6 +19,7 @@ import { QueueManagement } from "./QueueManagement";
 import { exit } from "process";
 import { ProductPictureRepository } from "./DB/Repositories/ProductPictureRepository";
 import { AuthManager } from "./Auth/AuthManager";
+import { array, object } from "yup";
 
 dotenv.config({ debug: process.env.DEBUG !== undefined ? Boolean(process.env.DEBUG) : undefined })
 
@@ -117,7 +118,7 @@ async function tryAndWait(callback: CallableFunction, secondsToWaitForEachTry: n
     app.disable('x-powered-by')
 
     app.use((req, res, next) => {
-        console.log('hit: ' + req.originalUrl + req.path)
+        console.log('hit: ' + req.originalUrl)
         next()
     })
 

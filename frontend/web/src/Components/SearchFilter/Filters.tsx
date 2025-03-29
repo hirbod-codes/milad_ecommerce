@@ -9,12 +9,15 @@ import { PlusIcon, Trash2Icon } from "lucide-react"
 import { Filter } from "./Filter"
 import { memo, useRef } from "react"
 
-export const Filters = memo(function Filters({ fields, filters, setFilters, unsetFilters }: { fields: { [k: string]: string }, filters: FiltersType, setFilters: (v: FiltersType) => void, unsetFilters?: (id) => void }) {
+export const Filters = memo(function Filters({ fields, filters, setFilters, unsetFilters }: { fields: { [k: string]: string }, filters?: FiltersType, setFilters: (v: FiltersType) => void, unsetFilters?: (id) => void }) {
     const lastId = useRef(0)
     const getId = () => {
         lastId.current++
         return lastId.current
     }
+
+    if (filters === undefined)
+        filters = { $and: [] }
 
     const key = Object.keys(filters).filter(f => f !== 'id')[0]
 
@@ -26,10 +29,9 @@ export const Filters = memo(function Filters({ fields, filters, setFilters, unse
                 <AccordionTrigger>
                     <Stack stackProps={{ className: 'w-full justify-between' }}>
                         <Select
-                            label={t("Filters.operators")}
                             defaultDisplayValue={t('Filters.$and')}
                             defaultValue={'$and'}
-                            onValueChange={(e: '$and' | '$or') => setFilters({ id: filters.id, [e]: filters[key] })}
+                            onValueChange={(e: '$and' | '$or') => setFilters({ id: filters?.id, [e]: filters[key] })}
                             inputProps={{ labelContainerProps: { stackProps: { className: 'w-full justify-between' } } }}
                             stopPropagation={true}
                         >
@@ -49,7 +51,7 @@ export const Filters = memo(function Filters({ fields, filters, setFilters, unse
                     <Stack direction="vertical">
                         {filters[key].map((filter, i) =>
                             (Object.keys(filter).includes('$and') || Object.keys(filter).includes('$or'))
-                                ? <div className="px-8">
+                                ? <div className="pl-8">
                                     <Filters
                                         key={filter.id}
                                         fields={fields}
