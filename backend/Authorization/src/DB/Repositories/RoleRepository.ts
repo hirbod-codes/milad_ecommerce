@@ -1,11 +1,11 @@
-import { Collection, DeleteResult, InsertOneResult, ObjectId, UpdateResult } from 'mongodb'
+import { Collection, DeleteResult, InsertOneResult, MongoSystemError, ObjectId, UpdateResult } from 'mongodb'
 import { DateTime } from 'luxon'
-import { Role, RoleCreate, RoleInput, RoleUpdate, RoleWithPrivileges, schemaVersion } from '../Models/Role'
+import { RoleCreate, RoleInput, RoleUpdate, RoleWithPrivileges, schemaVersion } from '../Models/Role'
 import { collectionName } from '../Models/Privilege'
 import { defaultRolePrivilegeNames } from '../Models/privilegeNames'
 import { MongoDB } from '../mongodb'
 import { PrivilegeRepository } from './PrivilegeRepository'
-import { UserRepository } from './UserRepository'
+import { faker, fakerFA } from '@faker-js/faker/'
 
 export class RoleRepository extends MongoDB {
     private collection: Collection<RoleCreate>
@@ -45,6 +45,47 @@ export class RoleRepository extends MongoDB {
             })
             if (r === false || !r.acknowledged)
                 throw new Error('System failed to initialize roles')
+        }
+    }
+
+    static async seed(count: number = 10) {
+        const collection = await MongoDB.getDbInstance().getRoleCollection()
+        const privilegeRepository = await PrivilegeRepository.getInstance()
+
+        if (!(await collection.deleteMany({ name: { $ne: 'admin' } })).acknowledged)
+            throw new Error('seeding roles failed!')
+
+        const startTimeTS = DateTime.utc().minus({ years: 2 }).toUnixInteger()
+        const endTimeTS = DateTime.utc().minus({ months: 2 }).toUnixInteger()
+
+        const privileges = await privilegeRepository.get()
+        if (privileges === false || privileges.length === 0)
+            throw new Error('seeding roles failed')
+
+        for (let i = 0; i < count; i++) {
+            let safety = 0
+            while (safety < 10) {
+                safety++
+                try {
+                    const name = faker.person.firstName()
+                    const selectedPrivileges = faker.helpers.arrayElements(privileges, faker.number.int({ min: 1, max: 12 }))
+                    const ts = faker.number.int({ min: startTimeTS, max: endTimeTS })
+
+                    let r = await collection.insertOne({
+                        schemaVersion,
+                        name,
+                        displayName: { fa: fakerFA.person.firstName(), en: name },
+                        privileges: selectedPrivileges.map(sp => sp._id),
+                        createdAt: ts,
+                        updatedAt: ts,
+                    })
+                    if (r.acknowledged)
+                        break
+                } catch (e) {
+                    if (!(e instanceof MongoSystemError) || e.code !== 11000)
+                        throw e
+                }
+            }
         }
     }
 

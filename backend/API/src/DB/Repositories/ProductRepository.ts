@@ -1,7 +1,10 @@
 import { DateTime } from "luxon";
 import { Product, ProductInput, ProductCreate, schemaVersion, ProductUpdate, ProductImmutable } from "../Models/Product";
-import { Collection, DeleteResult, Filter, InsertOneResult, ObjectId, SortDirection, UpdateResult } from 'mongodb'
+import { Collection, DeleteResult, Filter, InsertOneResult, MongoSystemError, ObjectId, SortDirection, UpdateResult } from 'mongodb'
 import { MongoDB } from "../mongodb";
+import { faker, fakerFA } from "@faker-js/faker/";
+import { CategoryRepository } from "./CategoryRepository";
+import { TagRepository } from "./TagRepository";
 
 export class ProductRepository extends MongoDB {
     private collection: Collection<ProductCreate>
@@ -13,6 +16,62 @@ export class ProductRepository extends MongoDB {
 
     static async getInstance(): Promise<ProductRepository> {
         return new ProductRepository(await MongoDB.getDbInstance().getProductCollection())
+    }
+
+    static async seed(count: number = 100) {
+        const collection = await MongoDB.getDbInstance().getProductCollection()
+        const categoryRepository = await CategoryRepository.getInstance()
+        const tagRepository = await TagRepository.getInstance()
+
+        if (!(await collection.deleteMany()).acknowledged)
+            throw new Error('seeding users failed!')
+
+        const startTimeTS = DateTime.utc().minus({ years: 2 }).toUnixInteger()
+        const endTimeTS = DateTime.utc().minus({ months: 2 }).toUnixInteger()
+
+        const categories = await categoryRepository.get()
+        if (categories === false || categories.length === 0)
+            throw new Error('seeding users failed!')
+
+        const tags = await tagRepository.get()
+        if (tags === false || tags.length === 0)
+            throw new Error('seeding users failed!')
+
+        const localCategoryIds: string[] = []
+
+        for (let i = 0; i < count; i++) {
+            let safety = 0
+            while (safety < 10) {
+                safety++
+                try {
+                    const ts = faker.number.int({ min: startTimeTS, max: endTimeTS })
+
+                    let r = await collection.insertOne({
+                        schemaVersion,
+                        categories: faker.helpers.arrayElements(categories, faker.number.int({ min: 1, max: 5 })).map(m => m.name),
+                        tags: faker.helpers.arrayElements(tags, faker.number.int({ min: 1, max: 5 })).map(m => m.name),
+                        name: faker.commerce.product(),
+                        displayName: { fa: fakerFA.commerce.productName(), en: faker.commerce.productName() },
+                        description: { fa: fakerFA.commerce.productDescription(), en: faker.commerce.productDescription() },
+                        price: { IRR: faker.number.int({ min: 0, max: 500_000_000 }), en: faker.number.int({ min: 0, max: 500_000_000 }) },
+                        purchaseCount: faker.number.int({ min: 0, max: 5000 }),
+                        reviewsCount: faker.number.int({ min: 0, max: 1000 }),
+                        isAvailable: faker.datatype.boolean(0.7),
+                        views: faker.number.int({ min: 0, max: 100000 }),
+                        averageRating: faker.number.float({ min: 0, max: 5 }),
+                        createdAt: ts,
+                        updatedAt: ts,
+                    })
+                    if (r.acknowledged) {
+                        localCategoryIds.push(r.insertedId.toString())
+                        break
+                    }
+                } catch (e) {
+                    if (!(e instanceof MongoSystemError) || e.code !== 11000)
+                        throw e
+                }
+            }
+        }
     }
 
     async create(product: ProductInput): Promise<InsertOneResult | false> {

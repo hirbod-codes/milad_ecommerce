@@ -1,7 +1,8 @@
-import { Collection, DeleteResult, InsertOneResult, ObjectId, UpdateResult } from 'mongodb'
+import { Collection, DeleteResult, InsertOneResult, MongoSystemError, ObjectId, UpdateResult } from 'mongodb'
 import { DateTime } from 'luxon'
 import { Category, CategoryCreate, CategoryImmutable, CategoryInput, CategoryUpdate, schemaVersion } from '../Models/Category'
 import { MongoDB } from '../mongodb';
+import { faker, fakerFA } from "@faker-js/faker"
 
 export class CategoryRepository extends MongoDB {
     private collection: Collection<CategoryCreate>
@@ -13,6 +14,52 @@ export class CategoryRepository extends MongoDB {
 
     static async getInstance(): Promise<CategoryRepository> {
         return new CategoryRepository(await MongoDB.getDbInstance().getCategoryCollection())
+    }
+
+    static async seed(count: number = 50) {
+        const collection = await MongoDB.getDbInstance().getCategoryCollection()
+
+        if (!(await collection.deleteMany()).acknowledged)
+            throw new Error('seeding users failed!')
+
+        const startTimeTS = DateTime.utc().minus({ years: 2 }).toUnixInteger()
+        const endTimeTS = DateTime.utc().minus({ months: 2 }).toUnixInteger()
+
+        const localCategoryIds: string[] = []
+
+        for (let i = 0; i < count; i++) {
+            let safety = 0
+            while (safety < 10) {
+                safety++
+                try {
+                    const ts = faker.number.int({ min: startTimeTS, max: endTimeTS })
+
+                    const name = faker.person.firstName()
+                    const parentCategory = i === 0 || faker.datatype.boolean(0.3) ? undefined : faker.helpers.arrayElement(localCategoryIds)
+
+                    let r = await collection.insertOne({
+                        schemaVersion,
+                        name,
+                        displayName: { fa: fakerFA.person.firstName(), en: name },
+                        parentCategory,
+                        recommendedProductProperties: new Array(faker.number.int({ min: 1, max: 15 })).fill(null).map(() => {
+                            const key = faker.string.alpha({ length: { min: 3, max: 20 } })
+                            return ({ name: key, display: { fa: fakerFA.string.alpha({ length: { min: 3, max: 20 } }), en: key } });
+                        }),
+                        views: faker.number.int({ min: 0, max: 100000 }),
+                        createdAt: ts,
+                        updatedAt: ts,
+                    })
+                    if (r.acknowledged) {
+                        localCategoryIds.push(r.insertedId.toString())
+                        break
+                    }
+                } catch (e) {
+                    if (!(e instanceof MongoSystemError) || e.code !== 11000)
+                        throw e
+                }
+            }
+        }
     }
 
     async create(category: CategoryInput): Promise<InsertOneResult | false> {

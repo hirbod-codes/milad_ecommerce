@@ -131,6 +131,11 @@ export { sessionRedisClient, revokedTokensRedisClient }
         await UserRepository.initialize(adminUsername, adminPhoneNumber, adminEmail, adminPassword)
         await PrivilegeRepository.initialize()
         await RoleRepository.initialize()
+
+        if (isProduction !== true) {
+            await RoleRepository.seed()
+            await UserRepository.seed()
+        }
     }))
         exit(1)
 

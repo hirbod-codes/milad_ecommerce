@@ -1,8 +1,10 @@
 import { DateTime } from "luxon";
 import { schemaVersion, User, UserCreate, UserInput, UserUpdate } from "../Models/User";
-import { Collection, DeleteResult, InsertOneResult, ObjectId, UpdateResult } from 'mongodb'
+import { Collection, DeleteResult, InsertOneResult, MongoSystemError, ObjectId, UpdateResult } from 'mongodb'
 import crypto from "crypto";
 import { MongoDB } from '../mongodb'
+import { faker } from "@faker-js/faker"
+import { RoleRepository } from "./RoleRepository";
 
 export class UserRepository {
     private collection: Collection<UserCreate>
@@ -47,6 +49,64 @@ export class UserRepository {
             })
             if (!r.acknowledged)
                 throw new Error('System failed to initialize users')
+        }
+    }
+
+    static async seed(count: number = 50) {
+        const collection = await MongoDB.getDbInstance().getUserCollection()
+        const roleRepository = await RoleRepository.getInstance()
+
+        if (!(await collection.deleteMany({ role: { $ne: 'admin' } })).acknowledged)
+            throw new Error('seeding users failed!')
+
+        const roles = await roleRepository.get()
+        if (roles.length === 0)
+            throw new Error('seeding users failed!')
+
+        const startTimeTS = DateTime.utc().minus({ years: 2 }).toUnixInteger()
+        const endTimeTS = DateTime.utc().minus({ months: 2 }).toUnixInteger()
+
+        let passwordSalt: string | undefined = undefined, passwordIterations: number = 10000
+        const hashedPassword: string = await (async () => {
+            return new Promise((resolve, reject) => {
+                passwordSalt = crypto.randomBytes(128).toString('base64')
+                crypto.pbkdf2('Pass99%aa', passwordSalt, passwordIterations, 64, 'sha512', (err, derivedKey) => {
+                    if (err)
+                        reject(err)
+                    else
+                        resolve(derivedKey.toString('hex'))
+                })
+            })
+        })()
+
+        for (let i = 0; i < count; i++) {
+            let safety = 0
+            while (safety < 10) {
+                safety++
+                try {
+                    const ts = faker.number.int({ min: startTimeTS, max: endTimeTS })
+
+                    let r = await collection.insertOne({
+                        schemaVersion,
+                        role: faker.helpers.arrayElement(roles.filter(f => f.name !== 'admin').map(m => m.name)),
+                        firstName: faker.person.firstName(),
+                        lastName: faker.person.lastName(),
+                        phoneNumber: '09' + faker.string.numeric({ length: 9, allowLeadingZeros: true }),
+                        username: faker.internet.username(),
+                        email: faker.internet.exampleEmail(),
+                        password: hashedPassword,
+                        passwordIterations,
+                        passwordSalt,
+                        createdAt: ts,
+                        updatedAt: ts,
+                    })
+                    if (r.acknowledged)
+                        break
+                } catch (e) {
+                    if (!(e instanceof MongoSystemError) || e.code !== 11000)
+                        throw e
+                }
+            }
         }
     }
 
