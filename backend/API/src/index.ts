@@ -13,7 +13,6 @@ import { order } from './routes/order'
 import { categories } from './routes/categories'
 import { tags } from './routes/tags'
 import { QueueManagement } from "./QueueManagement";
-import { exit } from "process";
 import { RevokedAccessTokenManager } from "./RevokedAccessTokens/RevokedAccessTokenManager";
 import { SessionManager } from "./Session/SessionManager";
 

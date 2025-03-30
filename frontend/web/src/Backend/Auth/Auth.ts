@@ -20,6 +20,7 @@ export class Auth {
                 'Accept': 'application/json'
             }
         })
+        console.log('Auth.login: r', r)
 
         if (!r.ok)
             return false

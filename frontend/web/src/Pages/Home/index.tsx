@@ -1,12 +1,13 @@
 import { GoogleAuthManager } from "@/src/Backend/Auth/GoogleAuthManager";
-import { useEffect } from "react";
-import { useSearchParams } from "react-router";
+import { Button } from "@/src/Components/Base/Button";
+import { memo, useEffect } from "react";
+import { useNavigate, useSearchParams } from "react-router";
 
-export function Home() {
-    console.log('Home')
-
+export const Home = memo(function Home() {
     const [queryVars, setQueryVars] = useSearchParams()
     const code = queryVars.get('code')
+
+    const navigate = useNavigate()
 
     console.log('Home', { code })
 
@@ -30,6 +31,6 @@ export function Home() {
     }
 
     return (
-        <div>Home</div>
+        <div>Home<Button onClick={() => navigate('/about-us')}>a</Button></div>
     )
-}
+})

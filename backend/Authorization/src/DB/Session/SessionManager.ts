@@ -31,9 +31,13 @@ export class SessionManager {
         }
     }
 
-    static async setSession(key: string, value: string, expiresAt?: number): Promise<void> {
+    static async setSession(key: string, value: string, expiresAt?: number, uniquenessKey?: string): Promise<void> {
         try {
-            let result = await SessionManager.sessionRedisClient.set(key, value, { EXAT: expiresAt })
+            if (uniquenessKey) {
+                const redisKey = await SessionManager.sessionRedisClient.incr(uniquenessKey)
+                key = redisKey + '_' + key
+            }
+            let result = await SessionManager.sessionRedisClient.set(key, value, { NX: uniquenessKey ? true : undefined, EXAT: expiresAt })
 
             if (result === null || result === undefined)
                 throw new SessionInsertionFailure()

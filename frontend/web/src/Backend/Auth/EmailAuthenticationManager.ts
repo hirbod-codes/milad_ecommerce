@@ -43,7 +43,7 @@ export class EmailAuthenticationManager extends Auth {
 
             if (r.ok && r.status === 200) {
                 let { token } = await r.json()
-                this.login(token!)
+                this.setToken(token!)
                 return { success: true }
             }
             else
@@ -74,7 +74,7 @@ export class EmailAuthenticationManager extends Auth {
 
             if (r.ok && r.status === 201) {
                 let { token } = await r.json()
-                await this.login(token!)
+                await this.setToken(token!)
                 return { success: true }
             }
             else

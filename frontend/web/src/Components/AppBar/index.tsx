@@ -1,4 +1,4 @@
-import { useContext, useState } from "react";
+import { memo, useContext, useState } from "react";
 import { Button } from "../Base/Button";
 import { Stack } from "../Base/Stack";
 import { SiteLogo } from "../SiteLogo";
@@ -11,7 +11,7 @@ import { FeedbackContext } from "@/src/Contexts/Feedback/FeedbackContext";
 import { useNavigate } from "react-router";
 import { UserCircleIcon } from "lucide-react";
 
-export function AppBar() {
+export const AppBar = memo(function AppBar() {
     const feedback = useContext(FeedbackContext)
     const navigate = useNavigate()
 
@@ -56,4 +56,4 @@ export function AppBar() {
             <AuthModal open={authModalOpen} onClose={() => { setAuthModalOpen(false); if (Auth.getToken()) dispatch(LAYOUT_RERENDER, Auth.getToken()) }} />
         </>
     )
-}
+})

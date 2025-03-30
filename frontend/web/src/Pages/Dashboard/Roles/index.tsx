@@ -129,8 +129,6 @@ export function Roles() {
     }
 
     const init = async () => {
-        console.log('init')
-
         setLoading(true)
         try {
             const r = await authFetchData(`${getAuthApiUrl()}/roles`, { method: 'get', headers: { 'Accept': 'application/json' } })

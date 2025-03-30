@@ -13,6 +13,7 @@ import { Tags } from "./Pages/Dashboard/Tags"
 import { Products } from "./Pages/Dashboard/Products"
 import { Orders } from "./Pages/Dashboard/Orders"
 import { Settings } from "./Pages/Dashboard/Settings"
+import { AboutUs } from "./Pages/AboutUs"
 
 export function Main() {
     console.log('Main')
@@ -27,6 +28,7 @@ export function Main() {
     const dashboardOrder = useMemo(() => <Orders />, [])
     const dashboardSettings = useMemo(() => <Settings />, [])
     const home = useMemo(() => <Home />, [])
+    const aboutUs = useMemo(() => <AboutUs />, [])
     const error = useMemo(() => <Error />, [])
     const notFound = useMemo(() => <NotFound />, [])
 
@@ -40,6 +42,10 @@ export function Main() {
                     index: true,
                     path: "/",
                     element: home
+                },
+                {
+                    path: "/about-us",
+                    element: aboutUs
                 },
                 {
                     path: "Dashboard",

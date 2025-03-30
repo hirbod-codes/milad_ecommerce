@@ -77,8 +77,6 @@ export function Products() {
     console.log('Products', { products, openFilter, filters, openSort, ask, page })
 
     const init = async (offset: number, limit: number): Promise<boolean> => {
-        console.log('init()')
-
         const res = await fetchData(`${getApiUrl()}/products?limit=${limit}&skip=${offset}${filters === undefined ? '' : '&filter=' + JSON.stringify(formatFilters(filters))}`)
         if (!res.response || !res.response.ok || !array().required().isValidSync(res.data)) {
             feedback.push({

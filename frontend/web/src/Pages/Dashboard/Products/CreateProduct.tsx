@@ -145,17 +145,17 @@ export function CreateProduct({ onFinish }: { onFinish?: (shouldRefresh: boolean
                 <Separator />
 
                 {/* Second Row */}
-                <Stack stackProps={{ className: 'overflow-y-auto' }}>
+                <Stack stackProps={{ className: 'w-full overflow-y-auto' }}>
                     {/* First Column */}
-                    <Stack direction="vertical" stackProps={{ className: 'w-1/2' }}>
-                        <Input value={name ?? ''} label={t('CreateProduct.name')} labelId={t('CreateProduct.name')} onChange={(e) => setName(e.target.value.trim())} />
+                    <Stack direction="vertical" stackProps={{ className: 'w-[calc(50%-(0.75rem)/2)]' }}>
+                        <Input value={name ?? ''} placeholder={t('CreateProduct.name')} onChange={(e) => setName(e.target.value.trim())} />
 
                         {languages &&
                             <Stack direction='vertical' stackProps={{ className: "border rounded-lg shadow-lg p-2 min-h-[5cm] overflow-y-auto" }}>
                                 <div className="text-lg">{t('CreateProduct.DisplayNameTitle')}</div>
 
-                                {languages.map(l =>
-                                    <Stack direction="vertical">
+                                {languages.map((l, i) =>
+                                    <Stack key={i} direction="vertical">
                                         <Input placeholder={l} value={displayName ? displayName[l] ?? '' : ''} onChange={(e) => setDisplayName({ ...displayName, [l]: e.target.value.trim() })} />
                                     </Stack>
                                 )}
@@ -166,8 +166,8 @@ export function CreateProduct({ onFinish }: { onFinish?: (shouldRefresh: boolean
                             <Stack direction='vertical' stackProps={{ className: "border rounded-lg shadow-lg p-2 min-h-[5cm] overflow-y-auto" }}>
                                 <div className="text-lg">{t('CreateProduct.DescriptionTitle')}</div>
 
-                                {languages.map(l =>
-                                    <Stack direction="vertical">
+                                {languages.map((l, i) =>
+                                    <Stack key={i} direction="vertical">
                                         <Textarea placeholder={l} value={description ? description[l] ?? '' : ''} onChange={(e) => setDescription({ ...description, [l]: e.target.value.trim() })} />
                                     </Stack>
                                 )}
@@ -176,17 +176,17 @@ export function CreateProduct({ onFinish }: { onFinish?: (shouldRefresh: boolean
                     </Stack>
 
                     {/* Second Column */}
-                    <Stack direction="vertical" stackProps={{ className: 'w-1/2' }}>
+                    <Stack direction="vertical" stackProps={{ className: 'w-[calc(50%-(0.75rem)/2)]' }}>
                         <CheckBox
                             label={t('CreateProduct.isAvailable')}
                             inputProps={{ checked: isAvailable, onChange: (e) => setIsAvailable(e.target.checked) }}
                         />
 
-                        <Stack direction='vertical' stackProps={{ className: "border rounded-lg shadow-lg p-2 max-h-[5cm] overflow-y-auto" }}>
+                        <Stack direction='vertical' stackProps={{ className: "border rounded-lg shadow-lg p-2 min-h-[5cm] overflow-y-auto" }}>
                             <div className="text-lg">{t('CreateProduct.DisplayNameTitle')}</div>
 
-                            {['IRR', 'USD'].map(l =>
-                                <Stack direction="vertical">
+                            {['IRR', 'USD'].map((l, i) =>
+                                <Stack key={i} direction="vertical">
                                     <Input
                                         placeholder={l}
                                         value={displayName ? displayName[l] ?? '' : ''}
