@@ -19,7 +19,7 @@ export const Filters = memo(function Filters({ fields, filters, setFilters, unse
     if (filters === undefined)
         filters = { $and: [] }
 
-    const [key, setKey] = useState<string>(Object.keys(filters).filter(f => f !== 'id')[0] ?? '$and')
+    const key = Object.keys(filters).filter(f => f !== 'id')[0] ?? '$and'
 
     console.log('Filters', { fields, filters, lastId: lastId.current })
 
@@ -33,16 +33,15 @@ export const Filters = memo(function Filters({ fields, filters, setFilters, unse
                             inputProps={{
                                 labelContainerProps: { stackProps: { className: 'w-full justify-between' } },
                                 value: key,
-                                onChange: e => { setKey(e.target.value.trim()); if (['$and', '$or'].includes(e.target.value)) setFilters({ id: filters?.id, [e.target.value]: filters[key] }) }
                             }}
                             stopPropagation={true}
                         >
-                            <Select.Item value={'$and'} displayValue={t('Filters.$and')}>
-                                {t('Filters.$and')}
+                            <Select.Item value={'$and'} displayValue={t('Filters.and')}>
+                                {t('Filters.and')}
                             </Select.Item>
                             <Separator />
-                            <Select.Item value={'$or'} displayValue={t('Filters.$or')}>
-                                {t('Filters.$or')}
+                            <Select.Item value={'$or'} displayValue={t('Filters.or')}>
+                                {t('Filters.or')}
                             </Select.Item>
                         </Select>
 
@@ -78,6 +77,6 @@ export const Filters = memo(function Filters({ fields, filters, setFilters, unse
                     </Stack>
                 </AccordionContent>
             </AccordionItem>
-        </Accordion>
+        </Accordion >
     )
 })

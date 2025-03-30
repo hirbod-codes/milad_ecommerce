@@ -18,7 +18,7 @@ export class OrderRepository extends MongoDB {
         return new OrderRepository(await MongoDB.getDbInstance().getOrderCollection())
     }
 
-    static async seed(count: number = 50) {
+    static async seed(count: number = 150) {
         const collection = await MongoDB.getDbInstance().getOrderCollection()
         const productRepository = await ProductRepository.getInstance()
         const userRepository = await UserRepository.getInstance()

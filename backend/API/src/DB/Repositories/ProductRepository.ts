@@ -46,12 +46,14 @@ export class ProductRepository extends MongoDB {
                 try {
                     const ts = faker.number.int({ min: startTimeTS, max: endTimeTS })
 
+                    const name = faker.commerce.productName()
+
                     let r = await collection.insertOne({
                         schemaVersion,
                         categories: faker.helpers.arrayElements(categories, faker.number.int({ min: 1, max: 5 })).map(m => m.name),
                         tags: faker.helpers.arrayElements(tags, faker.number.int({ min: 1, max: 5 })).map(m => m.name),
-                        name: faker.commerce.product(),
-                        displayName: { fa: fakerFA.commerce.productName(), en: faker.commerce.productName() },
+                        name,
+                        displayName: { fa: fakerFA.commerce.productName(), en: name },
                         description: { fa: fakerFA.commerce.productDescription(), en: faker.commerce.productDescription() },
                         price: { IRR: faker.number.int({ min: 0, max: 500_000_000 }), en: faker.number.int({ min: 0, max: 500_000_000 }) },
                         purchaseCount: faker.number.int({ min: 0, max: 5000 }),

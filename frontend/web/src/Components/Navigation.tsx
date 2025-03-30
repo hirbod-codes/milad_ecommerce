@@ -2,13 +2,14 @@ import { t } from 'i18next';
 import { memo, useContext, useEffect, useRef, useState } from 'react';
 import { ConfigurationContext } from '../Contexts/Configuration/ConfigurationContext';
 import { useNavigate } from 'react-router-dom';
-import { HistoryIcon, SettingsIcon, ShieldAlertIcon, TimerIcon, UsersIcon } from 'lucide-react';
+import { BoxIcon, ReplaceIcon, SettingsIcon, ShieldUserIcon, ShoppingBasketIcon, TagIcon, UsersIcon } from 'lucide-react';
 import { Button } from './Base/Button';
 import { motion } from 'framer-motion'
-import { Auth } from '../Backend/Auth/Auth';
 import { FeedbackContext } from '../Contexts/Feedback/FeedbackContext';
+import { AuthContext } from '../Contexts/Auth/AuthContext';
 
 export const Navigation = memo(function Navigation() {
+    const privileges = useContext(AuthContext).privileges
     const feedback = useContext(FeedbackContext)
     const navigate = useNavigate();
 
@@ -25,26 +26,23 @@ export const Navigation = memo(function Navigation() {
     const [writesTags, setWritesTags] = useState(false)
 
     useEffect(() => {
-        Auth.getPrivileges()
-            .then(privileges => {
-                if (privileges === undefined) {
-                    feedback.push({
-                        node: t('privileges.getFailure')
-                    })
-                    return
-                }
-
-                for (const privilege of privileges) {
-                    if (privilege === 'get-user')
-                        setReadsUsers(true)
-                    if (privilege === 'get-role')
-                        setReadsRoles(true)
-                    if (['create-category', 'update-category', 'delete-category'].includes(privilege))
-                        setWritesCategories(true)
-                    if (['create-tag', 'update-tag', 'delete-tag'].includes(privilege))
-                        setWritesTags(true)
-                }
+        if (privileges === undefined) {
+            feedback.push({
+                node: t('privileges.getFailure')
             })
+            return
+        }
+
+        for (const privilege of privileges) {
+            if (privilege === 'get-user')
+                setReadsUsers(true)
+            if (privilege === 'get-role')
+                setReadsRoles(true)
+            if (['create-category', 'update-category', 'delete-category'].includes(privilege))
+                setWritesCategories(true)
+            if (['create-tag', 'update-tag', 'delete-tag'].includes(privilege))
+                setWritesTags(true)
+        }
     }, [])
 
     console.log('Navigation', { configuration, openDrawer })
@@ -102,8 +100,6 @@ export const Navigation = memo(function Navigation() {
                         }
                     </Button>}
 
-                <div className='mb-2' />
-
                 {readsRoles &&
                     <Button
                         variant='text'
@@ -112,7 +108,7 @@ export const Navigation = memo(function Navigation() {
                         onClick={() => { if (window.location.pathname !== '/Dashboard/Roles') { setOpenDrawer(false); setDestination('/Dashboard/Roles') } }}
                     >
                         <motion.div layout>
-                            <ShieldAlertIcon />
+                            <ShieldUserIcon />
                         </motion.div>
                         {openDrawer &&
                             <motion.div layout>
@@ -120,8 +116,6 @@ export const Navigation = memo(function Navigation() {
                             </motion.div>
                         }
                     </Button>}
-
-                <div className='mb-2' />
 
                 {writesCategories &&
                     <Button
@@ -131,7 +125,7 @@ export const Navigation = memo(function Navigation() {
                         onClick={() => { if (window.location.pathname !== '/Dashboard/Categories') { setOpenDrawer(false); setDestination('/Dashboard/Categories') } }}
                     >
                         <motion.div layout>
-                            <TimerIcon />
+                            <ReplaceIcon />
                         </motion.div>
                         {openDrawer &&
                             <motion.div layout>
@@ -148,7 +142,7 @@ export const Navigation = memo(function Navigation() {
                         onClick={() => { if (window.location.pathname !== '/Dashboard/Tags') { setOpenDrawer(false); setDestination('/Dashboard/Tags') } }}
                     >
                         <motion.div layout>
-                            <TimerIcon />
+                            <TagIcon />
                         </motion.div>
                         {openDrawer &&
                             <motion.div layout>
@@ -164,7 +158,7 @@ export const Navigation = memo(function Navigation() {
                     onClick={() => { if (window.location.pathname !== '/Dashboard/Products') { setOpenDrawer(false); setDestination('/Dashboard/Products') } }}
                 >
                     <motion.div layout>
-                        <TimerIcon />
+                        <BoxIcon />
                     </motion.div>
                     {openDrawer &&
                         <motion.div layout>
@@ -173,8 +167,6 @@ export const Navigation = memo(function Navigation() {
                     }
                 </Button>
 
-                <div className='mb-2' />
-
                 <Button
                     variant='text'
                     fgColor={window.location.pathname !== '/Dashboard/Orders' ? 'surface-foreground' : 'primary'}
@@ -182,7 +174,7 @@ export const Navigation = memo(function Navigation() {
                     onClick={() => { if (window.location.pathname !== '/Dashboard/Orders') { setOpenDrawer(false); setDestination('/Dashboard/Orders') } }}
                 >
                     <motion.div layout>
-                        <HistoryIcon />
+                        <ShoppingBasketIcon />
                     </motion.div>
                     {openDrawer &&
                         <motion.div layout>

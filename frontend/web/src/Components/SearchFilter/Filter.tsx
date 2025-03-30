@@ -14,11 +14,8 @@ export const Filter = memo(function Filter({ fields, filter, setFilter, unsetFil
     return (
         <Stack>
             <Select
-                label={t("Filter.field")}
-                defaultDisplayValue={t('Columns.' + filter.field)}
-                defaultValue={filter.field}
-                onValueChange={(e) => setFilter({ ...filter, field: e })}
-                inputProps={{ labelContainerProps: { stackProps: { className: 'w-full justify-between' } } }}
+                onValueSelect={(e) => setFilter({ ...filter, field: e })}
+                inputProps={{ value: filter?.field ?? '', labelContainerProps: { stackProps: { className: 'w-full justify-between' } } }}
             >
                 {
                     Object.keys(fields).map((k, i) =>
@@ -35,11 +32,8 @@ export const Filter = memo(function Filter({ fields, filter, setFilter, unsetFil
             </Select>
 
             <Select
-                label={t("Filter.operators")}
-                defaultDisplayValue={t('Filter.' + operators[operators.$eq])}
-                defaultValue={operators[operators.$eq]}
-                onValueChange={(e) => setFilter({ ...filter, operator: e })}
-                inputProps={{ labelContainerProps: { stackProps: { className: 'w-full justify-between' } } }}
+                onValueSelect={(e) => setFilter({ ...filter, operator: e })}
+                inputProps={{ value: filter?.operator ?? '', labelContainerProps: { stackProps: { className: 'w-full justify-between' } } }}
             >
                 {
                     Object.values(operators).map((o, i) =>

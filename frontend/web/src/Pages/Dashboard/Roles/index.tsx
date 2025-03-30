@@ -17,8 +17,12 @@ import { array, string } from "yup";
 import { CreateRole } from "./CreateRole";
 import { UpdateRole } from "./UpdateRole";
 import { Ask } from "@/src/Components/Ask";
+import { AuthContext } from "@/src/Contexts/Auth/AuthContext";
+import { DATE, toFormat } from "@/src/Lib/DateTime/date-time-helpers";
 
-export function Roles({ privileges }: { privileges?: string[] }) {
+export function Roles() {
+    const privileges = useContext(AuthContext).privileges
+
     console.log('Roles')
 
     const feedback = useContext(FeedbackContext)!
@@ -30,10 +34,10 @@ export function Roles({ privileges }: { privileges?: string[] }) {
     let dataGridGradientColor = ColorStatic.parse(themeOptions.colors.primary[themeOptions.mode].main).toRgb()
     dataGridGradientColor.setAlpha(0.1)
 
-    const [createsRole, setCreatesRole] = useState(privileges?.find(f => f === 'create-role') !== undefined ? true : false)
-    const [updatesRole, setUpdatesRole] = useState(privileges?.find(f => f === 'update-role') !== undefined ? true : false)
-    const [deletesRole, setDeletesRole] = useState(privileges?.find(f => f === 'delete-role') !== undefined ? true : false)
-    const [assignsRole, setAssignsRole] = useState(privileges?.find(f => f === 'assign-role') !== undefined ? true : false)
+    const createsRole = privileges?.find(f => f === 'create-role') !== undefined
+    const updatesRole = privileges?.find(f => f === 'update-role') !== undefined
+    const deletesRole = privileges?.find(f => f === 'delete-role') !== undefined
+    const assignsRole = privileges?.find(f => f === 'assign-role') !== undefined
 
     const [loading, setLoading] = useState(true)
 
@@ -70,6 +74,19 @@ export function Roles({ privileges }: { privileges?: string[] }) {
         }
 
     }
+
+    const overWriteColumns: ColumnDef<any>[] = [
+        {
+            id: 'createdAt',
+            accessorKey: 'createdAt',
+            cell: ({ getValue }) => typeof getValue() === 'number' ? toFormat(getValue() as number, configuration.local, undefined, DATE) : '-',
+        },
+        {
+            id: 'updatedAt',
+            accessorKey: 'updatedAt',
+            cell: ({ getValue }) => typeof getValue() === 'number' ? toFormat(getValue() as number, configuration.local, undefined, DATE) : '-',
+        },
+    ]
 
     const additionalColumns: ColumnDef<any>[] = (!createsRole && !updatesRole && !deletesRole && !assignsRole)
         ? []
@@ -116,26 +133,6 @@ export function Roles({ privileges }: { privileges?: string[] }) {
 
         setLoading(true)
         try {
-            if (!privileges) {
-                const r = await authFetchData(`${getAuthApiUrl()}/privileges`, { method: 'get', headers: { 'Accept': 'application/json' } })
-                if (!r.response?.ok || !array().required().strict(true).of(string().required().strict(true)).isValidSync(r?.data)) {
-                    feedback.push({
-                        node: t('privileges.getFailure')
-                    })
-                    return
-                }
-
-                for (const privilege of r.data)
-                    if (privilege === 'create-role')
-                        setCreatesRole(true)
-                    else if (privilege === 'update-role')
-                        setUpdatesRole(true)
-                    else if (privilege === 'delete-role')
-                        setDeletesRole(true)
-                    else if (privilege === 'assign-role')
-                        setAssignsRole(true)
-            }
-
             const r = await authFetchData(`${getAuthApiUrl()}/roles`, { method: 'get', headers: { 'Accept': 'application/json' } })
             console.log('data', r.data)
             if (r.response.ok && array().required().strict(true).isValidSync(r.data))
@@ -155,7 +152,7 @@ export function Roles({ privileges }: { privileges?: string[] }) {
                 configName='roles'
                 containerProps={{ stackProps: { style: { backgroundImage: `linear-gradient(to bottom right, ${dataGridGradientColor.toHex()} , transparent)` } } }}
                 data={rows.map(row => Object.fromEntries(Object.entries(row).filter(f => f[0] !== 'privileges')))}
-                // overWriteColumns={columns}
+                overWriteColumns={overWriteColumns}
                 loading={loading}
                 defaultColumnOrderModel={['actions']}
                 additionalColumns={additionalColumns}

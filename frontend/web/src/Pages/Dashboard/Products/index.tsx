@@ -8,7 +8,7 @@ import { DataGrid } from "@/src/Components/DataGrid";
 import { Ask } from "@/src/Components/Ask";
 import { Button } from "@/src/Components/Base/Button";
 import { t } from "i18next";
-import { FilterIcon, ListFilterIcon, PlusIcon, RefreshCwIcon, Trash2Icon } from "lucide-react";
+import { EditIcon, FilterIcon, ListFilterIcon, PlusIcon, RefreshCwIcon, Trash2Icon } from "lucide-react";
 import { FeedbackContext } from "@/src/Contexts/Feedback/FeedbackContext";
 import { array } from "yup";
 import { DropdownMenu } from "@/src/Components/Base/DropdownMenu";
@@ -16,6 +16,9 @@ import { ColumnDef } from "@tanstack/react-table";
 import { DATE, toFormat } from "@/src/Lib/DateTime/date-time-helpers";
 import { Modal } from "@/src/Components/Base/Modal";
 import { CreateProduct } from "./CreateProduct";
+import { AuthContext } from "@/src/Contexts/Auth/AuthContext";
+import { Stack } from "@/src/Components/Base/Stack";
+import { CircularLoadingIcon } from "@/src/Components/Base/CircularLoadingIcon";
 
 function formatFilters(filters: Filters) {
     let key = undefined
@@ -45,6 +48,7 @@ function formatFilter(filter: Filter) {
 }
 
 export function Products() {
+    const privileges = useContext(AuthContext).privileges
     const feedback = useContext(FeedbackContext)!
 
     const configuration = useContext(ConfigurationContext)!
@@ -52,7 +56,10 @@ export function Products() {
 
     const [products, setProducts] = useState<any[]>([])
 
-    const [openCreate, setOpenCreate] = useState(false)
+    const [openCreateProductModal, setOpenCreateProductModal] = useState(false)
+    const [openUpdateProductModal, setOpenUpdateProductModal] = useState(false)
+    const [editingProduct, setEditingProduct] = useState(undefined)
+    const [deletingProduct, setDeletingProduct] = useState(undefined)
 
     const filterButtonRef = useRef<HTMLButtonElement>(null)
     const [openFilter, setOpenFilter] = useState(false)
@@ -95,12 +102,15 @@ export function Products() {
             .finally(() => setLoading(false))
     }, [])
 
+    const deleteProduct = async (_id: string) => {
+    }
+
     let dataGridGradientColor = ColorStatic.parse(themeOptions.colors.primary[themeOptions.mode].main).toRgb()
     dataGridGradientColor.setAlpha(0.1)
 
-    const createsProduct = true
-    const updatesProduct = true
-    const deletesProduct = true
+    const createsProduct = privileges.find(f => f === 'create-category') !== undefined
+    const updatesProduct = privileges.find(f => f === 'update-category') !== undefined
+    const deletesProduct = privileges.find(f => f === 'delete-category') !== undefined
 
     const overWriteColumns: ColumnDef<any>[] = [
         {
@@ -115,7 +125,39 @@ export function Products() {
         },
     ]
 
-    const additionalColumns: ColumnDef<any>[] = []
+    const additionalColumns: ColumnDef<any>[] = [
+        {
+            id: 'actions',
+            accessorKey: 'actions',
+            cell: ({ row }) =>
+                <Stack stackProps={{ className: "justify-center w-full" }}>
+                    {
+                        updatesProduct &&
+                        <Button
+                            isIcon
+                            variant='text'
+                            onClick={() => {
+                                setOpenUpdateProductModal(true)
+                                setEditingProduct(row.original._id)
+                            }}
+                        >
+                            {editingProduct === undefined || editingProduct !== row.original._id ? <EditIcon /> : <CircularLoadingIcon />}
+                        </Button>
+                    }
+                    {
+                        deletesProduct &&
+                        <Button
+                            isIcon
+                            variant='text'
+                            fgColor='error'
+                            onClick={() => setAsk({ open: true, title: t('Products.deletionTitle'), content: t('Products.deletionContent'), successAction: () => deleteProduct(row.original._id), failureAction: () => setAsk({ ...ask, open: false }) })}
+                        >
+                            {deletingProduct === undefined || deletingProduct !== row.original._id ? <Trash2Icon /> : <CircularLoadingIcon />}
+                        </Button>
+                    }
+                </Stack >
+        }
+    ]
 
     return (
         <>
@@ -139,7 +181,7 @@ export function Products() {
                         <Button variant='outline' onClick={async () => await init(page.offset, page.limit)}><RefreshCwIcon />{t('Products.Refresh')}</Button>,
                         <Button buttonRef={filterButtonRef} variant='outline' onClick={() => setOpenFilter(true)}><FilterIcon />{t('Products.Filters')}</Button>,
                         <Button buttonRef={sortButtonRef} variant='outline' onClick={() => setOpenSort(true)}><ListFilterIcon />{t('Products.Sorts')}</Button>,
-                        createsProduct && <Button fgColor='success' variant='outline' onClick={() => setOpenCreate(true)}><PlusIcon />{t('Products.Create')}</Button>,
+                        createsProduct && <Button fgColor='success' variant='outline' onClick={() => setOpenCreateProductModal(true)}><PlusIcon />{t('Products.Create')}</Button>,
                     ]}
                 />
             }
@@ -155,10 +197,10 @@ export function Products() {
                 </div>
             </DropdownMenu>
 
-            <Modal open={openCreate} onClose={() => setOpenCreate(false)}>
+            <Modal open={openCreateProductModal} onClose={() => setOpenCreateProductModal(false)}>
                 <CreateProduct
                     onFinish={(shouldRefresh) => {
-                        setOpenCreate(false)
+                        setOpenCreateProductModal(false)
                         if (shouldRefresh)
                             init(page.limit, page.offset)
                     }}

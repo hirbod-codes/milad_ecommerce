@@ -13,8 +13,10 @@ import { FeedbackContext } from '@/src/Contexts/Feedback/FeedbackContext'
 import { CircularLoading } from '@/src/Components/Base/CircularLoading'
 import { UpdateCategory } from './UpdateCategory'
 import { ReadCategory } from './ReadCategory'
+import { AuthContext } from '@/src/Contexts/Auth/AuthContext'
 
 export function Category({ category, allCategories, refresh }: { category: CategoryType, allCategories: CategoryType[], refresh?: () => void }) {
+    const privileges = useContext(AuthContext).privileges
     const feedback = useContext(FeedbackContext)
 
     const [ask, setAsk] = useState<ComponentProps<typeof Ask>>(undefined)
@@ -22,8 +24,6 @@ export function Category({ category, allCategories, refresh }: { category: Categ
     const [openCreateCategoryModal, setOpenCreateCategoryModal] = useState(false)
     const [openReadCategoryModal, setOpenReadCategoryModal] = useState(false)
     const [openUpdateCategoryModal, setOpenUpdateCategoryModal] = useState(false)
-    const [updating, setUpdating] = useState(false)
-    const [customProperties, setCustomProperties] = useState(false)
     const [deleting, setDeleting] = useState(false)
 
     const updateCategory = async (id: string) => {
@@ -50,6 +50,10 @@ export function Category({ category, allCategories, refresh }: { category: Categ
         } finally { setDeleting(false) }
     }
 
+    const createsCategory = privileges.find(f => f === 'create-category') !== undefined
+    const updatesCategory = privileges.find(f => f === 'update-category') !== undefined
+    const deletesCategory = privileges.find(f => f === 'delete-category') !== undefined
+
     return (
         <div className="w-full p-2">
             <Accordion type="single" collapsible className='w-full border rounded-lg p-2'>
@@ -65,27 +69,31 @@ export function Category({ category, allCategories, refresh }: { category: Categ
                                     size='xs'
                                     onClick={(e) => { e.stopPropagation(); setOpenReadCategoryModal(true) }}
                                 >
-                                    {updating ? <CircularLoading /> : <EyeIcon />}
+                                    <EyeIcon />
                                 </Button>
 
-                                <Button
-                                    isIcon
-                                    variant="text"
-                                    size='xs'
-                                    onClick={(e) => { e.stopPropagation(); setOpenUpdateCategoryModal(true) }}
-                                >
-                                    {updating ? <CircularLoading /> : <EditIcon />}
-                                </Button>
+                                {updatesCategory &&
+                                    <Button
+                                        isIcon
+                                        variant="text"
+                                        size='xs'
+                                        onClick={(e) => { e.stopPropagation(); setOpenUpdateCategoryModal(true) }}
+                                    >
+                                        <EditIcon />
+                                    </Button>
+                                }
 
-                                <Button
-                                    isIcon
-                                    variant="text"
-                                    fgColor="error"
-                                    size='xs'
-                                    onClick={(e) => { e.stopPropagation(); setAsk({ open: true, title: t('Category.deletionTitle'), content: t('Category.deletionContent'), successAction: () => deleteCategory(category._id), failureAction: () => setAsk({ ...ask, open: false }) }) }}
-                                >
-                                    {deleting ? <CircularLoading /> : <Trash2Icon />}
-                                </Button>
+                                {deletesCategory &&
+                                    <Button
+                                        isIcon
+                                        variant="text"
+                                        fgColor="error"
+                                        size='xs'
+                                        onClick={(e) => { e.stopPropagation(); setAsk({ open: true, title: t('Category.deletionTitle'), content: t('Category.deletionContent'), successAction: () => deleteCategory(category._id), failureAction: () => setAsk({ ...ask, open: false }) }) }}
+                                    >
+                                        {deleting ? <CircularLoading /> : <Trash2Icon />}
+                                    </Button>
+                                }
                             </Stack>
                         </Stack>
                     </AccordionTrigger>
@@ -94,7 +102,7 @@ export function Category({ category, allCategories, refresh }: { category: Categ
                             <Category key={i} category={child} allCategories={allCategories} />
                         )}
 
-                        <Button isIcon variant="text" fgColor="success" onClick={() => setOpenCreateCategoryModal(true)}><PlusIcon /></Button>
+                        {createsCategory && <Button isIcon variant="text" fgColor="success" onClick={() => setOpenCreateCategoryModal(true)}><PlusIcon /></Button>}
                     </AccordionContent>
                 </AccordionItem>
             </Accordion>

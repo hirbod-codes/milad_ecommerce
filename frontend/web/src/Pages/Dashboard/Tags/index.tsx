@@ -4,6 +4,7 @@ import { CircularLoading } from "@/src/Components/Base/CircularLoading"
 import { Input } from "@/src/Components/Base/Input"
 import { Modal } from "@/src/Components/Base/Modal"
 import { Stack } from "@/src/Components/Base/Stack"
+import { AuthContext } from "@/src/Contexts/Auth/AuthContext"
 import { FeedbackContext } from "@/src/Contexts/Feedback/FeedbackContext"
 import { Separator } from "@/src/shadcn/components/ui/separator"
 import { t } from "i18next"
@@ -12,6 +13,7 @@ import { useContext, useEffect, useState } from "react"
 import { array } from "yup"
 
 export function Tags() {
+    const privileges = useContext(AuthContext).privileges
     const feedback = useContext(FeedbackContext)
 
     const [tags, setTags] = useState<{ _id: string, name: string, view: number, displayName: { [k: string]: string } }[]>([])
@@ -64,21 +66,28 @@ export function Tags() {
         await init()
     }
 
+    const createsTag = privileges.find(f => f === 'create-tag') !== undefined
+    const deletesTag = privileges.find(f => f === 'delete-tag') !== undefined
+
     return (
         <>
             <Stack direction="vertical" stackProps={{ className: 'border rounded-lg p-4 justify-start size-full overflow-y-auto' }}>
-                <Button size='md' variant="text" fgColor='success' onClick={() => setOpenCreateTagModal(true)} className="w-fit">
-                    {t('Tags.Create')}
-                    <PlusIcon />
-                </Button>
+                {createsTag &&
+                    <Button size='md' variant="text" fgColor='success' onClick={() => setOpenCreateTagModal(true)} className="w-fit">
+                        {t('Tags.Create')}
+                        <PlusIcon />
+                    </Button>
+                }
 
                 {tags.map(tag =>
                     <Stack stackProps={{ className: 'justify-between' }}>
                         {tag.name}
 
-                        <Button isIcon variant="text" fgColor='error' onClick={() => deleteTag(tag._id)}>
-                            {deletingId === tag._id ? <CircularLoading size="md" /> : <Trash2Icon />}
-                        </Button>
+                        {deletesTag &&
+                            <Button isIcon variant="text" fgColor='error' onClick={() => deleteTag(tag._id)}>
+                                {deletingId === tag._id ? <CircularLoading size="md" /> : <Trash2Icon />}
+                            </Button>
+                        }
                     </Stack>
                 )}
             </Stack>

@@ -11,8 +11,10 @@ import { Modal } from "@/src/Components/Base/Modal"
 import { CreateCategory } from "./CreateCategory"
 import { t } from "i18next"
 import { FeedbackContext } from "@/src/Contexts/Feedback/FeedbackContext"
+import { AuthContext } from "@/src/Contexts/Auth/AuthContext"
 
 export function Categories() {
+    const privileges = useContext(AuthContext).privileges
     const feedback = useContext(FeedbackContext)
 
     const [categories, setCategories] = useState<CategoryType[]>([])
@@ -42,6 +44,8 @@ export function Categories() {
         init()
     }, [])
 
+    const createsCategory = privileges.find(f => f === 'create-category') !== undefined
+
     return (
         <>
             <Stack direction="vertical" stackProps={{ className: "border rounded-lg size-full p-2 size-full overflow-y-auto" }}>
@@ -52,7 +56,7 @@ export function Categories() {
                     )
                 }
 
-                <Button isIcon variant="text" fgColor="success" onClick={() => setOpenCreateCategoryModal(true)}><PlusIcon /></Button>
+                {createsCategory && <Button isIcon variant="text" fgColor="success" onClick={() => setOpenCreateCategoryModal(true)}><PlusIcon /></Button>}
             </Stack>
 
             <Modal
