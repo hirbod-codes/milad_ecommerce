@@ -1,40 +1,56 @@
-import { sessionRedisClient } from "@/src";
+import { createClient, createCluster, RedisClientType, RedisClusterType, RedisDefaultModules } from "redis";
 import { SessionInsertionFailure } from "./Exceptions/SessionInsertionFailure";
 import { SessionRetrievalFailure } from "./Exceptions/SessionRetrievalFailure";
+import { ConnectionFailure } from "./Exceptions/ConnectionFailure";
 
 export class SessionManager {
-    static async setSession(key: string, value: string, expiresAt?: number, uniquenessKey?: string): Promise<void> {
-        try {
-            await sessionRedisClient.connect()
+    static sessionRedisClient: RedisClusterType<RedisDefaultModules> | RedisClientType<RedisDefaultModules> = undefined!
 
-            if (uniquenessKey) {
-                const redisKey = await sessionRedisClient.incr(uniquenessKey)
-                key = redisKey + '_' + key
-            }
-            let result = await sessionRedisClient.set(key, value, { NX: uniquenessKey ? true : undefined, EXAT: expiresAt })
+    static async initialize(sessionRedisType: 'single' | 'cluster', sessionRedisInitialNodeUrl: string) {
+        if (sessionRedisType === 'single')
+            SessionManager.sessionRedisClient = createClient({ url: sessionRedisInitialNodeUrl })
+        else if (sessionRedisType === 'cluster')
+            SessionManager.sessionRedisClient = createCluster({
+                rootNodes: [{ url: sessionRedisInitialNodeUrl }],
+                useReplicas: true
+            })
+        else
+            throw new Error('Invalid configuration provided for redis')
+
+        try {
+            await SessionManager.sessionRedisClient.connect()
+
+            process.on('SIGINT', async () => {
+                await SessionManager.sessionRedisClient.quit();
+                console.log('Sessions Redis connection closed');
+                process.exit(0);
+            })
+        } catch (e) {
+            console.error(e)
+            throw new ConnectionFailure()
+        }
+    }
+
+    static async setSession(key: string, value: string, expiresAt?: number): Promise<void> {
+        try {
+            let result = await SessionManager.sessionRedisClient.set(key, value, { EXAT: expiresAt })
 
             if (result === null || result === undefined)
                 throw new SessionInsertionFailure()
         } catch (e) {
             console.error(e)
             throw new SessionInsertionFailure()
-        } finally {
-            await sessionRedisClient.quit()
         }
     }
 
     static async getSession(key: string): Promise<string | undefined> {
         try {
-            await sessionRedisClient.connect()
-
-            let v = await sessionRedisClient.get(key)
+            let v = await SessionManager.sessionRedisClient.get(key)
 
             return v === null ? undefined : v
         } catch (e) {
             console.error(e)
             throw new SessionRetrievalFailure()
-        } finally {
-            await sessionRedisClient.quit()
         }
     }
 }

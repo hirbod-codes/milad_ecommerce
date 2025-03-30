@@ -8,7 +8,32 @@ export class Auth {
         return Auth.token !== undefined
     }
 
-    static login(token: string) { Auth.token = token }
+    static setToken(token: string) {
+        Auth.token = token
+    }
+
+    static async login() {
+        const r = await fetch(`${getAuthApiUrl()}/auth/tokens/retrieve-access-token`, {
+            method: 'post',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            }
+        })
+
+        if (!r.ok)
+            return false
+
+        if (r.headers.get('content-type')?.includes('application/json')) {
+            const { token } = await r.json()
+            Auth.setToken(token)
+        } else if (r.headers.get('content-type')?.includes('text/plain'))
+            Auth.setToken(await r.text())
+        else
+            return false
+
+        return true
+    }
 
     static async logout() {
         Auth.token = undefined

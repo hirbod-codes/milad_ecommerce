@@ -1,11 +1,12 @@
 import { Outlet } from "react-router";
 import { ConfigurationContextWrapper } from "../../Contexts/Configuration/ConfigurationContextWrapper";
 import { AppBar } from "@/src/Components/AppBar";
-import { useMemo, useReducer } from "react";
+import { useEffect, useMemo, useReducer } from "react";
 import { FeedbackWrapper } from "@/src/Contexts/Feedback/FeedbackWrapper";
 import { Stack } from "@/src/Components/Base/Stack";
 import { subscribe } from "@/src/Lib/Events";
 import { Auth } from "@/src/Backend/Auth/Auth";
+import { getAuthApiUrl } from "@/src/Backend/helpers";
 import { AuthContextWrapper } from "@/src/Contexts/Auth/AuthContextWrapper";
 
 export const LAYOUT_RERENDER = 'layout_rerender'
@@ -17,7 +18,7 @@ export function Layout() {
 
     subscribe(LAYOUT_RERENDER, (e) => {
         if ((e as CustomEvent)?.detail)
-            Auth.login((e as CustomEvent)?.detail)
+            Auth.setToken((e as CustomEvent)?.detail)
         rerender();
     })
 
@@ -41,6 +42,24 @@ export function Layout() {
             {auth}
         </FeedbackWrapper>
         , [x])
+
+    useEffect(() => {
+        if (!Auth.isAuthenticated())
+            fetch(`${getAuthApiUrl()}/auth/tokens/retrieve-access-token`, {
+                method: 'post',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                }
+            })
+                .then(async r => {
+                    if (r.ok && r.headers.get('content-type')?.includes('application/json')) {
+                        const { token } = await r.json()
+                        Auth.setToken(token)
+                        rerender()
+                    }
+                })
+    }, [])
 
     return (
         <ConfigurationContextWrapper key={x}>

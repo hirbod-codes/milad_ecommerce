@@ -124,3 +124,29 @@ export async function httpsRequest(options: https.RequestOptions, sendData?: str
         request.end();
     })
 }
+
+export async function tryAndWait(callback: CallableFunction, secondsToWaitForEachTry: number = 5): Promise<boolean> {
+    let safety = 0
+    while (safety <= 100) {
+        safety += 1
+        console.log('safety', safety)
+        try {
+            await callback()
+            return true
+        }
+        catch (e) { console.error(e) }
+        finally {
+            await (() => new Promise<void>((res, rej) => {
+                console.log('waiting for 5 seconds...')
+                setTimeout(() => { res() }, secondsToWaitForEachTry * 1000)
+            }))()
+        }
+    }
+
+    if (safety > 100) {
+        console.log('safety reached!!')
+        return false
+    }
+
+    return true
+}

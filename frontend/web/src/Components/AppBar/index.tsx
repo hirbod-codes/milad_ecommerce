@@ -9,7 +9,7 @@ import { dispatch } from "@/src/Lib/Events";
 import { LAYOUT_RERENDER } from "@/src/Pages/Layout";
 import { FeedbackContext } from "@/src/Contexts/Feedback/FeedbackContext";
 import { useNavigate } from "react-router";
-import { UserCircle2Icon, UserCircleIcon } from "lucide-react";
+import { UserCircleIcon } from "lucide-react";
 
 export function AppBar() {
     const feedback = useContext(FeedbackContext)
@@ -53,7 +53,7 @@ export function AppBar() {
                 }
             </Stack>
 
-            <AuthModal open={authModalOpen} onClose={() => { setAuthModalOpen(false); dispatch(LAYOUT_RERENDER, Auth.getToken()) }} />
+            <AuthModal open={authModalOpen} onClose={() => { setAuthModalOpen(false); if (Auth.getToken()) dispatch(LAYOUT_RERENDER, Auth.getToken()) }} />
         </>
     )
 }

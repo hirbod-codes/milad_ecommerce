@@ -82,9 +82,8 @@ export async function authFetch(input: string | URL | globalThis.Request, init?:
     AuthState.Authenticating = true
     AuthState.AuthFailed = false
     AuthState.AuthSucceeded = false
-    let authRes: Response
     try {
-        authRes = await fetch(`${getAuthApiUrl()}/auth/tokens/retrieve-access-token`, {
+        let authRes: Response = await fetch(`${getAuthApiUrl()}/auth/tokens/retrieve-access-token`, {
             method: 'post',
             headers: {
                 'Content-Type': 'application/json',
@@ -105,11 +104,11 @@ export async function authFetch(input: string | URL | globalThis.Request, init?:
         if (authRes.headers.get('content-type')?.includes('application/json')) {
             const data = await authRes.json()
             console.log('\taccessToken', data)
-            Auth.login(data.token)
+            Auth.setToken(data.token)
         } else {
             const accessToken = await authRes.text()
             console.log('\taccessToken', accessToken)
-            Auth.login(accessToken)
+            Auth.setToken(accessToken)
         }
 
         AuthState.AuthSucceeded = true

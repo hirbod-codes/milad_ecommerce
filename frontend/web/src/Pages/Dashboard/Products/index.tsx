@@ -19,6 +19,8 @@ import { CreateProduct } from "./CreateProduct";
 import { AuthContext } from "@/src/Contexts/Auth/AuthContext";
 import { Stack } from "@/src/Components/Base/Stack";
 import { CircularLoadingIcon } from "@/src/Components/Base/CircularLoadingIcon";
+import { CircularLoadingScreen } from "@/src/Components/Base/CircularLoadingScreen";
+import { UpdateProduct } from "./UpdateProduct";
 
 function formatFilters(filters: Filters) {
     let key = undefined
@@ -150,19 +152,22 @@ export function Products() {
                             isIcon
                             variant='text'
                             fgColor='error'
-                            onClick={() => setAsk({ open: true, title: t('Products.deletionTitle'), content: t('Products.deletionContent'), successAction: () => deleteProduct(row.original._id), failureAction: () => setAsk({ ...ask, open: false }) })}
+                            onClick={() => {
+                                setDeletingProduct(row.original._id)
+                                setAsk({ open: true, title: t('Products.deletionTitle'), content: t('Products.deletionContent'), successAction: () => deleteProduct(row.original._id), failureAction: () => setAsk({ ...ask, open: false }) });
+                            }}
                         >
                             {deletingProduct === undefined || deletingProduct !== row.original._id ? <Trash2Icon /> : <CircularLoadingIcon />}
                         </Button>
                     }
-                </Stack >
+                </Stack>
         }
     ]
 
     return (
         <>
-            {!loading &&
-                <DataGrid
+            {!loading
+                ? <DataGrid
                     containerProps={{ stackProps: { style: { backgroundImage: `linear-gradient(to bottom right, ${dataGridGradientColor.toHex()} , transparent)` } } }}
                     configName='products'
                     data={products}
@@ -184,6 +189,7 @@ export function Products() {
                         createsProduct && <Button fgColor='success' variant='outline' onClick={() => setOpenCreateProductModal(true)}><PlusIcon />{t('Products.Create')}</Button>,
                     ]}
                 />
+                : <CircularLoadingScreen />
             }
 
             <DropdownMenu
@@ -199,6 +205,17 @@ export function Products() {
 
             <Modal open={openCreateProductModal} onClose={() => setOpenCreateProductModal(false)}>
                 <CreateProduct
+                    onFinish={(shouldRefresh) => {
+                        setOpenCreateProductModal(false)
+                        if (shouldRefresh)
+                            init(page.limit, page.offset)
+                    }}
+                />
+            </Modal>
+
+            <Modal open={openUpdateProductModal} onClose={() => setOpenUpdateProductModal(false)}>
+                <UpdateProduct
+                    productId={editingProduct}
                     onFinish={(shouldRefresh) => {
                         setOpenCreateProductModal(false)
                         if (shouldRefresh)

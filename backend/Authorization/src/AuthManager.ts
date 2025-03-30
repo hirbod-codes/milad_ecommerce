@@ -6,7 +6,7 @@ import { DateTime } from 'luxon';
 import { InsertionFailure } from './DB/Exceptions/InsertionFailure';
 import { RevokedAccessTokenManager } from './RevokedAccessTokens/RevokedAccessTokenManager';
 import { privilegeNames } from "@/src/DB/Models/privilegeNames"
-import { MongoServerError, ObjectId } from 'mongodb';
+import { ObjectId } from 'mongodb';
 import { RefreshToken } from './DB/Models/RefreshToken';
 import { MongoDB } from './DB/mongodb';
 

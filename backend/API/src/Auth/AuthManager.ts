@@ -1,6 +1,7 @@
-import { jwtSecret, revokedTokensRedisClient } from "@/src"
+import { jwtSecret } from "@/src"
 import { RevokedTokensRedisInsertionFailure } from "./Exceptions/RevokedTokensRedisInsertionFailure"
 import Jwt from 'jsonwebtoken'
+import { RevokedAccessTokenManager } from "../RevokedAccessTokens/RevokedAccessTokenManager"
 
 export class AuthManager {
     static getInstance() {
@@ -18,16 +19,12 @@ export class AuthManager {
 
     static async isAccessTokenRevoked(accessToken: string): Promise<boolean> {
         try {
-            await revokedTokensRedisClient.connect()
-
-            let result = await revokedTokensRedisClient.get(accessToken)
+            let result = await RevokedAccessTokenManager.get(accessToken)
 
             return result !== null && result !== undefined
         } catch (e) {
             console.error(e)
             throw new RevokedTokensRedisInsertionFailure()
-        } finally {
-            await revokedTokensRedisClient.quit()
         }
     }
 

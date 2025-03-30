@@ -25,6 +25,9 @@ export class TagRepository extends MongoDB {
         const startTimeTS = DateTime.utc().minus({ years: 2 }).toUnixInteger()
         const endTimeTS = DateTime.utc().minus({ months: 2 }).toUnixInteger()
 
+        const names = faker.helpers.uniqueArray(faker.definitions.person.first_name.generic!, count)
+        const faNames = fakerFA.helpers.uniqueArray(fakerFA.definitions.person.first_name.generic!, count)
+
         for (let i = 0; i < count; i++) {
             let safety = 0
             while (safety < 10) {
@@ -32,12 +35,11 @@ export class TagRepository extends MongoDB {
                 try {
                     const ts = faker.number.int({ min: startTimeTS, max: endTimeTS })
 
-                    const name = faker.person.firstName()
 
                     let r = await collection.insertOne({
                         schemaVersion,
-                        name,
-                        displayName: { fa: fakerFA.person.firstName(), en: name },
+                        name: names[i],
+                        displayName: { fa: faNames[i], en: names[i] },
                         views: faker.number.int({ min: 0, max: 100000 }),
                         createdAt: ts,
                         updatedAt: ts,

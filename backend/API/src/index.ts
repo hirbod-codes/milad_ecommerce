@@ -1,7 +1,6 @@
 import express from "express";
 import dotenv from "dotenv";
-import { getBooleanEnv, getIntegerEnv, getStringEnv } from "./helpers";
-import { createClient, createCluster, RedisClientType, RedisClusterType, RedisDefaultModules } from "redis";
+import { getBooleanEnv, getIntegerEnv, getStringEnv, tryAndWait } from "./helpers";
 import { MongoDB } from "./DB/mongodb";
 import { TagRepository } from "./DB/Repositories/TagRepository";
 import { ProductReviewsRepository } from "./DB/Repositories/ProductReviewsRepository";
@@ -15,6 +14,8 @@ import { categories } from './routes/categories'
 import { tags } from './routes/tags'
 import { QueueManagement } from "./QueueManagement";
 import { exit } from "process";
+import { RevokedAccessTokenManager } from "./RevokedAccessTokens/RevokedAccessTokenManager";
+import { SessionManager } from "./Session/SessionManager";
 
 dotenv.config({ debug: process.env.DEBUG !== undefined ? Boolean(process.env.DEBUG) : undefined })
 
@@ -43,30 +44,11 @@ else
     messageBrokerUrl = messageBrokerManagementApiUrl
 
 // Stores
-const sessionRedisType = getStringEnv('SESSION_REDIS_TYPE', 'The Session redis type environment variable is not provided')
+const sessionRedisType = getStringEnv('SESSION_REDIS_TYPE', 'The Session redis type environment variable is not provided', s => s.oneOf(['single', 'cluster'])) as 'single' | 'cluster'
 const sessionRedisInitialNodeUrl = getStringEnv('SESSION_REDIS_INITIAL_NODE_URL', 'The Session redis initial node url environment variable is not provided')
-const revokedTokensRedisType = getStringEnv('REVOKED_TOKENS_REDIS_TYPE', 'The Revoked tokens redis type environment variable is not provided')
+
+const revokedTokensRedisType = getStringEnv('REVOKED_TOKENS_REDIS_TYPE', 'The Revoked tokens redis type environment variable is not provided', s => s.oneOf(['single', 'cluster'])) as 'single' | 'cluster'
 const revokedTokensRedisInitialNodeUrl = getStringEnv('REVOKED_TOKENS_REDIS_INITIAL_NODE_URL', 'The Revoked tokens redis initial node url environment variable is not provided')
-
-let sessionRedisClient: RedisClusterType<RedisDefaultModules> | RedisClientType<RedisDefaultModules> = undefined!
-if (sessionRedisType === 'single')
-    sessionRedisClient = createClient({ url: sessionRedisInitialNodeUrl })
-else if (sessionRedisType === 'cluster')
-    sessionRedisClient = createCluster({
-        rootNodes: [{ url: sessionRedisInitialNodeUrl }],
-        useReplicas: true
-    });
-
-let revokedTokensRedisClient: RedisClusterType<RedisDefaultModules> | RedisClientType<RedisDefaultModules> = undefined!
-if (revokedTokensRedisType === 'single')
-    revokedTokensRedisClient = createClient({ url: revokedTokensRedisInitialNodeUrl })
-else if (revokedTokensRedisType === 'cluster')
-    revokedTokensRedisClient = createCluster({
-        rootNodes: [{ url: revokedTokensRedisInitialNodeUrl }],
-        useReplicas: true
-    });
-
-export { sessionRedisClient, revokedTokensRedisClient }
 
 export const dbConfig = {
     databaseName: getStringEnv('DB_DATABASE_NAME', 'The Db database name environment variable is not provided'),
@@ -78,30 +60,10 @@ export const dbConfig = {
     }
 }
 
-export const queueManagement = new QueueManagement(messageBrokerUrl, messageBrokerUsername, messageBrokerPassword, messageBrokerType as any)
+SessionManager.initialize(sessionRedisType, sessionRedisInitialNodeUrl)
+RevokedAccessTokenManager.initialize(revokedTokensRedisType, revokedTokensRedisInitialNodeUrl)
 
-async function tryAndWait(callback: CallableFunction, secondsToWaitForEachTry: number = 5) {
-    let safety = 0
-    while (safety <= 100) {
-        safety++
-        try {
-            await callback()
-            break;
-        }
-        catch (e) { console.error(e) }
-        finally {
-            await (() => new Promise<void>((res, rej) => {
-                console.log('waiting for 5 seconds...')
-                setTimeout(() => { res() }, secondsToWaitForEachTry * 1000)
-            }))()
-        }
-    }
-
-    if (safety > 100) {
-        console.log('safety reached!!')
-        exit(1)
-    }
-}
+export const queueManagement = new QueueManagement(messageBrokerUrl, messageBrokerUsername, messageBrokerPassword, messageBrokerType as any);
 
 (async () => {
     await tryAndWait(async () => {

@@ -19,6 +19,8 @@ export type MongodbConfig = {
 }
 
 export class MongoDB {
+    private static client: MongoClient | undefined = undefined
+
     static getDbInstance() {
         return new MongoDB()
     }
@@ -104,9 +106,12 @@ export class MongoDB {
     }
 
     async getClient(): Promise<MongoClient> {
-        console.group('getClient')
-
         try {
+            if (MongoDB.client !== undefined)
+                return MongoDB.client
+
+            console.log('creating mongodb client...')
+
             const c = this.config
 
             if (!c || !c)
@@ -124,6 +129,17 @@ export class MongoDB {
 
             await client.connect()
 
+            try {
+                const adminDb = client.db().admin();
+                await adminDb.ping();
+                console.log('MongoDB is healthy');
+            } catch (e) {
+                console.error('MongoDB health check failed:', e)
+                throw e
+            }
+
+            MongoDB.client = client
+
             return client
         } catch (error) {
             console.error(error)
@@ -132,40 +148,37 @@ export class MongoDB {
                 throw error
             else
                 throw new ConnectionError()
-        } finally {
-            console.groupEnd()
         }
     }
 
     async getDb(client?: MongoClient): Promise<Db> {
-        console.group('getDb')
-
         try {
             let db
-            if (!client) {
-                client = await this.getClient()
-                db = client.db(this.config.databaseName)
-            }
-            else
-                db = client.db(this.config.databaseName)
+            if (client === undefined)
+                client = MongoDB.client ?? await this.getClient()
+
+            db = client.db(this.config.databaseName)
 
             try {
-                const pingResult = await db.command({ ping: 1 })
-
-                console.log({ pingResult })
-            } catch (error) {
-                console.error(error);
-                await client?.close()
-                throw error
+                const adminDb = client.db().admin();
+                await adminDb.ping();
+                console.log('MongoDB is healthy');
+            } catch (e) {
+                console.error('MongoDB health check failed:', e)
+                throw e
             }
 
             return db
-        } finally {
-            console.groupEnd()
+        } catch (error) {
+            console.error(error);
+            await client?.close()
+            MongoDB.client = undefined
+            throw error
         }
     }
 
     async initializeDb(): Promise<void> {
+        MongoDB.client = undefined
         await this.addCollections()
     }
 

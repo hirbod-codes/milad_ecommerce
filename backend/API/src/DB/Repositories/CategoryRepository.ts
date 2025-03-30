@@ -27,6 +27,9 @@ export class CategoryRepository extends MongoDB {
 
         const localCategoryIds: string[] = []
 
+        const names = faker.helpers.uniqueArray(faker.definitions.person.first_name.generic!, count)
+        const faNames = fakerFA.helpers.uniqueArray(fakerFA.definitions.person.first_name.generic!, count)
+
         for (let i = 0; i < count; i++) {
             let safety = 0
             while (safety < 10) {
@@ -34,13 +37,13 @@ export class CategoryRepository extends MongoDB {
                 try {
                     const ts = faker.number.int({ min: startTimeTS, max: endTimeTS })
 
-                    const name = faker.person.firstName()
+                    const name = names[i]
                     const parentCategory = i === 0 || faker.datatype.boolean(0.3) ? undefined : faker.helpers.arrayElement(localCategoryIds)
 
                     let r = await collection.insertOne({
                         schemaVersion,
                         name,
-                        displayName: { fa: fakerFA.person.firstName(), en: name },
+                        displayName: { fa: faNames[i], en: name },
                         parentCategory,
                         recommendedProductProperties: new Array(faker.number.int({ min: 1, max: 15 })).fill(null).map(() => {
                             const key = faker.string.alpha({ length: { min: 3, max: 20 } })

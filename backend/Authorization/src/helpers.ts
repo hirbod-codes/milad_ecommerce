@@ -129,6 +129,7 @@ export async function tryAndWait(callback: CallableFunction, secondsToWaitForEac
     let safety = 0
     while (safety <= 100) {
         safety++
+        console.log('safety', safety)
         try {
             await callback()
             return true

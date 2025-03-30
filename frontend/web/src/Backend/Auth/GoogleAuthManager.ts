@@ -90,7 +90,7 @@ export class GoogleAuthManager extends Auth {
             return false
         }
 
-        this.login(token)
+        this.setToken(token)
 
         return true
     }

@@ -4,15 +4,20 @@ import { Auth } from '@/src/Backend/Auth/Auth';
 import { useNavigate } from 'react-router';
 
 export const AuthContextWrapper = memo(function AuthContextWrapper({ children }: { children?: ReactNode; }) {
+    const navigate = useNavigate()
+
     const [privileges, setPrivileges] = useState(undefined)
     const [loading, setLoading] = useState(true)
-
-    const navigate = useNavigate()
 
     console.log('AuthContextWrapper', { privileges, loading })
 
     const init = async () => {
         try {
+            if (!Auth.isAuthenticated() && (await Auth.login()) !== true) {
+                navigate('/')
+                return
+            }
+
             const ps = await Auth.getPrivileges()
             if (ps !== undefined)
                 setPrivileges(ps)
