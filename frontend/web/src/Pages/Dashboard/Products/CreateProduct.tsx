@@ -105,6 +105,7 @@ export function CreateProduct({ onFinish }: { onFinish?: (shouldRefresh: boolean
                                     key={i}
                                     label={c.name}
                                     inputProps={{
+                                        checked: selectedCategories.find(f => f._id === c._id) !== undefined,
                                         onChange: (e) => {
                                             if (e.target.checked && selectedCategories.find(f => f._id === c._id) === undefined)
                                                 setSelectedCategories([...selectedCategories, c])
@@ -129,6 +130,7 @@ export function CreateProduct({ onFinish }: { onFinish?: (shouldRefresh: boolean
                                     key={i}
                                     label={tag.name}
                                     inputProps={{
+                                        checked: selectedTags.find(f => f._id === tag._id) !== undefined,
                                         onChange: (e) => {
                                             if (e.target.checked && selectedTags.find(f => f._id === tag._id) === undefined)
                                                 setSelectedTags([...selectedTags, tag])
@@ -189,7 +191,7 @@ export function CreateProduct({ onFinish }: { onFinish?: (shouldRefresh: boolean
                                 <Stack key={i} direction="vertical">
                                     <Input
                                         placeholder={l}
-                                        value={displayName ? displayName[l] ?? '' : ''}
+                                        value={price ? price[l] ?? '' : ''}
                                         onChange={(e) => e.target.value.trim().match(/^[0-9]?([0-9]+(\.+[0-9]+)*)*$/) !== null ? setPrice({ ...price, [l]: Number(e.target.value.trim()) }) : undefined}
                                     />
                                 </Stack>

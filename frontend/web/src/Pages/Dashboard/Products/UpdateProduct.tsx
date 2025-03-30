@@ -21,15 +21,7 @@ export function UpdateProduct({ productId, onFinish }: { productId: string, onFi
     const [categories, setCategories] = useState<Category[]>([])
     const [tags, setTags] = useState<{ _id: string, name: string }[]>([])
 
-    const [selectedTags, setSelectedTags] = useState<{ _id: string, name: string }[]>([])
-    const [selectedCategories, setSelectedCategories] = useState<Category[]>([])
-
-    const [name, setName] = useState(undefined)
-    const [displayName, setDisplayName] = useState<{ [k: string]: string } | undefined>(undefined)
-    const [description, setDescription] = useState(undefined)
-    const [price, setPrice] = useState<{ [k: string]: number } | undefined>(undefined)
-
-    const [isAvailable, setIsAvailable] = useState(true)
+    const [product, setProduct] = useState(undefined)
 
     const id = useRef(0)
     const getId = () => {
@@ -42,7 +34,7 @@ export function UpdateProduct({ productId, onFinish }: { productId: string, onFi
     const [loading, setLoading] = useState(true)
     const [submitting, setSubmitting] = useState(false)
 
-    console.log('CreateProduct', { languages, categories, tags, selectedTags, selectedCategories, name, displayName, description, price, isAvailable, customProperties, loading, submitting })
+    console.log('UpdateProduct', {})
 
     useEffect(() => {
         Promise.all([
@@ -50,6 +42,7 @@ export function UpdateProduct({ productId, onFinish }: { productId: string, onFi
             fetchData(`${getApiUrl()}/tags`),
             // should be cached in future releases
             fetchData(`${getApiUrl()}/languages`),
+            fetchData(`${getApiUrl()}/products/${productId}`),
         ])
             .then(r => {
                 if (r[0].response && r[0].response.ok && array().required().isValidSync(r[0].data))
@@ -61,20 +54,31 @@ export function UpdateProduct({ productId, onFinish }: { productId: string, onFi
                 if (r[2].response && r[2].response.ok && array().required().isValidSync(r[2].data))
                     setLanguages(r[2].data)
 
+                if (r[3].response && r[3].response.ok)
+                    setProduct(r[3].data)
+
                 setLoading(false)
             })
     }, [])
 
     const submit = async () => {
+        for (const key in product?.price) {
+            if (Object.prototype.hasOwnProperty.call(product?.price, key)) {
+                const price = product?.price[key] as string;
+                if (price.endsWith('.'))
+                    return
+            }
+        }
+
         setSubmitting(true)
         try {
             const data = {
-                tags: selectedTags.map(st => st.name),
-                categories: selectedCategories.map(sc => sc.name),
-                name,
-                displayName,
-                price,
-                isAvailable,
+                // tags: selectedTags.map(st => st.name),
+                // categories: selectedCategories.map(sc => sc.name),
+                // name,
+                // displayName,
+                // price,
+                // isAvailable,
                 ...Object.fromEntries(customProperties.map(cp => [cp.key, cp.value]))
             }
 
@@ -83,7 +87,7 @@ export function UpdateProduct({ productId, onFinish }: { productId: string, onFi
                 if (onFinish)
                     onFinish(true)
             } else
-                feedback.push({ node: t('CreateProduct.CreationFailure'), color: { bgColor: 'error', fgColor: 'error-foreground' } })
+                feedback.push({ node: t('UpdateProduct.CreationFailure'), color: { bgColor: 'error', fgColor: 'error-foreground' } })
         } finally { setSubmitting(false) }
     }
 
@@ -95,7 +99,7 @@ export function UpdateProduct({ productId, onFinish }: { productId: string, onFi
                 <Stack stackProps={{ className: 'h-[5cm]' }}>
                     {/* Categories */}
                     <Stack size={3} direction="vertical" stackProps={{ className: 'w-1/2 overflow-y-auto border rounded-lg shadow-lg py-4' }}>
-                        <div className="text-lg px-2">{t('CreateProduct.Categories')}</div>
+                        <div className="text-lg px-2">{t('UpdateProduct.Categories')}</div>
 
                         <Separator className="mx-2 w-auto" />
 
@@ -105,11 +109,12 @@ export function UpdateProduct({ productId, onFinish }: { productId: string, onFi
                                     key={i}
                                     label={c.name}
                                     inputProps={{
+                                        checked: product?.categories?.find(f => f._id === c._id) !== undefined,
                                         onChange: (e) => {
-                                            if (e.target.checked && selectedCategories.find(f => f._id === c._id) === undefined)
-                                                setSelectedCategories([...selectedCategories, c])
-                                            if (!e.target.checked && selectedCategories.find(f => f._id === c._id) !== undefined)
-                                                setSelectedCategories([...selectedCategories.filter(f => f._id !== c._id)])
+                                            if (e.target.checked && product?.categories?.find(f => f._id === c._id) === undefined)
+                                                setProduct({ ...product, categories: [...categories, c] })
+                                            if (!e.target.checked && product?.categories?.find(f => f._id === c._id) !== undefined)
+                                                setProduct({ ...product, categories: categories.filter(f => f._id !== c._id) })
                                         }
                                     }}
                                 />
@@ -119,7 +124,7 @@ export function UpdateProduct({ productId, onFinish }: { productId: string, onFi
 
                     {/* Tags */}
                     <Stack size={3} direction="vertical" stackProps={{ className: 'w-1/2 overflow-y-auto border rounded-lg shadow-lg py-4' }}>
-                        <div className="text-lg px-2">{t('CreateProduct.Tags')}</div>
+                        <div className="text-lg px-2">{t('UpdateProduct.Tags')}</div>
 
                         <Separator className="mx-2 w-auto" />
 
@@ -129,11 +134,12 @@ export function UpdateProduct({ productId, onFinish }: { productId: string, onFi
                                     key={i}
                                     label={tag.name}
                                     inputProps={{
+                                        checked: product.tags?.find(f => f._id === tag._id) !== undefined,
                                         onChange: (e) => {
-                                            if (e.target.checked && selectedTags.find(f => f._id === tag._id) === undefined)
-                                                setSelectedTags([...selectedTags, tag])
-                                            if (!e.target.checked && selectedTags.find(f => f._id === tag._id) !== undefined)
-                                                setSelectedTags([...selectedTags.filter(f => f._id !== tag._id)])
+                                            if (e.target.checked && product.tags?.find(f => f._id === tag._id) === undefined)
+                                                setProduct({ ...product, tags: [...tags, tag] })
+                                            if (!e.target.checked && product.tags?.find(f => f._id === tag._id) !== undefined)
+                                                setProduct({ ...product, tags: tags.filter(f => f._id !== tag._id) })
                                         }
                                     }}
                                 />
@@ -147,16 +153,16 @@ export function UpdateProduct({ productId, onFinish }: { productId: string, onFi
                 {/* Second Row */}
                 <Stack stackProps={{ className: 'overflow-y-auto' }}>
                     {/* First Column */}
-                    <Stack direction="vertical" stackProps={{ className: 'w-1/2' }}>
-                        <Input value={name ?? ''} label={t('CreateProduct.name')} labelId={t('CreateProduct.name')} onChange={(e) => setName(e.target.value.trim())} />
+                    <Stack direction="vertical" stackProps={{ className: 'w-[calc(50%-(0.75rem)/2)]' }}>
+                        <Input value={product.name ?? ''} placeholder={t('UpdateProduct.name')} onChange={(e) => setProduct({ ...product, name: e.target.value.trim() })} />
 
                         {languages &&
                             <Stack direction='vertical' stackProps={{ className: "border rounded-lg shadow-lg p-2 min-h-[5cm] overflow-y-auto" }}>
-                                <div className="text-lg">{t('CreateProduct.DisplayNameTitle')}</div>
+                                <div className="text-lg">{t('UpdateProduct.DisplayNameTitle')}</div>
 
-                                {languages.map(l =>
-                                    <Stack direction="vertical">
-                                        <Input placeholder={l} value={displayName ? displayName[l] ?? '' : ''} onChange={(e) => setDisplayName({ ...displayName, [l]: e.target.value.trim() })} />
+                                {languages.map((l, i) =>
+                                    <Stack key={i} direction="vertical">
+                                        <Input placeholder={l} value={product.displayName ? product.displayName[l] ?? '' : ''} onChange={(e) => setProduct({ ...product, displayName: { ...product.displayName, [l]: e.target.value.trim() } })} />
                                     </Stack>
                                 )}
                             </Stack>
@@ -164,11 +170,11 @@ export function UpdateProduct({ productId, onFinish }: { productId: string, onFi
 
                         {languages &&
                             <Stack direction='vertical' stackProps={{ className: "border rounded-lg shadow-lg p-2 min-h-[5cm] overflow-y-auto" }}>
-                                <div className="text-lg">{t('CreateProduct.DescriptionTitle')}</div>
+                                <div className="text-lg">{t('UpdateProduct.DescriptionTitle')}</div>
 
-                                {languages.map(l =>
-                                    <Stack direction="vertical">
-                                        <Textarea placeholder={l} value={description ? description[l] ?? '' : ''} onChange={(e) => setDescription({ ...description, [l]: e.target.value.trim() })} />
+                                {languages.map((l, i) =>
+                                    <Stack key={i} direction="vertical">
+                                        <Textarea placeholder={l} value={product.description ? product.description[l] ?? '' : ''} onChange={(e) => setProduct({ ...product, description: { ...product.description, [l]: e.target.value.trim() } })} />
                                     </Stack>
                                 )}
                             </Stack>
@@ -176,21 +182,22 @@ export function UpdateProduct({ productId, onFinish }: { productId: string, onFi
                     </Stack>
 
                     {/* Second Column */}
-                    <Stack direction="vertical" stackProps={{ className: 'w-1/2' }}>
+                    <Stack direction="vertical" stackProps={{ className: 'w-[calc(50%-(0.75rem)/2)]' }}>
                         <CheckBox
-                            label={t('CreateProduct.isAvailable')}
-                            inputProps={{ checked: isAvailable, onChange: (e) => setIsAvailable(e.target.checked) }}
+                            label={t('UpdateProduct.isAvailable')}
+                            inputProps={{ checked: product.isAvailable, onChange: (e) => setProduct({ ...product, isAvailable: e.target.checked }) }}
                         />
 
                         <Stack direction='vertical' stackProps={{ className: "border rounded-lg shadow-lg p-2 max-h-[5cm] overflow-y-auto" }}>
-                            <div className="text-lg">{t('CreateProduct.DisplayNameTitle')}</div>
+                            <div className="text-lg">{t('UpdateProduct.DisplayNameTitle')}</div>
 
-                            {['IRR', 'USD'].map(l =>
-                                <Stack direction="vertical">
+                            {['IRR', 'USD'].map((l, i) =>
+                                <Stack key={i} direction="vertical">
                                     <Input
                                         placeholder={l}
-                                        value={displayName ? displayName[l] ?? '' : ''}
-                                        onChange={(e) => e.target.value.trim().match(/^[0-9]?([0-9]+(\.+[0-9]+)*)*$/) !== null ? setPrice({ ...price, [l]: Number(e.target.value.trim()) }) : undefined}
+                                        value={product?.price ? (product?.price[l] ?? '') : ''}
+                                        onChange={(e) => e.target.value.trim().match(/^[0-9]?([0-9]+(\.+[0-9]*)*)*$/) !== null ? setProduct({ ...product, price: { ...product?.price, [l]: Number(e.target.value.trim()) } }) : undefined}
+                                        errorText={product?.price && product?.price[l] && product?.price[l]?.match(/^[0-9]?([0-9]+(\.+[0-9]+)*)*$/) === null ? t('UpdateProduct.priceInputError') : undefined}
                                     />
                                 </Stack>
                             )}
@@ -202,10 +209,21 @@ export function UpdateProduct({ productId, onFinish }: { productId: string, onFi
 
                 {/* Third Row */}
                 <Stack direction="vertical" stackProps={{ className: 'max-h-[10cm] overflow-y-auto' }}>
+                    {
+                        Object.entries(product)
+                            .filter(e => !['schemaVersion', '_id', 'tags', 'categories', 'name', 'displayName', 'description', 'price', 'isAvailable', 'thumbnail', 'purchaseCount', 'reviewsCount', 'views', 'averageRating', 'createdAt', 'updatedAt',].includes(e[0]))
+                            .map(m =>
+                                <Stack key={m[0]} stackProps={{ className: 'items-center justify-between' }}>
+                                    <Input containerProps={{ className: "flex-grow" }} value={m[0]} readOnly />
+                                    <Input containerProps={{ className: "flex-grow" }} placeholder={t('UpdateProduct.Value')} value={(m[1] as any) ?? ''} onChange={(e) => setProduct({ ...product, [m[0]]: e.target.value.trim() })} />
+                                    <Button isIcon variant="text" fgColor="error" onClick={() => setProduct({ ...Object.fromEntries(Object.entries(product).filter(f => f[0] !== m[0])) })}><Trash2Icon /></Button>
+                                </Stack>
+                            )
+                    }
                     {customProperties.map(cp =>
                         <Stack key={cp.id} stackProps={{ className: 'items-center justify-between' }}>
-                            {selectedCategories.find(c => c?.recommendedProductProperties?.length > 0) === undefined
-                                ? <Input containerProps={{ className: "flex-grow" }} placeholder={t('CreateProduct.Field')} value={cp.key ?? ''} onChange={(e) => { cp.key = e.target.value; setCustomProperties([...customProperties]) }} />
+                            {product?.categories?.find(c => c?.recommendedProductProperties?.length > 0) === undefined
+                                ? <Input containerProps={{ className: "flex-grow" }} placeholder={t('UpdateProduct.Field')} value={cp.key ?? ''} onChange={(e) => { cp.key = e.target.value; setCustomProperties([...customProperties]) }} />
                                 : <Select
                                     onValueSelect={(e: '$and' | '$or') => { cp.key = e; setCustomProperties([...customProperties]) }}
                                     inputProps={{
@@ -215,7 +233,7 @@ export function UpdateProduct({ productId, onFinish }: { productId: string, onFi
                                         onChange: (e) => {
                                             cp.key = e.target.value.trim()
                                             setCustomProperties([...customProperties])
-                                            setSuggestedProperties(selectedCategories.reduce((p, c) => p.concat(c.recommendedProductProperties.filter(f => f.name.includes(cp.key)).map(m => m.name) ?? []), []))
+                                            setSuggestedProperties(product?.categories?.reduce((p, c) => p.concat(c.recommendedProductProperties.filter(f => f.name.includes(cp.key)).map(m => m.name) ?? []), []))
                                         }
                                     }}
                                     stopPropagation={true}
@@ -231,7 +249,7 @@ export function UpdateProduct({ productId, onFinish }: { productId: string, onFi
                                 </Select>
                             }
 
-                            <Input containerProps={{ className: "flex-grow" }} placeholder={t('CreateProduct.Value')} value={cp.value ?? ''} onChange={(e) => { cp.value = e.target.value; setCustomProperties([...customProperties]) }} />
+                            <Input containerProps={{ className: "flex-grow" }} placeholder={t('UpdateProduct.Value')} value={cp.value ?? ''} onChange={(e) => { cp.value = e.target.value; setCustomProperties([...customProperties]) }} />
 
                             <Button isIcon variant="text" fgColor="error" onClick={() => setCustomProperties([...customProperties.filter(f => f.id !== cp.id)])}><Trash2Icon /></Button>
                         </Stack>
@@ -244,7 +262,7 @@ export function UpdateProduct({ productId, onFinish }: { productId: string, onFi
 
                 <Separator />
 
-                <Button disabled={submitting || !name || Object.values(price).find(f => f === undefined) !== undefined || Object.keys(price).length === 0} onClick={submit}>{submitting ? <CircularLoading /> : t('CreateProduct.Create')}</Button>
+                <Button disabled={submitting} onClick={submit}>{submitting ? <CircularLoading /> : t('UpdateProduct.Update')}</Button>
             </Stack>
     )
 }

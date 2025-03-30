@@ -55,14 +55,14 @@ export function Layout() {
 
     useEffect(() => {
         if (ref.current) {
-            grownRef.current.style.width = (ref.current.getBoundingClientRect().width - 64) + 'px'
+            grownRef.current.style.width = (ref.current.getBoundingClientRect().width - 72) + 'px'
             rerender()
         }
     }, [ref, ref.current])
 
     return (
         <Stack stackProps={{ className: 'size-full', }} stackRef={ref}>
-            <div className="w-[64px] h-full">
+            <div className="w-[72px] h-full">
                 <Navigation />
             </div>
 

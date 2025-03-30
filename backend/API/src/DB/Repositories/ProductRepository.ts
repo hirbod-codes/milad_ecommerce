@@ -61,6 +61,7 @@ export class ProductRepository extends MongoDB {
                         isAvailable: faker.datatype.boolean(0.7),
                         views: faker.number.int({ min: 0, max: 100000 }),
                         averageRating: faker.number.float({ min: 0, max: 5 }),
+                        ...(Object.fromEntries(new Array(faker.number.int({ min: 0, max: 10 })).fill(null).map(m => [faker.string.alpha({ length: { min: 2, max: 10 } }), faker.string.alpha({ length: { min: 2, max: 10 } })]))),
                         createdAt: ts,
                         updatedAt: ts,
                     })
