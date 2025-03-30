@@ -1,7 +1,10 @@
-import { Collection, DeleteResult, InsertOneResult, ObjectId, UpdateResult } from 'mongodb'
+import { Collection, DeleteResult, InsertOneResult, MongoSystemError, ObjectId, UpdateResult } from 'mongodb'
 import { ProductReview, ProductReviewCreate, ProductReviewInput, ProductReviewUpdate, schemaVersion } from '../Models/ProductReview'
 import { DateTime } from 'luxon'
 import { MongoDB } from '../mongodb';
+import { faker } from '@faker-js/faker/.';
+import { ProductRepository } from './ProductRepository';
+import { UserRepository } from './UserRepository';
 
 export class ProductReviewsRepository extends MongoDB {
     private collection: Collection<ProductReviewCreate>
@@ -9,6 +12,53 @@ export class ProductReviewsRepository extends MongoDB {
     constructor(collection: Collection<ProductReviewCreate>) {
         super();
         this.collection = collection
+    }
+
+    static async seed(count: number = 50) {
+        const collection = await MongoDB.getDbInstance().getProductReviewsCollection()
+        const productRepository = await ProductRepository.getInstance()
+        const userRepository = await UserRepository.getInstance()
+
+        if (!(await collection.deleteMany()).acknowledged)
+            throw new Error('seeding users failed!')
+
+        const users = await userRepository.get()
+        if (users.length === 0)
+            throw new Error('seeding users failed!')
+
+        const products = await productRepository.getAll()
+        if (products.length === 0)
+            throw new Error('seeding users failed!')
+
+        const startTimeTS = DateTime.utc().minus({ years: 2 }).toUnixInteger()
+        const endTimeTS = DateTime.utc().minus({ months: 2 }).toUnixInteger()
+
+        for (let i = 0; i < count; i++) {
+            let safety = 0
+            while (safety < 10) {
+                safety++
+                try {
+                    const ts = faker.number.int({ min: startTimeTS, max: endTimeTS })
+
+                    const name = faker.person.firstName()
+
+                    let r = await collection.insertOne({
+                        schemaVersion,
+                        productId: faker.helpers.arrayElement(products)._id.toString(),
+                        userId: faker.helpers.arrayElement(users)._id.toString(),
+                        rating: faker.number.int({ min: 0, max: 5 }),
+                        content: faker.word.words({ count: { min: 20, max: 100 } }),
+                        createdAt: ts,
+                        updatedAt: ts,
+                    })
+                    if (r.acknowledged)
+                        break
+                } catch (e) {
+                    if (!(e instanceof MongoSystemError) || e.code !== 11000)
+                        throw e
+                }
+            }
+        }
     }
 
     static async getInstance(): Promise<ProductReviewsRepository> {

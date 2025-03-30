@@ -1,6 +1,5 @@
 import dotenv from "dotenv";
 import express from "express";
-import { AuthManager } from "./AuthManager";
 import { MongoDB } from "./DB/mongodb";
 import { getBooleanEnv, getIntegerEnv, getStringEnv, tryAndWait } from "./helpers";
 import { createClient, createCluster, RedisClientType, RedisClusterType, RedisDefaultModules } from "redis";
@@ -8,7 +7,6 @@ import nodemailer from "nodemailer";
 import { UserRepository } from "./DB/Repositories/UserRepository";
 import { RoleRepository } from "./DB/Repositories/RoleRepository";
 import { PrivilegeRepository } from "./DB/Repositories/PrivilegeRepository";
-import { UserProfilePictureRepository } from "./DB/Repositories/UserProfilePictureRepository";
 import { tokenRouter } from "./routes/Auth/tokens";
 import { emailRouter } from "./routes/Auth/email";
 import { phoneNumberRouter } from "./routes/Auth/phoneNumber";

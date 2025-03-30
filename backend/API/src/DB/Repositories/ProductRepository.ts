@@ -102,6 +102,11 @@ export class ProductRepository extends MongoDB {
         catch (e) { console.error(e); return undefined }
     }
 
+    async getAll(): Promise<Product[]> {
+        try { return await this.collection.find().toArray() }
+        catch (e) { console.error(e); return [] }
+    }
+
     async get(filter: Filter<Product>, sorts: { field: keyof Product, direction: SortDirection }[], limit: number, skip: number): Promise<Product[] | false> {
         try {
             let cursor = this.collection.find(filter)

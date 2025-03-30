@@ -3,8 +3,6 @@ import dotenv from "dotenv";
 import { getBooleanEnv, getIntegerEnv, getStringEnv } from "./helpers";
 import { createClient, createCluster, RedisClientType, RedisClusterType, RedisDefaultModules } from "redis";
 import { MongoDB } from "./DB/mongodb";
-import { UserRepository } from "./DB/Repositories/UserRepository";
-import { RoleRepository } from "./DB/Repositories/RoleRepository";
 import { TagRepository } from "./DB/Repositories/TagRepository";
 import { ProductReviewsRepository } from "./DB/Repositories/ProductReviewsRepository";
 import { ProductRepository } from "./DB/Repositories/ProductRepository";
@@ -17,11 +15,10 @@ import { categories } from './routes/categories'
 import { tags } from './routes/tags'
 import { QueueManagement } from "./QueueManagement";
 import { exit } from "process";
-import { ProductPictureRepository } from "./DB/Repositories/ProductPictureRepository";
-import { AuthManager } from "./Auth/AuthManager";
-import { array, object } from "yup";
 
 dotenv.config({ debug: process.env.DEBUG !== undefined ? Boolean(process.env.DEBUG) : undefined })
+
+export const isProduction = getStringEnv('NODE_ENV', 'The Node env environment variable is not provided')! === 'production'
 
 export const hostName = getStringEnv('HOST', 'The HOST environment variable is not provided')
 export const hostPort = getIntegerEnv('PORT', 'The PORT environment variable is not provided', (s) => s.min(1025))
@@ -109,6 +106,14 @@ async function tryAndWait(callback: CallableFunction, secondsToWaitForEachTry: n
 (async () => {
     await tryAndWait(async () => {
         await MongoDB.getDbInstance().initializeDb();
+
+        if (isProduction !== true) {
+            await CategoryRepository.seed()
+            await TagRepository.seed()
+            await ProductRepository.seed()
+            await ProductReviewsRepository.seed()
+            await OrderRepository.seed()
+        }
     })
 
     await tryAndWait(async () => await queueManagement.subscribeConsumers(messageBrokerUrl))

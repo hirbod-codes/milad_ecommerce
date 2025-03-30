@@ -18,4 +18,9 @@ export class UserRepository extends MongoDB {
         try { return await this.collection.findOne({ _id: ObjectId.createFromHexString(id) }) }
         catch (e) { console.error(e); return undefined }
     }
+
+    async get(): Promise<User[]> {
+        try { return await this.collection.find().toArray() }
+        catch (e) { console.error(e); return [] }
+    }
 }

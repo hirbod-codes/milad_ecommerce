@@ -1,7 +1,10 @@
-import { Collection, DeleteResult, Filter, InsertOneResult, ObjectId, SortDirection, UpdateResult } from 'mongodb'
+import { Collection, DeleteResult, Filter, InsertOneResult, MongoSystemError, ObjectId, SortDirection, UpdateResult } from 'mongodb'
 import { Order, OrderCreate, OrderImmutable, OrderInput, OrderUpdate, schemaVersion } from '../Models/Order'
 import { DateTime } from 'luxon'
 import { MongoDB } from '../mongodb';
+import { faker } from '@faker-js/faker/.';
+import { ProductRepository } from './ProductRepository';
+import { UserRepository } from './UserRepository';
 
 export class OrderRepository extends MongoDB {
     private collection: Collection<OrderCreate>
@@ -13,6 +16,59 @@ export class OrderRepository extends MongoDB {
 
     static async getInstance(): Promise<OrderRepository> {
         return new OrderRepository(await MongoDB.getDbInstance().getOrderCollection())
+    }
+
+    static async seed(count: number = 50) {
+        const collection = await MongoDB.getDbInstance().getOrderCollection()
+        const productRepository = await ProductRepository.getInstance()
+        const userRepository = await UserRepository.getInstance()
+
+        if (!(await collection.deleteMany()).acknowledged)
+            throw new Error('seeding users failed!')
+
+        const users = await userRepository.get()
+        if (users.length === 0)
+            throw new Error('seeding users failed!')
+
+        const products = await productRepository.getAll()
+        if (products.length === 0)
+            throw new Error('seeding users failed!')
+
+        const startTimeTS = DateTime.utc().minus({ years: 2 }).toUnixInteger()
+        const endTimeTS = DateTime.utc().minus({ months: 2 }).toUnixInteger()
+
+        for (let i = 0; i < count; i++) {
+            let safety = 0
+            while (safety < 10) {
+                safety++
+                try {
+                    const ts = faker.number.int({ min: startTimeTS, max: endTimeTS })
+
+                    const selectedProducts = faker.helpers.arrayElements(products, faker.number.int({ min: 3 }))
+                    const cost = { IRR: selectedProducts.reduce((p, c) => p + c.price.IRR, 0), USD: selectedProducts.reduce((p, c) => p + c.price.USD, 0) }
+
+                    let r = await collection.insertOne({
+                        schemaVersion,
+                        userId: faker.helpers.arrayElement(users)._id.toString(),
+                        isPayed: true,
+                        isSent: faker.datatype.boolean(0.5),
+                        products: selectedProducts.map(m => m._id),
+                        cost,
+                        address: {
+                            text: faker.lorem.lines({ min: 1, max: 5 }),
+                            googleMap: faker.internet.url()
+                        },
+                        createdAt: ts,
+                        updatedAt: ts,
+                    })
+                    if (r.acknowledged)
+                        break
+                } catch (e) {
+                    if (!(e instanceof MongoSystemError) || e.code !== 11000)
+                        throw e
+                }
+            }
+        }
     }
 
     async create(userId: string | ObjectId, order: OrderInput, cost: { [k: string]: number }): Promise<InsertOneResult | false> {
