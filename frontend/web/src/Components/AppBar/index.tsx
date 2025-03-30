@@ -8,9 +8,12 @@ import { Auth } from "@/src/Backend/Auth/Auth";
 import { dispatch } from "@/src/Lib/Events";
 import { LAYOUT_RERENDER } from "@/src/Pages/Layout";
 import { FeedbackContext } from "@/src/Contexts/Feedback/FeedbackContext";
+import { useNavigate } from "react-router";
+import { UserCircle2Icon, UserCircleIcon } from "lucide-react";
 
 export function AppBar() {
     const feedback = useContext(FeedbackContext)
+    const navigate = useNavigate()
 
     console.log('AppBar')
 
@@ -26,20 +29,27 @@ export function AppBar() {
                     ? <Stack stackProps={{ className: 'items-center' }}>
                         <Button variant="outline" size='sm' onClick={() => setAuthModalOpen(true)}>{t('common.login')}/{t('common.signup')}</Button>
                     </Stack>
-                    : <Button
-                        variant="outline"
-                        size='sm'
-                        onClick={async () => {
-                            const r = await Auth.logout()
+                    :
+                    <>
+                        <Stack size={2} stackProps={{ className: 'items-center' }}>
+                            <Button isIcon variant="text" size="sm" className="[&_svg]:size-7" onClick={() => navigate('/Dashboard/Roles')}><UserCircleIcon strokeWidth={1} /></Button>
 
-                            if (!r)
-                                feedback.push({ node: t('common.logoutFailed') })
-                            else
-                                dispatch(LAYOUT_RERENDER)
-                        }}
-                    >
-                        {t('common.logout')}
-                    </Button>
+                            <Button
+                                variant="outline"
+                                size='xs'
+                                onClick={async () => {
+                                    const r = await Auth.logout()
+
+                                    if (!r)
+                                        feedback.push({ node: t('common.logoutFailed') })
+                                    else
+                                        dispatch(LAYOUT_RERENDER)
+                                }}
+                            >
+                                {t('common.logout')}
+                            </Button>
+                        </Stack>
+                    </>
                 }
             </Stack>
 
