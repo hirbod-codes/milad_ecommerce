@@ -93,14 +93,6 @@ export function UpdateProduct({ productId, onFinish }: { productId: string, onFi
     }, [])
 
     const submit = async () => {
-        for (const key in product?.price) {
-            if (Object.prototype.hasOwnProperty.call(product?.price, key)) {
-                const price = product?.price[key].toString();
-                if (price.endsWith('.'))
-                    return
-            }
-        }
-
         setSubmitting(true)
         try {
             const data = {
@@ -345,6 +337,7 @@ export function UpdateProduct({ productId, onFinish }: { productId: string, onFi
                         <Separator />
 
                         {/* Fifth Row */}
+                        {/* Custom Fields */}
                         <Stack direction="vertical" stackProps={{ className: 'max-h-[10cm] overflow-y-auto' }}>
                             {
                                 product && Object.entries(product)
@@ -399,6 +392,8 @@ export function UpdateProduct({ productId, onFinish }: { productId: string, onFi
 
                         <Separator />
 
+                        {/* Sixth Row */}
+                        {/* Pictures */}
                         <Stack stackProps={{ className: 'flex-wrap items-start' }}>
                             {
                                 images === undefined
@@ -466,8 +461,10 @@ export function UpdateProduct({ productId, onFinish }: { productId: string, onFi
                             disabled={
                                 submitting ||
                                 !product?.name.trim() ||
-                                Object.entries(product?.price ?? {}).find(f => !f[0].trim() || !f[1].toString().trim()) !== undefined ||
-                                Object.entries(product?.displayName ?? {}).find(f => !f[0].trim() || !f[1].toString().trim()) !== undefined ||
+                                !product?.price ||
+                                !product?.displayName ||
+                                Object.entries(product?.price).find(f => !f[0].trim() || !f[1].toString().trim() || f[1]?.toString()?.match(/^[0-9]?([0-9]+(\.+[0-9]+)*)*$/) === null) !== undefined ||
+                                Object.entries(product?.displayName).find(f => !f[0].trim() || !f[1].toString().trim()) !== undefined ||
                                 customProperties.find(f => !f.key.trim() || !f.value.trim()) !== undefined
                             }
                             onClick={submit}
