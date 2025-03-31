@@ -134,9 +134,44 @@ products.get('/', async (req, res) => {
     }
 })
 
-products.get('/pictures/:ids', async (req, res) => {
+products.get('/picture/:fileId', async (req, res) => {
     try {
-        const { ids: idsStr } = req.params
+        const { fileId } = req.params
+
+        if (!fileId) {
+            res.sendStatus(400)
+            return
+        }
+
+        if (!stringObjectId.required().isValidSync(fileId)) {
+            res.sendStatus(400)
+            return
+        }
+        const productPictureRepository = await ProductPictureRepository.getInstance()
+        const file = await productPictureRepository.getFile(fileId)
+        if (file === undefined) {
+            res.sendStatus(404)
+            return
+        }
+
+        const readstream = productPictureRepository.getReadStream(file._id);
+        console.log('readstream', readstream)
+
+        readstream.pipe(res)
+
+        readstream.on('error', e => {
+            console.error(e)
+            res.sendStatus(500)
+        })
+    } catch (e) {
+        console.error(e)
+        res.sendStatus(500)
+    }
+})
+
+products.get('/pictures/:productIds', async (req, res) => {
+    try {
+        const { productIds: idsStr } = req.params
 
         if (!idsStr) {
             res.sendStatus(400)
@@ -150,27 +185,10 @@ products.get('/pictures/:ids', async (req, res) => {
             return
         }
 
-        // Create a ZIP archive
-        const archive = archiver("zip", {
-            zlib: { level: 9 }, // Compression level
-        });
-
-        // Set the response headers
-        res.attachment("files.zip");
-        archive.pipe(res);
-
-        // Add each file to the archive
         const productPictureRepository = await ProductPictureRepository.getInstance()
         const files = await productPictureRepository.getFilesByProductId(ids)
-        console.log('files', files)
-        files.forEach((file) => {
-            const readstream = productPictureRepository.getReadStream(file._id);
-            console.log('readstream', readstream)
-            archive.append(readstream, { name: file.filename });
-        });
 
-        // Finalize the archive and send it
-        await archive.finalize();
+        res.json(files)
     } catch (e) {
         console.error(e)
         res.sendStatus(500)
