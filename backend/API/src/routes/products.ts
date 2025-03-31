@@ -287,7 +287,7 @@ products.post('/pictures/:productId', authenticate, async (req, res) => {
     }
 })
 
-products.delete('/picture/:fileId', async (req, res) => {
+products.delete('/picture', async (req, res) => {
     try {
         const { fileId } = req.body
 

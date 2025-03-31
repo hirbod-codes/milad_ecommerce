@@ -404,7 +404,15 @@ export function UpdateProduct({ productId, onFinish }: { productId: string, onFi
                                             <div className="size-full absolute top-0 *:hover:block z-50" onClick={() => setImage(m)}>
                                                 <div className="size-full absolute top-0 hidden bg-[#00000080]" onClick={() => setImage(m)} />
                                                 <div className="hidden absolute bottom-1 right-1">
-                                                    <Button isIcon variant="text" size='xs' fgColor="error" className='' onClick={() => { }}><Trash2Icon /></Button>
+                                                    <Button isIcon variant="text" size='xs' fgColor="error" onClick={async (e) => {
+                                                        e.stopPropagation()
+
+                                                        const r = await authFetchData(`${getApiUrl()}/products/picture`, { method: 'delete', body: JSON.stringify({ fileId: m }) })
+                                                        if (!r.response || !r.response.ok)
+                                                            feedback.push({ node: t('UpdateProduct.pictureDeleteFailed'), color: { bgColor: 'error', fgColor: 'error-foreground' } })
+
+                                                        setImages([...images.filter(f => f !== m)])
+                                                    }}><Trash2Icon /></Button>
                                                 </div>
                                             </div>
                                         </div>
