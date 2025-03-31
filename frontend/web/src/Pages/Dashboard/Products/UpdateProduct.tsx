@@ -394,14 +394,19 @@ export function UpdateProduct({ productId, onFinish }: { productId: string, onFi
 
                         {/* Sixth Row */}
                         {/* Pictures */}
-                        <Stack stackProps={{ className: 'flex-wrap items-start' }}>
+                        <Stack stackProps={{ className: 'flex-wrap items-start *:py-1' }}>
                             {
                                 images === undefined
                                     ? <CircularLoadingIcon />
                                     : images?.map((m, i) =>
                                         <div key={i} className="relative w-[3cm]">
-                                            <img src={`${getApiUrl()}/products/picture/${m}`} className="w-full relative" loading="lazy" />
-                                            <div className="size-full absolute top-0 hover:bg-[#00000080]" onClick={() => setImage(m)} />
+                                            <img src={`${getApiUrl()}/products/picture/${m}`} className="w-full relative top-0" loading="lazy" />
+                                            <div className="size-full absolute top-0 *:hover:block z-50" onClick={() => setImage(m)}>
+                                                <div className="size-full absolute top-0 hidden bg-[#00000080]" onClick={() => setImage(m)} />
+                                                <div className="hidden absolute bottom-1 right-1">
+                                                    <Button isIcon variant="text" size='xs' fgColor="error" className='' onClick={() => { }}><Trash2Icon /></Button>
+                                                </div>
+                                            </div>
                                         </div>
                                     )
                             }

@@ -172,6 +172,7 @@ export function Products() {
                     additionalColumns={additionalColumns}
                     loading={loading}
                     hasPagination
+                    defaultColumnOrderModel={['actions']}
                     pagination={{ pageSize: page.limit, pageIndex: page.offset }}
                     onPagination={async (p) => {
                         const result = await init(p.pageIndex, p.pageSize)

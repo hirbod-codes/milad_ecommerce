@@ -145,7 +145,7 @@ export class ProductPictureRepository extends MongoDB {
         }
     }
 
-    async deleteFile(productId: string, fileId: string, filename: string): Promise<boolean> {
+    async deleteFile(fileId: string): Promise<boolean> {
         try {
             await this.collection.delete(ObjectId.createFromHexString(fileId))
 

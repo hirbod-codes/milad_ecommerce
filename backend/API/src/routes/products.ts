@@ -287,6 +287,34 @@ products.post('/pictures/:productId', authenticate, async (req, res) => {
     }
 })
 
+products.delete('/picture/:fileId', async (req, res) => {
+    try {
+        const { fileId } = req.body
+
+        if (!fileId) {
+            res.sendStatus(400)
+            return
+        }
+
+        if (!stringObjectId.required().isValidSync(fileId)) {
+            res.sendStatus(400)
+            return
+        }
+
+        const productPictureRepository = await ProductPictureRepository.getInstance()
+        const file = await productPictureRepository.deleteFile(fileId)
+        if (file === false) {
+            res.sendStatus(404)
+            return
+        }
+
+        res.sendStatus(200)
+    } catch (e) {
+        console.error(e)
+        res.sendStatus(500)
+    }
+})
+
 products.patch('/', authenticate, async (req, res) => {
     try {
         if (await authorize(req, 'update-product') !== true) {
