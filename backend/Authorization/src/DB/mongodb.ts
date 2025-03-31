@@ -21,6 +21,11 @@ export type MongodbConfig = {
 export class MongoDB {
     private static client: MongoClient | undefined = undefined
 
+    static unsetClient() {
+        console.log('unsetting client...')
+        MongoDB.client = undefined
+    }
+
     static getDbInstance() {
         return new MongoDB()
     }
@@ -159,26 +164,17 @@ export class MongoDB {
 
             db = client.db(this.config.databaseName)
 
-            try {
-                const adminDb = client.db().admin();
-                await adminDb.ping();
-                console.log('MongoDB is healthy');
-            } catch (e) {
-                console.error('MongoDB health check failed:', e)
-                throw e
-            }
-
             return db
         } catch (error) {
             console.error(error);
             await client?.close()
-            MongoDB.client = undefined
+            MongoDB.unsetClient()
             throw error
         }
     }
 
     async initializeDb(): Promise<void> {
-        MongoDB.client = undefined
+        MongoDB.unsetClient()
         await this.addCollections()
     }
 

@@ -231,7 +231,7 @@ products.post('/pictures/:productId', authenticate, async (req, res) => {
 
                 files.push(fileData);
             });
-        });
+        })
 
         bb.on("finish", () => {
             if (files.length === 0)

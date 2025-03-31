@@ -1,5 +1,5 @@
 import { Fragment, useContext, useEffect, useRef, useState } from "react";
-import { authFetchData, extractImagesFromZip, fetchData, getApiUrl } from "@/src/Backend/helpers";
+import { authFetch, authFetchData, extractImagesFromZip, fetchData, getApiUrl } from "@/src/Backend/helpers";
 import { Button } from "@/src/Components/Base/Button";
 import { t } from "i18next";
 import { PlusIcon, SearchIcon, Trash2Icon } from "lucide-react";
@@ -16,12 +16,15 @@ import { Select } from "@/src/Components/Base/Select";
 import { Product } from './index.d'
 import { CircularLoadingIcon } from "@/src/Components/Base/CircularLoadingIcon";
 import { Modal } from "@/src/Components/Base/Modal";
+import { uptime } from "process";
 
 export function UpdateProduct({ productId, onFinish }: { productId: string, onFinish?: (shouldRefresh: boolean) => void }) {
     const feedback = useContext(FeedbackContext)
 
     const [product, setProduct] = useState<Product | undefined>(undefined)
 
+    const [uploading, setUploading] = useState(false)
+    const uploadRef = useRef<HTMLInputElement>(null)
     const [images, setImages] = useState<string[]>(undefined)
     const [image, setImage] = useState<string>(undefined)
 
@@ -137,7 +140,7 @@ export function UpdateProduct({ productId, onFinish }: { productId: string, onFi
                         containerProps={{ className: 'w-full' }}
                         label={t('UpdateProduct.name')}
                         labelId={t('UpdateProduct.name')}
-                        value={product.name ?? ''}
+                        value={product?.name ?? ''}
                         onChange={(e) => setProduct({ ...product, name: e.target.value.trim() })}
                     />
                 </Stack>
@@ -407,9 +410,46 @@ export function UpdateProduct({ productId, onFinish }: { productId: string, onFi
                                 </div>
                             )
                     }
-                    <Button isIcon variant="text" fgColor='success'><PlusIcon /></Button>
+                    <Input
+                        className='hidden'
+                        type="file"
+                        multiple={true}
+                        inputRef={uploadRef}
+                        onChange={async e => {
+                            setUploading(true)
+                            try {
+                                let size = 0
+                                const formData = new FormData()
+                                for (const file of e.target.files) {
+                                    formData.append(file.name, file)
+                                    size += file.size
+                                }
+
+                                const r = await authFetchData(`${getApiUrl()}/products/pictures/${productId}`, {
+                                    method: 'post',
+                                    body: formData,
+                                    headers: {
+                                        Accept: 'application/json',
+                                        'Content-Length': size.toString(),
+                                    }
+                                }, false)
+
+                                if (!r.response || !r?.response?.ok) {
+                                    feedback.push({ node: t('UpdateProduct.failedToUploadImage'), color: { bgColor: 'error', fgColor: 'error-foreground' } })
+                                    return
+                                }
+                            } finally { setUploading(false) }
+                        }}
+                    />
+                    <Button isIcon variant="text" fgColor='success' onClick={() => { if (uploadRef) uploadRef.current.click() }}>{uploading ? <CircularLoadingIcon /> : <PlusIcon />}</Button>
                 </Stack>
-                <Modal modalContainerProps={{ className: 'max-h-screen h-max' }} useResponsiveContainer={false} childrenContainerProps={{ className: 'w-auto bg-transparent p-0' }} open={image !== undefined} onClose={() => setImage(undefined)}>
+                <Modal
+                    modalContainerProps={{ className: 'max-h-screen h-max' }}
+                    useResponsiveContainer={false}
+                    childrenContainerProps={{ className: 'w-auto bg-transparent p-0' }}
+                    open={image !== undefined}
+                    onClose={() => setImage(undefined)}
+                >
                     <img src={image} className="h-max relative" loading="lazy" />
                 </Modal>
 

@@ -39,13 +39,12 @@ user.get('/', authenticate, async (req, res) => {
 
 user.get('/avatar', async (req, res) => {
     try {
-        // if (await authorize(req, 'get-user-self') !== true) {
-        //     res.sendStatus(403)
-        //     return
-        // }
+        if (await authorize(req, 'get-user-self') !== true) {
+            res.sendStatus(403)
+            return
+        }
 
-        // let userId = (Jwt.decode(req.headers['authorization']!.replace('Bearer ', '')!) as Jwt.JwtPayload)?.sub ?? ''
-        let userId = '67dd2c33f9cf6e137a6adde3'
+        let userId = (Jwt.decode(req.headers['authorization']!.replace('Bearer ', '')!) as Jwt.JwtPayload)?.sub ?? ''
 
         if (!stringObjectId.isValidSync(userId)) {
             res.sendStatus(400)
@@ -133,6 +132,8 @@ user.post('/avatar', authenticate, async (req, res) => {
                 files.push(fileData);
             });
         });
+
+        bb.on('error', e => { console.error(e); res.sendStatus(500) })
 
         bb.on("finish", () => {
             if (files.length !== 1)

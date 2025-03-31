@@ -105,6 +105,7 @@ emailRouter.post('/signup', async (req, res) => {
         const userRepository = await UserRepository.getInstance()
 
         if (await userRepository.emailExists(email)) {
+            console.log('email already exists!')
             res.sendStatus(500)
             return
         }
