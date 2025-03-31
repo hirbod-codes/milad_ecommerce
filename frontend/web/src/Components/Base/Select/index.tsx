@@ -11,7 +11,7 @@ const SelectContext = createContext<{ stopPropagation?: boolean, updateSelection
 
 export type SelectProps = {
     children: ReactElement[]
-    onValueSelect: (v) => void | Promise<void>
+    onValueSelect?: (v) => void | Promise<void>
     id?: string
     label?: string
     loading?: boolean

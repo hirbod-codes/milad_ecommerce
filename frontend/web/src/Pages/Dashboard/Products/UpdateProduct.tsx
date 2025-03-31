@@ -2,7 +2,7 @@ import { Fragment, useContext, useEffect, useRef, useState } from "react";
 import { authFetchData, fetchData, getApiUrl } from "@/src/Backend/helpers";
 import { Button } from "@/src/Components/Base/Button";
 import { t } from "i18next";
-import { PlusIcon, Trash2Icon } from "lucide-react";
+import { PlusIcon, SearchIcon, Trash2Icon } from "lucide-react";
 import { FeedbackContext } from "@/src/Contexts/Feedback/FeedbackContext";
 import { array } from "yup";
 import { Stack } from "@/src/Components/Base/Stack";
@@ -13,15 +13,22 @@ import { Input } from "@/src/Components/Base/Input";
 import { Textarea } from "@/src/shadcn/components/ui/textarea";
 import { Category } from "../Categories/index.d";
 import { Select } from "@/src/Components/Base/Select";
+import { Product } from './index.d'
 
 export function UpdateProduct({ productId, onFinish }: { productId: string, onFinish?: (shouldRefresh: boolean) => void }) {
     const feedback = useContext(FeedbackContext)
 
-    const [languages, setLanguages] = useState([])
-    const [categories, setCategories] = useState<Category[]>([])
-    const [tags, setTags] = useState<{ _id: string, name: string }[]>([])
+    const [product, setProduct] = useState<Product | undefined>(undefined)
 
-    const [product, setProduct] = useState(undefined)
+    const [languages, setLanguages] = useState([])
+
+    const [searchCategory, setSearchCategory] = useState<string>('')
+    const [searchedCategories, setSearchedCategories] = useState<string[]>([])
+    const [categories, setCategories] = useState<Category[]>([])
+
+    const [searchTag, setSearchTag] = useState<string>('')
+    const [searchedTags, setSearchedTags] = useState<string[]>([])
+    const [tags, setTags] = useState<{ _id: string, name: string }[]>([])
 
     const id = useRef(0)
     const getId = () => {
@@ -34,7 +41,7 @@ export function UpdateProduct({ productId, onFinish }: { productId: string, onFi
     const [loading, setLoading] = useState(true)
     const [submitting, setSubmitting] = useState(false)
 
-    console.log('UpdateProduct', {})
+    console.log('UpdateProduct', { searchCategory, searchedCategories, categories, searchTag, searchedTags, tags, product, customProperties, suggestedProperties, loading, submitting })
 
     useEffect(() => {
         Promise.all([
@@ -43,8 +50,11 @@ export function UpdateProduct({ productId, onFinish }: { productId: string, onFi
             // should be cached in future releases
             fetchData(`${getApiUrl()}/languages`),
             fetchData(`${getApiUrl()}/products/${productId}`),
+            fetchData(`${getApiUrl()}/products/pictures/${productId}`),
         ])
             .then(r => {
+                console.log('UpdateProduct r', r)
+
                 if (r[0].response && r[0].response.ok && array().required().isValidSync(r[0].data))
                     setCategories(r[0].data)
 
@@ -55,7 +65,10 @@ export function UpdateProduct({ productId, onFinish }: { productId: string, onFi
                     setLanguages(r[2].data)
 
                 if (r[3].response && r[3].response.ok)
-                    setProduct(r[3].data)
+                    setProduct(r[3].data[0])
+
+                if (r[4].response && r[4].response.ok)
+                    setImages(r[4].data[0])
 
                 setLoading(false)
             })
@@ -64,7 +77,7 @@ export function UpdateProduct({ productId, onFinish }: { productId: string, onFi
     const submit = async () => {
         for (const key in product?.price) {
             if (Object.prototype.hasOwnProperty.call(product?.price, key)) {
-                const price = product?.price[key] as string;
+                const price = product?.price[key].toString();
                 if (price.endsWith('.'))
                     return
             }
@@ -73,13 +86,11 @@ export function UpdateProduct({ productId, onFinish }: { productId: string, onFi
         setSubmitting(true)
         try {
             const data = {
-                // tags: selectedTags.map(st => st.name),
-                // categories: selectedCategories.map(sc => sc.name),
-                // name,
-                // displayName,
-                // price,
-                // isAvailable,
-                ...Object.fromEntries(customProperties.map(cp => [cp.key, cp.value]))
+                id: productId,
+                product: {
+                    ...product,
+                    ...Object.fromEntries(customProperties.map(cp => [cp.key, cp.value]))
+                }
             }
 
             const r = await authFetchData(`${getApiUrl()}/products`, { method: 'post', body: JSON.stringify(data) })
@@ -94,70 +105,43 @@ export function UpdateProduct({ productId, onFinish }: { productId: string, onFi
     return (
         loading
             ? <CircularLoading />
-            : <Stack direction="vertical" stackProps={{ className: 'mt-8 h-max overflow-y-auto' }}>
-                {/* First Row  */}
-                <Stack stackProps={{ className: 'h-[5cm]' }}>
-                    {/* Categories */}
-                    <Stack size={3} direction="vertical" stackProps={{ className: 'w-1/2 overflow-y-auto border rounded-lg shadow-lg py-4' }}>
-                        <div className="text-lg px-2">{t('UpdateProduct.Categories')}</div>
-
-                        <Separator className="mx-2 w-auto" />
-
-                        <Stack direction="vertical" size={1}>
-                            {categories.map((c, i) =>
-                                <CheckBox
-                                    key={i}
-                                    label={c.name}
-                                    inputProps={{
-                                        checked: product?.categories?.find(f => f._id === c._id) !== undefined,
-                                        onChange: (e) => {
-                                            if (e.target.checked && product?.categories?.find(f => f._id === c._id) === undefined)
-                                                setProduct({ ...product, categories: [...categories, c] })
-                                            if (!e.target.checked && product?.categories?.find(f => f._id === c._id) !== undefined)
-                                                setProduct({ ...product, categories: categories.filter(f => f._id !== c._id) })
-                                        }
-                                    }}
-                                />
-                            )}
-                        </Stack>
-                    </Stack>
-
-                    {/* Tags */}
-                    <Stack size={3} direction="vertical" stackProps={{ className: 'w-1/2 overflow-y-auto border rounded-lg shadow-lg py-4' }}>
-                        <div className="text-lg px-2">{t('UpdateProduct.Tags')}</div>
-
-                        <Separator className="mx-2 w-auto" />
-
-                        <Stack direction="vertical" size={1}>
-                            {tags.map((tag, i) =>
-                                <CheckBox
-                                    key={i}
-                                    label={tag.name}
-                                    inputProps={{
-                                        checked: product.tags?.find(f => f._id === tag._id) !== undefined,
-                                        onChange: (e) => {
-                                            if (e.target.checked && product.tags?.find(f => f._id === tag._id) === undefined)
-                                                setProduct({ ...product, tags: [...tags, tag] })
-                                            if (!e.target.checked && product.tags?.find(f => f._id === tag._id) !== undefined)
-                                                setProduct({ ...product, tags: tags.filter(f => f._id !== tag._id) })
-                                        }
-                                    }}
-                                />
-                            )}
-                        </Stack>
-                    </Stack>
-                </Stack>
+            : <Stack direction="vertical" stackProps={{ className: 'mt-4 h-max overflow-y-auto' }}>
+                <div className="text-3xl">
+                    {t('UpdateProduct.title')}
+                </div>
 
                 <Separator />
 
+                {/* First Row */}
+                <Stack>
+                    <Input
+                        innerContainerProps={{ className: 'flex-grow' }}
+                        containerProps={{ className: 'w-full' }}
+                        label={t('UpdateProduct.name')}
+                        labelId={t('UpdateProduct.name')}
+                        value={product.name ?? ''}
+                        onChange={(e) => setProduct({ ...product, name: e.target.value.trim() })}
+                    />
+                </Stack>
+
                 {/* Second Row */}
+                <Stack>
+                    <CheckBox
+                        label={t('UpdateProduct.isAvailable')}
+                        containerProps={{ className: 'w-full justify-between' }}
+                        labelFirst={true}
+                        inputProps={{ checked: product.isAvailable, onChange: (e) => setProduct({ ...product, isAvailable: e.target.checked }) }}
+                    />
+
+                </Stack>
+
+                {/* Third Row */}
                 <Stack stackProps={{ className: 'overflow-y-auto' }}>
                     {/* First Column */}
                     <Stack direction="vertical" stackProps={{ className: 'w-[calc(50%-(0.75rem)/2)]' }}>
-                        <Input value={product.name ?? ''} placeholder={t('UpdateProduct.name')} onChange={(e) => setProduct({ ...product, name: e.target.value.trim() })} />
 
                         {languages &&
-                            <Stack direction='vertical' stackProps={{ className: "border rounded-lg shadow-lg p-2 min-h-[5cm] overflow-y-auto" }}>
+                            <Stack direction='vertical' stackProps={{ className: "border rounded-lg shadow-lg p-2 overflow-y-auto" }}>
                                 <div className="text-lg">{t('UpdateProduct.DisplayNameTitle')}</div>
 
                                 {languages.map((l, i) =>
@@ -169,7 +153,7 @@ export function UpdateProduct({ productId, onFinish }: { productId: string, onFi
                         }
 
                         {languages &&
-                            <Stack direction='vertical' stackProps={{ className: "border rounded-lg shadow-lg p-2 min-h-[5cm] overflow-y-auto" }}>
+                            <Stack direction='vertical' stackProps={{ className: "border rounded-lg shadow-lg p-2 overflow-y-auto" }}>
                                 <div className="text-lg">{t('UpdateProduct.DescriptionTitle')}</div>
 
                                 {languages.map((l, i) =>
@@ -183,21 +167,16 @@ export function UpdateProduct({ productId, onFinish }: { productId: string, onFi
 
                     {/* Second Column */}
                     <Stack direction="vertical" stackProps={{ className: 'w-[calc(50%-(0.75rem)/2)]' }}>
-                        <CheckBox
-                            label={t('UpdateProduct.isAvailable')}
-                            inputProps={{ checked: product.isAvailable, onChange: (e) => setProduct({ ...product, isAvailable: e.target.checked }) }}
-                        />
-
-                        <Stack direction='vertical' stackProps={{ className: "border rounded-lg shadow-lg p-2 max-h-[5cm] overflow-y-auto" }}>
+                        <Stack direction='vertical' stackProps={{ className: "border rounded-lg shadow-lg p-2 overflow-y-auto" }}>
                             <div className="text-lg">{t('UpdateProduct.DisplayNameTitle')}</div>
 
                             {['IRR', 'USD'].map((l, i) =>
                                 <Stack key={i} direction="vertical">
                                     <Input
                                         placeholder={l}
-                                        value={product?.price ? (product?.price[l] ?? '') : ''}
+                                        value={product?.price ? (product?.price[l]?.toString() ?? '') : ''}
                                         onChange={(e) => e.target.value.trim().match(/^[0-9]?([0-9]+(\.+[0-9]*)*)*$/) !== null ? setProduct({ ...product, price: { ...product?.price, [l]: Number(e.target.value.trim()) } }) : undefined}
-                                        errorText={product?.price && product?.price[l] && product?.price[l]?.match(/^[0-9]?([0-9]+(\.+[0-9]+)*)*$/) === null ? t('UpdateProduct.priceInputError') : undefined}
+                                        errorText={product?.price && product?.price[l] && product?.price[l]?.toString()?.match(/^[0-9]?([0-9]+(\.+[0-9]+)*)*$/) === null ? t('UpdateProduct.priceInputError') : undefined}
                                     />
                                 </Stack>
                             )}
@@ -207,25 +186,162 @@ export function UpdateProduct({ productId, onFinish }: { productId: string, onFi
 
                 <Separator />
 
-                {/* Third Row */}
+                {/* Forth Row */}
+                <Stack stackProps={{ className: 'h-[7cm]' }}>
+                    {/* Categories */}
+                    <Stack size={3} direction="vertical" stackProps={{ className: 'w-1/2 overflow-y-auto border rounded-lg shadow-lg py-4 *:px-2' }}>
+                        <div className="text-lg">{t('UpdateProduct.Categories')}</div>
+
+                        <Separator className="mx-2 w-auto" />
+
+                        <Select
+                            onValueSelect={e => { }}
+                            listContainerProps={{ stackProps: { className: 'max-h-[10cm] overflow-y-auto' } }}
+                            inputProps={{
+                                containerProps: { className: "flex-grow" },
+                                labelContainerProps: { stackProps: { className: 'w-full justify-between' } },
+                                className: 'pl-8',
+                                startIcon: <SearchIcon />,
+                                value: searchCategory ?? '',
+                                onChange: (e) => {
+                                    let v = e.target.value.trim()
+                                    setSearchCategory(v)
+                                    if (!v)
+                                        setSearchedCategories([])
+                                    else
+                                        setSearchedCategories(categories?.filter(f => f.name.toLocaleLowerCase().includes(v.toLocaleLowerCase())).map(m => m.name.toLocaleLowerCase()))
+                                }
+                            }}
+                            stopPropagation={true}
+                        >
+                            {...categories?.filter(f => searchedCategories.includes(f.name.toLocaleLowerCase()))?.map((c, i) =>
+                                <Fragment key={i}>
+                                    <CheckBox
+                                        label={c.name}
+                                        inputProps={{
+                                            checked: product?.categories?.find(f => f === c.name) !== undefined,
+                                            onChange: (e) => {
+                                                if (e.target.checked && product?.categories?.find(f => f === c.name) === undefined)
+                                                    setProduct({ ...product, categories: [...product?.categories, c.name] })
+                                                if (!e.target.checked && product?.categories?.find(f => f === c.name) !== undefined)
+                                                    setProduct({ ...product, categories: product?.categories?.filter(f => f !== c.name) })
+                                            }
+                                        }}
+                                    />
+                                    {i !== searchedCategories.length - 1 && <Separator />}
+                                </Fragment>
+                            )}
+                        </Select>
+
+                        <Separator className="mx-2 w-auto" />
+
+                        <Stack direction="vertical" size={1}>
+                            {categories.map((c, i) =>
+                                <CheckBox
+                                    key={i}
+                                    label={c.name}
+                                    inputProps={{
+                                        checked: product?.categories?.find(f => f === c.name) !== undefined,
+                                        onChange: (e) => {
+                                            if (e.target.checked && product?.categories?.find(f => f === c.name) === undefined)
+                                                setProduct({ ...product, categories: [...product?.categories, c.name] })
+                                            if (!e.target.checked && product?.categories?.find(f => f === c.name) !== undefined)
+                                                setProduct({ ...product, categories: product?.categories?.filter(f => f !== c.name) })
+                                        }
+                                    }}
+                                />
+                            )}
+                        </Stack>
+                    </Stack>
+
+                    {/* Tags */}
+                    <Stack size={3} direction="vertical" stackProps={{ className: 'w-1/2 overflow-y-auto border rounded-lg shadow-lg py-4 *:px-2' }}>
+                        <div className="text-lg px-2">{t('UpdateProduct.Tags')}</div>
+
+                        <Separator className="mx-2 w-auto" />
+
+                        <Select
+                            onValueSelect={e => { }}
+                            listContainerProps={{ stackProps: { className: 'max-h-[10cm] overflow-y-auto' } }}
+                            inputProps={{
+                                containerProps: { className: "flex-grow" },
+                                labelContainerProps: { stackProps: { className: 'w-full justify-between' } },
+                                className: 'pl-8',
+                                startIcon: <SearchIcon />,
+                                value: searchTag ?? '',
+                                onChange: (e) => {
+                                    let v = e.target.value.trim()
+                                    setSearchTag(v)
+                                    if (!v)
+                                        setSearchedCategories([])
+                                    else
+                                        setSearchedTags(tags?.filter(f => f.name.toLocaleLowerCase().includes(v.toLocaleLowerCase())).map(m => m.name.toLocaleLowerCase()))
+                                }
+                            }}
+                            stopPropagation={true}
+                        >
+                            {...tags?.filter(f => searchedTags.includes(f.name.toLocaleLowerCase()))?.map((c, i) =>
+                                <Fragment key={i}>
+                                    <CheckBox
+                                        label={c.name}
+                                        inputProps={{
+                                            checked: product?.tags?.find(f => f === c.name) !== undefined,
+                                            onChange: (e) => {
+                                                if (e.target.checked && product?.tags?.find(f => f === c.name) === undefined)
+                                                    setProduct({ ...product, tags: [...product?.tags, c.name] })
+                                                if (!e.target.checked && product?.tags?.find(f => f === c.name) !== undefined)
+                                                    setProduct({ ...product, tags: product?.tags?.filter(f => f !== c.name) })
+                                            }
+                                        }}
+                                    />
+                                    {i !== searchedTags.length - 1 && <Separator />}
+                                </Fragment>
+                            )}
+                        </Select>
+
+                        <Separator className="mx-2 w-auto" />
+
+                        <Stack direction="vertical" size={1}>
+                            {tags.map((tag, i) =>
+                                <CheckBox
+                                    key={i}
+                                    label={tag.name}
+                                    inputProps={{
+                                        checked: product.tags?.find(f => f === tag.name) !== undefined,
+                                        onChange: (e) => {
+                                            if (e.target.checked && product.tags?.find(f => f === tag._id) === undefined)
+                                                setProduct({ ...product, tags: [...product?.tags, tag.name] })
+                                            if (!e.target.checked && product.tags?.find(f => f === tag._id) !== undefined)
+                                                setProduct({ ...product, tags: product?.tags?.filter(f => f !== tag._id) })
+                                        }
+                                    }}
+                                />
+                            )}
+                        </Stack>
+                    </Stack>
+                </Stack>
+
+                <Separator />
+
+                {/* Fifth Row */}
                 <Stack direction="vertical" stackProps={{ className: 'max-h-[10cm] overflow-y-auto' }}>
                     {
                         Object.entries(product)
-                            .filter(e => !['schemaVersion', '_id', 'tags', 'categories', 'name', 'displayName', 'description', 'price', 'isAvailable', 'thumbnail', 'purchaseCount', 'reviewsCount', 'views', 'averageRating', 'createdAt', 'updatedAt',].includes(e[0]))
+                            .filter(e => ['schemaVersion', '_id', 'tags', 'categories', 'name', 'displayName', 'description', 'price', 'isAvailable', 'thumbnail', 'purchaseCount', 'reviewsCount', 'views', 'averageRating', 'createdAt', 'updatedAt',].includes(e[0]) === false)
                             .map(m =>
                                 <Stack key={m[0]} stackProps={{ className: 'items-center justify-between' }}>
                                     <Input containerProps={{ className: "flex-grow" }} value={m[0]} readOnly />
                                     <Input containerProps={{ className: "flex-grow" }} placeholder={t('UpdateProduct.Value')} value={(m[1] as any) ?? ''} onChange={(e) => setProduct({ ...product, [m[0]]: e.target.value.trim() })} />
-                                    <Button isIcon variant="text" fgColor="error" onClick={() => setProduct({ ...Object.fromEntries(Object.entries(product).filter(f => f[0] !== m[0])) })}><Trash2Icon /></Button>
+                                    <Button isIcon variant="text" fgColor="error" onClick={() => setProduct(Object.fromEntries(Object.entries(product).filter(f => f[0] !== m[0])) as any)}><Trash2Icon /></Button>
                                 </Stack>
                             )
                     }
                     {customProperties.map(cp =>
                         <Stack key={cp.id} stackProps={{ className: 'items-center justify-between' }}>
-                            {product?.categories?.find(c => c?.recommendedProductProperties?.length > 0) === undefined
+                            {categories?.filter(f => product?.categories?.includes(f.name))?.find(f => f?.recommendedProductProperties.length > 0) !== undefined
                                 ? <Input containerProps={{ className: "flex-grow" }} placeholder={t('UpdateProduct.Field')} value={cp.key ?? ''} onChange={(e) => { cp.key = e.target.value; setCustomProperties([...customProperties]) }} />
                                 : <Select
-                                    onValueSelect={(e: '$and' | '$or') => { cp.key = e; setCustomProperties([...customProperties]) }}
+                                    onValueSelect={e => { cp.key = e; setCustomProperties([...customProperties]) }}
                                     inputProps={{
                                         containerProps: { className: "flex-grow" },
                                         labelContainerProps: { stackProps: { className: 'w-full justify-between' } },
@@ -233,7 +349,7 @@ export function UpdateProduct({ productId, onFinish }: { productId: string, onFi
                                         onChange: (e) => {
                                             cp.key = e.target.value.trim()
                                             setCustomProperties([...customProperties])
-                                            setSuggestedProperties(product?.categories?.reduce((p, c) => p.concat(c.recommendedProductProperties.filter(f => f.name.includes(cp.key)).map(m => m.name) ?? []), []))
+                                            setSuggestedProperties(categories?.filter(f => product?.categories?.includes(f.name))?.reduce((p, c) => p.concat(c.recommendedProductProperties.filter(f => f.name.includes(cp.key)).map(m => m.name) ?? []), []))
                                         }
                                     }}
                                     stopPropagation={true}
@@ -262,7 +378,18 @@ export function UpdateProduct({ productId, onFinish }: { productId: string, onFi
 
                 <Separator />
 
-                <Button disabled={submitting} onClick={submit}>{submitting ? <CircularLoading /> : t('UpdateProduct.Update')}</Button>
+                <Button
+                    disabled={
+                        submitting ||
+                        !product.name.trim() ||
+                        Object.entries(product?.price ?? {}).find(f => !f[0].trim() || !f[1].toString().trim()) !== undefined ||
+                        Object.entries(product?.displayName ?? {}).find(f => !f[0].trim() || !f[1].toString().trim()) !== undefined ||
+                        customProperties.find(f => !f.key.trim() || !f.value.trim()) !== undefined
+                    }
+                    onClick={submit}
+                >
+                    {submitting ? <CircularLoading /> : t('UpdateProduct.Update')}
+                </Button>
             </Stack>
     )
 }

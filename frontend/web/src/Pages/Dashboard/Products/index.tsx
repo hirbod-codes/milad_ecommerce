@@ -137,7 +137,6 @@ export function Products() {
                             isIcon
                             variant='text'
                             onClick={() => {
-                                setOpenUpdateProductModal(true)
                                 setEditingProduct(row.original._id)
                             }}
                         >
@@ -211,11 +210,11 @@ export function Products() {
                 />
             </Modal>
 
-            <Modal open={openUpdateProductModal} onClose={() => setOpenUpdateProductModal(false)}>
+            <Modal open={editingProduct !== undefined} onClose={() => setEditingProduct(undefined)}>
                 <UpdateProduct
                     productId={editingProduct}
                     onFinish={(shouldRefresh) => {
-                        setOpenCreateProductModal(false)
+                        setEditingProduct(undefined)
                         if (shouldRefresh)
                             init(page.limit, page.offset)
                     }}

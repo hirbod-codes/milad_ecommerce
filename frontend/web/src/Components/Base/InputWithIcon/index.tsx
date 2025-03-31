@@ -2,7 +2,7 @@ import { ConfigurationContext } from "@/src/Contexts/Configuration/Configuration
 import { cn } from "@/src/shadcn/lib/utils";
 import { ComponentProps, ReactNode, RefObject, useContext } from "react";
 
-export function InputWithIcon({ startIcon, startIconProps, endIcon, endIconProps, inputRef, ...props }: { startIcon?: ReactNode, startIconProps?: ComponentProps<'div'>, endIcon?: ReactNode, endIconProps?: ComponentProps<'div'>, inputRef?: RefObject<HTMLInputElement | null> } & ComponentProps<'input'>) {
+export function InputWithIcon({ startIcon, startIconProps, endIcon, endIconProps, inputRef, containerProps, ...props }: { startIcon?: ReactNode, startIconProps?: ComponentProps<'div'>, endIcon?: ReactNode, endIconProps?: ComponentProps<'div'>, inputRef?: RefObject<HTMLInputElement | null>, containerProps?: ComponentProps<'div'> } & ComponentProps<'input'>) {
     let local = useContext(ConfigurationContext)!.local
 
     let si = local.direction === 'ltr' ? startIcon : endIcon
@@ -12,7 +12,7 @@ export function InputWithIcon({ startIcon, startIconProps, endIcon, endIconProps
     let eiProps = local.direction === 'ltr' ? endIconProps : startIconProps
 
     return (
-        <div className="relative">
+        <div {...containerProps} className={cn("relative", containerProps?.className)} >
             {si && (
                 <div {...siProps} className={cn("absolute left-1.5 top-1/2 transform -translate-y-1/2", siProps?.className)}>
                     {si}
