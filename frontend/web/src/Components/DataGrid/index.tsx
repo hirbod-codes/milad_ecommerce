@@ -46,6 +46,7 @@ import { StorageApi } from '@/src/Backend/Storage/StorageApi'
 export type DataGridProps = {
     configName?: string
     data: any[]
+    columns?: ColumnDef<any>[],
     overWriteColumns?: ColumnDef<any>[]
     additionalColumns?: ColumnDef<any>[]
     prependHeaderNodes?: ReactNode[]
@@ -80,6 +81,7 @@ export type DataGridProps = {
 export function DataGrid({
     configName,
     data,
+    columns: inputColumns,
     overWriteColumns = [],
     additionalColumns = [],
     prependHeaderNodes = [],
@@ -120,7 +122,7 @@ export function DataGrid({
         data = data.map((d, i) => ({ ...d, counter: (pagination.pageIndex * pagination.pageSize) + (i + 1) }))
 
     const columns = useMemo<ColumnDef<any>[]>(() => {
-        return getColumns(data, overWriteColumns, additionalColumns, defaultColumnOrderModel)
+        return inputColumns ?? getColumns(data, overWriteColumns, additionalColumns, defaultColumnOrderModel)
     }, [overWriteColumns, additionalColumns, defaultColumnOrderModel])
 
     if (addCounterColumn === true && !columns.find(f => f.id === 'counter'))

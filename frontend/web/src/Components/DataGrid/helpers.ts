@@ -77,4 +77,3 @@ export function getCommonPinningStyles(column: Column<any>): CSSProperties {
         zIndex: isPinned ? 1 : undefined,
     }
 }
-

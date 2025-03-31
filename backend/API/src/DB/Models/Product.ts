@@ -25,13 +25,13 @@ export const productSchema = object().required().strict(true).unknown(true).shap
 })
 export type Product = InferType<typeof productSchema>
 
-export const productInputSchema = productSchema.required().unknown(true).strict(true).pick(['tags', 'categories', 'name', 'displayName', 'description', 'price', 'isAvailable'])
+export const productInputSchema = productSchema.pick(['tags', 'categories', 'name', 'displayName', 'description', 'price', 'isAvailable', 'thumbnail']).required().unknown(true).strict(true)
 export type ProductInput = InferType<typeof productInputSchema>
 
-export const productCreateSchema = productSchema.required().unknown(true).strict(true).omit(['_id']).shape({ _id: likeObjectId.optional() })
+export const productCreateSchema = productSchema.omit(['_id']).shape({ _id: likeObjectId.optional() }).required().unknown(true).strict(true)
 export type ProductCreate = InferType<typeof productCreateSchema>
 
-export let productUpdateSchema = productSchema.required().unknown(true).strict(true).pick(['name', 'displayName', 'description', 'tags', 'categories', 'price', 'isAvailable', 'thumbnail'])
+export let productUpdateSchema = productSchema.pick(['name', 'displayName', 'description', 'tags', 'categories', 'price', 'isAvailable', 'thumbnail']).required().unknown(true).strict(true)
 for (const field in productUpdateSchema.fields)
     if (Object.prototype.hasOwnProperty.call(productUpdateSchema.fields, field))
         (productUpdateSchema.fields as any)[field] = (productUpdateSchema.fields as any)[field].optional()

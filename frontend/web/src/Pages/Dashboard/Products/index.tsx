@@ -8,7 +8,7 @@ import { DataGrid } from "@/src/Components/DataGrid";
 import { Ask } from "@/src/Components/Ask";
 import { Button } from "@/src/Components/Base/Button";
 import { t } from "i18next";
-import { EditIcon, FilterIcon, ListFilterIcon, PlusIcon, RefreshCwIcon, Trash2Icon } from "lucide-react";
+import { EditIcon, EyeIcon, FilterIcon, ListFilterIcon, PlusIcon, RefreshCwIcon, Trash2Icon } from "lucide-react";
 import { FeedbackContext } from "@/src/Contexts/Feedback/FeedbackContext";
 import { array } from "yup";
 import { DropdownMenu } from "@/src/Components/Base/DropdownMenu";
@@ -21,6 +21,8 @@ import { Stack } from "@/src/Components/Base/Stack";
 import { CircularLoadingIcon } from "@/src/Components/Base/CircularLoadingIcon";
 import { CircularLoadingScreen } from "@/src/Components/Base/CircularLoadingScreen";
 import { UpdateProduct } from "./UpdateProduct";
+import { CheckBox } from "@/src/Components/Base/CheckBox";
+import { Input } from "@/src/Components/Base/Input";
 
 function formatFilters(filters: Filters) {
     let key = undefined
@@ -49,6 +51,10 @@ function formatFilter(filter: Filter) {
     return { [filter.field]: { [filter.operator]: filter.value } }
 }
 
+/**
+ * Note: static fields of Product model is hard coded.
+ * @returns 
+ */
 export function Products() {
     const privileges = useContext(AuthContext).privileges
     const feedback = useContext(FeedbackContext)!
@@ -72,7 +78,11 @@ export function Products() {
 
     const [ask, setAsk] = useState<ComponentProps<typeof Ask>>(undefined)
 
-    const [page, setPage] = useState<{ limit: number, offset: number }>({ limit: 25, offset: 0 })
+    const [page, setPage] = useState<{ limit: number, offset: number }>({ limit: 10, offset: 0 })
+
+    const [showingTags, setShowingTags] = useState<string | undefined>(undefined)
+    const [showingCategories, setShowingCategories] = useState<string | undefined>(undefined)
+    const [showCustomFields, setShowCustomFields] = useState<any | undefined>(undefined)
 
     console.log('Products', { products, openFilter, filters, openSort, ask, page })
 
@@ -112,20 +122,11 @@ export function Products() {
     const updatesProduct = privileges.find(f => f === 'update-category') !== undefined
     const deletesProduct = privileges.find(f => f === 'delete-category') !== undefined
 
-    const overWriteColumns: ColumnDef<any>[] = [
+    const columns: ColumnDef<any>[] = [
         {
-            id: 'createdAt',
-            accessorKey: 'createdAt',
-            cell: ({ getValue }) => typeof getValue() === 'number' ? toFormat(getValue() as number, configuration.local, undefined, DATE) : '-',
+            id: '_id',
+            accessorKey: '_id',
         },
-        {
-            id: 'updatedAt',
-            accessorKey: 'updatedAt',
-            cell: ({ getValue }) => typeof getValue() === 'number' ? toFormat(getValue() as number, configuration.local, undefined, DATE) : '-',
-        },
-    ]
-
-    const additionalColumns: ColumnDef<any>[] = [
         {
             id: 'actions',
             accessorKey: 'actions',
@@ -158,7 +159,79 @@ export function Products() {
                         </Button>
                     }
                 </Stack>
-        }
+        },
+        {
+            id: 'name',
+            accessorKey: 'name',
+        },
+        {
+            id: 'displayName',
+            accessorKey: 'displayName',
+            maxSize: 200,
+            cell: ({ getValue }) => getValue()[configuration.local.language],
+        },
+        {
+            id: 'description',
+            accessorKey: 'description',
+            maxSize: 200,
+            cell: ({ getValue }) => getValue()[configuration.local.language],
+        },
+        {
+            id: 'isAvailable',
+            accessorKey: 'isAvailable',
+            cell: ({ row, getValue }) => <div className="w-full flex flex-row justify-center">{Boolean(getValue()) ? <CheckBox containerProps={{ className: 'w-fit' }} colorForeground='success' inputProps={{ checked: true, readOnly: true }} /> : <CheckBox containerProps={{ className: 'w-fit' }} colorForeground='error' inputProps={{ checked: false, readOnly: true }} />}</div>,
+        },
+        {
+            id: 'customFields',
+            accessorKey: 'customFields',
+            cell: ({ row }) => <div className="w-full flex flex-row justify-center"><Button isIcon variant="text" onClick={() => setShowCustomFields(row.original._id)}><EyeIcon /></Button></div>,
+        },
+        {
+            id: 'tags',
+            accessorKey: 'tags',
+            cell: ({ row, getValue }) => <div className="text-center w-full cursor-pointer rounded-lg hover:border text-nowrap text-ellipsis overflow-hidden" onClick={() => setShowingTags(row.original._id)}>{(getValue() as string[]).join(', ')}</div>,
+        },
+        {
+            id: 'categories',
+            accessorKey: 'categories',
+            cell: ({ row, getValue }) => <div className="text-center w-full cursor-pointer rounded-lg hover:border text-nowrap text-ellipsis overflow-hidden" onClick={() => setShowingCategories(row.original._id)}>{(getValue() as string[]).join(', ')}</div>,
+        },
+        {
+            id: 'views',
+            accessorKey: 'views',
+            cell: ({ getValue }) => new Intl.NumberFormat(configuration.local.language, { useGrouping: true, signDisplay: 'never', maximumFractionDigits: 0 }).format(getValue() as number),
+        },
+        {
+            id: 'purchaseCount',
+            accessorKey: 'purchaseCount',
+            cell: ({ getValue }) => new Intl.NumberFormat(configuration.local.language, { useGrouping: true, signDisplay: 'never', maximumFractionDigits: 0 }).format(getValue() as number),
+        },
+        {
+            id: 'reviewsCount',
+            accessorKey: 'reviewsCount',
+            cell: ({ getValue }) => new Intl.NumberFormat(configuration.local.language, { useGrouping: true, signDisplay: 'never', maximumFractionDigits: 0 }).format(getValue() as number),
+        },
+        {
+            id: 'averageRating',
+            accessorKey: 'averageRating',
+            cell: ({ getValue }) => new Intl.NumberFormat(configuration.local.language, { useGrouping: true, signDisplay: 'never', maximumFractionDigits: 2 }).format(getValue() as number),
+        },
+        {
+            id: 'price',
+            accessorKey: 'price',
+            maxSize: 200,
+            cell: ({ getValue }) => new Intl.NumberFormat(configuration.local.language, { useGrouping: true, currency: 'IRR', style: 'currency', signDisplay: 'never', maximumFractionDigits: 0 }).format(getValue()['IRR'] as number),
+        },
+        {
+            id: 'createdAt',
+            accessorKey: 'createdAt',
+            cell: ({ getValue }) => typeof getValue() === 'number' ? toFormat(getValue() as number, configuration.local, undefined, DATE) : '-',
+        },
+        {
+            id: 'updatedAt',
+            accessorKey: 'updatedAt',
+            cell: ({ getValue }) => typeof getValue() === 'number' ? toFormat(getValue() as number, configuration.local, undefined, DATE) : '-',
+        },
     ]
 
     return (
@@ -168,8 +241,7 @@ export function Products() {
                     containerProps={{ stackProps: { style: { backgroundImage: `linear-gradient(to bottom right, ${dataGridGradientColor.toHex()} , transparent)` } } }}
                     configName='products'
                     data={products}
-                    overWriteColumns={overWriteColumns}
-                    additionalColumns={additionalColumns}
+                    columns={columns}
                     loading={loading}
                     hasPagination
                     defaultColumnOrderModel={['actions']}
@@ -200,6 +272,49 @@ export function Products() {
                     <SearchFilter filters={filters} setFilters={setFilters} fields={{}} />
                 </div>
             </DropdownMenu>
+
+            <Modal
+                modalContainerProps={{ className: 'overflow-y-auto' }}
+                open={showCustomFields !== undefined}
+                onClose={() => setShowCustomFields(undefined)}
+            >
+                <Stack direction="vertical" stackProps={{ className: 'w-full items-center justify-between' }}>
+                    {showCustomFields && Object.entries(products.find(f => f._id === showCustomFields) ?? {}).filter(f => ['schemaVersion', '_id', 'tags', 'categories', 'name', 'displayName', 'description', 'price', 'isAvailable', 'thumbnail', 'purchaseCount', 'reviewsCount', 'views', 'averageRating', 'createdAt', 'updatedAt',].includes(f[0]) === false).map(m =>
+                        <Stack key={m[0]}>
+                            <Input containerProps={{ className: "flex-grow" }} readOnly value={m[0]} />
+                            <Input containerProps={{ className: "flex-grow" }} placeholder={t('UpdateProduct.Value')} readOnly value={m[1] as any} />
+                        </Stack>
+                    )}
+                </Stack>
+            </Modal>
+
+            <Modal
+                modalContainerProps={{ className: 'overflow-y-auto' }}
+                open={showingTags !== undefined}
+                onClose={() => setShowingTags(undefined)}
+            >
+                <Stack direction="vertical">
+                    {products?.find(f => f._id === showingTags)?.tags?.map(m =>
+                        <div key={m} className="text-lg">
+                            {m}
+                        </div>
+                    )}
+                </Stack>
+            </Modal>
+
+            <Modal
+                modalContainerProps={{ className: 'overflow-y-auto' }}
+                open={showingCategories !== undefined}
+                onClose={() => setShowingCategories(undefined)}
+            >
+                <Stack direction="vertical">
+                    {products?.find(f => f._id === showingCategories)?.categories?.map(m =>
+                        <div key={m} className="text-lg">
+                            {m}
+                        </div>
+                    )}
+                </Stack>
+            </Modal>
 
             <Modal open={openCreateProductModal} onClose={() => setOpenCreateProductModal(false)}>
                 <CreateProduct

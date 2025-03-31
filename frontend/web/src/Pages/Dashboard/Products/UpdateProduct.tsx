@@ -102,6 +102,8 @@ export function UpdateProduct({ productId, onFinish }: { productId: string, onFi
                     ...Object.fromEntries(customProperties.map(cp => [cp.key, cp.value]))
                 }
             }
+            console.log('data', data)
+            return
 
             const r = await authFetchData(`${getApiUrl()}/products`, { method: 'post', body: JSON.stringify(data) })
             if (r.response && r.response?.ok) {
@@ -149,6 +151,7 @@ export function UpdateProduct({ productId, onFinish }: { productId: string, onFi
                         </Stack>
 
                         {/* Third Row */}
+                        {/* Common Options */}
                         <Stack stackProps={{ className: 'overflow-y-auto' }}>
                             {/* First Column */}
                             <Stack direction="vertical" stackProps={{ className: 'w-[calc(50%-(0.75rem)/2)]' }}>
@@ -200,6 +203,7 @@ export function UpdateProduct({ productId, onFinish }: { productId: string, onFi
                         <Separator />
 
                         {/* Forth Row */}
+                        {/* Categories and Tags */}
                         <Stack stackProps={{ className: 'h-[7cm]' }}>
                             {/* Categories */}
                             <Stack size={3} direction="vertical" stackProps={{ className: 'w-1/2 overflow-y-auto border rounded-lg shadow-lg py-4 *:px-2' }}>
