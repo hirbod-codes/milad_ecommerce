@@ -162,13 +162,15 @@ products.get('/pictures/:ids', async (req, res) => {
         // Add each file to the archive
         const productPictureRepository = await ProductPictureRepository.getInstance()
         const files = await productPictureRepository.getFilesByProductId(ids)
+        console.log('files', files)
         files.forEach((file) => {
             const readstream = productPictureRepository.getReadStream(file._id);
+            console.log('readstream', readstream)
             archive.append(readstream, { name: file.filename });
         });
 
         // Finalize the archive and send it
-        archive.finalize();
+        await archive.finalize();
     } catch (e) {
         console.error(e)
         res.sendStatus(500)
@@ -237,6 +239,7 @@ products.post('/pictures/:productId', authenticate, async (req, res) => {
 
             const uploadedFiles: { filename: string, id: string }[] = [];
 
+            console.log('files', files)
             files.forEach(async (file) => {
                 const productPictureRepository = await ProductPictureRepository.getInstance()
                 const writeStream = productPictureRepository.getWriteStream(file.filename, productId, file.mimeType)

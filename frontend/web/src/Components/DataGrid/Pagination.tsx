@@ -33,15 +33,16 @@ export function Pagination({ paginationLimitOptions = [10, 25, 50, 100], onPagin
         <Stack stackProps={{ className: 'justify-end items-center' }}>
             <Select
                 loading={isChangingLimit}
-                defaultValue={paginationLimit.toString()}
-                defaultDisplayValue={paginationLimit.toString()}
-                onValueChange={async (value) => {
+                onValueSelect={async (value) => {
                     setIsChangingLimit(true)
                     setPaginationLimit(Math.floor(Number(value)))
                     if (setPaginationLimitChange)
                         await setPaginationLimitChange(Math.floor(Number(value)))
                     setPage(0)
                     setIsChangingLimit(false)
+                }}
+                inputProps={{
+                    value: paginationLimit.toString()
                 }}
             >
                 {paginationLimitOptions.map((l, i) =>

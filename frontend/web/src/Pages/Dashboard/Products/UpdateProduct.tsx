@@ -1,5 +1,5 @@
 import { Fragment, useContext, useEffect, useRef, useState } from "react";
-import { authFetchData, fetchData, getApiUrl } from "@/src/Backend/helpers";
+import { authFetchData, extractImagesFromZip, fetchData, getApiUrl } from "@/src/Backend/helpers";
 import { Button } from "@/src/Components/Base/Button";
 import { t } from "i18next";
 import { PlusIcon, SearchIcon, Trash2Icon } from "lucide-react";
@@ -14,11 +14,16 @@ import { Textarea } from "@/src/shadcn/components/ui/textarea";
 import { Category } from "../Categories/index.d";
 import { Select } from "@/src/Components/Base/Select";
 import { Product } from './index.d'
+import { CircularLoadingIcon } from "@/src/Components/Base/CircularLoadingIcon";
+import { Modal } from "@/src/Components/Base/Modal";
 
 export function UpdateProduct({ productId, onFinish }: { productId: string, onFinish?: (shouldRefresh: boolean) => void }) {
     const feedback = useContext(FeedbackContext)
 
     const [product, setProduct] = useState<Product | undefined>(undefined)
+
+    const [images, setImages] = useState<string[]>(undefined)
+    const [image, setImage] = useState<string>(undefined)
 
     const [languages, setLanguages] = useState([])
 
@@ -41,18 +46,21 @@ export function UpdateProduct({ productId, onFinish }: { productId: string, onFi
     const [loading, setLoading] = useState(true)
     const [submitting, setSubmitting] = useState(false)
 
-    console.log('UpdateProduct', { searchCategory, searchedCategories, categories, searchTag, searchedTags, tags, product, customProperties, suggestedProperties, loading, submitting })
+    console.log('UpdateProduct', { product, images, languages, searchCategory, searchedCategories, categories, searchTag, searchedTags, tags, customProperties, suggestedProperties, loading, submitting })
 
     useEffect(() => {
+        const keyDown = e => { if (e.key === 'Escape') setImage(undefined) }
+        window.addEventListener('keydown', keyDown)
+
         Promise.all([
             fetchData(`${getApiUrl()}/categories`),
             fetchData(`${getApiUrl()}/tags`),
             // should be cached in future releases
             fetchData(`${getApiUrl()}/languages`),
             fetchData(`${getApiUrl()}/products/${productId}`),
-            fetchData(`${getApiUrl()}/products/pictures/${productId}`),
+            fetch(`${getApiUrl()}/products/pictures/${productId}`),
         ])
-            .then(r => {
+            .then(async r => {
                 console.log('UpdateProduct r', r)
 
                 if (r[0].response && r[0].response.ok && array().required().isValidSync(r[0].data))
@@ -67,11 +75,21 @@ export function UpdateProduct({ productId, onFinish }: { productId: string, onFi
                 if (r[3].response && r[3].response.ok)
                     setProduct(r[3].data[0])
 
-                if (r[4].response && r[4].response.ok)
-                    setImages(r[4].data[0])
+                if (r[4] && r[4].ok) {
+                    (async () => {
+                        setImages(await extractImagesFromZip(await r[4].blob()))
+                    })()
+                }
 
                 setLoading(false)
             })
+
+        return () => {
+            images?.forEach((url) => URL.revokeObjectURL(url));
+            if (image !== undefined)
+                URL.revokeObjectURL(image)
+            window.removeEventListener('keydown', keyDown)
+        };
     }, [])
 
     const submit = async () => {
@@ -105,7 +123,7 @@ export function UpdateProduct({ productId, onFinish }: { productId: string, onFi
     return (
         loading
             ? <CircularLoading />
-            : <Stack direction="vertical" stackProps={{ className: 'mt-4 h-max overflow-y-auto' }}>
+            : <Stack direction="vertical" stackProps={{ className: 'mt-4 h-max' }}>
                 <div className="text-3xl">
                     {t('UpdateProduct.title')}
                 </div>
@@ -375,6 +393,25 @@ export function UpdateProduct({ productId, onFinish }: { productId: string, onFi
                         <Button isIcon fgColor='success' variant="text" onClick={() => setCustomProperties([...customProperties, { id: getId(), key: '', value: '' }])}><PlusIcon /></Button>
                     </div>
                 </Stack>
+
+                <Separator />
+
+                <Stack stackProps={{ className: 'flex-wrap items-start' }}>
+                    {
+                        images === undefined
+                            ? <CircularLoadingIcon />
+                            : images?.map((m, i) =>
+                                <div key={i} className="relative w-[3cm]">
+                                    <img src={m} className="w-full relative" loading="lazy" />
+                                    <div className="size-full absolute top-0 hover:bg-[#00000080]" onClick={() => setImage(m)} />
+                                </div>
+                            )
+                    }
+                    <Button isIcon variant="text" fgColor='success'><PlusIcon /></Button>
+                </Stack>
+                <Modal modalContainerProps={{ className: 'max-h-screen h-max' }} useResponsiveContainer={false} childrenContainerProps={{ className: 'w-auto bg-transparent p-0' }} open={image !== undefined} onClose={() => setImage(undefined)}>
+                    <img src={image} className="h-max relative" loading="lazy" />
+                </Modal>
 
                 <Separator />
 

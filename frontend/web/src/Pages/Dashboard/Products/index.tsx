@@ -98,7 +98,7 @@ export function Products() {
 
     useEffect(() => {
         setLoading(true)
-        init(page.limit, page.offset)
+        init(page.offset, page.limit)
             .finally(() => setLoading(false))
     }, [])
 

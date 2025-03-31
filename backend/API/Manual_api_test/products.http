@@ -1,5 +1,5 @@
-@accessToken=eyJhbGciOiJIUzUxMiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI2N2RlOWUzOTg0ZDQxODFjMmRjODNiOGMiLCJyb2xlIjoiYWRtaW4iLCJ0b2tlbk1vZGUiOiJhY2Nlc3NUb2tlbiIsImlhdCI6MTc0MjY1NDk1MiwiZXhwIjoxNzQyNjU2NzUyLCJpc3MiOiJBdXRob3JpemF0aW9uIFNlcnZlciJ9.BXBHZvVan7Uki4RPeefKa1t8IuO7HGzB4y3kHGr3fP3CEWpcRxnhfHnyq0C3_uxHAy6MSVbdd6ulkPiusJA-pQ
-@productId=67deb9ae82aec5fe352caafc
+@accessToken=eyJhbGciOiJIUzUxMiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI2N2U5NWE4ZTM5NjU2NTRhNzIzOTBiZDEiLCJyb2xlIjoiYWRtaW4iLCJ0b2tlbk1vZGUiOiJhY2Nlc3NUb2tlbiIsImlhdCI6MTc0MzQwNzcyOCwiZXhwIjoxNzQzNDA5NTI4LCJpc3MiOiJBdXRob3JpemF0aW9uIFNlcnZlciJ9.VYfd_SMuM_imw0FWpzGz3cqVE0oGpiCwwUwAgbyHARUUIHQ32ApmnA0mM6GPTSw3fXFh0n9ENwFVpuT6joRjUQ
+@productId=67ea47a2d557f40102912efc
 
 ###
 POST http://localhost:3000/products HTTP/1.1
@@ -21,8 +21,27 @@ Accept: application/json
 }
 
 ###
+POST http://localhost:3000/products/pictures/{{productId}} HTTP/1.1
+Authorization: Bearer {{accessToken}}
+Accept: application/json
+File-Name: testAvatar2
+Content-Length: 2048
+Content-Type: multipart/form-data; boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW
+
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="image"; filename="testAvatar2.png"
+Content-Type: image/png
+
+< ./testAvatar2.png
+------WebKitFormBoundary7MA4YWxkTrZu0gW--
+
+###
 GET http://localhost:3000/products/{{productId}} HTTP/1.1
 Accept: application/json
+
+###
+GET http://localhost:3000/products/pictures/{{productId}} HTTP/1.1
+Accept: application/zip
 
 ###
 GET http://localhost:3000/products HTTP/1.1

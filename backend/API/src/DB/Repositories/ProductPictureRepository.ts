@@ -86,7 +86,7 @@ export class ProductPictureRepository extends MongoDB {
 
     async getFiles(fileIds: string[]): Promise<GridFSFile[]> {
         try {
-            return await this.collection.find({ productId: { $in: fileIds.map(id => ObjectId.createFromHexString(id)) } }).toArray();
+            return await this.collection.find({ _id: { $in: fileIds.map(id => ObjectId.createFromHexString(id)) } }).toArray();
         } catch (e) {
             console.error(e)
             return []
@@ -95,7 +95,7 @@ export class ProductPictureRepository extends MongoDB {
 
     async getFilesByProductId(productIds: string | string[]): Promise<GridFSFile[]> {
         try {
-            return await this.collection.find({ metadata: { productId: typeof productIds === 'string' ? ObjectId.createFromHexString(productIds) : { $in: productIds.map(id => ObjectId.createFromHexString(id)) } } }).toArray();
+            return await this.collection.find({ 'metadata.productId': typeof productIds === 'string' ? ObjectId.createFromHexString(productIds) : { $in: productIds.map(id => typeof id === 'string' ? ObjectId.createFromHexString(id) : id) } }).toArray();
         } catch (e) {
             console.error(e)
             return []
@@ -121,7 +121,7 @@ export class ProductPictureRepository extends MongoDB {
 
     async deleteFilesByProductId(productId: string): Promise<boolean> {
         try {
-            const cursor = await this.collection.find({ metadata: { productId: productId } }).toArray()
+            const cursor = await this.collection.find({ 'metadata.productId': typeof productId === 'string' ? ObjectId.createFromHexString(productId) : productId }).toArray()
 
             for (const doc of cursor)
                 await this.collection.delete(new ObjectId(doc._id))

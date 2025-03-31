@@ -1,5 +1,6 @@
 import { string } from "yup";
 import { Auth } from "./Auth/Auth";
+import JSZip from 'jszip';
 
 export function getAuthApiUrl(): string {
     const authApiUrl = import.meta.env.VITE_AUTH_API_URL;
@@ -173,3 +174,32 @@ export async function tryAndWait(callback: CallableFunction, secondsToWaitForEac
 
     return true
 }
+
+const fetchZipFile = async () => {
+    try {
+        const response = await fetch('https://example.com/path-to-your-zipfile.zip');
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const blob = await response.blob();
+        return blob;
+    } catch (error) {
+        console.error('Error fetching the ZIP file:', error);
+    }
+};
+
+
+export const extractImagesFromZip = async (zipBlob: Blob): Promise<string[]> => {
+    const zip = new JSZip();
+    const zipContents = await zip.loadAsync(zipBlob);
+    const imageFiles = Object.keys(zipContents.files).filter((filename) => /\.(jpe?g|png|gif)$/i.test(filename));
+
+    const images = await Promise.all(
+        imageFiles.map(async (filename) => {
+            const fileData = await zipContents.files[filename].async('blob');
+            return URL.createObjectURL(fileData);
+        })
+    );
+
+    return images;
+};
