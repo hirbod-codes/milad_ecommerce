@@ -103,7 +103,6 @@ export function UpdateProduct({ productId, onFinish }: { productId: string, onFi
                 }
             }
             console.log('data', data)
-            return
 
             const r = await authFetchData(`${getApiUrl()}/products`, { method: 'post', body: JSON.stringify(data) })
             if (r.response && r.response?.ok) {

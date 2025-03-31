@@ -1,7 +1,7 @@
 import { Filter, Filters } from "@/src/Components/SearchFilter/index.d";
 import { SearchFilter } from "@/src/Components/SearchFilter";
 import { ComponentProps, useContext, useEffect, useRef, useState } from "react";
-import { fetchData, getApiUrl } from "@/src/Backend/helpers";
+import { authFetchData, fetchData, getApiUrl } from "@/src/Backend/helpers";
 import { ColorStatic } from "@/src/Lib/Colors/ColorStatic";
 import { ConfigurationContext } from "@/src/Contexts/Configuration/ConfigurationContext";
 import { DataGrid } from "@/src/Components/DataGrid";
@@ -112,7 +112,12 @@ export function Products() {
             .finally(() => setLoading(false))
     }, [])
 
-    const deleteProduct = async (_id: string) => {
+    const deleteProduct = async (id: string) => {
+        const r = await authFetchData(`${getApiUrl()}/products`, { method: 'delete', body: JSON.stringify({ id }) })
+        if (r.response && r.response?.ok)
+            feedback.push({ node: t('UpdateProduct.CreationSuccessful'), color: { bgColor: 'success', fgColor: 'success-foreground' } })
+        else
+            feedback.push({ node: t('UpdateProduct.CreationFailure'), color: { bgColor: 'error', fgColor: 'error-foreground' } })
     }
 
     let dataGridGradientColor = ColorStatic.parse(themeOptions.colors.primary[themeOptions.mode].main).toRgb()
@@ -152,7 +157,7 @@ export function Products() {
                             fgColor='error'
                             onClick={() => {
                                 setDeletingProduct(row.original._id)
-                                setAsk({ open: true, title: t('Products.deletionTitle'), content: t('Products.deletionContent'), successAction: () => deleteProduct(row.original._id), failureAction: () => setAsk({ ...ask, open: false }) });
+                                setAsk({ open: true, title: t('Products.deletionTitle'), content: t('Products.deletionContent'), successAction: async () => { await deleteProduct(row.original._id); await init(page.offset, page.limit); setAsk({ ...ask, open: false }); }, failureAction: () => setAsk({ ...ask, open: false }) });
                             }}
                         >
                             {deletingProduct === undefined || deletingProduct !== row.original._id ? <Trash2Icon /> : <CircularLoadingIcon />}
@@ -261,6 +266,8 @@ export function Products() {
                 />
                 : <CircularLoadingScreen />
             }
+
+            <Ask {...ask} onClose={() => setAsk({ ...ask, open: false })} />
 
             <DropdownMenu
                 anchorRef={filterButtonRef}
