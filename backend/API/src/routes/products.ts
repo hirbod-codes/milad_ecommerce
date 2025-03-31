@@ -324,7 +324,7 @@ products.patch('/', authenticate, async (req, res) => {
 
         const { product, id } = req.body
 
-        if (!stringObjectId.required().isValidSync(id) || !productUpdateSchema.isValidSync(product)) {
+        if (!stringObjectId.required().isValidSync(id) || !productUpdateSchema.required().isValidSync(product)) {
             res.sendStatus(400)
             return
         }

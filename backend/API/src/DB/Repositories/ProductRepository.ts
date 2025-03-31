@@ -55,7 +55,7 @@ export class ProductRepository extends MongoDB {
                         name,
                         displayName: { fa: fakerFA.commerce.productName(), en: name },
                         description: { fa: fakerFA.commerce.productDescription(), en: faker.commerce.productDescription() },
-                        price: { IRR: faker.number.int({ min: 0, max: 500_000_000 }), en: faker.number.int({ min: 0, max: 500_000_000 }) },
+                        price: { IRR: faker.number.int({ min: 0, max: 500_000_000 }), USD: faker.number.int({ min: 0, max: 500_000_000 }) },
                         purchaseCount: faker.number.int({ min: 0, max: 5000 }),
                         reviewsCount: faker.number.int({ min: 0, max: 1000 }),
                         isAvailable: faker.datatype.boolean(0.7),

@@ -95,10 +95,18 @@ export function UpdateProduct({ productId, onFinish }: { productId: string, onFi
     const submit = async () => {
         setSubmitting(true)
         try {
-            const data = {
+            const { tags, categories, name, displayName, description, price, isAvailable, thumbnail } = product
+            const data: any = {
                 id: productId,
                 product: {
-                    ...product,
+                    tags,
+                    categories,
+                    name,
+                    displayName,
+                    description,
+                    price,
+                    isAvailable,
+                    thumbnail,
                     ...Object.fromEntries(customProperties.map(cp => [cp.key, cp.value]))
                 }
             }

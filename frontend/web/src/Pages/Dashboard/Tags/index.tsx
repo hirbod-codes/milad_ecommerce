@@ -9,7 +9,7 @@ import { FeedbackContext } from "@/src/Contexts/Feedback/FeedbackContext"
 import { Separator } from "@/src/shadcn/components/ui/separator"
 import { t } from "i18next"
 import { PlusIcon, Trash2Icon } from "lucide-react"
-import { useContext, useEffect, useState } from "react"
+import { Fragment, useContext, useEffect, useState } from "react"
 import { array } from "yup"
 
 export function Tags() {
@@ -79,16 +79,20 @@ export function Tags() {
                     </Button>
                 }
 
-                {tags.map(tag =>
-                    <Stack stackProps={{ className: 'justify-between' }}>
-                        {tag.name}
+                {tags.map((tag, i) =>
+                    <Fragment key={tag.name}>
+                        <Stack key={tag.name} stackProps={{ className: 'justify-between' }}>
+                            {tag.name}
 
-                        {deletesTag &&
-                            <Button isIcon variant="text" fgColor='error' onClick={() => deleteTag(tag._id)}>
-                                {deletingId === tag._id ? <CircularLoading size="md" /> : <Trash2Icon />}
-                            </Button>
-                        }
-                    </Stack>
+                            {deletesTag &&
+                                <Button isIcon variant="text" fgColor='error' onClick={() => deleteTag(tag._id)}>
+                                    {deletingId === tag._id ? <CircularLoading size="md" /> : <Trash2Icon />}
+                                </Button>
+                            }
+                        </Stack>
+
+                        {i !== tags.length - 1 && <Separator />}
+                    </Fragment>
                 )}
             </Stack>
 
