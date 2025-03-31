@@ -92,35 +92,6 @@ export function UpdateProduct({ productId, onFinish }: { productId: string, onFi
         };
     }, [])
 
-    const submit = async () => {
-        setSubmitting(true)
-        try {
-            const { tags, categories, name, displayName, description, price, isAvailable, thumbnail } = product
-            const data: any = {
-                id: productId,
-                product: {
-                    tags,
-                    categories,
-                    name,
-                    displayName,
-                    description,
-                    price,
-                    isAvailable,
-                    thumbnail,
-                    ...Object.fromEntries(customProperties.map(cp => [cp.key, cp.value]))
-                }
-            }
-            console.log('data', data)
-
-            const r = await authFetchData(`${getApiUrl()}/products`, { method: 'post', body: JSON.stringify(data) })
-            if (r.response && r.response?.ok) {
-                if (onFinish)
-                    onFinish(true)
-            } else
-                feedback.push({ node: t('UpdateProduct.CreationFailure'), color: { bgColor: 'error', fgColor: 'error-foreground' } })
-        } finally { setSubmitting(false) }
-    }
-
     return (
         loading
             ? <CircularLoading />
@@ -491,7 +462,34 @@ export function UpdateProduct({ productId, onFinish }: { productId: string, onFi
                                 Object.entries(product?.displayName).find(f => !f[0].trim() || !f[1].toString().trim()) !== undefined ||
                                 customProperties.find(f => !f.key.trim() || !f.value.trim()) !== undefined
                             }
-                            onClick={submit}
+                            onClick={async () => {
+                                setSubmitting(true)
+                                try {
+                                    const { tags, categories, name, displayName, description, price, isAvailable, thumbnail } = product
+                                    const data: any = {
+                                        id: productId,
+                                        product: {
+                                            tags,
+                                            categories,
+                                            name,
+                                            displayName,
+                                            description,
+                                            price,
+                                            isAvailable,
+                                            thumbnail,
+                                            ...Object.fromEntries(customProperties.map(cp => [cp.key, cp.value]))
+                                        }
+                                    }
+                                    console.log('data', data)
+
+                                    const r = await authFetchData(`${getApiUrl()}/products`, { method: 'PATCH', body: JSON.stringify(data) })
+                                    if (r.response && r.response?.ok) {
+                                        if (onFinish)
+                                            onFinish(true)
+                                    } else
+                                        feedback.push({ node: t('UpdateProduct.CreationFailure'), color: { bgColor: 'error', fgColor: 'error-foreground' } })
+                                } finally { setSubmitting(false) }
+                            }}
                         >
                             {submitting ? <CircularLoading /> : t('UpdateProduct.Update')}
                         </Button>

@@ -16,22 +16,22 @@ export const productSchema = object().required().strict(true).unknown(true).shap
     price: price.required(),
     isAvailable: boolean().required(),
     thumbnail: likeObjectId.optional(),
-    purchaseCount: number().integer().min(0).optional(),
-    reviewsCount: number().integer().min(0).optional(),
-    views: number().integer().min(0).optional(),
-    averageRating: number().min(0).max(5).optional(),
-    createdAt: number().required(),
-    updatedAt: number().required(),
+    purchaseCount: number().strict(true).integer().min(0).optional(),
+    reviewsCount: number().strict(true).integer().min(0).optional(),
+    views: number().strict(true).integer().min(0).optional(),
+    averageRating: number().strict(true).min(0).max(5).optional(),
+    createdAt: number().strict(true).required(),
+    updatedAt: number().strict(true).required(),
 })
 export type Product = InferType<typeof productSchema>
 
-export const productInputSchema = productSchema.pick(['tags', 'categories', 'name', 'displayName', 'description', 'price', 'isAvailable', 'thumbnail']).required().unknown(true).strict(true)
+export const productInputSchema = productSchema.pick(['tags', 'categories', 'name', 'displayName', 'description', 'price', 'isAvailable', 'thumbnail']).required().strict(true).unknown(true)
 export type ProductInput = InferType<typeof productInputSchema>
 
-export const productCreateSchema = productSchema.omit(['_id']).shape({ _id: likeObjectId.optional() }).required().unknown(true).strict(true)
+export const productCreateSchema = productSchema.omit(['_id']).shape({ _id: likeObjectId.optional() }).required().strict(true).unknown(true)
 export type ProductCreate = InferType<typeof productCreateSchema>
 
-export let productUpdateSchema = productSchema.pick(['name', 'displayName', 'description', 'tags', 'categories', 'price', 'isAvailable', 'thumbnail']).required().unknown(true).strict(true)
+export let productUpdateSchema = productSchema.pick(['name', 'displayName', 'description', 'tags', 'categories', 'price', 'isAvailable', 'thumbnail']).required().strict(true).unknown(true)
 for (const field in productUpdateSchema.fields)
     if (Object.prototype.hasOwnProperty.call(productUpdateSchema.fields, field))
         (productUpdateSchema.fields as any)[field] = (productUpdateSchema.fields as any)[field].optional()

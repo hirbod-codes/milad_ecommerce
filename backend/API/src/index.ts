@@ -84,7 +84,7 @@ export const queueManagement = new QueueManagement(messageBrokerUrl, messageBrok
     app.disable('x-powered-by')
 
     app.use((req, res, next) => {
-        console.log('hit: ' + req.originalUrl)
+        console.log('hit: ' + req.method + req.originalUrl)
         next()
     })
 

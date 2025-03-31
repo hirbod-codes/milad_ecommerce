@@ -324,13 +324,18 @@ products.patch('/', authenticate, async (req, res) => {
 
         const { product, id } = req.body
 
-        if (!stringObjectId.required().isValidSync(id) || !productUpdateSchema.required().isValidSync(product)) {
+        if (!stringObjectId.required().isValidSync(id)) {
+            res.sendStatus(400)
+            return
+        }
+
+        if (!productUpdateSchema.required().isValidSync(product)) {
             res.sendStatus(400)
             return
         }
 
         const productRepository = await ProductRepository.getInstance()
-        const result = await productRepository.update(id, productUpdateSchema.cast(product))
+        const result = await productRepository.update(id, product)
 
         if (result === false || result.acknowledged !== true)
             res.sendStatus(500)
