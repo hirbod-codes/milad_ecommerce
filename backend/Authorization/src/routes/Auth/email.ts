@@ -110,7 +110,7 @@ emailRouter.post('/signup', async (req, res) => {
             return
         }
 
-        let salt: string | undefined = undefined, iterations: number = 10000
+        let salt: string | undefined = undefined, iterations: number = 1000
         const hashedPassword: string = await (async () => {
             return new Promise((resolve, reject) => {
                 salt = crypto.randomBytes(128).toString('base64')

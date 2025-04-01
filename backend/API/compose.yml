@@ -170,10 +170,10 @@ services:
             - /app/node_modules
         environment:
             - NODE_ENV=development
-            - ADMIN_USERNAME=username
-            - ADMIN_PHONE_NUMBER=phonenumber
-            - ADMIN_EMAIL=email
-            - ADMIN_PASSWORD=password
+            - ADMIN_USERNAME=hirbod
+            - ADMIN_PHONE_NUMBER=09999999999
+            - ADMIN_EMAIL=example@domain.com
+            - ADMIN_PASSWORD=Pass99%aa
             - ALLOWED_ORIGINS=https://localhost
             - DB_SUPPORTS_TRANSACTION=false
             - DB_URL=mongodb://main_mongodb:27017

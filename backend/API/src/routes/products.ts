@@ -40,9 +40,9 @@ products.post('/', authenticate, async (req, res) => {
     }
 })
 
-products.get('/:ids', async (req, res) => {
+products.get('/ids', async (req, res) => {
     try {
-        const { ids: idsStr } = req.params
+        const { ids: idsStr } = req.query
 
         if (!string().required().strict(true).isValidSync(idsStr)) {
             res.sendStatus(400)

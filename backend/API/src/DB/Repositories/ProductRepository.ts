@@ -74,6 +74,9 @@ export class ProductRepository extends MongoDB {
                         throw e
                 }
             }
+
+            if (safety >= 10)
+                throw new Error('safety triggered while seeding products!')
         }
     }
 

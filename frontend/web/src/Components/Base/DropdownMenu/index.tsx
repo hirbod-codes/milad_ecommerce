@@ -1,7 +1,7 @@
 import { ComponentProps, memo, ReactNode, RefObject, useEffect, useReducer, useRef } from "react";
 import { cn } from "@/src/shadcn/lib/utils";
 import { createPortal } from "react-dom";
-import { useAnimate } from "framer-motion";
+import { AnimatePresence, motion, MotionProps } from "framer-motion";
 
 export type DropdownMenuProps = {
     children: ReactNode
@@ -9,7 +9,7 @@ export type DropdownMenuProps = {
     anchorDomRect?: { left?: number, top?: number, width?: number, height?: number }
     open?: boolean
     onOpenChange?: (open: boolean) => void
-    containerProps?: ComponentProps<'div'>
+    containerProps?: ComponentProps<'div'> & MotionProps
     verticalPosition?: 'top' | 'center' | 'bottom'
     horizontalPosition?: 'left' | 'center' | 'right'
 }
@@ -17,12 +17,11 @@ export type DropdownMenuProps = {
 export const DropdownMenu = memo(function DropdownMenu({ children, anchorRef, anchorDomRect, open = false, onOpenChange, containerProps, verticalPosition = 'bottom', horizontalPosition = 'center' }: DropdownMenuProps) {
     const [, rerender] = useReducer(x => x + 1, 0)
 
-    const [scope, animate] = useAnimate()
-
+    const containerRef = useRef<HTMLDivElement>(null)
     const helperRef = useRef<HTMLDivElement>(null)
 
     const updatePosition = () => {
-        if (!scope?.current)
+        if (!containerRef?.current)
             return
 
         if (!anchorDomRect && !anchorRef?.current)
@@ -33,35 +32,32 @@ export const DropdownMenu = memo(function DropdownMenu({ children, anchorRef, an
 
         let aRect: any = anchorDomRect ?? anchorRef?.current!.getBoundingClientRect()
         const cRect = {
-            ...scope.current.getBoundingClientRect()
-            , width: helperRef?.current?.getBoundingClientRect().width, height: helperRef?.current?.getBoundingClientRect().height
+            ...containerRef.current.getBoundingClientRect(),
+            width: helperRef?.current?.getBoundingClientRect().width,
+            height: helperRef?.current?.getBoundingClientRect().height,
         }
-        // console.log({ aRect, cRect })
+        console.log({ aRect, cRect })
 
         // console.log('updatePosition', verticalPosition, horizontalPosition, { visualViewport: window.visualViewport, 'ref': anchorRef?.current, 'scrollTop': anchorRef?.current?.scrollTop, 'offsetTop': anchorRef?.current?.offsetTop, 'offsetLeft': anchorRef?.current?.offsetLeft, 'offsetHeight': anchorRef?.current?.offsetHeight, 'offsetWidth': anchorRef?.current?.offsetWidth, 'aRect.top': aRect?.top, 'aRect.bottom': aRect?.bottom, 'aRect.left': aRect?.left, 'aRect.right': aRect?.right, 'aRect.width': aRect?.width, 'aRect.height': aRect?.height })
-        // console.log('updatePosition', verticalPosition, horizontalPosition, { 'ref': scope.current, 'offsetTop': scope.current.offsetTop, 'offsetLeft': scope.current.offsetLeft, 'offsetHeight': scope.current.offsetHeight, 'offsetWidth': scope.current.offsetWidth, 'cRect.top': cRect.top, 'cRect.bottom': cRect.bottom, 'cRect.left': cRect.left, 'cRect.right': cRect.right, 'cRect.width': cRect.width, 'cRect.height': cRect.height })
+        // console.log('updatePosition', verticalPosition, horizontalPosition, { 'ref': containerRef.current, 'offsetTop': containerRef.current.offsetTop, 'offsetLeft': containerRef.current.offsetLeft, 'offsetHeight': containerRef.current.offsetHeight, 'offsetWidth': containerRef.current.offsetWidth, 'cRect.top': cRect.top, 'cRect.bottom': cRect.bottom, 'cRect.left': cRect.left, 'cRect.right': cRect.right, 'cRect.width': cRect.width, 'cRect.height': cRect.height })
 
-        scope.current.style.top = ''
-        scope.current.style.bottom = ''
-        scope.current.style.left = ''
-        scope.current.style.right = ''
+        containerRef.current.style.top = ''
+        containerRef.current.style.bottom = ''
+        containerRef.current.style.left = ''
+        containerRef.current.style.right = ''
 
         // aRect = { left: aRect.right, right: aRect.left, top: aRect.top, bottom: aRect.bottom, width: aRect.width, height: aRect.height }
 
-        positionElement(scope.current, verticalPosition, horizontalPosition, aRect! as DOMRect, cRect, window.innerHeight, window.innerWidth)
+        positionElement(containerRef.current, verticalPosition, horizontalPosition, aRect! as DOMRect, cRect, window.innerHeight, window.innerWidth)
 
-        // scope.current.style.right = scope.current.style.left
-        // scope.current.style.left = ''
+        // containerRef.current.style.right = containerRef.current.style.left
+        // containerRef.current.style.left = ''
     }
 
     useEffect(() => {
-        if (scope?.current) {
+        if (containerRef?.current && open) {
             updatePosition()
             rerender()
-            if (open)
-                animate(scope.current, { display: 'block', opacity: 1 })
-            else
-                animate(scope.current, { display: 'none', opacity: 0 })
         }
 
         if (onOpenChange)
@@ -76,10 +72,10 @@ export const DropdownMenu = memo(function DropdownMenu({ children, anchorRef, an
 
     useEffect(() => {
         function handleClickOutside(e) {
-            if (!scope || !scope?.current || !onOpenChange || !anchorRef || !anchorRef?.current)
+            if (!containerRef || !containerRef?.current || !onOpenChange || !anchorRef || !anchorRef?.current)
                 return
 
-            const c = scope.current.getBoundingClientRect()
+            const c = containerRef.current.getBoundingClientRect()
             const a = anchorRef.current.getBoundingClientRect()
 
             const outOfContainer = e.clientX < c.left || e.clientX > c.right || e.clientY < c.top || e.clientY > c.bottom
@@ -94,26 +90,31 @@ export const DropdownMenu = memo(function DropdownMenu({ children, anchorRef, an
         return () => {
             document.body.removeEventListener("pointerdown", handleClickOutside);
         };
-    }, [scope, scope?.current]);
+    }, [containerRef, containerRef?.current]);
 
-    console.log('DropdownMenu', { anchorDomRect, containerRef: scope, anchorRef, onOpenChange, containerProps, verticalPosition, horizontalPosition })
+    // console.log('DropdownMenu', { anchorDomRect, containerRef: containerRef, anchorRef, onOpenChange, containerProps, verticalPosition, horizontalPosition })
 
-    return (
+    return createPortal(
         <>
-            {createPortal(<div ref={helperRef} className="absolute -z-[60]">{children}</div>, document.body)}
-            {createPortal(
-                <div
-                    {...containerProps}
-                    id="dropdown-container"
-                    ref={scope}
-                    className={cn(['absolute z-50'], containerProps?.className)}
-                    style={{ top: '-100%', opacity: 0, ...containerProps?.style }}
-                >
-                    {children}
-                </div>
-                , document.body
-            )}
+            {open && <div ref={helperRef} className="absolute -z-[60]">{children}</div>}
+            <AnimatePresence>
+                {open &&
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.3 }}
+                        {...containerProps}
+                        id="dropdown-container"
+                        ref={containerRef}
+                        className={cn(['absolute z-50'], containerProps?.className)}
+                    >
+                        {children}
+                    </motion.div>
+                }
+            </AnimatePresence>
         </>
+        , document.body
     )
 })
 

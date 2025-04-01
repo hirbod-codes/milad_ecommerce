@@ -1,8 +1,8 @@
 import dotenv from "dotenv";
 import express from "express";
+import pino from 'pino-http'
 import { MongoDB } from "./DB/mongodb";
 import { getBooleanEnv, getIntegerEnv, getStringEnv, tryAndWait } from "./helpers";
-import { createClient, createCluster, RedisClientType, RedisClusterType, RedisDefaultModules } from "redis";
 import nodemailer from "nodemailer";
 import { UserRepository } from "./DB/Repositories/UserRepository";
 import { RoleRepository } from "./DB/Repositories/RoleRepository";
@@ -126,13 +126,14 @@ export const queueManagement = new QueueManagement(messageBrokerUrl, messageBrok
 
     app.disable('x-powered-by')
 
+    app.use(pino())
+
     if (isProduction !== true)
         app.use((req, res, next) => {
-            console.log(`REQUEST: ${req.method} ${req.path}`)
-            console.log(`REQUEST BODY: ${req.body}`)
-
-            // simulate slow connection
-            setTimeout(() => next(), 2000)
+            // To simulate slow connections
+            setTimeout(() => {
+                next()
+            }, 2000)
         })
 
     app.use((req, res, next) => {

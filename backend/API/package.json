@@ -25,6 +25,7 @@
         "module-alias": "^2.2.3",
         "mongodb": "6.8",
         "nodemailer": "^6.10.0",
+        "pino-http": "^10.4.0",
         "redis": "^4.7.0",
         "yup": "^1.6.1"
     },
@@ -41,6 +42,7 @@
         "@types/mongodb": "^4.0.7",
         "@types/node": "^22.13.8",
         "@types/nodemailer": "^6.4.17",
+        "@types/pino-http": "^5.8.4",
         "@types/redis": "^4.0.11",
         "@types/yup": "^0.32.0",
         "concurrently": "^9.1.2",

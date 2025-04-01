@@ -87,7 +87,7 @@ export function Products() {
     console.log('Products', { products, openFilter, filters, openSort, ask, page })
 
     const init = async (offset: number, limit: number): Promise<boolean> => {
-        const res = await fetchData(`${getApiUrl()}/products?limit=${limit}&skip=${offset}${filters === undefined ? '' : '&filter=' + JSON.stringify(formatFilters(filters))}`)
+        const res = await fetchData(`${getApiUrl()}/products?limit=${limit}&skip=${limit * offset}${filters === undefined ? '' : '&filter=' + JSON.stringify(formatFilters(filters))}`)
         if (!res.response || !res.response.ok || !array().required().isValidSync(res.data)) {
             feedback.push({
                 node: t('Products.failedToFetchProducts'),
@@ -255,7 +255,8 @@ export function Products() {
                     columns={columns}
                     loading={loading}
                     hasPagination
-                    defaultColumnOrderModel={['actions']}
+                    defaultColumnVisibilityModel={{ _id: false, schemaVersion: false }}
+                    defaultColumnOrderModel={['actions', 'name', 'displayName', 'isAvailable', 'customFields', 'price', 'description', 'tags', 'categories', 'views', 'purchaseCount', 'reviewsCount', 'averageRating', 'createdAt', 'updatedAt',]}
                     pagination={{ pageSize: page.limit, pageIndex: page.offset }}
                     onPagination={async (p) => {
                         const result = await init(p.pageIndex, p.pageSize)

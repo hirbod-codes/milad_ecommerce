@@ -1,5 +1,6 @@
 import express from "express";
 import dotenv from "dotenv";
+import pino from 'pino-http'
 import { getBooleanEnv, getIntegerEnv, getStringEnv, tryAndWait } from "./helpers";
 import { MongoDB } from "./DB/mongodb";
 import { TagRepository } from "./DB/Repositories/TagRepository";
@@ -83,13 +84,14 @@ export const queueManagement = new QueueManagement(messageBrokerUrl, messageBrok
 
     app.disable('x-powered-by')
 
+    app.use(pino())
+
     if (isProduction !== true)
         app.use((req, res, next) => {
-            console.log(`REQUEST: ${req.method} ${req.path}`)
-            console.log(`REQUEST BODY: ${req.body}`)
-
-            // simulate slow connection
-            setTimeout(() => next(), 2000)
+            // To simulate slow connections
+            setTimeout(() => {
+                next()
+            }, 2000)
         })
 
     app.use((req, res, next) => {

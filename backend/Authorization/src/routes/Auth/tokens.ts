@@ -13,7 +13,6 @@ tokenRouter.get('/logout', (req, res) => {
 
 tokenRouter.post('/retrieve-access-token', async (req, res) => {
     try {
-        console.log('req?.cookies', req?.cookies)
         const refreshToken = req?.cookies?.token
 
         const badRequestErrors = []

@@ -11,11 +11,15 @@ import { Filter, Filters } from "@/src/Components/SearchFilter/index.d";
 import { DataGrid } from "@/src/Components/DataGrid";
 import { Button } from "@/src/Components/Base/Button";
 import { CircularLoadingScreen } from "@/src/Components/Base/CircularLoadingScreen";
-import { EditIcon, FilterIcon, ListFilterIcon, PlusIcon, RefreshCwIcon, Trash2Icon } from "lucide-react";
+import { EditIcon, EyeIcon, FilterIcon, ListFilterIcon, PlusIcon, RefreshCwIcon, Trash2Icon } from "lucide-react";
 import { ColumnDef } from "@tanstack/react-table";
 import { Stack } from "@/src/Components/Base/Stack";
 import { CircularLoadingIcon } from "@/src/Components/Base/CircularLoadingIcon";
 import { DATE, toFormat } from "@/src/Lib/DateTime/date-time-helpers";
+import { CheckBox } from "@/src/Components/Base/CheckBox";
+import { Modal } from "@/src/Components/Base/Modal";
+import { Product } from "../Products/index.d";
+import { CircularLoading } from "@/src/Components/Base/CircularLoading";
 
 function formatFilters(filters: Filters) {
     let key = undefined
@@ -69,18 +73,20 @@ export function Orders() {
 
     const [page, setPage] = useState<{ limit: number, offset: number }>({ limit: 10, offset: 0 })
 
-    const [showingTags, setShowingTags] = useState<string | undefined>(undefined)
-    const [showingCategories, setShowingCategories] = useState<string | undefined>(undefined)
-    const [showCustomFields, setShowCustomFields] = useState<any | undefined>(undefined)
+    const [showProducts, setShowProducts] = useState<any | undefined>(undefined)
+    const [fetchedProducts, setFetchedProducts] = useState<Product[]>(undefined)
+    const [loadingProducts, setLoadingProducts] = useState(true)
+
+    const [loading, setLoading] = useState(true)
 
     console.log('Orders', { orders, openFilter, filters, openSort, ask, page })
 
     const init = async (offset: number, limit: number): Promise<boolean> => {
-        const res = await authFetchData(`${getApiUrl()}/orders?limit=${limit}&skip=${offset}${filters === undefined ? '' : '&filter=' + JSON.stringify(formatFilters(filters))}`)
+        const res = await authFetchData(`${getApiUrl()}/orders?limit=${limit}&skip=${limit * offset}${filters === undefined ? '' : '&filter=' + JSON.stringify(formatFilters(filters))}`)
         if (!res.response || !res.response.ok || !array().required().isValidSync(res.data)) {
             feedback.push({
                 node: t('Orders.failedToFetchOrders'),
-                color: { fgColor: 'error' }
+                color: { bgColor: 'error', fgColor: 'error-foreground' }
             })
             return false
         }
@@ -93,16 +99,29 @@ export function Orders() {
         return false
     }
 
-    const [loading, setLoading] = useState(true)
-
     useEffect(() => {
         setLoading(true)
         init(page.offset, page.limit)
             .finally(() => setLoading(false))
     }, [])
 
+    useEffect(() => {
+        if (showProducts !== undefined) {
+            setLoadingProducts(true);
+            (async () => {
+                const r = await fetchData(`${getApiUrl()}/products?ids=${orders?.find(o => o._id === showProducts)?.products?.map(m => m.productId)?.join(',')}`)
+                if (!r.response || !r.response.ok || !array().required().isValidSync(r?.data)) {
+                    feedback.push({ node: t('Orders.getProductsFailure') })
+                    setFetchedProducts(undefined)
+                } else
+                    setFetchedProducts(r.data)
+            })()
+                .finally(() => setLoadingProducts(false))
+        }
+    }, [showProducts])
+
     const deleteOrder = async (id: string) => {
-        const r = await authFetchData(`${getApiUrl()}/orders`, { method: 'delete', body: JSON.stringify({ id }) })
+        const r = await authFetchData(`${getApiUrl()}/orders`, { method: 'delete', body: JSON.stringify({ orderId: id }) })
         if (r.response && r.response?.ok)
             feedback.push({ node: t('UpdateOrder.CreationSuccessful'), color: { bgColor: 'success', fgColor: 'success-foreground' } })
         else
@@ -118,8 +137,28 @@ export function Orders() {
 
     const overWriteColumns: ColumnDef<any>[] = [
         {
-            id: 'price',
-            accessorKey: 'price',
+            id: 'products',
+            accessorKey: 'products',
+            cell: ({ row }) => <div className="w-full flex flex-row justify-center"><Button isIcon variant="text" onClick={() => setShowProducts(row.original._id)}><EyeIcon /></Button></div>,
+        },
+        {
+            id: 'isPayed',
+            accessorKey: 'isAvailable',
+            cell: ({ row, getValue }) => <div className="w-full flex flex-row justify-center">{Boolean(getValue()) ? <CheckBox containerProps={{ className: 'w-fit' }} colorForeground='success' inputProps={{ checked: true, readOnly: true }} /> : <CheckBox containerProps={{ className: 'w-fit' }} colorForeground='error' inputProps={{ checked: false, readOnly: true }} />}</div>,
+        },
+        {
+            id: 'isSent',
+            accessorKey: 'isAvailable',
+            cell: ({ row, getValue }) => <div className="w-full flex flex-row justify-center">{Boolean(getValue()) ? <CheckBox containerProps={{ className: 'w-fit' }} colorForeground='success' inputProps={{ checked: true, readOnly: true }} /> : <CheckBox containerProps={{ className: 'w-fit' }} colorForeground='error' inputProps={{ checked: false, readOnly: true }} />}</div>,
+        },
+        {
+            id: 'address',
+            accessorKey: 'address',
+            cell: ({ getValue }) => getValue()['text'],
+        },
+        {
+            id: 'cost',
+            accessorKey: 'cost',
             maxSize: 200,
             cell: ({ getValue }) => new Intl.NumberFormat(configuration.local.language, { useGrouping: true, currency: 'IRR', style: 'currency', signDisplay: 'never', maximumFractionDigits: 0 }).format(getValue()['IRR'] as number),
         },
@@ -188,7 +227,8 @@ export function Orders() {
                     additionalColumns={additionalColumns}
                     loading={loading}
                     hasPagination
-                    defaultColumnOrderModel={['actions']}
+                    defaultColumnVisibilityModel={{ userId: false, _id: false, schemaVersion: false }}
+                    defaultColumnOrderModel={['actions', 'cost', 'isPayed', 'isSent', 'products', 'createdAt', 'updatedAt', 'address']}
                     pagination={{ pageSize: page.limit, pageIndex: page.offset }}
                     onPagination={async (p) => {
                         const result = await init(p.pageIndex, p.pageSize)
@@ -205,6 +245,26 @@ export function Orders() {
                 />
                 : <CircularLoadingScreen />
             }
+
+            <Modal
+                modalContainerProps={{ className: 'overflow-y-auto' }}
+                open={showProducts !== undefined}
+                onClose={() => setShowProducts(undefined)}
+            >
+                <Stack direction="vertical">
+                    {
+                        loadingProducts
+                            ? <CircularLoading />
+                            : (
+                                fetchedProducts === undefined
+                                    ? ''
+                                    : fetchedProducts.map(m =>
+                                        <div>{m.displayName[configuration.local.language]}</div>
+                                    )
+                            )
+                    }
+                </Stack>
+            </Modal>
         </>
     )
 }

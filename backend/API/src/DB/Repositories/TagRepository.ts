@@ -51,6 +51,9 @@ export class TagRepository extends MongoDB {
                         throw e
                 }
             }
+
+            if (safety >= 10)
+                throw new Error('safety triggered while seeding tags!')
         }
     }
 

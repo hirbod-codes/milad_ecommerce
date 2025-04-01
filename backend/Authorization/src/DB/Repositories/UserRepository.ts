@@ -18,15 +18,16 @@ export class UserRepository {
     }
 
     static async initialize(adminUsername: string, adminPhoneNumber: string, adminEmail: string, adminPassword: string) {
+        console.log('adminPassword', adminPassword)
         const collection = await MongoDB.getDbInstance().getUserCollection()
 
         if (await collection.estimatedDocumentCount() === 0) {
             let nowTS = DateTime.utc().toUnixInteger()
-            let passwordSalt: string | undefined = undefined, iterations: number = 10000
+            let passwordSalt: string | undefined = undefined, passwordIterations: number = 1000
             const password: string = await (async () => {
                 return new Promise((resolve, reject) => {
                     passwordSalt = crypto.randomBytes(128).toString('base64')
-                    crypto.pbkdf2(adminPassword, passwordSalt, iterations, 64, 'sha512', (err, derivedKey) => {
+                    crypto.pbkdf2(adminPassword, passwordSalt, passwordIterations, 64, 'sha512', (err, derivedKey) => {
                         if (err)
                             reject(err)
                         else
@@ -41,7 +42,7 @@ export class UserRepository {
                 role: 'admin',
                 email: adminEmail,
                 phoneNumber: adminPhoneNumber,
-                passwordIterations: 1000,
+                passwordIterations,
                 passwordSalt,
                 password,
                 createdAt: nowTS,
