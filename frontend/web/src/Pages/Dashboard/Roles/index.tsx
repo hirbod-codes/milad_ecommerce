@@ -151,9 +151,9 @@ export function Roles() {
                 containerProps={{ stackProps: { style: { backgroundImage: `linear-gradient(to bottom right, ${dataGridGradientColor.toHex()} , transparent)` } } }}
                 data={rows.map(row => Object.fromEntries(Object.entries(row).filter(f => f[0] !== 'privileges')))}
                 overWriteColumns={overWriteColumns}
+                additionalColumns={additionalColumns}
                 loading={loading}
                 defaultColumnOrderModel={['actions']}
-                additionalColumns={additionalColumns}
                 appendHeaderNodes={[
                     <Button variant='outline' onClick={async () => await refresh()}><RefreshCwIcon />{t('Roles.Refresh')}</Button>,
                     createsRole &&

@@ -60,23 +60,23 @@ orders.get('/', authenticate, async (req, res) => {
 
         const { userId, filter: filterJson, sort: sortJson, limit: limitStr, skip: skipStr } = req.query
 
-        if (!stringObjectId.required().isValidSync(userId)) {
+        if (!stringObjectId.optional().isValidSync(userId)) {
             res.status(400).json({ errors: ['invalid userId'] })
             return
         }
 
-        if (!number().optional().positive().integer().isValidSync(limitStr)) {
+        if (!number().optional().min(0).integer().isValidSync(limitStr)) {
             res.status(400).json({ errors: ['invalid limit'] })
             return
         }
 
-        if (!number().optional().positive().integer().isValidSync(skipStr)) {
+        if (!number().optional().min(0).integer().isValidSync(skipStr)) {
             res.status(400).json({ errors: ['invalid skip'] })
             return
         }
 
-        let limit = number().required().positive().integer().cast(limitStr ?? 25)
-        let skip = number().required().positive().integer().cast(skipStr ?? 0)
+        let limit = number().required().min(1).integer().cast(limitStr ?? 25)
+        let skip = number().required().min(0).integer().cast(skipStr ?? 0)
 
         let sort: { field: keyof Order, direction: SortDirection }[] = []
         if (sortJson) {

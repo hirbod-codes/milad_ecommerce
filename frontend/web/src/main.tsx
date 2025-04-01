@@ -72,7 +72,7 @@ export function Main() {
                             element: dashboardProducts,
                         },
                         {
-                            path: "Order",
+                            path: "Orders",
                             element: dashboardOrder,
                         },
                         {

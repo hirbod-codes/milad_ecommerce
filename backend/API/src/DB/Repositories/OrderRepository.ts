@@ -96,7 +96,7 @@ export class OrderRepository extends MongoDB {
 
     async get(filter: Filter<Order>, sorts: { field: keyof Order, direction: SortDirection }[], limit: number, skip: number, userId?: string): Promise<Order[] | false> {
         try {
-            let cursor = this.collection.find(userId === undefined ? filter : { $and: [filter, { userId: ObjectId.createFromHexString(userId) }] })
+            let cursor = this.collection.find(userId === undefined ? filter : { $and: [filter, { userId: typeof userId === 'string' ? ObjectId.createFromHexString(userId) : userId }] })
 
             sorts.forEach(sort => cursor.sort(sort.field, sort.direction))
 
