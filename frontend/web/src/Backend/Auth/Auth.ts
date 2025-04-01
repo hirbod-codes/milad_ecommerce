@@ -12,6 +12,8 @@ export class Auth {
         Auth.token = token
     }
 
+    static getToken(): string | undefined { return Auth.token }
+
     static async login() {
         const r = await fetch(`${getAuthApiUrl()}/auth/tokens/retrieve-access-token`, {
             method: 'post',
@@ -55,8 +57,6 @@ export class Auth {
 
         return true
     }
-
-    static getToken(): string | undefined { return Auth.token }
 
     static getRole(): string | undefined {
         const token = Auth.getToken()

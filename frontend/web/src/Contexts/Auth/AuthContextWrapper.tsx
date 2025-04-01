@@ -14,10 +14,14 @@ export const AuthContextWrapper = memo(function AuthContextWrapper({ children }:
 
     const init = async () => {
         try {
+            console.log('Auth.getToken()', Auth.getToken())
+
             if (!Auth.isAuthenticated() && (await Auth.login()) !== true) {
                 navigate('/')
                 return
             }
+
+            console.log('Auth.getToken()', Auth.getToken())
 
             const ps = await Auth.getPrivileges()
             if (ps !== undefined)

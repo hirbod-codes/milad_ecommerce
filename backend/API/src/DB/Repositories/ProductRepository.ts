@@ -121,10 +121,11 @@ export class ProductRepository extends MongoDB {
         catch (e) { console.error(e); return false }
     }
 
-    async sumPriceOfAvailable(productIds: string[], unit: string): Promise<number | false> {
+    async sumPriceOfAvailable(selectedProducts: { productId: string, quantity: number }[], unit: string): Promise<number | false> {
         try {
-            let products = await this.collection.find({ isAvailable: true, _id: { $in: productIds.map(id => ObjectId.createFromHexString(id)) } }).toArray()
-            console.log('products', products)
+            let products = await this.collection.find({ isAvailable: true, _id: { $in: selectedProducts.map(p => ObjectId.createFromHexString(p.productId)) } }).toArray()
+            if (products.length !== selectedProducts.length)
+                return false
 
             let sum = 0
             for (const product of products)

@@ -52,7 +52,7 @@ export class OrderRepository extends MongoDB {
                         userId: faker.helpers.arrayElement(users)._id.toString(),
                         isPayed: true,
                         isSent: faker.datatype.boolean(0.5),
-                        products: selectedProducts.map(m => m._id),
+                        products: selectedProducts.map(m => ({ productId: m._id, quantity: faker.number.int({ min: 1, max: 20 }) })),
                         cost,
                         address: {
                             text: faker.lorem.lines({ min: 1, max: 5 }),
@@ -77,7 +77,7 @@ export class OrderRepository extends MongoDB {
         if (typeof userId === 'string')
             userId = ObjectId.createFromHexString(userId)
 
-        order.products = order.products.map(p => typeof p === 'string' ? ObjectId.createFromHexString(p) : p)
+        order.products = order.products.map(p => ({ ...p, productId: typeof p.productId === 'string' ? ObjectId.createFromHexString(p.productId) : p.productId }))
 
         let o: OrderCreate = {
             ...order,

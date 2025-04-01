@@ -5,7 +5,7 @@ import { authorize } from "@/src/middlewares/authorize";
 import { FilterManagement } from "@/src/DB/FilterManagement";
 import { array, number, object, string } from "yup";
 import { stringObjectId } from "@/src/DB/Models/common_schemas";
-import { Filter, ObjectId, SortDirection } from "mongodb";
+import { Filter, SortDirection } from "mongodb";
 import { ProductRepository } from "../DB/Repositories/ProductRepository";
 import { OrderRepository } from "../DB/Repositories/OrderRepository";
 

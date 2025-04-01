@@ -1,5 +1,5 @@
 import { addMethod, array, boolean, InferType, number, object, string } from "yup";
-import { likeObjectId, price, uniqueArrayTest } from "./common_schemas";
+import { likeObjectId, price } from "./common_schemas";
 
 export const collectionName = 'order'
 
@@ -17,7 +17,11 @@ export const orderSchema = object().required().strict(true).unknown(true).shape(
     schemaVersion: string().required().min(6).max(20),
     _id: likeObjectId.required(),
     userId: likeObjectId.required(),
-    products: array().required().min(1).of(likeObjectId.required()).test('unique-array', uniqueArrayTest),
+    products: array().required().min(1).max(20).of(object().required().strict(true).noUnknown(true).shape({ productId: likeObjectId.required(), quantity: number().required().min(1) })).test('unique-array', (list: any) => {
+        if (!list) return true
+        if (!Array.isArray(list)) return false
+        return list.length === new Set(list.map(m => m.productId)).size;
+    }),
     cost: price.required(),
     isPayed: boolean().required(),
     isSent: boolean().required(),
