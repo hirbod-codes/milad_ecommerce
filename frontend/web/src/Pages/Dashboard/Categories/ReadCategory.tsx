@@ -39,7 +39,7 @@ export function ReadCategory({ category }: { category: Category }) {
                 <Separator />
 
                 {/* Tag name */}
-                <Input value={category.name ?? ''} label={t('CreateCategory.name')} labelId={t('CreateCategory.name')} />
+                <Input value={category.name ?? ''} readOnly label={t('CreateCategory.name')} labelId={t('CreateCategory.name')} />
 
                 {!loading && languages &&
                     <Stack direction='vertical' stackProps={{ className: "border rounded-lg shadow-lg p-2" }}>
@@ -47,7 +47,7 @@ export function ReadCategory({ category }: { category: Category }) {
 
                         {languages.map((l, i) =>
                             <Stack key={i} direction="vertical">
-                                <Input placeholder={l} value={category.displayName ? category.displayName[l] ?? '' : ''} />
+                                <Input placeholder={l} value={category.displayName ? category.displayName[l] ?? '' : ''} readOnly />
                             </Stack>
                         )}
                     </Stack>
@@ -55,7 +55,7 @@ export function ReadCategory({ category }: { category: Category }) {
 
                 {category?.recommendedProductProperties?.map((p, i) =>
                     <Stack key={i} direction="vertical">
-                        <Input placeholder={t('UpdateCategory.field')} value={p.name} />
+                        <Input placeholder={t('UpdateCategory.field')} value={p.name} readOnly />
 
                         {!loading && languages &&
                             <Stack direction='vertical' stackProps={{ className: "border rounded-lg shadow-lg p-2" }}>
@@ -63,7 +63,7 @@ export function ReadCategory({ category }: { category: Category }) {
 
                                 {languages.map((l, i) =>
                                     <Stack key={i} direction="vertical">
-                                        <Input placeholder={l} value={p.display ? p.display[l] ?? '' : ''} />
+                                        <Input placeholder={l} value={p.display ? p.display[l] ?? '' : ''} readOnly />
                                     </Stack>
                                 )}
                             </Stack>

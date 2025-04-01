@@ -126,10 +126,14 @@ export const queueManagement = new QueueManagement(messageBrokerUrl, messageBrok
 
     app.disable('x-powered-by')
 
-    app.use((req, res, next) => {
-        console.log('hit: ' + req.path)
-        next()
-    })
+    if (isProduction !== true)
+        app.use((req, res, next) => {
+            console.log(`REQUEST: ${req.method} ${req.path}`)
+            console.log(`REQUEST BODY: ${req.body}`)
+
+            // simulate slow connection
+            setTimeout(() => next(), 2000)
+        })
 
     app.use((req, res, next) => {
         res.header('Access-Control-Allow-Origin', allowedOrigins)

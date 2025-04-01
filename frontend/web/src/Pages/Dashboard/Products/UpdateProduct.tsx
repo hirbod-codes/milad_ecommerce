@@ -1,5 +1,5 @@
 import { Fragment, useContext, useEffect, useRef, useState } from "react";
-import { authFetch, authFetchData, extractImagesFromZip, fetchData, getApiUrl } from "@/src/Backend/helpers";
+import { authFetchData, fetchData, getApiUrl } from "@/src/Backend/helpers";
 import { Button } from "@/src/Components/Base/Button";
 import { t } from "i18next";
 import { PlusIcon, SearchIcon, Trash2Icon } from "lucide-react";
@@ -13,10 +13,9 @@ import { Input } from "@/src/Components/Base/Input";
 import { Textarea } from "@/src/shadcn/components/ui/textarea";
 import { Category } from "../Categories/index.d";
 import { Select } from "@/src/Components/Base/Select";
-import { Product } from './index.d'
+import { Product, staticFields, staticUpdateFields } from './index.d'
 import { CircularLoadingIcon } from "@/src/Components/Base/CircularLoadingIcon";
 import { Modal } from "@/src/Components/Base/Modal";
-import { uptime } from "process";
 
 export function UpdateProduct({ productId, onFinish }: { productId: string, onFinish?: (shouldRefresh: boolean) => void }) {
     const feedback = useContext(FeedbackContext)
@@ -169,7 +168,10 @@ export function UpdateProduct({ productId, onFinish }: { productId: string, onFi
                                             <Input
                                                 placeholder={l}
                                                 value={product?.price ? (product?.price[l]?.toString() ?? '') : ''}
-                                                onChange={(e) => e.target.value.trim().match(/^[0-9]?([0-9]+(\.+[0-9]*)*)*$/) !== null ? setProduct({ ...product, price: { ...product?.price, [l]: Number(e.target.value.trim()) } }) : undefined}
+                                                onChange={(e) => {
+                                                    let v: number = e.target.value.trim().match(/^[0-9]?([0-9]+(\.+[0-9]*)*)*$/) === null ? e.target.value.trim() as any : Number(e.target.value.trim())
+                                                    setProduct({ ...product, price: { ...product?.price, [l]: v } })
+                                                }}
                                                 errorText={product?.price && product?.price[l] && product?.price[l]?.toString()?.match(/^[0-9]?([0-9]+(\.+[0-9]+)*)*$/) === null ? t('UpdateProduct.priceInputError') : undefined}
                                             />
                                         </Stack>
@@ -323,7 +325,7 @@ export function UpdateProduct({ productId, onFinish }: { productId: string, onFi
                         <Stack direction="vertical" stackProps={{ className: 'max-h-[10cm] overflow-y-auto' }}>
                             {
                                 product && Object.entries(product)
-                                    .filter(e => ['schemaVersion', '_id', 'tags', 'categories', 'name', 'displayName', 'description', 'price', 'isAvailable', 'thumbnail', 'purchaseCount', 'reviewsCount', 'views', 'averageRating', 'createdAt', 'updatedAt',].includes(e[0]) === false)
+                                    .filter(e => staticFields.includes(e[0]) === false)
                                     .map(m =>
                                         <Stack key={m[0]} stackProps={{ className: 'items-center justify-between' }}>
                                             <Input containerProps={{ className: "flex-grow" }} value={m[0]} readOnly />
@@ -465,18 +467,10 @@ export function UpdateProduct({ productId, onFinish }: { productId: string, onFi
                             onClick={async () => {
                                 setSubmitting(true)
                                 try {
-                                    const { tags, categories, name, displayName, description, price, isAvailable, thumbnail } = product
                                     const data: any = {
                                         id: productId,
                                         product: {
-                                            tags,
-                                            categories,
-                                            name,
-                                            displayName,
-                                            description,
-                                            price,
-                                            isAvailable,
-                                            thumbnail,
+                                            ...Object.fromEntries(Object.entries(product).filter(f => staticUpdateFields.includes(f[0]))),
                                             ...Object.fromEntries(customProperties.map(cp => [cp.key, cp.value]))
                                         }
                                     }

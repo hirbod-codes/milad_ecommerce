@@ -71,13 +71,7 @@ export class Auth {
         try {
             console.log('getPrivileges()')
 
-            let r = await authFetch(`${getAuthApiUrl()}/privileges`, {
-                method: 'get',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json'
-                }
-            })
+            let r = await authFetch(`${getAuthApiUrl()}/privileges`)
             console.log('\tr', r)
 
             if (!r || !r.headers.get('content-type')?.includes('application/json'))

@@ -157,7 +157,13 @@ export function Products() {
                             fgColor='error'
                             onClick={() => {
                                 setDeletingProduct(row.original._id)
-                                setAsk({ open: true, title: t('Products.deletionTitle'), content: t('Products.deletionContent'), successAction: async () => { await deleteProduct(row.original._id); await init(page.offset, page.limit); setAsk({ ...ask, open: false }); }, failureAction: () => setAsk({ ...ask, open: false }) });
+                                setAsk({
+                                    open: true,
+                                    title: t('Products.deletionTitle'),
+                                    content: t('Products.deletionContent'),
+                                    successAction: async () => { await deleteProduct(row.original._id); await init(page.offset, page.limit); setAsk({ ...ask, open: false }); },
+                                    failureAction: () => { setDeletingProduct(undefined); setAsk({ ...ask, open: false }) }
+                                });
                             }}
                         >
                             {deletingProduct === undefined || deletingProduct !== row.original._id ? <Trash2Icon /> : <CircularLoadingIcon />}
@@ -267,7 +273,7 @@ export function Products() {
                 : <CircularLoadingScreen />
             }
 
-            <Ask {...ask} onClose={() => setAsk({ ...ask, open: false })} />
+            <Ask {...ask} onClose={() => { if (ask.failureAction) ask.failureAction(); else setAsk({ ...ask, open: false }) }} />
 
             <DropdownMenu
                 anchorRef={filterButtonRef}

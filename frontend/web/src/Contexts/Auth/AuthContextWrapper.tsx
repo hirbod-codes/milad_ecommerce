@@ -2,6 +2,7 @@ import { useState, ReactNode, useEffect, memo } from 'react';
 import { AuthContext } from './AuthContext';
 import { Auth } from '@/src/Backend/Auth/Auth';
 import { useNavigate } from 'react-router';
+import { CircularLoadingScreen } from '@/src/Components/Base/CircularLoadingScreen';
 
 export const AuthContextWrapper = memo(function AuthContextWrapper({ children }: { children?: ReactNode; }) {
     const navigate = useNavigate()
@@ -32,7 +33,7 @@ export const AuthContextWrapper = memo(function AuthContextWrapper({ children }:
 
     return (
         <AuthContext.Provider value={{ privileges, isAuthLoading: loading }}>
-            {!loading && children}
+            {loading ? <CircularLoadingScreen /> : children}
         </AuthContext.Provider>
     );
 })
