@@ -246,6 +246,8 @@ export function Orders() {
                 : <CircularLoadingScreen />
             }
 
+            <Ask {...ask} onClose={() => { if (ask.failureAction) ask.failureAction(); else setAsk({ ...ask, open: false }) }} />
+
             <Modal
                 modalContainerProps={{ className: 'overflow-y-auto' }}
                 open={showProducts !== undefined}
@@ -257,9 +259,9 @@ export function Orders() {
                             ? <CircularLoading />
                             : (
                                 fetchedProducts === undefined
-                                    ? ''
-                                    : fetchedProducts.map(m =>
-                                        <div>{m.displayName[configuration.local.language]}</div>
+                                    ? t('common.NoData')
+                                    : fetchedProducts.map((m, i) =>
+                                        <div key={i}>{m.displayName[configuration.local.language]}</div>
                                     )
                             )
                     }

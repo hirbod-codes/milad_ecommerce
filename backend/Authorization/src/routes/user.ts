@@ -30,7 +30,7 @@ user.get('/', authenticate, async (req, res) => {
         }
 
         const userRepository = await UserRepository.getInstance()
-        res.json(await userRepository.get(userId))
+        res.json(await userRepository.getById(userId))
     } catch (e) {
         console.error(e)
         res.sendStatus(500)
@@ -245,7 +245,7 @@ user.post('/email-code', authenticate, async (req, res) => {
         const userId = (Jwt.decode(req.headers['authorization']!.replace('Bearer ', '')!) as Jwt.JwtPayload)?.sub ?? ''
 
         const userRepository = await UserRepository.getInstance()
-        const user = await userRepository.get(userId)
+        const user = await userRepository.getById(userId)
 
         if (!user || (usePhoneNumber === true && !user.phoneNumber) || (usePhoneNumber !== true && !user.email)) {
             res.sendStatus(400)
@@ -332,7 +332,7 @@ user.post('/phone-number-code', authenticate, async (req, res) => {
         const userId = (Jwt.decode(req.headers['authorization']!.replace('Bearer ', '')!) as Jwt.JwtPayload)?.sub ?? ''
 
         const userRepository = await UserRepository.getInstance()
-        const user = await userRepository.get(userId)
+        const user = await userRepository.getById(userId)
 
         if (!user || (usePhoneNumber === true && !user.phoneNumber) || (usePhoneNumber !== true && !user.email)) {
             res.sendStatus(400)
@@ -419,7 +419,7 @@ user.post('/username-code', authenticate, async (req, res) => {
         const userId = (Jwt.decode(req.headers['authorization']!.replace('Bearer ', '')!) as Jwt.JwtPayload)?.sub ?? ''
 
         const userRepository = await UserRepository.getInstance()
-        const user = await userRepository.get(userId)
+        const user = await userRepository.getById(userId)
 
         if (!user || (usePhoneNumber === true && !user.phoneNumber) || (usePhoneNumber !== true && !user.email)) {
             res.sendStatus(400)
@@ -506,7 +506,7 @@ user.post('/password-code', authenticate, async (req, res) => {
         const userId = (Jwt.decode(req.headers['authorization']!.replace('Bearer ', '')!) as Jwt.JwtPayload)?.sub ?? ''
 
         const userRepository = await UserRepository.getInstance()
-        const user = await userRepository.get(userId)
+        const user = await userRepository.getById(userId)
 
         if (!user || (usePhoneNumber === true && !user.phoneNumber) || (usePhoneNumber !== true && !user.email)) {
             res.sendStatus(400)
@@ -606,7 +606,7 @@ user.post('/delete-code', authenticate, async (req, res) => {
         const userId = (Jwt.decode(req.headers['authorization']!.replace('Bearer ', '')!) as Jwt.JwtPayload)?.sub ?? ''
 
         const userRepository = await UserRepository.getInstance()
-        const user = await userRepository.get(userId)
+        const user = await userRepository.getById(userId)
 
         if (!user || (usePhoneNumber === true && !user.phoneNumber) || (usePhoneNumber !== true && !user.email)) {
             res.sendStatus(400)

@@ -1,6 +1,6 @@
 import { DateTime } from "luxon";
 import { schemaVersion, User, UserCreate, UserInput, UserUpdate } from "../Models/User";
-import { Collection, DeleteResult, InsertOneResult, MongoSystemError, ObjectId, UpdateResult } from 'mongodb'
+import { Collection, DeleteResult, Filter, InsertOneResult, MongoSystemError, ObjectId, SortDirection, UpdateResult } from 'mongodb'
 import crypto from "crypto";
 import { MongoDB } from '../mongodb'
 import { faker } from "@faker-js/faker"
@@ -124,9 +124,25 @@ export class UserRepository {
         catch (e) { console.error(e); return false }
     }
 
-    async get(id: string): Promise<User | null | undefined> {
+    async getById(id: string): Promise<User | null | undefined> {
         try { return await this.collection.findOne({ _id: ObjectId.createFromHexString(id) }) }
         catch (e) { console.error(e); return undefined }
+    }
+
+    async getByIds(ids: (string | ObjectId)[]): Promise<User[] | undefined> {
+        try { return await this.collection.find({ _id: { $in: ids.map(id => typeof id === 'string' ? ObjectId.createFromHexString(id) : id) } }).toArray() }
+        catch (e) { console.error(e); return undefined }
+    }
+
+    async get(filter: Filter<User>, sorts: { field: keyof User, direction: SortDirection }[], limit: number, skip: number): Promise<User[] | false> {
+        try {
+            let cursor = this.collection.find(filter)
+
+            sorts.forEach(sort => cursor.sort(sort.field, sort.direction))
+
+            return await cursor.limit(limit).skip(skip).toArray()
+        }
+        catch (e) { console.error(e); return false }
     }
 
     async getUserByEmail(email: string): Promise<User | null | undefined> {
