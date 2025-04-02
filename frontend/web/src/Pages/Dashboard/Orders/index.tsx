@@ -37,6 +37,7 @@ export function Orders() {
     const [openUpdateOrderModal, setOpenUpdateOrderModal] = useState(false)
     const [updatingOrder, setUpdatingOrder] = useState(undefined)
     const [updatingIsPayed, setUpdatingIsPayed] = useState<string | undefined>(undefined)
+    const [updatingIsSent, setUpdatingIsSent] = useState<string | undefined>(undefined)
 
     const [deletingOrder, setDeletingOrder] = useState(undefined)
 
@@ -124,54 +125,74 @@ export function Orders() {
             cell: ({ row }) => <div className="w-full flex flex-row justify-center"><Button isIcon variant="text" onClick={() => setShowProducts(row.original._id)}><EyeIcon /></Button></div>,
         },
         {
-            id: 'isPayed',
-            accessorKey: 'isPayed',
-            cell: ({ row, getValue }) => <div className="w-full flex flex-row justify-center">
-                {
-                    updatingIsPayed !== undefined && updatingIsPayed === row.original._id
-                        ? <CircularLoading />
-                        : <CheckBox containerProps={{ className: 'w-fit' }} colorForeground='success' inputProps={{
-                            checked: Boolean(getValue()),
-                            readOnly: !updatesImmutableOrder,
-                            onChange: !updatesImmutableOrder ? undefined : async (e) => {
-                                setUpdatingIsPayed(row.original._id)
-                                try {
-                                    const data = { orderId: row.original._id, order: { isPayed: !(Boolean(getValue())) } }
-                                    const r = await authFetchData(`${getApiUrl()}/orders/immutables`, { method: 'PATCH', body: JSON.stringify(data) })
-                                    if (!r.response || !r.response.ok)
-                                        feedback.push({ node: t('UpdateOrder.updateFailed'), color: { bgColor: 'error', fgColor: 'error-foreground' } })
-                                    else
-                                        feedback.push({ node: t('UpdateOrder.updateSucceeded'), color: { bgColor: 'success', fgColor: 'success-foreground' } })
-                                } finally { setUpdatingIsPayed(undefined) }
-                            }
-                        }} />
-                }
-            </div>,
-        },
-        {
             id: 'isSent',
             accessorKey: 'isSent',
-            cell: ({ row, getValue }) => <div className="w-full flex flex-row justify-center">
-                {
-                    updatingIsPayed !== undefined && updatingIsPayed === row.original._id
+            cell: ({ row, getValue }) =>
+                <div className="w-full flex flex-row justify-center">
+                    {updatingIsSent !== undefined && updatingIsSent === row.original._id
                         ? <CircularLoading />
-                        : <CheckBox containerProps={{ className: 'w-fit' }} colorForeground='success' inputProps={{
-                            checked: Boolean(getValue()),
-                            readOnly: !updatesImmutableOrder,
-                            onChange: !updatesImmutableOrder ? undefined : async (e) => {
-                                setUpdatingIsPayed(row.original._id)
-                                try {
-                                    const data = { orderId: row.original._id, order: { isSent: !(Boolean(getValue())) } }
-                                    const r = await authFetchData(`${getApiUrl()}/orders/immutables`, { method: 'PATCH', body: JSON.stringify(data) })
-                                    if (!r.response || !r.response.ok)
-                                        feedback.push({ node: t('UpdateOrder.updateFailed'), color: { bgColor: 'error', fgColor: 'error-foreground' } })
-                                    else
-                                        feedback.push({ node: t('UpdateOrder.updateSucceeded'), color: { bgColor: 'success', fgColor: 'success-foreground' } })
-                                } finally { setUpdatingIsPayed(undefined) }
-                            }
-                        }} />
-                }
-            </div>,
+                        : <CheckBox
+                            containerProps={{ className: 'w-fit' }}
+                            colorForeground='success'
+                            inputProps={{
+                                checked: row.original.isSent,
+                                readOnly: updatesImmutableOrder === false,
+                                onChange: updatesImmutableOrder === false ? undefined : async (e) => {
+                                    e.stopPropagation();
+
+                                    setUpdatingIsSent(row.original._id);
+                                    try {
+                                        const data = { orderId: row.original._id, order: { isSent: !(Boolean(getValue())) } };
+                                        const r = await authFetchData(`${getApiUrl()}/orders/immutables`, { method: 'PATCH', body: JSON.stringify(data) });
+                                        if (!r.response || !r.response.ok) {
+                                            feedback.push({ node: t('UpdateOrder.updateFailed'), color: { bgColor: 'error', fgColor: 'error-foreground' } });
+                                            return;
+                                        }
+
+                                        feedback.push({ node: t('UpdateOrder.updateSucceeded'), color: { bgColor: 'success', fgColor: 'success-foreground' } });
+
+                                        await init(page.offset, page.limit);
+                                    } finally { setUpdatingIsSent(undefined); }
+                                }
+                            }}
+                        />
+                    }
+                </div>,
+        },
+        {
+            id: 'isPayed',
+            accessorKey: 'isPayed',
+            cell: ({ row, getValue }) =>
+                <div className="w-full flex flex-row justify-center">
+                    {updatingIsPayed !== undefined && updatingIsPayed === row.original._id
+                        ? <CircularLoading />
+                        : <CheckBox
+                            containerProps={{ className: 'w-fit' }}
+                            colorForeground='success'
+                            inputProps={{
+                                checked: row.original.isPayed,
+                                readOnly: updatesImmutableOrder === false,
+                                onChange: updatesImmutableOrder === false ? undefined : async (e) => {
+                                    e.stopPropagation();
+
+                                    setUpdatingIsPayed(row.original._id);
+                                    try {
+                                        const data = { orderId: row.original._id, order: { isPayed: !(Boolean(getValue())) } };
+                                        const r = await authFetchData(`${getApiUrl()}/orders/immutables`, { method: 'PATCH', body: JSON.stringify(data) });
+                                        if (!r.response || !r.response.ok) {
+                                            feedback.push({ node: t('UpdateOrder.updateFailed'), color: { bgColor: 'error', fgColor: 'error-foreground' } });
+                                            return;
+                                        }
+
+                                        feedback.push({ node: t('UpdateOrder.updateSucceeded'), color: { bgColor: 'success', fgColor: 'success-foreground' } });
+
+                                        await init(page.offset, page.limit);
+                                    } finally { setUpdatingIsPayed(undefined); }
+                                }
+                            }}
+                        />
+                    }
+                </div>,
         },
         {
             id: 'address',
