@@ -29,6 +29,9 @@ for (const field in privilegeUpdateSchema.fields)
 export type PrivilegeUpdate = InferType<typeof privilegeUpdateSchema>
 
 export const privilegeImmutableSchema = privilegeSchema.required().noUnknown(true).strict(true).pick(Object.keys(privilegeSchema.fields).filter(f => !['_id', 'schemaVersion', 'createdAt', 'updatedAt'].concat(Object.keys(privilegeUpdateSchema.fields)).includes(f)) as any)
+for (const field in privilegeImmutableSchema.fields)
+    if (Object.prototype.hasOwnProperty.call(privilegeImmutableSchema.fields, field))
+        (privilegeImmutableSchema.fields as any)[field] = (privilegeImmutableSchema.fields as any)[field].optional()
 export type PrivilegeImmutable = InferType<typeof privilegeImmutableSchema>
 
 export const fields: (keyof Privilege)[] = Object.keys(privilegeSchema.fields) as any

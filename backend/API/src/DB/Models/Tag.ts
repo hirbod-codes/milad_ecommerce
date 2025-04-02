@@ -29,6 +29,9 @@ for (const field in tagUpdateSchema.fields)
 export type TagUpdate = InferType<typeof tagUpdateSchema>
 
 export const tagImmutableSchema = tagSchema.required().noUnknown(true).strict(true).pick(Object.keys(tagSchema.fields).filter(f => !['_id', 'schemaVersion', 'createdAt', 'updatedAt'].concat(Object.keys(tagUpdateSchema.fields)).includes(f)) as any)
+for (const field in tagImmutableSchema.fields)
+    if (Object.prototype.hasOwnProperty.call(tagImmutableSchema.fields, field))
+        (tagImmutableSchema.fields as any)[field] = (tagImmutableSchema.fields as any)[field].optional()
 export type TagImmutable = InferType<typeof tagImmutableSchema>
 
 export const fields: (keyof Tag)[] = Object.keys(tagSchema.fields) as any

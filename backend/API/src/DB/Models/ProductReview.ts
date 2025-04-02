@@ -30,6 +30,9 @@ for (const field in productReviewUpdateSchema.fields)
 export type ProductReviewUpdate = InferType<typeof productReviewUpdateSchema>
 
 export const productReviewImmutableSchema = productReviewSchema.required().noUnknown(true).strict(true).pick(Object.keys(productReviewSchema.fields).filter(f => !['_id', 'schemaVersion', 'createdAt', 'updatedAt'].concat(Object.keys(productReviewUpdateSchema.fields)).includes(f)) as any)
+for (const field in productReviewImmutableSchema.fields)
+    if (Object.prototype.hasOwnProperty.call(productReviewImmutableSchema.fields, field))
+        (productReviewImmutableSchema.fields as any)[field] = (productReviewImmutableSchema.fields as any)[field].optional()
 export type ProductReviewImmutable = InferType<typeof productReviewImmutableSchema>
 
 export const fields: (keyof ProductReview)[] = Object.keys(productReviewSchema.fields) as any

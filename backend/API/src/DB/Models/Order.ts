@@ -47,6 +47,9 @@ for (const field in orderUpdateSchema.fields)
 export type OrderUpdate = InferType<typeof orderUpdateSchema>
 
 export const orderImmutableSchema = orderSchema.required().noUnknown(true).strict(true).pick(Object.keys(orderSchema.fields).filter(f => !['_id', 'schemaVersion', 'createdAt', 'updatedAt'].concat(Object.keys(orderUpdateSchema.fields)).includes(f)) as any)
+for (const field in orderImmutableSchema.fields)
+    if (Object.prototype.hasOwnProperty.call(orderImmutableSchema.fields, field))
+        (orderImmutableSchema.fields as any)[field] = (orderImmutableSchema.fields as any)[field].optional()
 export type OrderImmutable = InferType<typeof orderImmutableSchema>
 
 export const fields: (keyof Order)[] = Object.keys(orderSchema.fields) as any

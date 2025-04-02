@@ -35,6 +35,9 @@ for (const field in roleUpdateSchema.fields)
 export type RoleUpdate = InferType<typeof roleUpdateSchema>
 
 export const roleImmutableSchema = roleSchema.required().noUnknown(true).strict(true).pick(Object.keys(roleSchema.fields).filter(f => !['_id', 'schemaVersion', 'createdAt', 'updatedAt'].concat(Object.keys(roleUpdateSchema.fields)).includes(f)) as any)
+for (const field in roleImmutableSchema.fields)
+    if (Object.prototype.hasOwnProperty.call(roleImmutableSchema.fields, field))
+        (roleImmutableSchema.fields as any)[field] = (roleImmutableSchema.fields as any)[field].optional()
 export type RoleImmutable = InferType<typeof roleImmutableSchema>
 
 export const fields: (keyof Role)[] = Object.keys(roleSchema.fields) as any

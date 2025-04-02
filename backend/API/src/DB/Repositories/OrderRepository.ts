@@ -50,7 +50,7 @@ export class OrderRepository extends MongoDB {
                     let r = await collection.insertOne({
                         schemaVersion,
                         userId: faker.helpers.arrayElement(users)._id.toString(),
-                        isPayed: true,
+                        isPayed: faker.datatype.boolean(0.8),
                         isSent: faker.datatype.boolean(0.5),
                         products: selectedProducts.map(m => ({ productId: m._id, quantity: faker.number.int({ min: 1, max: 20 }) })),
                         cost,

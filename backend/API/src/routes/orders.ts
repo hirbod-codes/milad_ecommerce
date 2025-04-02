@@ -137,13 +137,13 @@ orders.patch('/', authenticate, async (req, res) => {
 
         const { orderId, order } = req.body
 
-        if (!stringObjectId.required().isValidSync(orderId) || !orderUpdateSchema.isValidSync(order)) {
+        if (!stringObjectId.required().isValidSync(orderId) || !orderImmutableSchema.isValidSync(order)) {
             res.sendStatus(400)
             return
         }
 
         const orderRepository = await OrderRepository.getInstance()
-        const result = await orderRepository.update(orderId, orderUpdateSchema.cast(order))
+        const result = await orderRepository.update(orderId, orderImmutableSchema.cast(order))
 
         if (result === false || result.acknowledged !== true)
             res.sendStatus(500)

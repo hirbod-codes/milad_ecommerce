@@ -37,6 +37,9 @@ for (const field in userUpdateSchema.fields)
 export type UserUpdate = InferType<typeof userUpdateSchema>
 
 export const userImmutableSchema = userSchema.required().noUnknown(true).strict(true).pick(Object.keys(userSchema.fields).filter(f => !['_id', 'schemaVersion', 'createdAt', 'updatedAt'].concat(Object.keys(userUpdateSchema.fields)).includes(f)) as any)
+for (const field in userImmutableSchema.fields)
+    if (Object.prototype.hasOwnProperty.call(userImmutableSchema.fields, field))
+        (userImmutableSchema.fields as any)[field] = (userImmutableSchema.fields as any)[field].optional()
 export type UserImmutable = InferType<typeof userImmutableSchema>
 
 export const fields: (keyof User)[] = Object.keys(userSchema.fields) as any

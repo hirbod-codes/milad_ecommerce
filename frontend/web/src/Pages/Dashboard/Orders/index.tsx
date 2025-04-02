@@ -11,7 +11,7 @@ import { Filter, Filters } from "@/src/Components/SearchFilter/index.d";
 import { DataGrid } from "@/src/Components/DataGrid";
 import { Button } from "@/src/Components/Base/Button";
 import { CircularLoadingScreen } from "@/src/Components/Base/CircularLoadingScreen";
-import { EditIcon, EyeIcon, FilterIcon, ListFilterIcon, RefreshCwIcon, Trash2Icon } from "lucide-react";
+import { EditIcon, EyeIcon, FilterIcon, ListFilterIcon, RefreshCwIcon, SearchIcon, Trash2Icon } from "lucide-react";
 import { ColumnDef } from "@tanstack/react-table";
 import { Stack } from "@/src/Components/Base/Stack";
 import { CircularLoadingIcon } from "@/src/Components/Base/CircularLoadingIcon";
@@ -33,8 +33,11 @@ export function Orders() {
     const [orders, setOrders] = useState<Order[]>([])
 
     const [openCreateOrderModal, setOpenCreateOrderModal] = useState(false)
+
     const [openUpdateOrderModal, setOpenUpdateOrderModal] = useState(false)
     const [updatingOrder, setUpdatingOrder] = useState(undefined)
+    const [updatingIsPayed, setUpdatingIsPayed] = useState<string | undefined>(undefined)
+
     const [deletingOrder, setDeletingOrder] = useState(undefined)
 
     const filterButtonRef = useRef<HTMLButtonElement>(null)
@@ -44,6 +47,8 @@ export function Orders() {
     const sortButtonRef = useRef<HTMLButtonElement>(null)
     const [openSort, setOpenSort] = useState(false)
 
+    const [openSearchByUser, setOpenSearchByUser] = useState(false)
+
     const [ask, setAsk] = useState<ComponentProps<typeof Ask>>(undefined)
 
     const [page, setPage] = useState<{ limit: number, offset: number }>({ limit: 10, offset: 0 })
@@ -52,6 +57,7 @@ export function Orders() {
     const [fetchedProducts, setFetchedProducts] = useState<Product[]>(undefined)
     const [loadingProducts, setLoadingProducts] = useState(true)
 
+    const [refreshing, setRefreshing] = useState(false)
     const [loading, setLoading] = useState(true)
 
     console.log('Orders', { orders, openFilter, filters, openSort, ask, page })
@@ -108,6 +114,7 @@ export function Orders() {
 
     const createsOrder = privileges.find(f => f === 'create-category') !== undefined
     const updatesOrder = privileges.find(f => f === 'update-category') !== undefined
+    const updatesImmutableOrder = privileges.find(f => f === 'update-immutables-category') !== undefined
     const deletesOrder = privileges.find(f => f === 'delete-category') !== undefined
 
     const overWriteColumns: ColumnDef<any>[] = [
@@ -118,13 +125,53 @@ export function Orders() {
         },
         {
             id: 'isPayed',
-            accessorKey: 'isAvailable',
-            cell: ({ row, getValue }) => <div className="w-full flex flex-row justify-center">{Boolean(getValue()) ? <CheckBox containerProps={{ className: 'w-fit' }} colorForeground='success' inputProps={{ checked: true, readOnly: true }} /> : <CheckBox containerProps={{ className: 'w-fit' }} colorForeground='error' inputProps={{ checked: false, readOnly: true }} />}</div>,
+            accessorKey: 'isPayed',
+            cell: ({ row, getValue }) => <div className="w-full flex flex-row justify-center">
+                {
+                    updatingIsPayed !== undefined && updatingIsPayed === row.original._id
+                        ? <CircularLoading />
+                        : <CheckBox containerProps={{ className: 'w-fit' }} colorForeground='success' inputProps={{
+                            checked: Boolean(getValue()),
+                            readOnly: !updatesImmutableOrder,
+                            onChange: !updatesImmutableOrder ? undefined : async (e) => {
+                                setUpdatingIsPayed(row.original._id)
+                                try {
+                                    const data = { orderId: row.original._id, order: { isPayed: !(Boolean(getValue())) } }
+                                    const r = await authFetchData(`${getApiUrl()}/orders/immutables`, { method: 'PATCH', body: JSON.stringify(data) })
+                                    if (!r.response || !r.response.ok)
+                                        feedback.push({ node: t('UpdateOrder.updateFailed'), color: { bgColor: 'error', fgColor: 'error-foreground' } })
+                                    else
+                                        feedback.push({ node: t('UpdateOrder.updateSucceeded'), color: { bgColor: 'success', fgColor: 'success-foreground' } })
+                                } finally { setUpdatingIsPayed(undefined) }
+                            }
+                        }} />
+                }
+            </div>,
         },
         {
             id: 'isSent',
-            accessorKey: 'isAvailable',
-            cell: ({ row, getValue }) => <div className="w-full flex flex-row justify-center">{Boolean(getValue()) ? <CheckBox containerProps={{ className: 'w-fit' }} colorForeground='success' inputProps={{ checked: true, readOnly: true }} /> : <CheckBox containerProps={{ className: 'w-fit' }} colorForeground='error' inputProps={{ checked: false, readOnly: true }} />}</div>,
+            accessorKey: 'isSent',
+            cell: ({ row, getValue }) => <div className="w-full flex flex-row justify-center">
+                {
+                    updatingIsPayed !== undefined && updatingIsPayed === row.original._id
+                        ? <CircularLoading />
+                        : <CheckBox containerProps={{ className: 'w-fit' }} colorForeground='success' inputProps={{
+                            checked: Boolean(getValue()),
+                            readOnly: !updatesImmutableOrder,
+                            onChange: !updatesImmutableOrder ? undefined : async (e) => {
+                                setUpdatingIsPayed(row.original._id)
+                                try {
+                                    const data = { orderId: row.original._id, order: { isSent: !(Boolean(getValue())) } }
+                                    const r = await authFetchData(`${getApiUrl()}/orders/immutables`, { method: 'PATCH', body: JSON.stringify(data) })
+                                    if (!r.response || !r.response.ok)
+                                        feedback.push({ node: t('UpdateOrder.updateFailed'), color: { bgColor: 'error', fgColor: 'error-foreground' } })
+                                    else
+                                        feedback.push({ node: t('UpdateOrder.updateSucceeded'), color: { bgColor: 'success', fgColor: 'success-foreground' } })
+                                } finally { setUpdatingIsPayed(undefined) }
+                            }
+                        }} />
+                }
+            </div>,
         },
         {
             id: 'address',
@@ -210,9 +257,15 @@ export function Orders() {
                         return result
                     }}
                     appendHeaderNodes={[
-                        <Button variant='outline' onClick={async () => await init(page.offset, page.limit)}><RefreshCwIcon />{t('Orders.Refresh')}</Button>,
+                        <Button variant='outline' onClick={async () => {
+                            setRefreshing(true)
+                            try {
+                                await init(page.offset, page.limit);
+                            } finally { setRefreshing(false) }
+                        }}>{refreshing ? <CircularLoadingIcon /> : <RefreshCwIcon />}{t('Orders.Refresh')}</Button>,
                         <Button buttonRef={filterButtonRef} variant='outline' onClick={() => setOpenFilter(true)}><FilterIcon />{t('Orders.Filters')}</Button>,
                         <Button buttonRef={sortButtonRef} variant='outline' onClick={() => setOpenSort(true)}><ListFilterIcon />{t('Orders.Sorts')}</Button>,
+                        <Button buttonRef={sortButtonRef} variant='outline' onClick={() => setOpenSearchByUser(true)}><SearchIcon />{t('Orders.SearchByUser')}</Button>,
                         // createsOrder && <Button fgColor='success' variant='outline' onClick={() => setOpenCreateOrderModal(true)}><PlusIcon />{t('Orders.Create')}</Button>,
                     ]}
                 />

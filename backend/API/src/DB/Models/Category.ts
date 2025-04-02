@@ -31,6 +31,9 @@ for (const field in categoryUpdateSchema.fields)
 export type CategoryUpdate = InferType<typeof categoryUpdateSchema>
 
 export const categoryImmutableSchema = categorySchema.required().noUnknown(true).strict(true).pick(Object.keys(categorySchema.fields).filter(f => !['_id', 'schemaVersion', 'createdAt', 'updatedAt'].concat(Object.keys(categoryUpdateSchema.fields)).includes(f)) as any)
+for (const field in categoryImmutableSchema.fields)
+    if (Object.prototype.hasOwnProperty.call(categoryImmutableSchema.fields, field))
+        (categoryImmutableSchema.fields as any)[field] = (categoryImmutableSchema.fields as any)[field].optional()
 export type CategoryImmutable = InferType<typeof categoryImmutableSchema>
 
 export const fields: (keyof Category)[] = Object.keys(categorySchema.fields) as any
