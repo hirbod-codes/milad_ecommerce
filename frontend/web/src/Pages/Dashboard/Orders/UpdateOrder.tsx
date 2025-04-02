@@ -1,5 +1,5 @@
 import { useContext, useEffect, useRef, useState } from "react";
-import { authFetchData, fetchData, getApiUrl } from "@/src/Backend/helpers";
+import { authFetchData, fetchData, formatCurrency, getApiUrl } from "@/src/Backend/helpers";
 import { ConfigurationContext } from "@/src/Contexts/Configuration/ConfigurationContext";
 import { t } from "i18next";
 import { FeedbackContext } from "@/src/Contexts/Feedback/FeedbackContext";
@@ -52,7 +52,7 @@ export function UpdateOrder({ order: orderInput, onFinish }: { order?: Order, on
 
                     <CheckBox label={t('UpdateOrder.isSent')} inputProps={{ checked: order.isSent, onChange: (e) => setOrder({ ...order, isSent: e.target.checked }) }} />
 
-                    <Input label={t('UpdateOrder.cost')} labelId={t('UpdateOrder.cost')} value={order.cost?.IRR ?? '-'} readOnly />
+                    <Input disabled label={t('UpdateOrder.cost')} labelId={t('UpdateOrder.cost')} value={order.cost?.IRR ? formatCurrency(configuration, order.cost?.IRR) : '-'} readOnly />
 
                     <Button variant="outline" onClick={() => setShowProducts(true)}>
                         {t('UpdateOrder.showProducts')}

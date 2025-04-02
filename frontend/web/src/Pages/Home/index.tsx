@@ -1,6 +1,6 @@
 import { GoogleAuthManager } from "@/src/Backend/Auth/GoogleAuthManager";
 import { Button } from "@/src/Components/Base/Button";
-import { memo, useEffect } from "react";
+import { memo, useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router";
 
 export const Home = memo(function Home() {
@@ -9,7 +9,8 @@ export const Home = memo(function Home() {
 
     const navigate = useNavigate()
 
-    console.log('Home', { code })
+    const [value, setValue] = useState('bbbb')
+    console.log('Home', { code, value })
 
     useEffect(() => {
         console.log('Home', 'useEffect')
@@ -31,6 +32,20 @@ export const Home = memo(function Home() {
     }
 
     return (
-        <div>Home<Button onClick={() => navigate('/about-us')}>a</Button></div>
+        <>
+            Home
+            <Button onClick={() => navigate('/about-us')}>a</Button>
+            <Button onClick={() => setValue('/about-us')}>b</Button>
+            <Comp1 value={value} />
+        </>
     )
 })
+
+export function Comp1({ value: inputValue }) {
+    const [value, setValue] = useState(inputValue)
+    console.log('Comp1', value)
+    return (
+        <div>Comp1</div>
+    )
+}
+

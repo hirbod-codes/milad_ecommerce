@@ -123,7 +123,7 @@ export function DataGrid({
 
     const columns = useMemo<ColumnDef<any>[]>(() => {
         return inputColumns ?? getColumns(data, overWriteColumns, additionalColumns, defaultColumnOrderModel)
-    }, [overWriteColumns, additionalColumns, defaultColumnOrderModel])
+    }, [overWriteColumns, additionalColumns, defaultColumnOrderModel, loading])
 
     if (addCounterColumn === true && !columns.find(f => f.id === 'counter'))
         columns.unshift({

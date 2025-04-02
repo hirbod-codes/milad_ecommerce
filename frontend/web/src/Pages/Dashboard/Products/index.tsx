@@ -151,13 +151,11 @@ export function Products() {
         {
             id: 'displayName',
             accessorKey: 'displayName',
-            maxSize: 200,
             cell: ({ getValue }) => getValue()[configuration.local.language],
         },
         {
             id: 'description',
             accessorKey: 'description',
-            maxSize: 200,
             cell: ({ getValue }) => getValue()[configuration.local.language],
         },
         {
