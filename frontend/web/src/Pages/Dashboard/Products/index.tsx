@@ -1,7 +1,7 @@
 import { Filter, Filters } from "@/src/Components/SearchFilter/index.d";
 import { SearchFilter } from "@/src/Components/SearchFilter";
 import { ComponentProps, useContext, useEffect, useRef, useState } from "react";
-import { authFetchData, fetchData, getApiUrl } from "@/src/Backend/helpers";
+import { authFetchData, fetchData, formatCurrency, formatFilters, formatNumber, getApiUrl } from "@/src/Backend/helpers";
 import { ColorStatic } from "@/src/Lib/Colors/ColorStatic";
 import { ConfigurationContext } from "@/src/Contexts/Configuration/ConfigurationContext";
 import { DataGrid } from "@/src/Components/DataGrid";
@@ -23,33 +23,6 @@ import { CircularLoadingScreen } from "@/src/Components/Base/CircularLoadingScre
 import { UpdateProduct } from "./UpdateProduct";
 import { CheckBox } from "@/src/Components/Base/CheckBox";
 import { Input } from "@/src/Components/Base/Input";
-
-function formatFilters(filters: Filters) {
-    let key = undefined
-    let refObject: any = {}
-
-    if (Object.keys(filters).includes('$and'))
-        key = '$and'
-    else
-        key = '$or'
-
-    refObject = { [key]: [] }
-
-    console.log('filters', filters)
-
-    for (const filter of filters[key])
-        if (Object.keys(filter).includes('$and') || Object.keys(filter).includes('$or'))
-            refObject[key].push(formatFilters(filter))
-        else
-            refObject[key].push(formatFilter(filter))
-
-    console.log('refObject', refObject)
-    return refObject
-}
-
-function formatFilter(filter: Filter) {
-    return { [filter.field]: { [filter.operator]: filter.value } }
-}
 
 /**
  * Note: static fields of Product model is hard coded.
@@ -210,28 +183,28 @@ export function Products() {
         {
             id: 'views',
             accessorKey: 'views',
-            cell: ({ getValue }) => new Intl.NumberFormat(configuration.local.language, { useGrouping: true, signDisplay: 'never', maximumFractionDigits: 0 }).format(getValue() as number),
+            cell: ({ getValue }) => formatNumber(configuration, getValue() as number),
         },
         {
             id: 'purchaseCount',
             accessorKey: 'purchaseCount',
-            cell: ({ getValue }) => new Intl.NumberFormat(configuration.local.language, { useGrouping: true, signDisplay: 'never', maximumFractionDigits: 0 }).format(getValue() as number),
+            cell: ({ getValue }) => formatNumber(configuration, getValue() as number),
         },
         {
             id: 'reviewsCount',
             accessorKey: 'reviewsCount',
-            cell: ({ getValue }) => new Intl.NumberFormat(configuration.local.language, { useGrouping: true, signDisplay: 'never', maximumFractionDigits: 0 }).format(getValue() as number),
+            cell: ({ getValue }) => formatNumber(configuration, getValue() as number),
         },
         {
             id: 'averageRating',
             accessorKey: 'averageRating',
-            cell: ({ getValue }) => new Intl.NumberFormat(configuration.local.language, { useGrouping: true, signDisplay: 'never', maximumFractionDigits: 2 }).format(getValue() as number),
+            cell: ({ getValue }) => formatNumber(configuration, getValue() as number),
         },
         {
             id: 'price',
             accessorKey: 'price',
             maxSize: 200,
-            cell: ({ getValue }) => new Intl.NumberFormat(configuration.local.language, { useGrouping: true, currency: 'IRR', style: 'currency', signDisplay: 'never', maximumFractionDigits: 0 }).format(getValue()['IRR'] as number),
+            cell: ({ getValue }) =>formatCurrency(configuration, getValue()['IRR'] as number),
         },
         {
             id: 'createdAt',

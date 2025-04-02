@@ -1,6 +1,44 @@
 import { string } from "yup";
 import { Auth } from "./Auth/Auth";
 import JSZip from 'jszip';
+import { Filters } from "../Components/SearchFilter/index.d";
+import { Filter } from "../Components/SearchFilter/index.d";
+import { Config } from "../Contexts/Configuration";
+
+export function formatNumber(configuration: Config, number: number) {
+    return new Intl.NumberFormat(configuration.local.language, { useGrouping: true, signDisplay: 'never', maximumFractionDigits: 0 }).format(number)
+}
+
+export function formatCurrency(configuration: Config, number: number) {
+    return new Intl.NumberFormat(configuration.local.language, { useGrouping: true, currency: 'IRR', style: 'currency', signDisplay: 'never', maximumFractionDigits: 0 }).format(number)
+}
+
+export function formatFilters(filters: Filters) {
+    let key = undefined
+    let refObject: any = {}
+
+    if (Object.keys(filters).includes('$and'))
+        key = '$and'
+    else
+        key = '$or'
+
+    refObject = { [key]: [] }
+
+    console.log('filters', filters)
+
+    for (const filter of filters[key])
+        if (Object.keys(filter).includes('$and') || Object.keys(filter).includes('$or'))
+            refObject[key].push(formatFilters(filter))
+        else
+            refObject[key].push(formatFilter(filter))
+
+    console.log('refObject', refObject)
+    return refObject
+}
+
+export function formatFilter(filter: Filter) {
+    return { [filter.field]: { [filter.operator]: filter.value } }
+}
 
 export function getAuthApiUrl(): string {
     const authApiUrl = import.meta.env.VITE_AUTH_API_URL;

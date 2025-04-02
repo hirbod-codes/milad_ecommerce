@@ -1,5 +1,5 @@
 import { ComponentProps, useContext, useEffect, useRef, useState } from "react";
-import { authFetchData, fetchData, getApiUrl } from "@/src/Backend/helpers";
+import { authFetchData, fetchData, formatCurrency, formatFilters, getApiUrl } from "@/src/Backend/helpers";
 import { ColorStatic } from "@/src/Lib/Colors/ColorStatic";
 import { ConfigurationContext } from "@/src/Contexts/Configuration/ConfigurationContext";
 import { Ask } from "@/src/Components/Ask";
@@ -11,7 +11,7 @@ import { Filter, Filters } from "@/src/Components/SearchFilter/index.d";
 import { DataGrid } from "@/src/Components/DataGrid";
 import { Button } from "@/src/Components/Base/Button";
 import { CircularLoadingScreen } from "@/src/Components/Base/CircularLoadingScreen";
-import { EditIcon, EyeIcon, FilterIcon, ListFilterIcon, PlusIcon, RefreshCwIcon, Trash2Icon } from "lucide-react";
+import { EditIcon, EyeIcon, FilterIcon, ListFilterIcon, RefreshCwIcon, Trash2Icon } from "lucide-react";
 import { ColumnDef } from "@tanstack/react-table";
 import { Stack } from "@/src/Components/Base/Stack";
 import { CircularLoadingIcon } from "@/src/Components/Base/CircularLoadingIcon";
@@ -20,33 +20,8 @@ import { CheckBox } from "@/src/Components/Base/CheckBox";
 import { Modal } from "@/src/Components/Base/Modal";
 import { Product } from "../Products/index.d";
 import { CircularLoading } from "@/src/Components/Base/CircularLoading";
-
-function formatFilters(filters: Filters) {
-    let key = undefined
-    let refObject: any = {}
-
-    if (Object.keys(filters).includes('$and'))
-        key = '$and'
-    else
-        key = '$or'
-
-    refObject = { [key]: [] }
-
-    console.log('filters', filters)
-
-    for (const filter of filters[key])
-        if (Object.keys(filter).includes('$and') || Object.keys(filter).includes('$or'))
-            refObject[key].push(formatFilters(filter))
-        else
-            refObject[key].push(formatFilter(filter))
-
-    console.log('refObject', refObject)
-    return refObject
-}
-
-function formatFilter(filter: Filter) {
-    return { [filter.field]: { [filter.operator]: filter.value } }
-}
+import { UpdateOrder } from "./UpdateOrder";
+import { Order } from './index.d'
 
 export function Orders() {
     const privileges = useContext(AuthContext).privileges
@@ -55,11 +30,11 @@ export function Orders() {
     const configuration = useContext(ConfigurationContext)!
     const themeOptions = configuration.themeOptions
 
-    const [orders, setOrders] = useState<any[]>([])
+    const [orders, setOrders] = useState<Order[]>([])
 
     const [openCreateOrderModal, setOpenCreateOrderModal] = useState(false)
     const [openUpdateOrderModal, setOpenUpdateOrderModal] = useState(false)
-    const [editingOrder, setEditingOrder] = useState(undefined)
+    const [updatingOrder, setUpdatingOrder] = useState(undefined)
     const [deletingOrder, setDeletingOrder] = useState(undefined)
 
     const filterButtonRef = useRef<HTMLButtonElement>(null)
@@ -160,7 +135,7 @@ export function Orders() {
             id: 'cost',
             accessorKey: 'cost',
             maxSize: 200,
-            cell: ({ getValue }) => new Intl.NumberFormat(configuration.local.language, { useGrouping: true, currency: 'IRR', style: 'currency', signDisplay: 'never', maximumFractionDigits: 0 }).format(getValue()['IRR'] as number),
+            cell: ({ getValue }) => formatCurrency(configuration, getValue()['IRR'] as number),
         },
         {
             id: 'createdAt',
@@ -185,11 +160,9 @@ export function Orders() {
                         <Button
                             isIcon
                             variant='text'
-                            onClick={() => {
-                                setEditingOrder(row.original._id)
-                            }}
+                            onClick={() => setUpdatingOrder(row.original._id)}
                         >
-                            {editingOrder === undefined || editingOrder !== row.original._id ? <EditIcon /> : <CircularLoadingIcon />}
+                            {updatingOrder === undefined || updatingOrder !== row.original._id ? <EditIcon /> : <CircularLoadingIcon />}
                         </Button>
                     }
                     {
@@ -240,7 +213,7 @@ export function Orders() {
                         <Button variant='outline' onClick={async () => await init(page.offset, page.limit)}><RefreshCwIcon />{t('Orders.Refresh')}</Button>,
                         <Button buttonRef={filterButtonRef} variant='outline' onClick={() => setOpenFilter(true)}><FilterIcon />{t('Orders.Filters')}</Button>,
                         <Button buttonRef={sortButtonRef} variant='outline' onClick={() => setOpenSort(true)}><ListFilterIcon />{t('Orders.Sorts')}</Button>,
-                        createsOrder && <Button fgColor='success' variant='outline' onClick={() => setOpenCreateOrderModal(true)}><PlusIcon />{t('Orders.Create')}</Button>,
+                        // createsOrder && <Button fgColor='success' variant='outline' onClick={() => setOpenCreateOrderModal(true)}><PlusIcon />{t('Orders.Create')}</Button>,
                     ]}
                 />
                 : <CircularLoadingScreen />
@@ -266,6 +239,17 @@ export function Orders() {
                             )
                     }
                 </Stack>
+            </Modal>
+
+            <Modal
+                modalContainerProps={{ className: 'overflow-y-auto' }}
+                open={updatingOrder !== undefined}
+                onClose={() => setUpdatingOrder(undefined)}
+            >
+                <UpdateOrder
+                    order={orders.find(f => f._id === updatingOrder)}
+                    onFinish={async shouldRefresh => { if (shouldRefresh) await init(page.offset, page.limit) }}
+                />
             </Modal>
         </>
     )

@@ -96,7 +96,7 @@ export const DropdownMenu = memo(function DropdownMenu({ children, anchorRef, an
 
     return createPortal(
         <>
-            {open && <div ref={helperRef} className="absolute -z-[60]">{children}</div>}
+            {open && <div ref={helperRef} className="absolute top-0 left-0 invisible -z-[60]">{children}</div>}
             <AnimatePresence>
                 {open &&
                     <motion.div
