@@ -9,6 +9,7 @@ import { CheckBox } from '../Base/CheckBox'
 import { t } from 'i18next'
 import { CircularLoading } from '../Base/CircularLoading'
 import { Tag } from './index.d'
+import { Button } from '../Base/Button'
 
 export function SearchTag({ selectedTags = [], onChange = (): void => { } }: { selectedTags?: string[], onChange?: (tags: string[]) => void }) {
     if (!selectedTags)
@@ -39,9 +40,9 @@ export function SearchTag({ selectedTags = [], onChange = (): void => { } }: { s
 
     return (
         loading
-            ? <CircularLoading />
+            ? <Stack stackProps={{ className: 'w-1/2 items-center justify-center' }}><CircularLoading /></Stack>
             : <Stack size={3} direction="vertical" stackProps={{ className: 'w-1/2 overflow-y-auto border rounded-lg shadow-lg py-4 *:px-2' }}>
-                <div className="text-lg">{t('SearchTag.Categories')}</div>
+                <div className="text-lg">{t('SearchTag.Tags')}</div>
 
                 <Separator className="mx-2 w-auto" />
 

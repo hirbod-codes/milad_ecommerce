@@ -10,11 +10,10 @@ import { Stack } from "../Base/Stack";
 import { Button } from "../Base/Button";
 import { ConfigurationContext } from "@/src/Contexts/Configuration/ConfigurationContext";
 import { DATE, toFormat } from "@/src/Lib/DateTime/date-time-helpers";
-import { EditIcon, EyeIcon, FilterIcon, ListFilterIcon, PlusIcon, RefreshCwIcon, Trash2Icon } from "lucide-react";
+import { EditIcon, FilterIcon, ListFilterIcon, PlusIcon, RefreshCwIcon, Trash2Icon } from "lucide-react";
 import { CircularLoadingIcon } from "../Base/CircularLoadingIcon";
 import { Ask } from "../Ask";
 import { Modal } from "../Base/Modal";
-import { CreateProduct } from "@/src/Pages/Dashboard/Products/CreateProduct";
 import { ManageProduct } from "./ManageProduct";
 import { Filters } from "../SearchFilter/index.d";
 import { CheckBox } from "../Base/CheckBox";
@@ -93,6 +92,8 @@ export function ProductsDataGrid({
 
     const sortButtonRef = useRef<HTMLButtonElement>(null)
     const [openSort, setOpenSort] = useState(false)
+
+    const [loading, setLoading] = useState(true)
 
     const init = async (offset: number = 0, limit: number = 0) => {
         setLoading(true)
@@ -328,8 +329,6 @@ export function ProductsDataGrid({
             }
         }
     )
-
-    const [loading, setLoading] = useState(true)
 
     useEffect(() => {
         if (onChange)

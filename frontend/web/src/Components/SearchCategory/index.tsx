@@ -9,6 +9,7 @@ import { CheckBox } from '../Base/CheckBox'
 import { t } from 'i18next'
 import { CircularLoading } from '../Base/CircularLoading'
 import { Category } from './index.d'
+import { Button } from '../Base/Button'
 
 export function SearchCategory({ selectedCategories = [], onChange = (): void => { } }: { selectedCategories?: string[], onChange?: (categories: string[]) => void }) {
     if (!selectedCategories)
@@ -39,7 +40,7 @@ export function SearchCategory({ selectedCategories = [], onChange = (): void =>
 
     return (
         loading
-            ? <CircularLoading />
+            ? <Stack stackProps={{ className: 'w-1/2 items-center justify-center' }}><CircularLoading /></Stack>
             : <Stack size={3} direction="vertical" stackProps={{ className: 'w-1/2 overflow-y-auto border rounded-lg shadow-lg py-4 *:px-2' }}>
                 <div className="text-lg">{t('SearchCategory.Categories')}</div>
 

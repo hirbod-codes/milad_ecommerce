@@ -71,7 +71,7 @@ export function ManageProduct({ product: productInput, onFinish }: { product?: P
 
     return (
         loading
-            ? <CircularLoadingScreen size='lg' />
+            ? <Stack stackProps={{ className: 'items-center justify-center' }}><CircularLoading /></Stack>
             : <Stack direction="vertical" stackProps={{ className: 'mt-4 h-max' }}>
                 {productInput === undefined
                     ? <h5 className="text-center text-xl">{t('ManageProduct.createProduct')}</h5>
@@ -161,13 +161,11 @@ export function ManageProduct({ product: productInput, onFinish }: { product?: P
                 {/* Forth Row */}
                 {/* Categories and Tags */}
                 <Stack stackProps={{ className: 'h-[7cm]' }}>
-                    {/* Categories */}
                     <SearchCategory
                         selectedCategories={product?.categories ?? []}
                         onChange={(selectedCategories) => setProduct({ ...product, categories: selectedCategories })}
                     />
 
-                    {/* Tags */}
                     <SearchTag
                         selectedTags={product?.tags ?? []}
                         onChange={(selectedTags) => setProduct({ ...product, tags: selectedTags })}

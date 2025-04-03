@@ -81,7 +81,7 @@ export function Tags() {
 
                 {tags.map((tag, i) =>
                     <Fragment key={tag.name}>
-                        <Stack key={tag.name} stackProps={{ className: 'justify-between' }}>
+                        <Stack stackProps={{ className: 'justify-between' }}>
                             {tag.name}
 
                             {deletesTag &&
@@ -113,8 +113,8 @@ export function Tags() {
                             <Stack direction='vertical' stackProps={{ className: "border rounded-lg shadow-lg p-2" }}>
                                 <div className="text-lg">{t('Tags.DisplayNameTitle')}</div>
 
-                                {languages.map(l =>
-                                    <Stack direction="vertical">
+                                {languages.map((l, i) =>
+                                    <Stack key={i} direction="vertical">
                                         <Input placeholder={l} value={displayName ? displayName[l] ?? '' : ''} onChange={(e) => setDisplayName({ ...displayName, [l]: e.target.value })} />
                                     </Stack>
                                 )}
