@@ -335,7 +335,7 @@ products.patch('/', authenticate, async (req, res) => {
         }
 
         const productRepository = await ProductRepository.getInstance()
-        const result = await productRepository.update(id, product)
+        const result = await productRepository.update(id, productUpdateSchema.cast(product))
 
         if (result === false || result.acknowledged !== true)
             res.sendStatus(500)

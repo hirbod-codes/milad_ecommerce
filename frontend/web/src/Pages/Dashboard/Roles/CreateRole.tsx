@@ -49,7 +49,7 @@ export function CreateRole({ onFinish }: { onFinish?: (shouldRefresh?: boolean) 
         ])
             .then(async r => {
                 const ps = r[0]
-                if (ps.response && ps.response?.ok && array().required().of(object().unknown(true).shape({ name: string().required(), _id: string().required() })).isValidSync(ps?.data))
+                if (ps.response && ps.response?.ok && array().required().of(object().shape({ name: string().required(), _id: string().required() })).isValidSync(ps?.data))
                     setPrivileges(ps.data as any)
 
                 if (r[1].ok)

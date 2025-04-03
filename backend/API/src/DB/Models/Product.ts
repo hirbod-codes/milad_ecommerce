@@ -31,7 +31,21 @@ export type ProductInput = InferType<typeof productInputSchema>
 export const productCreateSchema = productSchema.omit(['_id']).shape({ _id: likeObjectId.optional() }).required().strict(true).unknown(true)
 export type ProductCreate = InferType<typeof productCreateSchema>
 
-export let productUpdateSchema = productSchema.pick(['name', 'displayName', 'description', 'tags', 'categories', 'price', 'isAvailable', 'thumbnail']).required().strict(true).unknown(true)
+export let productUpdateSchema = productSchema
+    .pick(['name', 'displayName', 'description', 'tags', 'categories', 'price', 'isAvailable', 'thumbnail'])
+    .shape({
+        _id: string().strip(true),
+        schemaVersion: string().strip(true),
+        createdAt: number().strip(true),
+        updatedAt: number().strip(true),
+        purchaseCount: number().strip(true),
+        reviewsCount: number().strip(true),
+        views: number().strip(true),
+        averageRating: number().strip(true),
+    })
+    .required()
+    .strict(true)
+    .unknown(true)
 for (const field in productUpdateSchema.fields)
     if (Object.prototype.hasOwnProperty.call(productUpdateSchema.fields, field))
         (productUpdateSchema.fields as any)[field] = (productUpdateSchema.fields as any)[field].optional()

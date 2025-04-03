@@ -321,11 +321,11 @@ export function RolesDataGrid({
             </Modal>
 
             <Modal
-                open={state.creating || state.updatingRow !== undefined}
+                open={state.creating || state?.updatingRow !== undefined}
                 onClose={() => dispatch({ operation: 'updateEnded' })}
             >
                 <ManageRole
-                    role={state.creating ? undefined : state.updatingRow as any}
+                    role={state.creating ? undefined : state?.updatingRow?.original as any}
                     onFinish={async () => {
                         dispatch({ operation: 'updateEnded' })
                         await init()

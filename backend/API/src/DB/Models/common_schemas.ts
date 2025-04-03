@@ -22,6 +22,8 @@ export const localizedText = mixed<any>().optional().test((v: any) => {
                 return false
 
     return true
+}).transform((v, ov) => {
+    return ov
 })
 
 export const price = mixed<any>().optional().test((v: any) => {
@@ -33,10 +35,12 @@ export const price = mixed<any>().optional().test((v: any) => {
 
     for (const k in v)
         if (Object.prototype.hasOwnProperty.call(v, k))
-            if (!number().positive().required().strict(true).isValidSync(v[k]))
+            if (!number().integer().min(0).required().strict(true).isValidSync(v[k]))
                 return false
 
     return true
+}).transform((v, ov) => {
+    return ov
 })
 
 export function uniqueArrayTest(list: any) {
