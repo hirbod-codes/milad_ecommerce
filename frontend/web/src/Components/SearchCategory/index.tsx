@@ -9,7 +9,6 @@ import { CheckBox } from '../Base/CheckBox'
 import { t } from 'i18next'
 import { CircularLoading } from '../Base/CircularLoading'
 import { Category } from './index.d'
-import { Button } from '../Base/Button'
 
 export function SearchCategory({ selectedCategories = [], onChange = (): void => { } }: { selectedCategories?: string[], onChange?: (categories: string[]) => void }) {
     if (!selectedCategories)

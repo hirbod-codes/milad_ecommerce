@@ -10,13 +10,15 @@ import { Stack } from "../Base/Stack";
 import { Button } from "../Base/Button";
 import { ConfigurationContext } from "@/src/Contexts/Configuration/ConfigurationContext";
 import { DATE, toFormat } from "@/src/Lib/DateTime/date-time-helpers";
-import { EditIcon, FilterIcon, ListFilterIcon, PlusIcon, RefreshCwIcon, Trash2Icon } from "lucide-react";
+import { EditIcon, EyeIcon, FilterIcon, ListFilterIcon, PlusIcon, RefreshCwIcon, Trash2Icon } from "lucide-react";
 import { CircularLoadingIcon } from "../Base/CircularLoadingIcon";
 import { Ask } from "../Ask";
 import { Modal } from "../Base/Modal";
 import { ManageProduct } from "./ManageProduct";
 import { Filters } from "../SearchFilter/index.d";
 import { CheckBox } from "../Base/CheckBox";
+import { Input } from "../Base/Input";
+import { CircularLoading } from "../Base/CircularLoading";
 
 export type DataGridProps = {
     products?: Product[]
@@ -93,6 +95,7 @@ export function ProductsDataGrid({
     const sortButtonRef = useRef<HTMLButtonElement>(null)
     const [openSort, setOpenSort] = useState(false)
 
+    const [initialLoading, setInitialLoading] = useState(true)
     const [loading, setLoading] = useState(true)
 
     const init = async (offset: number = 0, limit: number = 0) => {
@@ -118,7 +121,7 @@ export function ProductsDataGrid({
         } finally { setLoading(false) }
     }
 
-    const [state, dispatch] = useReducer<{
+    type State = {
         columns?: ColumnDef<any>[],
         additionalColumns?: ColumnDef<any>[],
         overWriteColumns?: ColumnDef<any>[],
@@ -127,12 +130,23 @@ export function ProductsDataGrid({
         searching: boolean,
         creating: boolean,
         updatingRow: Row<any> | undefined,
+        updatingIsAvailable: Row<any> | undefined,
         deletingRow: Row<any> | undefined,
         ask: ComponentProps<typeof Ask>,
         page: { limit: number, offset: number },
-    }, { operation: string, data: any }, any>(
-        (state, { operation, data }) => {
-            switch (operation) {
+        showTags: Row<any> | undefined,
+        showCategories: Row<any> | undefined,
+        showCustomFields: Row<any> | undefined,
+    }
+
+    type Actions =
+        { operation: 'createStarted' | 'createEnded' | 'updateEnded' | 'deleteEnded' | 'updatedIsAvailable' } |
+        { operation: 'updateStarted' | 'updatingIsAvailable' | 'deleteStarted' | 'delete' | 'showCategories' | 'showTags' | 'showCustomFields', data: Row<any> } |
+        { operation: 'setPage', data: { offset: number, limit: number } }
+
+    const [state, dispatch] = useReducer<State, Actions, [Actions]>(
+        (state, arg) => {
+            switch (arg.operation) {
                 case 'createStarted':
                     return {
                         ...state,
@@ -149,7 +163,7 @@ export function ProductsDataGrid({
                 case 'updateStarted':
                     return {
                         ...state,
-                        updatingRow: data
+                        updatingRow: arg.data
                     }
 
                 case 'updateEnded':
@@ -159,24 +173,50 @@ export function ProductsDataGrid({
                         updatingRow: undefined
                     }
 
+                case 'updatingIsAvailable':
+                    console.log('arg.data.original', arg.data.original)
+                    const data = { id: arg.data.original._id, product: { isAvailable: arg.data.original.isAvailable } }
+                    authFetchData(`${getApiUrl()}/products`, { method: 'PATCH', body: JSON.stringify(data) })
+                        .then(async r => {
+                            if (!r.response || !r.response.ok) {
+                                feedback.push({ node: t('UpdateOrder.updateFailed'), color: { bgColor: 'error', fgColor: 'error-foreground' } });
+                                return;
+                            }
+
+                            await init(state.page.offset, state.page.limit)
+
+                            feedback.push({ node: t('UpdateOrder.updateSucceeded'), color: { bgColor: 'success', fgColor: 'success-foreground' } });
+                        })
+                        .finally(() => dispatch({ operation: 'updatedIsAvailable' }))
+                    return {
+                        ...state,
+                        updatingIsAvailable: arg.data
+                    }
+
+                case 'updatedIsAvailable':
+                    return {
+                        ...state,
+                        updatingIsAvailable: undefined
+                    }
+
                 case 'deleteStarted':
                     return {
                         ...state,
-                        deletingRow: data,
-                        ask: { open: true, title: t('Products.deletionTitle'), content: t('Products.deletionContent'), successAction: () => dispatch({ operation: 'delete', data }), failureAction: () => dispatch({ operation: 'deleteEnded' }) }
+                        deletingRow: arg.data,
+                        ask: { open: true, title: t('Products.deletionTitle'), content: t('Products.deletionContent'), successAction: () => dispatch({ operation: 'delete', data: arg.data }), failureAction: () => dispatch({ operation: 'deleteEnded' }) }
                     }
 
                 case 'delete':
-                    authFetchData(`${getAuthApiUrl()}/products`, { method: 'delete', body: JSON.stringify({ id: data.original._id }) })
+                    authFetchData(`${getAuthApiUrl()}/products`, { method: 'delete', body: JSON.stringify({ id: arg.data.original._id }) })
                         .then(async r => {
                             if (!r.response?.ok) {
                                 feedback.push({ node: t('Products.DeletionFailure'), color: { bgColor: 'error', fgColor: 'error-foreground' } })
                                 return
                             }
 
-                            dispatch({ operation: 'deleteEnded' })
-
                             await init(state.page.offset, state.page.limit)
+
+                            dispatch({ operation: 'deleteEnded' })
                         })
                     return state
 
@@ -190,11 +230,29 @@ export function ProductsDataGrid({
                 case 'setPage':
                     return {
                         ...state,
-                        page: data
+                        page: arg.data
+                    }
+
+                case 'showCategories':
+                    return {
+                        ...state,
+                        showCategories: arg.data
+                    }
+
+                case 'showTags':
+                    return {
+                        ...state,
+                        showTags: arg.data
+                    }
+
+                case 'showCustomFields':
+                    return {
+                        ...state,
+                        showCustomFields: arg.data
                     }
 
                 default:
-                    throw new Error('Invalid operation requested in ProductsDataGrid component reducer!')
+                    throw new Error(`Invalid operation requested in ProductsDataGrid component reducer!${typeof (arg as any).operation === 'string' ? ': ' + (arg as any).operation : ''}`)
             }
         },
         undefined,
@@ -252,23 +310,56 @@ export function ProductsDataGrid({
                 {
                     id: 'isAvailable',
                     accessorKey: 'isAvailable',
-                    cell: ({ row, getValue }) => <div className="w-full flex flex-row justify-center">{Boolean(getValue()) ? <CheckBox containerProps={{ className: 'w-fit' }} colorForeground='success' inputProps={{ checked: true, readOnly: true }} /> : <CheckBox containerProps={{ className: 'w-fit' }} colorForeground='error' inputProps={{ checked: false, readOnly: true }} />}</div>,
+                    cell: ({ row, getValue }) =>
+                        <div className="w-full flex flex-row justify-center">
+                            {functionality.update === true
+                                ? (
+                                    state.updatingIsAvailable !== undefined && state.updatingIsAvailable.original._id === row.original._id
+                                        ? <CircularLoading />
+                                        : <CheckBox
+                                            containerProps={{ className: 'w-fit' }}
+                                            colorForeground='success'
+                                            inputProps={{
+                                                checked: row.original.isAvailable,
+                                                onChange: async (e) => {
+                                                    e.stopPropagation();
+
+                                                    console.log('row.original', row.original)
+
+                                                    dispatch({ operation: 'updatingIsAvailable', data: row })
+                                                }
+                                            }}
+                                        />
+                                )
+                                : <div className="w-full flex flex-row justify-center">{Boolean(getValue()) ? <CheckBox containerProps={{ className: 'w-fit' }} colorForeground='success' inputProps={{ checked: true, readOnly: true }} /> : <CheckBox containerProps={{ className: 'w-fit' }} colorForeground='error' inputProps={{ checked: false, readOnly: true }} />}</div>
+                            }
+                        </div>,
                 },
-                // {
-                //     id: 'customFields',
-                //     accessorKey: 'customFields',
-                //     cell: ({ row }) => <div className="w-full flex flex-row justify-center"><Button isIcon variant="text" onClick={() => setShowCustomFields(row.original._id)}><EyeIcon /></Button></div>,
-                // },
-                // {
-                //     id: 'tags',
-                //     accessorKey: 'tags',
-                //     cell: ({ row, getValue }) => <div className="text-center w-full cursor-pointer rounded-lg hover:border text-nowrap text-ellipsis overflow-hidden" onClick={() => setShowingTags(row.original._id)}>{(getValue() as string[]).join(', ')}</div>,
-                // },
-                // {
-                //     id: 'categories',
-                //     accessorKey: 'categories',
-                //     cell: ({ row, getValue }) => <div className="text-center w-full cursor-pointer rounded-lg hover:border text-nowrap text-ellipsis overflow-hidden" onClick={() => setShowingCategories(row.original._id)}>{(getValue() as string[]).join(', ')}</div>,
-                // },
+                {
+                    id: 'customFields',
+                    accessorKey: 'customFields',
+                    cell: ({ row }) => <div className="w-full flex flex-row justify-center"><Button isIcon variant="text" onClick={() => dispatch({ operation: 'showCustomFields', data: row })}><EyeIcon /></Button></div>,
+                },
+                {
+                    id: 'tags',
+                    accessorKey: 'tags',
+                    cell: ({ row, getValue }) =>
+                        <Stack stackProps={{ className: 'w-full justify-center' }}>
+                            <div className="w-[5cm] text-center cursor-pointer rounded-lg hover:border text-nowrap text-ellipsis overflow-hidden" onClick={() => dispatch({ operation: 'showTags', data: row })}>
+                                {(getValue() as string[]).join(', ')}
+                            </div>
+                        </Stack>
+                },
+                {
+                    id: 'categories',
+                    accessorKey: 'categories',
+                    cell: ({ row, getValue }) =>
+                        <Stack stackProps={{ className: 'w-full justify-center' }}>
+                            <div className="w-[5cm] text-center cursor-pointer rounded-lg hover:border text-nowrap text-ellipsis overflow-hidden" onClick={() => dispatch({ operation: 'showCategories', data: row })}>
+                                {(getValue() as string[]).join(', ')}
+                            </div>
+                        </Stack>
+                },
                 {
                     id: 'views',
                     accessorKey: 'views',
@@ -308,7 +399,7 @@ export function ProductsDataGrid({
             ]
 
             const defaultHeaderNodes = [
-                <Button variant='outline' onClick={async () => await init(state.page.offset, state.page.limit)}><RefreshCwIcon />{t('Products.Refresh')}</Button>,
+                <Button variant='outline' onClick={async () => await init(state.page.offset, state.page.limit)}>{!loading ? <CircularLoadingIcon /> : <RefreshCwIcon />}{t('Products.Refresh')}</Button>,
                 functionality.filter === true && <Button buttonRef={filterButtonRef} variant='outline' onClick={() => setOpenFilter(true)}><FilterIcon />{t('Products.Filters')}</Button>,
                 functionality.sort === true && <Button buttonRef={sortButtonRef} variant='outline' onClick={() => setOpenSort(true)}><ListFilterIcon />{t('Products.Sorts')}</Button>,
                 functionality.create === true && <Button fgColor='success' variant='outline' onClick={() => dispatch({ operation: 'createStarted' })}><PlusIcon />{t('Products.Create')}</Button>,
@@ -323,9 +414,13 @@ export function ProductsDataGrid({
                 searching: false,
                 creating: false,
                 updatingRow: undefined,
+                updatingIsAvailable: undefined,
                 deletingRow: undefined,
                 ask: { open: false },
                 page: { limit: 10, offset: 0 },
+                showTags: undefined,
+                showCategories: undefined,
+                showCustomFields: undefined,
             }
         }
     )
@@ -336,7 +431,9 @@ export function ProductsDataGrid({
     }, [products])
 
     useEffect(() => {
+        setInitialLoading(true)
         init(state.page.offset, state.page.limit)
+            .finally(() => setInitialLoading(false))
     }, [])
 
     console.log('ProductsDataGrid', { loading, products, state, afterDataFetchHook, allFunctionalitiesToggle, functionality, options, columns, headerNodes, onChange, dataGridProps })
@@ -346,7 +443,7 @@ export function ProductsDataGrid({
             <DataGrid
                 {...dataGridProps}
                 data={products}
-                loading={loading}
+                loading={initialLoading}
                 columns={state.columns}
                 additionalColumns={state.additionalColumns}
                 overWriteColumns={state.overWriteColumns}
@@ -373,6 +470,49 @@ export function ProductsDataGrid({
                         await init(state.page.offset, state.page.limit)
                     }}
                 />
+            </Modal>
+
+            <Modal
+                modalContainerProps={{ className: 'overflow-y-auto' }}
+                open={state?.showCustomFields !== undefined}
+                onClose={() => dispatch({ operation: 'showCustomFields', data: undefined })}
+            >
+                <Stack direction="vertical" stackProps={{ className: 'w-full items-center justify-between' }}>
+                    {state?.showCustomFields && Object.entries(products.find(f => f._id === state?.showCustomFields?.original?._id) ?? {}).filter(f => ['schemaVersion', '_id', 'tags', 'categories', 'name', 'displayName', 'description', 'price', 'isAvailable', 'thumbnail', 'purchaseCount', 'reviewsCount', 'views', 'averageRating', 'createdAt', 'updatedAt',].includes(f[0]) === false).map(m =>
+                        <Stack key={m[0]}>
+                            <Input containerProps={{ className: "flex-grow" }} readOnly value={m[0]} />
+                            <Input containerProps={{ className: "flex-grow" }} placeholder={t('ProductsDataGrid.Value')} readOnly value={m[1] as any} />
+                        </Stack>
+                    )}
+                </Stack>
+            </Modal>
+
+            <Modal
+                modalContainerProps={{ className: 'overflow-y-auto' }}
+                open={state?.showTags !== undefined}
+                onClose={() => dispatch({ operation: 'showTags', data: undefined })}
+            >
+                <Stack direction="vertical">
+                    {products?.find(f => f._id === state?.showTags?.original?._id)?.tags?.map(m =>
+                        <div key={m} className="text-lg">
+                            {m}
+                        </div>
+                    )}
+                </Stack>
+            </Modal>
+
+            <Modal
+                modalContainerProps={{ className: 'overflow-y-auto' }}
+                open={state?.showCategories !== undefined}
+                onClose={() => dispatch({ operation: 'showCategories', data: undefined })}
+            >
+                <Stack direction="vertical">
+                    {products?.find(f => f._id === state?.showCategories?.original?._id)?.categories?.map(m =>
+                        <div key={m} className="text-lg">
+                            {m}
+                        </div>
+                    )}
+                </Stack>
             </Modal>
         </>
     )
