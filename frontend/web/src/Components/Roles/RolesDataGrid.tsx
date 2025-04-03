@@ -18,6 +18,7 @@ import { useNavigate } from "react-router";
 import { Modal } from "../Base/Modal";
 import { CreateRole } from "@/src/Pages/Dashboard/Roles/CreateRole";
 import { UpdateRole } from "@/src/Pages/Dashboard/Roles/UpdateRole";
+import { ManageRole } from "./ManageRole";
 
 export type DataGridProps = {
     roles?: Role[]
@@ -320,15 +321,14 @@ export function RolesDataGrid({
             </Modal>
 
             <Modal
+                open={state.creating || state.updatingRow !== undefined}
                 onClose={() => dispatch({ operation: 'updateEnded' })}
-                open={state.updatingRow !== undefined}
             >
-                <UpdateRole
-                    editingRoleId={state.updatingRow?.original._id}
-                    onFinish={async (shouldRefresh = true) => {
+                <ManageRole
+                    role={state.creating ? undefined : state.updatingRow as any}
+                    onFinish={async () => {
                         dispatch({ operation: 'updateEnded' })
-                        if (shouldRefresh)
-                            await init()
+                        await init()
                     }}
                 />
             </Modal>
