@@ -86,6 +86,26 @@ export function RolesDataGrid({
         else
             functionality[p] = false
 
+    const init = async (offset: number = 0, limit: number = 0) => {
+        setLoading(true)
+        try {
+            if (roles.length === 0) {
+                const r = await authFetchData(`${getAuthApiUrl()}/roles`)
+                if (!r.response || !r.response.ok || !array().required().isValidSync(r.data)) {
+                    feedback.push({ node: t('RolesDataGrid.failedToFetchedRoles'), color: { bgColor: 'error', fgColor: 'error-foreground' } })
+                    return false
+                }
+
+                if (afterDAtaFetchHook)
+                    setRoles(afterDAtaFetchHook(r.data))
+                else
+                    setRoles(r.data)
+
+                return true
+            }
+        } finally { setLoading(false) }
+    }
+
     const [state, dispatch] = useReducer<{
         additionalColumns: ColumnDef<any>[],
         overWriteColumns: ColumnDef<any>[],
@@ -110,7 +130,7 @@ export function RolesDataGrid({
                     init()
                     return {
                         ...state,
-                        creating: true
+                        creating: false
                     }
 
                 case 'updateStarted':
@@ -261,26 +281,6 @@ export function RolesDataGrid({
             onChange(roles)
     }, [roles])
 
-    const init = async (offset: number = 0, limit: number = 0) => {
-        setLoading(true)
-        try {
-            if (roles.length === 0) {
-                const r = await authFetchData(`${getAuthApiUrl()}/roles`)
-                if (!r.response || !r.response.ok || !array().required().isValidSync(r.data)) {
-                    feedback.push({ node: t('RolesDataGrid.failedToFetchedRoles'), color: { bgColor: 'error', fgColor: 'error-foreground' } })
-                    return false
-                }
-
-                if (afterDAtaFetchHook)
-                    setRoles(afterDAtaFetchHook(r.data))
-                else
-                    setRoles(r.data)
-
-                return true
-            }
-        } finally { setLoading(false) }
-    }
-
     useEffect(() => {
         init()
     }, [])
@@ -295,8 +295,8 @@ export function RolesDataGrid({
                 loading={loading}
                 additionalColumns={state.additionalColumns}
                 overWriteColumns={state.overWriteColumns}
-                pagination={functionality.pagination ? undefined : { pageSize: state.page.limit, pageIndex: state.page.offset }}
-                onPagination={functionality.pagination ? undefined : async (p) => {
+                pagination={functionality.pagination !== true ? undefined : { pageSize: state.page.limit, pageIndex: state.page.offset }}
+                onPagination={functionality.pagination !== true ? undefined : async (p) => {
                     const result = await init(p.pageIndex, p.pageSize)
                     if (result)
                         dispatch({ operation: 'setPage', data: { limit: p.pageSize, offset: p.pageIndex } })
@@ -308,26 +308,13 @@ export function RolesDataGrid({
             <Ask {...state.ask} />
 
             <Modal
-                onClose={() => dispatch({ operation: 'createEnded' })}
-                open={state.creating}
-            >
-                <CreateRole
-                    onFinish={async (shouldRefresh = true) => {
-                        dispatch({ operation: 'createEnded' })
-                        if (shouldRefresh)
-                            await init()
-                    }}
-                />
-            </Modal>
-
-            <Modal
                 open={state.creating || state?.updatingRow !== undefined}
-                onClose={() => dispatch({ operation: 'updateEnded' })}
+                onClose={() => dispatch({ operation: state.creating ? 'createEnded' : 'updateEnded' })}
             >
                 <ManageRole
                     role={state.creating ? undefined : state?.updatingRow?.original as any}
                     onFinish={async () => {
-                        dispatch({ operation: 'updateEnded' })
+                        dispatch({ operation: state.creating ? 'createEnded' : 'updateEnded' })
                         await init()
                     }}
                 />

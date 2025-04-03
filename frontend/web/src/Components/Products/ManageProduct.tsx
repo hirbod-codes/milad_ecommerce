@@ -10,7 +10,7 @@ import { Separator } from "@/src/shadcn/components/ui/separator"
 import { t } from "i18next"
 import { useContext, useEffect, useRef, useState } from "react"
 import { array, object, string } from "yup"
-import { Product, staticFields, staticUpdateFields } from "."
+import { Product, staticFields } from "./index.d"
 import { CircularLoadingScreen } from "../Base/CircularLoadingScreen"
 import { Textarea } from "@/src/shadcn/components/ui/textarea"
 import { Select } from "../Base/Select"
@@ -53,16 +53,12 @@ export function ManageProduct({ product: productInput, onFinish }: { product?: P
         window.addEventListener('keydown', keyDown)
 
         Promise.all([
-            productInput !== undefined && authFetchData(`${getAuthApiUrl()}/products?ids=${product._id}`),
             fetch(`${getApiUrl()}/languages`, { headers: { 'Accept': 'application/json' } }),
         ])
             .then(async r => {
                 const ps = r[0]
-                if (productInput !== undefined && r[0].response && r[0].response?.ok && array().required().isValidSync(r[0]?.data))
-                    setProduct(r[0].data[0])
-
-                if (r[1].ok)
-                    setLanguages(await r[1].json())
+                if (r[0].ok)
+                    setLanguages(await r[0].json())
 
                 setLoading(false)
             })

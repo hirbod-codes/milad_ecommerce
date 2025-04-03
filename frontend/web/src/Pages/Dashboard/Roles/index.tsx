@@ -14,19 +14,17 @@ export function Roles() {
     const assignsRole = privileges?.find(f => f === 'assign-role') !== undefined
 
     return (
-        <>
-            <RolesDataGrid
-                dataGridProps={{
-                    configName: 'Roles',
-                    defaultColumnVisibilityModel: { _id: false },
-                    defaultColumnOrderModel: ['actions', 'name', 'displayName', 'privileges']
-                }}
-                functionality={{
-                    create: createsRole,
-                    update: updatesRole,
-                    delete: deletesRole,
-                }}
-            />
-        </>
+        <RolesDataGrid
+            dataGridProps={{
+                configName: 'Roles',
+                defaultColumnVisibilityModel: { _id: false },
+                defaultColumnOrderModel: ['actions', 'name', 'displayName', 'privileges']
+            }}
+            functionality={{
+                create: createsRole,
+                update: updatesRole,
+                delete: deletesRole,
+            }}
+        />
     )
 }

@@ -23,12 +23,42 @@ import { CircularLoadingScreen } from "@/src/Components/Base/CircularLoadingScre
 import { UpdateProduct } from "./UpdateProduct";
 import { CheckBox } from "@/src/Components/Base/CheckBox";
 import { Input } from "@/src/Components/Base/Input";
+import { ProductsDataGrid } from "@/src/Components/Products/ProductsDataGrid";
 
+export function Products() {
+    const privileges = useContext(AuthContext).privileges
+
+    const feedback = useContext(FeedbackContext)!
+
+    const createsProduct = privileges?.find(f => f === 'create-product') !== undefined
+    const updatesProduct = privileges?.find(f => f === 'update-product') !== undefined
+    const deletesProduct = privileges?.find(f => f === 'delete-product') !== undefined
+    const assignsProduct = privileges?.find(f => f === 'assign-product') !== undefined
+
+    return (
+        <ProductsDataGrid
+            dataGridProps={{
+                configName: 'Products',
+                defaultColumnVisibilityModel: { _id: false },
+                defaultColumnOrderModel: ['actions', 'name', 'displayName', 'privileges']
+            }}
+            functionality={{
+                create: createsProduct,
+                update: updatesProduct,
+                delete: deletesProduct,
+                filter: true,
+                sort: true,
+                search: true,
+                pagination: true,
+            }}
+        />
+    )
+}
 /**
  * Note: static fields of Product model is hard coded.
  * @returns 
  */
-export function Products() {
+export function Productss() {
     const privileges = useContext(AuthContext).privileges
     const feedback = useContext(FeedbackContext)!
 
@@ -202,7 +232,7 @@ export function Products() {
             id: 'price',
             accessorKey: 'price',
             maxSize: 200,
-            cell: ({ getValue }) =>formatCurrency(configuration, getValue()['IRR'] as number),
+            cell: ({ getValue }) => formatCurrency(configuration, getValue()['IRR'] as number),
         },
         {
             id: 'createdAt',
