@@ -5,8 +5,8 @@ import { Filters } from "../Components/SearchFilter/index.d";
 import { Filter } from "../Components/SearchFilter/index.d";
 import { Config } from "../Contexts/Configuration";
 
-export function formatNumber(configuration: Config, number: number) {
-    return new Intl.NumberFormat(configuration.local.language, { useGrouping: true, signDisplay: 'never', maximumFractionDigits: 0 }).format(number)
+export function formatNumber(configuration: Config, number: number, options?: Intl.NumberFormatOptions) {
+    return new Intl.NumberFormat(configuration.local.language, { useGrouping: true, signDisplay: 'never', maximumFractionDigits: 0, ...options }).format(number)
 }
 
 export function formatCurrency(configuration: Config, number: number) {

@@ -52,6 +52,7 @@ export const DraggableTableHeader = ({ header }: { header: Header<any, unknown>;
     return (
         <>
             <th
+                key={header.id}
                 colSpan={header.colSpan}
                 ref={(th) => {
                     if (!th)

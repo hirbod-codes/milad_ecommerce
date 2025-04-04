@@ -1,11 +1,11 @@
-import { ComponentProps, ReactNode, useContext, useEffect, useReducer, useRef, useState } from "react";
+import { ComponentProps, ReactNode, useContext, useEffect, useMemo, useReducer, useRef, useState } from "react";
 import { Product } from ".";
 import { authFetchData, fetchData, formatCurrency, formatFilters, formatNumber, getApiUrl, getAuthApiUrl } from "@/src/Backend/helpers";
 import { array } from "yup";
 import { t } from "i18next";
 import { FeedbackContext } from "@/src/Contexts/Feedback/FeedbackContext";
 import { DataGrid } from "../DataGrid";
-import { ColumnDef, Row } from "@tanstack/react-table";
+import { ColumnDef, createColumnHelper, Row } from "@tanstack/react-table";
 import { Stack } from "../Base/Stack";
 import { Button } from "../Base/Button";
 import { ConfigurationContext } from "@/src/Contexts/Configuration/ConfigurationContext";
@@ -101,23 +101,18 @@ export function ProductsDataGrid({
     const init = async (offset: number = 0, limit: number = 0) => {
         setLoading(true)
         try {
-            if (products.length === 0) {
-                const res = await fetchData(`${getApiUrl()}/products?limit=${limit}&skip=${limit * offset}${filters === undefined ? '' : '&filter=' + JSON.stringify(formatFilters(filters))}`)
-                if (!res.response || !res.response.ok || !array().required().isValidSync(res.data)) {
-                    feedback.push({
-                        node: t('Products.failedToFetchProducts'),
-                        color: { fgColor: 'error' }
-                    })
-                    return false
-                }
-
-                if (res.data.length >= 0) {
-                    setProducts(res.data)
-                    return true
-                }
-
+            const res = await fetchData(`${getApiUrl()}/products?limit=${limit}&skip=${limit * offset}${filters === undefined ? '' : '&filter=' + JSON.stringify(formatFilters(filters))}`)
+            if (!res.response || !res.response.ok || !array().required().isValidSync(res.data)) {
+                feedback.push({ node: t('Products.failedToFetchProducts'), color: { bgColor: 'error', fgColor: 'error-foreground' } })
                 return false
             }
+
+            if (res.data.length >= 0) {
+                setProducts(res.data)
+                return true
+            }
+
+            return false
         } finally { setLoading(false) }
     }
 
@@ -140,13 +135,16 @@ export function ProductsDataGrid({
     }
 
     type Actions =
-        { operation: 'createStarted' | 'createEnded' | 'updateEnded' | 'deleteEnded' | 'updatedIsAvailable' } |
+        { operation: 'rerender' | 'createStarted' | 'createEnded' | 'updateEnded' | 'deleteEnded' | 'updatedIsAvailable' } |
         { operation: 'updateStarted' | 'updatingIsAvailable' | 'deleteStarted' | 'delete' | 'showCategories' | 'showTags' | 'showCustomFields', data: Row<any> } |
         { operation: 'setPage', data: { offset: number, limit: number } }
 
     const [state, dispatch] = useReducer<State, Actions, [Actions]>(
         (state, arg) => {
             switch (arg.operation) {
+                case 'rerender':
+                    return { ...state }
+
                 case 'createStarted':
                     return {
                         ...state,
@@ -174,9 +172,7 @@ export function ProductsDataGrid({
                     }
 
                 case 'updatingIsAvailable':
-                    console.log('arg.data.original', arg.data.original)
-                    const data = { id: arg.data.original._id, product: { isAvailable: arg.data.original.isAvailable } }
-                    authFetchData(`${getApiUrl()}/products`, { method: 'PATCH', body: JSON.stringify(data) })
+                    authFetchData(`${getApiUrl()}/products`, { method: 'PATCH', body: JSON.stringify({ id: arg.data.original._id, product: { isAvailable: !arg.data.original.isAvailable } }) })
                         .then(async r => {
                             if (!r.response || !r.response.ok) {
                                 feedback.push({ node: t('UpdateOrder.updateFailed'), color: { bgColor: 'error', fgColor: 'error-foreground' } });
@@ -310,30 +306,25 @@ export function ProductsDataGrid({
                 {
                     id: 'isAvailable',
                     accessorKey: 'isAvailable',
-                    cell: ({ row, getValue }) =>
+                    cell: ({ row, cell, getValue }) =>
                         <div className="w-full flex flex-row justify-center">
                             {functionality.update === true
                                 ? (
-                                    state.updatingIsAvailable !== undefined && state.updatingIsAvailable.original._id === row.original._id
-                                        ? <CircularLoading />
+                                    state.updatingIsAvailable !== undefined && state.updatingIsAvailable.id === row.id
+                                        ? <CircularLoadingIcon />
                                         : <CheckBox
                                             containerProps={{ className: 'w-fit' }}
                                             colorForeground='success'
+                                            inputId={cell.id}
                                             inputProps={{
                                                 checked: row.original.isAvailable,
-                                                onChange: async (e) => {
-                                                    e.stopPropagation();
-
-                                                    console.log('row.original', row.original)
-
-                                                    dispatch({ operation: 'updatingIsAvailable', data: row })
-                                                }
+                                                readOnly: functionality.update !== true,
+                                                onClick: functionality.update !== true ? undefined : () => dispatch({ operation: 'updatingIsAvailable', data: row })
                                             }}
                                         />
                                 )
-                                : <div className="w-full flex flex-row justify-center">{Boolean(getValue()) ? <CheckBox containerProps={{ className: 'w-fit' }} colorForeground='success' inputProps={{ checked: true, readOnly: true }} /> : <CheckBox containerProps={{ className: 'w-fit' }} colorForeground='error' inputProps={{ checked: false, readOnly: true }} />}</div>
-                            }
-                        </div>,
+                                : <div className="w-full flex flex-row justify-center">{Boolean(getValue()) ? <CheckBox containerProps={{ className: 'w-fit' }} colorForeground='success' inputProps={{ checked: true, readOnly: true }} /> : <CheckBox containerProps={{ className: 'w-fit' }} colorForeground='error' inputProps={{ checked: false, readOnly: true }} />}</div>}
+                        </div>
                 },
                 {
                     id: 'customFields',
@@ -378,7 +369,7 @@ export function ProductsDataGrid({
                 {
                     id: 'averageRating',
                     accessorKey: 'averageRating',
-                    cell: ({ getValue }) => formatNumber(configuration, getValue() as number),
+                    cell: ({ getValue }) => formatNumber(configuration, getValue() as number, { maximumFractionDigits: 2 }),
                 },
                 {
                     id: 'price',
@@ -431,9 +422,11 @@ export function ProductsDataGrid({
     }, [products])
 
     useEffect(() => {
-        setInitialLoading(true)
-        init(state.page.offset, state.page.limit)
-            .finally(() => setInitialLoading(false))
+        if (products.length === 0) {
+            setInitialLoading(true)
+            init(state.page.offset, state.page.limit)
+                .finally(() => setInitialLoading(false))
+        }
     }, [])
 
     console.log('ProductsDataGrid', { loading, products, state, afterDataFetchHook, allFunctionalitiesToggle, functionality, options, columns, headerNodes, onChange, dataGridProps })
@@ -444,6 +437,7 @@ export function ProductsDataGrid({
                 {...dataGridProps}
                 data={products}
                 loading={initialLoading}
+                defaultColumnOrderModel={['isAvailable', 'isAvailable2', 'isAvailable3']}
                 columns={state.columns}
                 additionalColumns={state.additionalColumns}
                 overWriteColumns={state.overWriteColumns}

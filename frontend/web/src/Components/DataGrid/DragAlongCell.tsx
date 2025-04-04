@@ -64,6 +64,7 @@ export const DragAlongCell = ({ cell }: { cell: Cell<any, unknown>; }) => {
 
     return (
         <motion.td
+            key={cell.id}
             initial='enter'
             animate='active'
             exit='exit'
