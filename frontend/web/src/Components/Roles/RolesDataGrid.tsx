@@ -151,31 +151,32 @@ export function RolesDataGrid({
                     return {
                         ...state,
                         deletingRow: data,
-                        ask: { open: true,
+                        ask: {
+                            open: true,
                             title: t('Roles.deletionTitle'),
                             content: t('Roles.deletionContent'),
-                            successAction: () => 
+                            successAction: () =>
                                 authFetchData(`${getAuthApiUrl()}/roles`, { method: 'delete', body: JSON.stringify({ id: data.original._id }), headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' } })
                                     .then(async r => {
                                         if (!r.response?.ok) {
                                             feedback.push({ node: t('Roles.DeletionFailure'), color: { bgColor: 'error', fgColor: 'error-foreground' } })
                                             return
                                         }
-            
+
                                         await init()
-            
+
                                         if (Auth.getRole() === data.original.name) {
                                             const r = await Auth.logout()
-            
+
                                             if (!r)
                                                 feedback.push({ node: t('common.logoutFailed'), color: { bgColor: 'error', fgColor: 'error-foreground' } })
                                             else
                                                 navigate('/')
                                         }
-            
+
                                         dispatch({ operation: 'deleteEnded' })
                                     }),
-                            failureAction: () => dispatch({ operation: 'deleteEnded' }) 
+                            failureAction: () => dispatch({ operation: 'deleteEnded' })
                         }
                     }
 
@@ -360,7 +361,7 @@ export function RolesDataGrid({
                 {state?.showPrivileges &&
                     state.showPrivileges.original.privileges.map((m, i) =>
                         <div key={i} className="text-center">
-                            {m.displayName[configuration.local.language]}
+                            {m.name}
                         </div>
                     )
                 }
