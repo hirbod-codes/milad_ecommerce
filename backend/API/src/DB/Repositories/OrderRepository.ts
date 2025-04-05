@@ -56,7 +56,7 @@ export class OrderRepository extends MongoDB {
                         cost,
                         address: {
                             text: faker.lorem.lines({ min: 1, max: 5 }),
-                            googleMap: faker.internet.url()
+                            googleMap: faker.datatype.boolean() ? undefined : faker.internet.url()
                         },
                         createdAt: ts,
                         updatedAt: ts,

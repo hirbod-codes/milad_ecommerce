@@ -1,6 +1,6 @@
 import { SearchIcon } from "lucide-react"
 import { Select } from "../Base/Select"
-import { ComponentProps, Fragment, useContext, useEffect, useState } from "react"
+import { ComponentProps, Fragment, useContext, useEffect, useRef, useState } from "react"
 import { t } from "i18next"
 import { Stack } from "../Base/Stack"
 import { Separator } from "@/src/shadcn/components/ui/separator"
@@ -43,8 +43,14 @@ export function SearchUser({ onSelect, containerProps }: { onSelect?: (user: { _
         }
     }
 
+    const timer = useRef(undefined)
+
     useEffect(() => {
-        searchUser()
+        if (timer.current !== undefined)
+            clearTimeout(timer.current)
+        timer.current = setTimeout(() => {
+            searchUser()
+        }, 1500)
     }, [search])
 
     return (

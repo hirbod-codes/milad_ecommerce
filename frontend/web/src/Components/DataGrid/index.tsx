@@ -3,6 +3,7 @@ import {
     ColumnDef,
     ColumnPinningState,
     PaginationState,
+    RowSelectionState,
     VisibilityState,
     getCoreRowModel,
     getPaginationRowModel,
@@ -35,13 +36,14 @@ import { DataGridContext, Density } from './Context'
 import { DensityButton } from './DensityButton'
 import { ExportButton } from './ExportButton'
 import { Pagination } from './Pagination'
-import { getColumns } from './helpers'
+import { getColumns, getColumnsFormData } from './helpers'
 import { getLuxonLocale } from '../../Lib/localization'
 import { ConfigurationContext } from '../../Contexts/Configuration/ConfigurationContext'
 import { CircularLoadingIcon } from '../Base/CircularLoadingIcon'
 import { Stack } from '../Base/Stack'
 import { cn } from '../../shadcn/lib/utils'
 import { StorageApi } from '@/src/Backend/Storage/StorageApi'
+import { CheckBox } from '../Base/CheckBox'
 
 export type DataGridProps = {
     configName?: string
@@ -76,6 +78,8 @@ export type DataGridProps = {
     footerNodesContainerProps?: ComponentProps<typeof Stack>
     containerProps?: ComponentProps<typeof Stack>
     tableContainerProps?: ComponentProps<'div'>
+    defaultSelection?: RowSelectionState
+    onRowSelectionChange?: (rowSelectionState: RowSelectionState) => void
 }
 
 export function DataGrid({
@@ -111,6 +115,8 @@ export function DataGrid({
     footerNodesContainerProps,
     containerProps,
     tableContainerProps,
+    defaultSelection = {},
+    onRowSelectionChange = undefined,
 }: DataGridProps) {
     const configuration = useContext(ConfigurationContext)!
 
@@ -121,7 +127,41 @@ export function DataGrid({
         data = data.map((d, i) => ({ ...d, counter: (pagination.pageIndex * pagination.pageSize) + (i + 1) }))
 
     const columns = useMemo<ColumnDef<any>[]>(() => {
-        let cs = inputColumns ?? getColumns(data, overWriteColumns, additionalColumns, defaultColumnOrderModel)
+        let cs: ColumnDef<any>[]
+        if (inputColumns !== undefined)
+            cs = getColumns(inputColumns, overWriteColumns, additionalColumns, defaultColumnOrderModel)
+        else
+            cs = getColumnsFormData(data, overWriteColumns, additionalColumns, defaultColumnOrderModel)
+
+        if (onRowSelectionChange !== undefined)
+            cs.unshift({
+                id: 'select',
+                header: ({ table, header }) =>
+                    <div className="w-full flex flex-row justify-center">
+                        <CheckBox
+                            containerProps={{ className: 'w-fit' }}
+                            colorForeground='success'
+                            inputId={header.id}
+                            inputProps={{
+                                checked: table.getIsAllRowsSelected(),
+                                onChange: table.getToggleAllRowsSelectedHandler(),
+                            }}
+                        />
+                    </div>,
+                cell: ({ row, cell }) =>
+                    <div className="w-full flex flex-row justify-center">
+                        <CheckBox
+                            containerProps={{ className: 'w-fit' }}
+                            colorForeground='success'
+                            inputId={cell.id}
+                            inputProps={{
+                                checked: row.getIsSelected(),
+                                disabled: !row.getCanSelect(),
+                                onChange: row.getToggleSelectedHandler(),
+                            }}
+                        />
+                    </div>
+            })
 
         if (addCounterColumn === true && !cs.find(f => f.id === 'counter'))
             cs.unshift({
@@ -137,6 +177,7 @@ export function DataGrid({
     const [columnOrder, setColumnOrder] = useState<string[]>(defaultColumnOrderModel ?? (columns ?? []).map(c => c.id).filter(f => f !== undefined))
     const [columnVisibility, setColumnVisibility] = useState<VisibilityState>(defaultColumnVisibilityModel)
     const [columnPinning, setColumnPinning] = useState<ColumnPinningState>(defaultColumnPinningModel)
+    const [selection, setSelection] = useState<RowSelectionState>(defaultSelection)
 
     const [hasInit, setHasInit] = useState(false)
 
@@ -155,7 +196,8 @@ export function DataGrid({
             columnOrder,
             columnVisibility,
             columnPinning,
-            pagination: hasPagination && !onPagination ? pagination : undefined
+            pagination: hasPagination && !onPagination ? pagination : undefined,
+            rowSelection: selection,
         },
         enableColumnPinning: true,
         onColumnPinningChange: async (updaterOrValue) => {
@@ -226,6 +268,18 @@ export function DataGrid({
         },
         onPaginationChange: hasPagination && !onPagination ? onPagination as any : undefined,
         getPaginationRowModel: hasPagination && !onPagination ? getPaginationRowModel() : undefined,
+        enableRowSelection: onRowSelectionChange !== undefined,
+        onRowSelectionChange: onRowSelectionChange === undefined ? undefined : (updaterOrValue) => {
+            let rs: RowSelectionState
+            if (typeof updaterOrValue !== 'function')
+                rs = updaterOrValue
+            else
+                rs = updaterOrValue(selection)
+
+            onRowSelectionChange(rs)
+
+            setSelection(rs)
+        },
     })
 
     if (defaultHeaderNodes !== false)

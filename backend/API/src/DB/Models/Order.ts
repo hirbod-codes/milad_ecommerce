@@ -13,7 +13,7 @@ addMethod(array, 'uniqueArray', function (message) {
     });
 })
 
-export const orderSchema = object().required().strict(true).unknown(true).shape({
+export const orderSchema = object().required().strict(true).noUnknown(true).shape({
     schemaVersion: string().required().min(6).max(20),
     _id: likeObjectId.required(),
     userId: likeObjectId.required(),
@@ -25,8 +25,8 @@ export const orderSchema = object().required().strict(true).unknown(true).shape(
     cost: price.required(),
     isPayed: boolean().required(),
     isSent: boolean().required(),
-    address: object().optional().shape({
-        text: string().optional().max(1000),
+    address: object().required().shape({
+        text: string().required().max(1000),
         googleMap: string().optional().url()
     }),
     createdAt: number().required(),

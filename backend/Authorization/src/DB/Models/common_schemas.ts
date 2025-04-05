@@ -22,6 +22,8 @@ export const localizedText = mixed<any>().optional().test((v: any) => {
                 return false
 
     return true
+}).transform((v, ov) => {
+    return ov
 })
 
 export function uniqueArrayTest(list: any) {

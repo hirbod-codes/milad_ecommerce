@@ -3,24 +3,28 @@ import { Column } from "@tanstack/react-table";
 import { CSSProperties, useContext } from "react";
 import { ConfigurationContext } from '../../Contexts/Configuration/ConfigurationContext';
 
-export const getColumns = (data: any[], overWriteColumns?: ColumnDef<any>[], additionalColumns?: ColumnDef<any>[], orderedColumnsFields?: string[]): ColumnDef<any>[] => {
+export const getColumnsFormData = (data: any[], overWriteColumns?: ColumnDef<any>[], additionalColumns?: ColumnDef<any>[], orderedColumnsFields?: string[]): ColumnDef<any>[] => {
     if (!data || data.length === 0)
         return [];
 
-    let columns: ColumnDef<any>[] = Object.keys(data[0]).filter(f => f !== 'subRows').map(k => ({
+    let columns = Object.keys(data[0]).filter(f => f !== 'subRows').map(k => ({
         accessorKey: k,
         id: k
     }));
 
+    return getColumns(columns, overWriteColumns, additionalColumns, orderedColumnsFields)
+}
+
+export const getColumns = (initialColumns: ColumnDef<any>[], overWriteColumns?: ColumnDef<any>[], additionalColumns?: ColumnDef<any>[], orderedColumnsFields?: string[]): ColumnDef<any>[] => {
     if (overWriteColumns)
         for (let i = 0; i < overWriteColumns.length; i++) {
             const elm = overWriteColumns[i]
 
-            const index = columns.findIndex(c => c.id === elm.id);
+            const index = initialColumns.findIndex(c => c.id === elm.id);
             if (index === -1)
                 continue;
 
-            let entries = Object.entries(columns[index])
+            let entries = Object.entries(initialColumns[index])
                 .map(
                     arr => {
                         if (Object.keys(elm).includes(arr[0]))
@@ -31,23 +35,23 @@ export const getColumns = (data: any[], overWriteColumns?: ColumnDef<any>[], add
 
             entries = entries.concat(Object.entries(elm).filter(f => entries.find(e => e[0] === f[0]) === undefined));
 
-            columns[index] = Object.fromEntries(entries) as ColumnDef<any>;
+            initialColumns[index] = Object.fromEntries(entries) as ColumnDef<any>;
         }
 
     if (additionalColumns)
-        columns = columns.concat(additionalColumns);
+        initialColumns = initialColumns.concat(additionalColumns);
 
     if (orderedColumnsFields)
         for (let i = orderedColumnsFields.length - 1; i >= 0; i--) {
-            let c = columns.find(c => c.id === orderedColumnsFields[i]);
+            let c = initialColumns.find(c => c.id === orderedColumnsFields[i]);
             if (c === undefined)
                 continue;
 
-            columns = columns.filter(column => column.id !== c.id);
-            columns.unshift(c);
+            initialColumns = initialColumns.filter(column => column.id !== c.id);
+            initialColumns.unshift(c);
         }
 
-    return columns;
+    return initialColumns;
 };
 
 export function getCommonPinningStyles(column: Column<any>): CSSProperties {
