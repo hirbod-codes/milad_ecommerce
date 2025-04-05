@@ -113,7 +113,6 @@ export function DataGrid({
     tableContainerProps,
 }: DataGridProps) {
     const configuration = useContext(ConfigurationContext)!
-    const themeOptions = configuration.themeOptions
 
     if (!pagination)
         pagination = { pageIndex: 0, pageSize: 10 }
@@ -122,15 +121,17 @@ export function DataGrid({
         data = data.map((d, i) => ({ ...d, counter: (pagination.pageIndex * pagination.pageSize) + (i + 1) }))
 
     const columns = useMemo<ColumnDef<any>[]>(() => {
-        return inputColumns ?? getColumns(data, overWriteColumns, additionalColumns, defaultColumnOrderModel)
-    }, [overWriteColumns, additionalColumns, defaultColumnOrderModel, inputColumns, loading])
+        let cs = inputColumns ?? getColumns(data, overWriteColumns, additionalColumns, defaultColumnOrderModel)
 
-    if (addCounterColumn === true && !columns.find(f => f.id === 'counter'))
-        columns.unshift({
-            id: 'counter',
-            accessorKey: 'counter',
-            cell: ({ getValue }) => new Intl.NumberFormat(getLuxonLocale(configuration.local.language), { minimumIntegerDigits: 1, useGrouping: false }).format(getValue() as number)
-        })
+        if (addCounterColumn === true && !cs.find(f => f.id === 'counter'))
+            cs.unshift({
+                id: 'counter',
+                accessorKey: 'counter',
+                cell: ({ getValue }) => new Intl.NumberFormat(getLuxonLocale(configuration.local.language), { minimumIntegerDigits: 1, useGrouping: false }).format(getValue() as number)
+            })
+
+        return cs
+    }, [overWriteColumns, additionalColumns, defaultColumnOrderModel, inputColumns, loading, addCounterColumn, configuration.local.language])
 
     const [density, setDensity] = useState<Density>('compact')
     const [columnOrder, setColumnOrder] = useState<string[]>(defaultColumnOrderModel ?? (columns ?? []).map(c => c.id).filter(f => f !== undefined))
@@ -145,7 +146,7 @@ export function DataGrid({
         useSensor(KeyboardSensor, {})
     )
 
-    const [table, setTable] = useState(useReactTable({
+    const table = useReactTable({
         data,
         columns,
         getCoreRowModel: getCoreRowModel(),
@@ -225,7 +226,7 @@ export function DataGrid({
         },
         onPaginationChange: hasPagination && !onPagination ? onPagination as any : undefined,
         getPaginationRowModel: hasPagination && !onPagination ? getPaginationRowModel() : undefined,
-    }))
+    })
 
     if (defaultHeaderNodes !== false)
         headerNodes = [
@@ -318,7 +319,7 @@ export function DataGrid({
         init()
     }, [])
 
-    console.log('DataGrid', { data, columns, pagination, columnPinning, columnVisibility, columnOrder, headerNodes, footerNodes })
+    console.log('DataGrid', { configName, data, columns, inputColumns, overWriteColumns, additionalColumns, prependHeaderNodes, prependFooterNodes, showColumnHeaders, addCounterColumn, headerNodes, defaultHeaderNodes, footerNodes, defaultFooterNodes, appendHeaderNodes, appendFooterNodes, hasPagination, paginationLimitOptions, pagination, onPagination, loading, defaultColumnPinningModel, defaultColumnVisibilityModel, defaultColumnOrderModel, defaultTableDensity, dataGridContainerProps, tHeadProps, tBodyProps, tableProps, headerNodesContainerProps, footerNodesContainerProps, containerProps, tableContainerProps, density, columnOrder, columnVisibility, columnPinning, hasInit })
 
     return (
         <>

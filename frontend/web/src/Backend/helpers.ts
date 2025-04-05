@@ -4,13 +4,14 @@ import JSZip from 'jszip';
 import { Filters } from "../Components/SearchFilter/index.d";
 import { Filter } from "../Components/SearchFilter/index.d";
 import { Config } from "../Contexts/Configuration";
+import { getLuxonLocale } from "../Lib/localization";
 
 export function formatNumber(configuration: Config, number: number, options?: Intl.NumberFormatOptions) {
-    return new Intl.NumberFormat(configuration.local.language, { useGrouping: true, signDisplay: 'never', maximumFractionDigits: 0, ...options }).format(number)
+    return new Intl.NumberFormat(getLuxonLocale(configuration.local.language), { useGrouping: true, signDisplay: 'never', maximumFractionDigits: 0, ...options }).format(number)
 }
 
 export function formatCurrency(configuration: Config, number: number) {
-    return new Intl.NumberFormat(configuration.local.language, { useGrouping: true, currency: 'IRR', style: 'currency', signDisplay: 'never', maximumFractionDigits: 0 }).format(number)
+    return new Intl.NumberFormat(getLuxonLocale(configuration.local.language), { useGrouping: true, currency: 'IRR', style: 'currency', signDisplay: 'never', maximumFractionDigits: 0 }).format(number)
 }
 
 export function formatFilters(filters: Filters) {

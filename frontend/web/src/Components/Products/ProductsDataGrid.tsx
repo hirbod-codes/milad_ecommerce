@@ -1,4 +1,4 @@
-import { ComponentProps, ReactNode, useContext, useEffect, useMemo, useReducer, useRef, useState } from "react";
+import { ActionDispatch, ComponentProps, ReactNode, useContext, useEffect, useMemo, useReducer, useRef, useState } from "react";
 import { Product } from ".";
 import { authFetchData, fetchData, formatCurrency, formatFilters, formatNumber, getApiUrl, getAuthApiUrl } from "@/src/Backend/helpers";
 import { array } from "yup";
@@ -116,6 +116,21 @@ export function ProductsDataGrid({
         } finally { setLoading(false) }
     }
 
+    const fetch = async (offset: number = 0, limit: number = 0) => {
+        const res = await fetchData(`${getApiUrl()}/products?limit=${limit}&skip=${limit * offset}${filters === undefined ? '' : '&filter=' + JSON.stringify(formatFilters(filters))}`)
+        if (!res.response || !res.response.ok || !array().required().isValidSync(res.data)) {
+            feedback.push({ node: t('Products.failedToFetchProducts'), color: { bgColor: 'error', fgColor: 'error-foreground' } })
+            return false
+        }
+
+        if (res.data.length >= 0) {
+            setProducts(res.data)
+            return true
+        }
+
+        return false
+    }
+
     type State = {
         columns?: ColumnDef<any>[],
         additionalColumns?: ColumnDef<any>[],
@@ -129,292 +144,158 @@ export function ProductsDataGrid({
         deletingRow: Row<any> | undefined,
         ask: ComponentProps<typeof Ask>,
         page: { limit: number, offset: number },
+        fetching: boolean,
         showTags: Row<any> | undefined,
         showCategories: Row<any> | undefined,
         showCustomFields: Row<any> | undefined,
     }
 
     type Actions =
-        { operation: 'rerender' | 'createStarted' | 'createEnded' | 'updateEnded' | 'deleteEnded' | 'updatedIsAvailable' } |
-        { operation: 'updateStarted' | 'updatingIsAvailable' | 'deleteStarted' | 'delete' | 'showCategories' | 'showTags' | 'showCustomFields', data: Row<any> } |
+        { operation: 'fetch' | 'fetched' | 'createStarted' | 'createEnded' | 'updateEnded' | 'deleteEnded' | 'updatedIsAvailable' } |
+        { operation: 'updateStarted' | 'updateIsAvailable' | 'deleteStarted' | 'showCategories' | 'showTags' | 'showCustomFields', data: Row<any> } |
         { operation: 'setPage', data: { offset: number, limit: number } }
 
-    const [state, dispatch] = useReducer<State, Actions, [Actions]>(
-        (state, arg) => {
-            switch (arg.operation) {
-                case 'rerender':
-                    return { ...state }
+    const reducer = (state, arg) => {
+        switch (arg.operation) {
+            case 'fetch':
+                return { ...state, fetching: true, headerNodes: [...state.headerNodes] }
 
-                case 'createStarted':
-                    return {
-                        ...state,
-                        creating: true
+            case 'fetched':
+                return { ...state, fetching: false }
+
+            case 'createStarted':
+                return {
+                    ...state,
+                    creating: true
+                }
+
+            case 'createEnded':
+                init(state.page.offset, state.page.limit)
+                return {
+                    ...state,
+                    creating: false
+                }
+
+            case 'updateStarted':
+                return {
+                    ...state,
+                    updatingRow: arg.data
+                }
+
+            case 'updateEnded':
+                init(state.page.offset, state.page.limit)
+                return {
+                    ...state,
+                    updatingRow: undefined
+                }
+
+            case 'updateIsAvailable':
+                return { ...state, updatingIsAvailable: arg.data, headerNodes: [...state.headerNodes] }
+
+            case 'updatedIsAvailable':
+                return { ...state, updatingIsAvailable: undefined, headerNodes: [...state.headerNodes] }
+
+            case 'deleteStarted':
+                return {
+                    ...state,
+                    deletingRow: arg.data,
+                    ask: {
+                        open: true,
+                        title: t('Products.deletionTitle'),
+                        content: t('Products.deletionContent'),
+                        successAction: () =>
+                            authFetchData(`${getAuthApiUrl()}/products`, { method: 'delete', body: JSON.stringify({ id: arg.data.original._id }) })
+                                .then(async r => {
+                                    if (!r.response?.ok) {
+                                        feedback.push({ node: t('Products.DeletionFailure'), color: { bgColor: 'error', fgColor: 'error-foreground' } })
+                                        return
+                                    }
+
+                                    dispatch({ operation: 'fetch' })
+
+                                    dispatch({ operation: 'deleteEnded' })
+                                }),
+                        failureAction: () => dispatch({ operation: 'deleteEnded' })
                     }
+                }
 
-                case 'createEnded':
-                    init(state.page.offset, state.page.limit)
-                    return {
-                        ...state,
-                        creating: false
-                    }
+            case 'deleteEnded':
+                return {
+                    ...state,
+                    deletingRow: undefined,
+                    ask: { ...state.ask, open: false }
+                }
 
-                case 'updateStarted':
-                    return {
-                        ...state,
-                        updatingRow: arg.data
-                    }
+            case 'setPage':
+                return {
+                    ...state,
+                    page: arg.data
+                }
 
-                case 'updateEnded':
-                    init(state.page.offset, state.page.limit)
-                    return {
-                        ...state,
-                        updatingRow: undefined
-                    }
+            case 'showCategories':
+                return {
+                    ...state,
+                    showCategories: arg.data
+                }
 
-                case 'updatingIsAvailable':
-                    authFetchData(`${getApiUrl()}/products`, { method: 'PATCH', body: JSON.stringify({ id: arg.data.original._id, product: { isAvailable: !arg.data.original.isAvailable } }) })
-                        .then(async r => {
-                            if (!r.response || !r.response.ok) {
-                                feedback.push({ node: t('UpdateOrder.updateFailed'), color: { bgColor: 'error', fgColor: 'error-foreground' } });
-                                return;
-                            }
+            case 'showTags':
+                return {
+                    ...state,
+                    showTags: arg.data
+                }
 
-                            await init(state.page.offset, state.page.limit)
+            case 'showCustomFields':
+                return {
+                    ...state,
+                    showCustomFields: arg.data
+                }
 
-                            feedback.push({ node: t('UpdateOrder.updateSucceeded'), color: { bgColor: 'success', fgColor: 'success-foreground' } });
-                        })
-                        .finally(() => dispatch({ operation: 'updatedIsAvailable' }))
-                    return {
-                        ...state,
-                        updatingIsAvailable: arg.data
-                    }
-
-                case 'updatedIsAvailable':
-                    return {
-                        ...state,
-                        updatingIsAvailable: undefined
-                    }
-
-                case 'deleteStarted':
-                    return {
-                        ...state,
-                        deletingRow: arg.data,
-                        ask: { open: true, title: t('Products.deletionTitle'), content: t('Products.deletionContent'), successAction: () => dispatch({ operation: 'delete', data: arg.data }), failureAction: () => dispatch({ operation: 'deleteEnded' }) }
-                    }
-
-                case 'delete':
-                    authFetchData(`${getAuthApiUrl()}/products`, { method: 'delete', body: JSON.stringify({ id: arg.data.original._id }) })
-                        .then(async r => {
-                            if (!r.response?.ok) {
-                                feedback.push({ node: t('Products.DeletionFailure'), color: { bgColor: 'error', fgColor: 'error-foreground' } })
-                                return
-                            }
-
-                            await init(state.page.offset, state.page.limit)
-
-                            dispatch({ operation: 'deleteEnded' })
-                        })
-                    return state
-
-                case 'deleteEnded':
-                    return {
-                        ...state,
-                        deletingRow: undefined,
-                        ask: { ...state.ask, open: false }
-                    }
-
-                case 'setPage':
-                    return {
-                        ...state,
-                        page: arg.data
-                    }
-
-                case 'showCategories':
-                    return {
-                        ...state,
-                        showCategories: arg.data
-                    }
-
-                case 'showTags':
-                    return {
-                        ...state,
-                        showTags: arg.data
-                    }
-
-                case 'showCustomFields':
-                    return {
-                        ...state,
-                        showCustomFields: arg.data
-                    }
-
-                default:
-                    throw new Error(`Invalid operation requested in ProductsDataGrid component reducer!${typeof (arg as any).operation === 'string' ? ': ' + (arg as any).operation : ''}`)
-            }
-        },
-        undefined,
-        (i) => {
-            const defaultOverWriteColumns = []
-            const defaultAdditionalColumns = []
-
-            const defaultColumns: ColumnDef<any>[] = [
-                {
-                    id: '_id',
-                    accessorKey: '_id',
-                },
-                {
-                    id: 'actions',
-                    accessorKey: 'actions',
-                    cell: ({ row }) =>
-                        <Stack stackProps={{ className: "justify-center w-full" }}>
-                            {
-                                functionality.update === true &&
-                                <Button
-                                    isIcon
-                                    variant='text'
-                                    onClick={() => dispatch({ operation: 'updateStarted', data: row })}
-                                >
-                                    {state.updatingRow === undefined || state.updatingRow.original._id !== row.original._id ? <EditIcon /> : <CircularLoadingIcon />}
-                                </Button>
-                            }
-                            {
-                                functionality.delete === true &&
-                                <Button
-                                    isIcon
-                                    variant='text'
-                                    fgColor='error'
-                                    onClick={() => dispatch({ operation: 'deleteStarted', data: row })}
-                                >
-                                    {state.deletingRow === undefined || state.deletingRow.original._id !== row.original._id ? <Trash2Icon /> : <CircularLoadingIcon />}
-                                </Button>
-                            }
-                        </Stack>
-                },
-                {
-                    id: 'name',
-                    accessorKey: 'name',
-                },
-                {
-                    id: 'displayName',
-                    accessorKey: 'displayName',
-                    cell: ({ getValue }) => getValue()[configuration.local.language],
-                },
-                {
-                    id: 'description',
-                    accessorKey: 'description',
-                    cell: ({ getValue }) => getValue()[configuration.local.language],
-                },
-                {
-                    id: 'isAvailable',
-                    accessorKey: 'isAvailable',
-                    cell: ({ row, cell, getValue }) =>
-                        <div className="w-full flex flex-row justify-center">
-                            {functionality.update === true
-                                ? (
-                                    state.updatingIsAvailable !== undefined && state.updatingIsAvailable.id === row.id
-                                        ? <CircularLoadingIcon />
-                                        : <CheckBox
-                                            containerProps={{ className: 'w-fit' }}
-                                            colorForeground='success'
-                                            inputId={cell.id}
-                                            inputProps={{
-                                                checked: row.original.isAvailable,
-                                                readOnly: functionality.update !== true,
-                                                onClick: functionality.update !== true ? undefined : () => dispatch({ operation: 'updatingIsAvailable', data: row })
-                                            }}
-                                        />
-                                )
-                                : <div className="w-full flex flex-row justify-center">{Boolean(getValue()) ? <CheckBox containerProps={{ className: 'w-fit' }} colorForeground='success' inputProps={{ checked: true, readOnly: true }} /> : <CheckBox containerProps={{ className: 'w-fit' }} colorForeground='error' inputProps={{ checked: false, readOnly: true }} />}</div>}
-                        </div>
-                },
-                {
-                    id: 'customFields',
-                    accessorKey: 'customFields',
-                    cell: ({ row }) => <div className="w-full flex flex-row justify-center"><Button isIcon variant="text" onClick={() => dispatch({ operation: 'showCustomFields', data: row })}><EyeIcon /></Button></div>,
-                },
-                {
-                    id: 'tags',
-                    accessorKey: 'tags',
-                    cell: ({ row, getValue }) =>
-                        <Stack stackProps={{ className: 'w-full justify-center' }}>
-                            <div className="w-[5cm] text-center cursor-pointer rounded-lg hover:border text-nowrap text-ellipsis overflow-hidden" onClick={() => dispatch({ operation: 'showTags', data: row })}>
-                                {(getValue() as string[]).join(', ')}
-                            </div>
-                        </Stack>
-                },
-                {
-                    id: 'categories',
-                    accessorKey: 'categories',
-                    cell: ({ row, getValue }) =>
-                        <Stack stackProps={{ className: 'w-full justify-center' }}>
-                            <div className="w-[5cm] text-center cursor-pointer rounded-lg hover:border text-nowrap text-ellipsis overflow-hidden" onClick={() => dispatch({ operation: 'showCategories', data: row })}>
-                                {(getValue() as string[]).join(', ')}
-                            </div>
-                        </Stack>
-                },
-                {
-                    id: 'views',
-                    accessorKey: 'views',
-                    cell: ({ getValue }) => formatNumber(configuration, getValue() as number),
-                },
-                {
-                    id: 'purchaseCount',
-                    accessorKey: 'purchaseCount',
-                    cell: ({ getValue }) => formatNumber(configuration, getValue() as number),
-                },
-                {
-                    id: 'reviewsCount',
-                    accessorKey: 'reviewsCount',
-                    cell: ({ getValue }) => formatNumber(configuration, getValue() as number),
-                },
-                {
-                    id: 'averageRating',
-                    accessorKey: 'averageRating',
-                    cell: ({ getValue }) => formatNumber(configuration, getValue() as number, { maximumFractionDigits: 2 }),
-                },
-                {
-                    id: 'price',
-                    accessorKey: 'price',
-                    maxSize: 200,
-                    cell: ({ getValue }) => formatCurrency(configuration, getValue()['IRR'] as number),
-                },
-                {
-                    id: 'createdAt',
-                    accessorKey: 'createdAt',
-                    cell: ({ getValue }) => typeof getValue() === 'number' ? toFormat(getValue() as number, configuration.local, undefined, DATE) : '-',
-                },
-                {
-                    id: 'updatedAt',
-                    accessorKey: 'updatedAt',
-                    cell: ({ getValue }) => typeof getValue() === 'number' ? toFormat(getValue() as number, configuration.local, undefined, DATE) : '-',
-                },
-            ]
-
-            const defaultHeaderNodes = [
-                <Button variant='outline' onClick={async () => await init(state.page.offset, state.page.limit)}>{!loading ? <CircularLoadingIcon /> : <RefreshCwIcon />}{t('Products.Refresh')}</Button>,
-                functionality.filter === true && <Button buttonRef={filterButtonRef} variant='outline' onClick={() => setOpenFilter(true)}><FilterIcon />{t('Products.Filters')}</Button>,
-                functionality.sort === true && <Button buttonRef={sortButtonRef} variant='outline' onClick={() => setOpenSort(true)}><ListFilterIcon />{t('Products.Sorts')}</Button>,
-                functionality.create === true && <Button fgColor='success' variant='outline' onClick={() => dispatch({ operation: 'createStarted' })}><PlusIcon />{t('Products.Create')}</Button>,
-            ]
-
-            return {
-                columns: options?.appendDefaults === true || options?.appendDefaultColumns === true ? (columns?.columns ?? []).concat(defaultColumns) : columns?.columns,
-                additionalColumns: options?.appendDefaults === true || options?.appendDefaultAdditionalColumns === true ? (columns?.additionalColumns ?? []).concat(defaultAdditionalColumns) : columns?.additionalColumns,
-                overWriteColumns: options?.appendDefaults === true || options?.appendDefaultOverWriteColumns === true ? (columns?.overWriteColumns ?? []).concat(defaultOverWriteColumns) : columns?.overWriteColumns,
-                headerNodes: options?.appendDefaults === true || options?.appendDefaultHeaderNodes === true ? (headerNodes ?? []).concat(defaultHeaderNodes) : headerNodes,
-                searchedProducts: [],
-                searching: false,
-                creating: false,
-                updatingRow: undefined,
-                updatingIsAvailable: undefined,
-                deletingRow: undefined,
-                ask: { open: false },
-                page: { limit: 10, offset: 0 },
-                showTags: undefined,
-                showCategories: undefined,
-                showCustomFields: undefined,
-            }
+            default:
+                throw new Error(`Invalid operation requested in ProductsDataGrid component reducer!${typeof (arg as any).operation === 'string' ? ': ' + (arg as any).operation : ''}`)
         }
-    )
+    }
+
+    const [state, dispatch]: [State, ActionDispatch<[Actions]>] = useReducer<State, [Actions]>(reducer, {
+        columns: [],
+        additionalColumns: [],
+        overWriteColumns: [],
+        headerNodes: [],
+        searchedProducts: [],
+        searching: false,
+        creating: false,
+        updatingRow: undefined,
+        updatingIsAvailable: undefined,
+        deletingRow: undefined,
+        ask: { open: false },
+        fetching: false,
+        page: { limit: 10, offset: 0 },
+        showTags: undefined,
+        showCategories: undefined,
+        showCustomFields: undefined,
+    })
+
+    useEffect(() => {
+        if (state.updatingIsAvailable !== undefined) {
+            authFetchData(`${getApiUrl()}/products`, { method: 'PATCH', body: JSON.stringify({ id: state.updatingIsAvailable.original._id, product: { isAvailable: !state.updatingIsAvailable.original.isAvailable } }) })
+                .then(async r => {
+                    if (!r.response || !r.response.ok) {
+                        feedback.push({ node: t('UpdateOrder.updateFailed'), color: { bgColor: 'error', fgColor: 'error-foreground' } });
+                        return;
+                    }
+
+                    await init(state.page.offset, state.page.limit)
+
+                    feedback.push({ node: t('UpdateOrder.updateSucceeded'), color: { bgColor: 'success', fgColor: 'success-foreground' } });
+                })
+                .finally(() => dispatch({ operation: 'updatedIsAvailable' }))
+        }
+    }, [state.updatingIsAvailable])
+
+    useEffect(() => {
+        if (state.fetching === true)
+            fetch(state.page.offset, state.page.limit)
+                .finally(() => dispatch({ operation: 'fetched' }))
+    }, [state.fetching])
 
     useEffect(() => {
         if (onChange)
@@ -429,6 +310,149 @@ export function ProductsDataGrid({
         }
     }, [])
 
+    const defaultOverWriteColumns = []
+    const defaultAdditionalColumns = []
+
+    const defaultColumns: ColumnDef<Product>[] = [
+        {
+            id: '_id',
+            accessorKey: '_id',
+        },
+        {
+            id: 'actions',
+            accessorKey: 'actions',
+            cell: ({ row }) =>
+                <Stack stackProps={{ className: "justify-center w-full" }}>
+                    {
+                        functionality.update === true &&
+                        <Button
+                            isIcon
+                            variant='text'
+                            onClick={() => dispatch({ operation: 'updateStarted', data: row })}
+                        >
+                            {state.updatingRow === undefined || state.updatingRow.original._id !== row.original._id ? <EditIcon /> : <CircularLoadingIcon />}
+                        </Button>
+                    }
+                    {
+                        functionality.delete === true &&
+                        <Button
+                            isIcon
+                            variant='text'
+                            fgColor='error'
+                            onClick={() => dispatch({ operation: 'deleteStarted', data: row })}
+                        >
+                            {state.deletingRow === undefined || state.deletingRow.original._id !== row.original._id ? <Trash2Icon /> : <CircularLoadingIcon />}
+                        </Button>
+                    }
+                </Stack>
+        },
+        {
+            id: 'name',
+            accessorKey: 'name',
+        },
+        {
+            id: 'displayName',
+            accessorKey: 'displayName',
+            cell: ({ getValue }) => getValue()[configuration.local.language],
+        },
+        {
+            id: 'description',
+            accessorKey: 'description',
+            cell: ({ getValue }) => getValue()[configuration.local.language],
+        },
+        {
+            id: 'isAvailable',
+            accessorKey: 'isAvailable',
+            cell: ({ row, cell, getValue }) =>
+                <div className="w-full flex flex-row justify-center">
+                    {functionality.update === true
+                        ? (
+                            state.updatingIsAvailable !== undefined && state.updatingIsAvailable.id === row.id
+                                ? <CircularLoading />
+                                : <CheckBox
+                                    containerProps={{ className: 'w-fit' }}
+                                    colorForeground='success'
+                                    inputId={cell.id}
+                                    inputProps={{
+                                        checked: row.original.isAvailable,
+                                        readOnly: functionality.update !== true ? undefined : true,
+                                        onChange: functionality.update !== true ? undefined : () => dispatch({ operation: 'updateIsAvailable', data: row })
+                                    }}
+                                />
+                        )
+                        : <div className="w-full flex flex-row justify-center">{Boolean(getValue()) ? <CheckBox containerProps={{ className: 'w-fit' }} colorForeground='success' inputProps={{ checked: true, readOnly: true }} /> : <CheckBox containerProps={{ className: 'w-fit' }} colorForeground='error' inputProps={{ checked: false, readOnly: true }} />}</div>}
+                </div>
+        },
+        {
+            id: 'customFields',
+            accessorKey: 'customFields',
+            cell: ({ row }) => <div className="w-full flex flex-row justify-center"><Button isIcon variant="text" onClick={() => dispatch({ operation: 'showCustomFields', data: row })}><EyeIcon /></Button></div>,
+        },
+        {
+            id: 'tags',
+            accessorKey: 'tags',
+            cell: ({ row, getValue }) =>
+                <Stack stackProps={{ className: 'w-full justify-center' }}>
+                    <div className="w-[5cm] text-center cursor-pointer rounded-lg hover:border text-nowrap text-ellipsis overflow-hidden" onClick={() => dispatch({ operation: 'showTags', data: row })}>
+                        {(getValue() as string[]).join(', ')}
+                    </div>
+                </Stack>
+        },
+        {
+            id: 'categories',
+            accessorKey: 'categories',
+            cell: ({ row, getValue }) =>
+                <Stack stackProps={{ className: 'w-full justify-center' }}>
+                    <div className="w-[5cm] text-center cursor-pointer rounded-lg hover:border text-nowrap text-ellipsis overflow-hidden" onClick={() => dispatch({ operation: 'showCategories', data: row })}>
+                        {(getValue() as string[]).join(', ')}
+                    </div>
+                </Stack>
+        },
+        {
+            id: 'views',
+            accessorKey: 'views',
+            cell: ({ getValue }) => formatNumber(configuration, getValue() as number),
+        },
+        {
+            id: 'purchaseCount',
+            accessorKey: 'purchaseCount',
+            cell: ({ getValue }) => formatNumber(configuration, getValue() as number),
+        },
+        {
+            id: 'reviewsCount',
+            accessorKey: 'reviewsCount',
+            cell: ({ getValue }) => formatNumber(configuration, getValue() as number),
+        },
+        {
+            id: 'averageRating',
+            accessorKey: 'averageRating',
+            cell: ({ getValue }) => formatNumber(configuration, getValue() as number, { maximumFractionDigits: 2 }),
+        },
+        {
+            id: 'price',
+            accessorKey: 'price',
+            maxSize: 200,
+            cell: ({ getValue }) => formatCurrency(configuration, getValue()['IRR'] as number),
+        },
+        {
+            id: 'createdAt',
+            accessorKey: 'createdAt',
+            cell: ({ getValue }) => typeof getValue() === 'number' ? toFormat(getValue() as number, configuration.local, undefined, DATE) : '-',
+        },
+        {
+            id: 'updatedAt',
+            accessorKey: 'updatedAt',
+            cell: ({ getValue }) => typeof getValue() === 'number' ? toFormat(getValue() as number, configuration.local, undefined, DATE) : '-',
+        },
+    ]
+
+    const defaultHeaderNodes = [
+        <Button variant='outline' onClick={() => dispatch({ operation: 'fetch' })}>{state.fetching === true ? <CircularLoadingIcon /> : <RefreshCwIcon />}{t('Products.Refresh')}</Button>,
+        functionality.filter === true && <Button buttonRef={filterButtonRef} variant='outline' onClick={() => setOpenFilter(true)}><FilterIcon />{t('Products.Filters')}</Button>,
+        functionality.sort === true && <Button buttonRef={sortButtonRef} variant='outline' onClick={() => setOpenSort(true)}><ListFilterIcon />{t('Products.Sorts')}</Button>,
+        functionality.create === true && <Button fgColor='success' variant='outline' onClick={() => dispatch({ operation: 'createStarted' })}><PlusIcon />{t('Products.Create')}</Button>,
+    ]
+
     console.log('ProductsDataGrid', { loading, products, state, afterDataFetchHook, allFunctionalitiesToggle, functionality, options, columns, headerNodes, onChange, dataGridProps })
 
     return (
@@ -437,18 +461,17 @@ export function ProductsDataGrid({
                 {...dataGridProps}
                 data={products}
                 loading={initialLoading}
-                defaultColumnOrderModel={['isAvailable', 'isAvailable2', 'isAvailable3']}
-                columns={state.columns}
-                additionalColumns={state.additionalColumns}
-                overWriteColumns={state.overWriteColumns}
+                columns={options?.appendDefaults === true || options?.appendDefaultColumns === true ? (columns?.columns ?? []).concat(defaultColumns) : columns?.columns}
+                additionalColumns={options?.appendDefaults === true || options?.appendDefaultAdditionalColumns === true ? (columns?.additionalColumns ?? []).concat(defaultAdditionalColumns) : columns?.additionalColumns}
+                overWriteColumns={options?.appendDefaults === true || options?.appendDefaultOverWriteColumns === true ? (columns?.overWriteColumns ?? []).concat(defaultOverWriteColumns) : columns?.overWriteColumns}
                 pagination={functionality.pagination !== true ? undefined : { pageSize: state.page.limit, pageIndex: state.page.offset }}
                 onPagination={functionality.pagination !== true ? undefined : async (p) => {
-                    const result = await init(p.pageIndex, p.pageSize)
+                    const result = await fetch(p.pageIndex, p.pageSize)
                     if (result)
                         dispatch({ operation: 'setPage', data: { limit: p.pageSize, offset: p.pageIndex } })
                     return result
                 }}
-                appendHeaderNodes={state.headerNodes}
+                appendHeaderNodes={options?.appendDefaults === true || options?.appendDefaultHeaderNodes === true ? (headerNodes ?? []).concat(defaultHeaderNodes) : headerNodes}
             />
 
             <Ask {...state.ask} />
@@ -460,6 +483,7 @@ export function ProductsDataGrid({
                 <ManageProduct
                     product={state.creating ? undefined : state?.updatingRow?.original as any}
                     onFinish={async () => {
+
                         dispatch({ operation: state.creating ? 'createEnded' : 'updateEnded' })
                         await init(state.page.offset, state.page.limit)
                     }}
