@@ -1,11 +1,11 @@
-import { ActionDispatch, ComponentProps, ReactNode, useContext, useEffect, useMemo, useReducer, useRef, useState } from "react";
+import { ActionDispatch, ComponentProps, ReactNode, useContext, useEffect, useReducer, useRef, useState } from "react";
 import { Product } from ".";
 import { authFetchData, fetchData, formatCurrency, formatFilters, formatNumber, getApiUrl, getAuthApiUrl } from "@/src/Backend/helpers";
 import { array } from "yup";
 import { t } from "i18next";
 import { FeedbackContext } from "@/src/Contexts/Feedback/FeedbackContext";
 import { DataGrid } from "../DataGrid";
-import { ColumnDef, createColumnHelper, Row } from "@tanstack/react-table";
+import { ColumnDef, Row } from "@tanstack/react-table";
 import { Stack } from "../Base/Stack";
 import { Button } from "../Base/Button";
 import { ConfigurationContext } from "@/src/Contexts/Configuration/ConfigurationContext";
