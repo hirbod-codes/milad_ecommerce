@@ -117,6 +117,7 @@ export function RolesDataGrid({
         deletingRow: Row<any> | undefined,
         ask: ComponentProps<typeof Ask>,
         page: { limit: number, offset: number },
+        showPrivileges: Row<any> | undefined,
     }, { operation: string, data: any }, any>(
         (state, { operation, data }) => {
             switch (operation) {
@@ -150,7 +151,32 @@ export function RolesDataGrid({
                     return {
                         ...state,
                         deletingRow: data,
-                        ask: { open: true, title: t('Roles.deletionTitle'), content: t('Roles.deletionContent'), successAction: () => dispatch({ operation: 'delete', data }), failureAction: () => dispatch({ operation: 'deleteEnded' }) }
+                        ask: { open: true,
+                            title: t('Roles.deletionTitle'),
+                            content: t('Roles.deletionContent'),
+                            successAction: () => 
+                                authFetchData(`${getAuthApiUrl()}/roles`, { method: 'delete', body: JSON.stringify({ id: data.original._id }), headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' } })
+                                    .then(async r => {
+                                        if (!r.response?.ok) {
+                                            feedback.push({ node: t('Roles.DeletionFailure'), color: { bgColor: 'error', fgColor: 'error-foreground' } })
+                                            return
+                                        }
+            
+                                        await init()
+            
+                                        if (Auth.getRole() === data.original.name) {
+                                            const r = await Auth.logout()
+            
+                                            if (!r)
+                                                feedback.push({ node: t('common.logoutFailed'), color: { bgColor: 'error', fgColor: 'error-foreground' } })
+                                            else
+                                                navigate('/')
+                                        }
+            
+                                        dispatch({ operation: 'deleteEnded' })
+                                    }),
+                            failureAction: () => dispatch({ operation: 'deleteEnded' }) 
+                        }
                     }
 
                 case 'delete':
@@ -188,6 +214,12 @@ export function RolesDataGrid({
                         ...state,
                         page: data
                     }
+
+                case 'showPrivilegesStart':
+                    return { ...state, showPrivileges: data }
+
+                case 'showPrivilegesEnd':
+                    return { ...state, showPrivileges: undefined }
 
                 default:
                     throw new Error('Invalid operation requested in RolesDataGrid component reducer!')
@@ -268,6 +300,7 @@ export function RolesDataGrid({
                 creating: false,
                 updatingRow: undefined,
                 deletingRow: undefined,
+                showPrivileges: undefined,
                 ask: { open: false },
                 page: { limit: 10, offset: 0 },
             }
@@ -318,6 +351,19 @@ export function RolesDataGrid({
                         await init()
                     }}
                 />
+            </Modal>
+
+            <Modal
+                open={state.showPrivileges !== undefined}
+                onClose={() => dispatch({ operation: 'showPrivilegesEnd' })}
+            >
+                {state?.showPrivileges &&
+                    state.showPrivileges.original.privileges.map((m, i) =>
+                        <div key={i} className="text-center">
+                            {m.displayName[configuration.local.language]}
+                        </div>
+                    )
+                }
             </Modal>
         </>
     )
