@@ -19,6 +19,8 @@ import { Filters } from "../SearchFilter/index.d";
 import { CheckBox } from "../Base/CheckBox";
 import { Input } from "../Base/Input";
 import { CircularLoading } from "../Base/CircularLoading";
+import { ProductsDataGrid } from "../Products/ProductsDataGrid";
+import { Product } from "../Products";
 
 export type DataGridProps = {
     orders?: Order[]
@@ -132,27 +134,31 @@ export function OrdersDataGrid({
     }
 
     type State = {
-        columns?: ColumnDef<any>[],
-        additionalColumns?: ColumnDef<any>[],
-        overWriteColumns?: ColumnDef<any>[],
-        headerNodes: ReactNode[],
-        searchedOrders: Order[],
-        searching: boolean,
-        creating: boolean,
-        updatingRow: Row<any> | undefined,
-        updatingIsAvailable: Row<any> | undefined,
-        deletingRow: Row<any> | undefined,
-        ask: ComponentProps<typeof Ask>,
-        page: { limit: number, offset: number },
-        fetching: boolean,
-        showTags: Row<any> | undefined,
-        showCategories: Row<any> | undefined,
-        showProducts: Row<any> | undefined,
+        columns?: ColumnDef<any>[]
+        additionalColumns?: ColumnDef<any>[]
+        overWriteColumns?: ColumnDef<any>[]
+        headerNodes: ReactNode[]
+        searchedOrders: Order[]
+        searching: boolean
+        creating: boolean
+        updatingRow: Row<Order> | undefined
+        updatingIsSent: Row<Order> | undefined
+        updatingIsPayed: Row<Order> | undefined
+        deletingRow: Row<Order> | undefined
+        ask: ComponentProps<typeof Ask>
+        page: { limit: number, offset: number }
+        fetching: boolean
+        showTags: Row<Order> | undefined
+        showCategories: Row<Order> | undefined
+        showProducts: Row<Order> | undefined
+        showProductsFetching: boolean
+        fetchedProducts: Product[] | undefined
     }
 
     type Actions =
-        { operation: 'fetch' | 'fetched' | 'createStarted' | 'createEnded' | 'updateEnded' | 'deleteEnded' | 'updatedIsAvailable' } |
-        { operation: 'updateStarted' | 'updateIsAvailable' | 'deleteStarted' | 'showCategories' | 'showTags' | 'showProducts', data: Row<any> } |
+        { operation: 'showProductsFetchEnd', data: Product[] | undefined } |
+        { operation: 'fetch' | 'fetched' | 'createStarted' | 'createEnded' | 'updateEnded' | 'deleteEnded' | 'updatedIsSent' | 'updatedIsPayed' | 'showProductsEnd' } |
+        { operation: 'updateStarted' | 'updateIsSent' | 'updateIsPayed' | 'deleteStarted' | 'showCategories' | 'showTags' | 'showProducts', data: Row<any> } |
         { operation: 'setPage', data: { offset: number, limit: number } }
 
     const reducer = (state, arg) => {
@@ -189,11 +195,17 @@ export function OrdersDataGrid({
                     updatingRow: undefined
                 }
 
-            case 'updateIsAvailable':
-                return { ...state, updatingIsAvailable: arg.data, headerNodes: [...state.headerNodes] }
+            case 'updateIsSent':
+                return { ...state, updatingIsSent: arg.data }
 
-            case 'updatedIsAvailable':
-                return { ...state, updatingIsAvailable: undefined, headerNodes: [...state.headerNodes] }
+            case 'updatedIsSent':
+                return { ...state, updatingIsSent: undefined }
+
+            case 'updateIsPayed':
+                return { ...state, updatingIsPayed: arg.data }
+
+            case 'updatedIsPayed':
+                return { ...state, updatingIsPayed: undefined }
 
             case 'deleteStarted':
                 return {
@@ -227,28 +239,22 @@ export function OrdersDataGrid({
                 }
 
             case 'setPage':
-                return {
-                    ...state,
-                    page: arg.data
-                }
+                return { ...state, page: arg.data }
 
             case 'showCategories':
-                return {
-                    ...state,
-                    showCategories: arg.data
-                }
+                return { ...state, showCategories: arg.data }
 
             case 'showTags':
-                return {
-                    ...state,
-                    showTags: arg.data
-                }
+                return { ...state, showTags: arg.data }
 
             case 'showProducts':
-                return {
-                    ...state,
-                    showProducts: arg.data
-                }
+                return { ...state, showProducts: arg.data, showProductsFetching: true, }
+
+            case 'showProductsFetchEnd':
+                return { ...state, fetchedProducts: arg.data, showProductsFetching: false, }
+
+            case 'showProductsEnd':
+                return { ...state, showProducts: undefined }
 
             default:
                 throw new Error(`Invalid operation requested in OrdersDataGrid component reducer!${typeof (arg as any).operation === 'string' ? ': ' + (arg as any).operation : ''}`)
@@ -264,7 +270,8 @@ export function OrdersDataGrid({
         searching: false,
         creating: false,
         updatingRow: undefined,
-        updatingIsAvailable: undefined,
+        updatingIsSent: undefined,
+        updatingIsPayed: undefined,
         deletingRow: undefined,
         ask: { open: false },
         fetching: false,
@@ -272,11 +279,29 @@ export function OrdersDataGrid({
         showTags: undefined,
         showCategories: undefined,
         showProducts: undefined,
+        showProductsFetching: false,
+        fetchedProducts: undefined,
     })
 
     useEffect(() => {
-        if (state.updatingIsAvailable !== undefined) {
-            authFetchData(`${getApiUrl()}/orders`, { method: 'PATCH', body: JSON.stringify({ id: state.updatingIsAvailable.original._id, order: { isAvailable: !state.updatingIsAvailable.original.isAvailable } }) })
+        if (state.showProductsFetching === true && state.showProducts !== undefined) {
+            fetchData(`${getApiUrl()}/products/${state.showProducts.original.products.map(m => m.productId).join(',')}`)
+                .then(r => {
+                    if (!r.response || !r.response.ok) {
+                        if (r.response && r.response.status === 404)
+                            feedback.push({ node: t('OrdersDataGrid.ProductsNotFound'), color: { bgColor: 'error', fgColor: 'error-foreground' } })
+                        else
+                            feedback.push({ node: t('OrdersDataGrid.ProductsFetchFailed'), color: { bgColor: 'error', fgColor: 'error-foreground' } })
+                        dispatch({ operation: 'showProductsFetchEnd', data: undefined })
+                    } else
+                        dispatch({ operation: 'showProductsFetchEnd', data: r.data })
+                })
+        }
+    }, [state.showProductsFetching])
+
+    useEffect(() => {
+        if (state.updatingIsSent !== undefined) {
+            authFetchData(`${getApiUrl()}/orders`, { method: 'PATCH', body: JSON.stringify({ orderId: state.updatingIsSent.original._id, order: { isSent: !state.updatingIsSent.original.isSent } }) })
                 .then(async r => {
                     if (!r.response || !r.response.ok) {
                         feedback.push({ node: t('UpdateOrder.updateFailed'), color: { bgColor: 'error', fgColor: 'error-foreground' } });
@@ -287,9 +312,26 @@ export function OrdersDataGrid({
 
                     feedback.push({ node: t('UpdateOrder.updateSucceeded'), color: { bgColor: 'success', fgColor: 'success-foreground' } });
                 })
-                .finally(() => dispatch({ operation: 'updatedIsAvailable' }))
+                .finally(() => dispatch({ operation: 'updatedIsSent' }))
         }
-    }, [state.updatingIsAvailable])
+    }, [state.updatingIsSent])
+
+    useEffect(() => {
+        if (state.updatingIsPayed !== undefined) {
+            authFetchData(`${getApiUrl()}/orders`, { method: 'PATCH', body: JSON.stringify({ orderId: state.updatingIsPayed.original._id, order: { isPayed: !state.updatingIsPayed.original.isPayed } }) })
+                .then(async r => {
+                    if (!r.response || !r.response.ok) {
+                        feedback.push({ node: t('UpdateOrder.updateFailed'), color: { bgColor: 'error', fgColor: 'error-foreground' } });
+                        return;
+                    }
+
+                    await init(state.page.offset, state.page.limit)
+
+                    feedback.push({ node: t('UpdateOrder.updateSucceeded'), color: { bgColor: 'success', fgColor: 'success-foreground' } });
+                })
+                .finally(() => dispatch({ operation: 'updatedIsPayed' }))
+        }
+    }, [state.updatingIsPayed])
 
     useEffect(() => {
         if (state.fetching === true)
@@ -307,7 +349,8 @@ export function OrdersDataGrid({
             setInitialLoading(true)
             init(state.page.offset, state.page.limit)
                 .finally(() => setInitialLoading(false))
-        }
+        } else
+            setInitialLoading(false)
     }, [])
 
     const defaultOverWriteColumns = []
@@ -324,7 +367,6 @@ export function OrdersDataGrid({
         },
         {
             id: 'actions',
-            accessorKey: 'actions',
             cell: ({ row }) =>
                 <Stack stackProps={{ className: "justify-center w-full" }}>
                     {
@@ -354,6 +396,52 @@ export function OrdersDataGrid({
             id: 'cost',
             accessorKey: 'cost',
             cell: ({ getValue }) => formatCurrency(configuration, getValue()['IRR'] as number),
+        },
+        {
+            id: 'isSent',
+            accessorKey: 'isSent',
+            cell: ({ row, cell, getValue }) =>
+                <div className="w-full flex flex-row justify-center">
+                    {functionality.update === true
+                        ? (
+                            state.updatingIsSent !== undefined && state.updatingIsSent.id === row.id
+                                ? <CircularLoading />
+                                : <CheckBox
+                                    containerProps={{ className: 'w-fit' }}
+                                    colorForeground='success'
+                                    inputId={cell.id}
+                                    inputProps={{
+                                        checked: row.original.isSent,
+                                        readOnly: functionality.update !== true ? undefined : true,
+                                        onChange: functionality.update !== true ? undefined : () => dispatch({ operation: 'updateIsSent', data: row })
+                                    }}
+                                />
+                        )
+                        : <div className="w-full flex flex-row justify-center">{Boolean(getValue()) ? <CheckBox containerProps={{ className: 'w-fit' }} colorForeground='success' inputProps={{ checked: true, readOnly: true }} /> : <CheckBox containerProps={{ className: 'w-fit' }} colorForeground='error' inputProps={{ checked: false, readOnly: true }} />}</div>}
+                </div>
+        },
+        {
+            id: 'isPayed',
+            accessorKey: 'isPayed',
+            cell: ({ row, cell, getValue }) =>
+                <div className="w-full flex flex-row justify-center">
+                    {functionality.update === true
+                        ? (
+                            state.updatingIsPayed !== undefined && state.updatingIsPayed.id === row.id
+                                ? <CircularLoading />
+                                : <CheckBox
+                                    containerProps={{ className: 'w-fit' }}
+                                    colorForeground='success'
+                                    inputId={cell.id}
+                                    inputProps={{
+                                        checked: row.original.isPayed,
+                                        readOnly: functionality.update !== true ? undefined : true,
+                                        onChange: functionality.update !== true ? undefined : () => dispatch({ operation: 'updateIsPayed', data: row })
+                                    }}
+                                />
+                        )
+                        : <div className="w-full flex flex-row justify-center">{Boolean(getValue()) ? <CheckBox containerProps={{ className: 'w-fit' }} colorForeground='success' inputProps={{ checked: true, readOnly: true }} /> : <CheckBox containerProps={{ className: 'w-fit' }} colorForeground='error' inputProps={{ checked: false, readOnly: true }} />}</div>}
+                </div>
         },
         {
             id: 'address',
@@ -429,15 +517,19 @@ export function OrdersDataGrid({
             <Modal
                 modalContainerProps={{ className: 'overflow-y-auto' }}
                 open={state?.showProducts !== undefined}
-                onClose={() => dispatch({ operation: 'showProducts', data: undefined })}
+                onClose={() => dispatch({ operation: 'showProductsEnd' })}
             >
                 <Stack direction="vertical" stackProps={{ className: 'w-full items-center justify-between' }}>
-                    {state?.showProducts && Object.entries(orders.find(f => f._id === state?.showProducts?.original?._id) ?? {}).filter(f => ['schemaVersion', '_id', 'tags', 'categories', 'name', 'displayName', 'description', 'price', 'isAvailable', 'thumbnail', 'purchaseCount', 'reviewsCount', 'views', 'averageRating', 'createdAt', 'updatedAt',].includes(f[0]) === false).map(m =>
-                        <Stack key={m[0]}>
-                            <Input containerProps={{ className: "flex-grow" }} readOnly value={m[0]} />
-                            <Input containerProps={{ className: "flex-grow" }} placeholder={t('OrdersDataGrid.Value')} readOnly value={m[1] as any} />
-                        </Stack>
-                    )}
+                    {state.showProductsFetching !== false
+                        ? <CircularLoading />
+                        : (state.fetchedProducts === undefined || state.fetchedProducts.length === 0
+                            ? t('OrderDataGrid.ProductsFetchError')
+                            : <ProductsDataGrid
+                                products={state.fetchedProducts}
+                                functionality={{}}
+                            />
+                        )
+                    }
                 </Stack>
             </Modal>
         </>

@@ -17,4 +17,4 @@ export type Feedback = {
     timeout?: number
 }
 
-export const FeedbackContext = createContext<{ push: (feedback: Feedback) => void } | undefined>(undefined)
+export const FeedbackContext = createContext<{ push: (feedback: Feedback) => void, pushError: (feedback: Feedback) => void, pushSuccess: (feedback: Feedback) => void, pushWarning: (feedback: Feedback) => void } | undefined>(undefined)

@@ -40,7 +40,12 @@ export function FeedbackWrapper({ children }: { children?: ReactNode }) {
     }, [stack])
 
     return (
-        <FeedbackContext.Provider value={{ push: (feedback) => { if (feedback.createdAt === undefined) feedback.createdAt = DateTime.utc().toUnixInteger(); setStack([...stack, feedback]) } }}>
+        <FeedbackContext.Provider value={{
+            push: (feedback) => { if (feedback.createdAt === undefined) feedback.createdAt = DateTime.utc().toUnixInteger(); setStack([...stack, feedback]) },
+            pushError: (feedback) => { feedback.color = { bgColor: 'error', fgColor: 'error-foreground' }; if (feedback.createdAt === undefined) feedback.createdAt = DateTime.utc().toUnixInteger(); setStack([...stack, feedback]) },
+            pushSuccess: (feedback) => { feedback.color = { bgColor: 'success', fgColor: 'success-foreground' }; if (feedback.createdAt === undefined) feedback.createdAt = DateTime.utc().toUnixInteger(); setStack([...stack, feedback]) },
+            pushWarning: (feedback) => { feedback.color = { bgColor: 'warning', fgColor: 'warning-foreground' }; if (feedback.createdAt === undefined) feedback.createdAt = DateTime.utc().toUnixInteger(); setStack([...stack, feedback]) },
+        }}>
             {hasInit === true && children}
             {createPortal(
                 <>

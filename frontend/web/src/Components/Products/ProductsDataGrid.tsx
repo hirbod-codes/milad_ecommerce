@@ -309,7 +309,8 @@ export function ProductsDataGrid({
             setInitialLoading(true)
             init(state.page.offset, state.page.limit)
                 .finally(() => setInitialLoading(false))
-        }
+        } else
+            setInitialLoading(false)
     }, [])
 
     const defaultOverWriteColumns = []

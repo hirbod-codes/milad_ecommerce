@@ -360,7 +360,7 @@ export function RolesDataGrid({
             >
                 {state?.showPrivileges &&
                     state.showPrivileges.original.privileges.map((m, i) =>
-                        <div key={i} className="text-center">
+                        <div key={i}>
                             {m.name}
                         </div>
                     )
