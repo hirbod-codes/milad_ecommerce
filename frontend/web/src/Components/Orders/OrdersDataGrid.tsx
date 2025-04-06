@@ -527,13 +527,14 @@ export function OrdersDataGrid({
                             : <ProductsDataGrid
                                 dataGridProps={{
                                     containerProps: { stackProps: { className: 'w-full' } },
+                                    defaultColumnOrderModel: ['quantity']
                                 }}
                                 products={state.fetchedProducts}
                                 functionality={{}}
                                 columns={{
                                     additionalColumns: [
                                         {
-                                            id: 'qnt',
+                                            id: 'quantity',
                                             header(props) {
                                                 return t('Columns.quantity')
                                             },
@@ -542,7 +543,7 @@ export function OrdersDataGrid({
                                                     <Input
                                                         containerProps={{ className: 'w-fit' }}
                                                         type="number"
-                                                        readOnly
+                                                        disabled={true}
                                                         value={state.showProducts?.original?.products?.find(f => f.productId === row.original._id)?.quantity}
                                                     />
                                                 </div>

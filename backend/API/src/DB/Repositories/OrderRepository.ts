@@ -44,7 +44,7 @@ export class OrderRepository extends MongoDB {
                 try {
                     const ts = faker.number.int({ min: startTimeTS, max: endTimeTS })
 
-                    const selectedProducts = faker.helpers.arrayElements(products, faker.number.int({ min: 3 })).map(m => ({ productId: m._id, quantity: faker.number.int({ min: 1, max: 20 }) }))
+                    const selectedProducts = faker.helpers.arrayElements(products, faker.number.int({ min: 3, max: 20 })).map(m => ({ productId: m._id, quantity: faker.number.int({ min: 1, max: 400 }) }))
                     const cost = { IRR: selectedProducts.reduce((p, c) => p + products.find(f => f._id === c.productId)!.price.IRR * c.quantity, 0), USD: selectedProducts.reduce((p, c) => p + products.find(f => f._id === c.productId)!.price.USD * c.quantity, 0) }
 
                     let r = await collection.insertOne({
