@@ -37,28 +37,27 @@ export class FilterManagement {
                         if (this.validate(kv[1], schema, validFields, level++) !== true)
                             return false
                     } else {
+                        let filterEntries = kv
                         if (this.fields.length >= 6)
                             return false
 
-                        if (!this.fields.includes(kv[0]))
-                            this.fields.push(kv[0])
+                        if (!this.fields.includes(filterEntries[0]))
+                            this.fields.push(filterEntries[0])
 
                         if (this.filterCount >= 10)
                             return false
 
                         this.filterCount++
 
-                        if (validFields && !validFields.includes(kv[0]))
+                        if (validFields && !validFields.includes(filterEntries[0]))
                             return false
 
-                        if (!object().required().strict(true).isValidSync(kv[1])) {
-                            if (schema && !schema.pick([kv[0]]).isValidSync({ [kv[0]]: kv[1] }))
-                                return false
-                        } else {
-                            let kvEntries = Object.entries(kv[1])
+                        if (object().required().strict(true).isValidSync(filterEntries[1])) {
+                            let kvEntries = Object.entries(filterEntries[1])
                             if (kvEntries.length !== 1 || !FilterManagement.MONGODB_OPERATORS.includes(kvEntries[0][0]))
                                 return false
-                        }
+                        } else if (schema && !schema.pick([filterEntries[0]]).isValidSync({ [filterEntries[0]]: filterEntries[1] }))
+                            return false
                     }
             } else
                 return false

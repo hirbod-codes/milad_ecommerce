@@ -1,4 +1,4 @@
-import { ActionDispatch, ComponentProps, ReactNode, useContext, useEffect, useReducer, useRef, useState } from "react";
+import { ActionDispatch, ComponentProps, Fragment, ReactNode, useContext, useEffect, useReducer, useRef, useState } from "react";
 import { Product } from ".";
 import { authFetchData, fetchData, formatCurrency, formatFilters, formatNumber, getApiUrl, getAuthApiUrl } from "@/src/Backend/helpers";
 import { array } from "yup";
@@ -10,7 +10,7 @@ import { Stack } from "../Base/Stack";
 import { Button } from "../Base/Button";
 import { ConfigurationContext } from "@/src/Contexts/Configuration/ConfigurationContext";
 import { DATE, toFormat } from "@/src/Lib/DateTime/date-time-helpers";
-import { EditIcon, EyeIcon, FilterIcon, ListFilterIcon, PlusIcon, RefreshCwIcon, Trash2Icon } from "lucide-react";
+import { EditIcon, EyeIcon, FilterIcon, ListFilterIcon, PlusIcon, RefreshCwIcon, SearchIcon, Trash2Icon } from "lucide-react";
 import { CircularLoadingIcon } from "../Base/CircularLoadingIcon";
 import { Ask } from "../Ask";
 import { Modal } from "../Base/Modal";
@@ -134,30 +134,33 @@ export function ProductsDataGrid({
     }
 
     type State = {
-        columns?: ColumnDef<any>[],
-        additionalColumns?: ColumnDef<any>[],
-        overWriteColumns?: ColumnDef<any>[],
-        headerNodes: ReactNode[],
-        searchedProducts: Product[],
-        searching: boolean,
-        creating: boolean,
-        updatingRow: Row<any> | undefined,
-        updatingIsAvailable: Row<any> | undefined,
-        deletingRow: Row<any> | undefined,
-        ask: ComponentProps<typeof Ask>,
-        page: { limit: number, offset: number },
-        fetching: boolean,
-        showTags: Row<any> | undefined,
-        showCategories: Row<any> | undefined,
-        showCustomFields: Row<any> | undefined,
+        columns?: ColumnDef<any>[]
+        additionalColumns?: ColumnDef<any>[]
+        overWriteColumns?: ColumnDef<any>[]
+        headerNodes: ReactNode[]
+        searchedProducts: Product[]
+        searching: boolean
+        creating: boolean
+        updatingRow: Row<any> | undefined
+        updatingIsAvailable: Row<any> | undefined
+        deletingRow: Row<any> | undefined
+        ask: ComponentProps<typeof Ask>
+        page: { limit: number, offset: number }
+        fetching: boolean
+        showTags: Row<any> | undefined
+        showCategories: Row<any> | undefined
+        showCustomFields: Row<any> | undefined
+        searchByName: string
     }
 
     type Actions =
+        { operation: 'searchedByName', data: Product[] } |
+        { operation: 'searchByName', data: string } |
         { operation: 'fetch' | 'fetched' | 'createStarted' | 'createEnded' | 'updateEnded' | 'deleteEnded' | 'updatedIsAvailable' } |
         { operation: 'updateStarted' | 'updateIsAvailable' | 'deleteStarted' | 'showCategories' | 'showTags' | 'showCustomFields', data: Row<any> } |
         { operation: 'setPage', data: { offset: number, limit: number } }
 
-    const reducer = (state, arg) => {
+    const reducer = (state: State, arg: Actions): State => {
         switch (arg.operation) {
             case 'fetch':
                 return { ...state, fetching: true, headerNodes: [...state.headerNodes] }
@@ -252,6 +255,12 @@ export function ProductsDataGrid({
                     showCustomFields: arg.data
                 }
 
+            case 'searchByName':
+                return { ...state, searchByName: arg.data, searching: true }
+
+            case 'searchedByName':
+                return { ...state, searchedProducts: arg.data, searching: false }
+
             default:
                 throw new Error(`Invalid operation requested in ProductsDataGrid component reducer!${typeof (arg as any).operation === 'string' ? ': ' + (arg as any).operation : ''}`)
         }
@@ -264,6 +273,7 @@ export function ProductsDataGrid({
         headerNodes: [],
         searchedProducts: [],
         searching: false,
+        searchByName: '',
         creating: false,
         updatingRow: undefined,
         updatingIsAvailable: undefined,
@@ -275,6 +285,25 @@ export function ProductsDataGrid({
         showCategories: undefined,
         showCustomFields: undefined,
     })
+
+    const timer = useRef(undefined)
+
+    useEffect(() => {
+        if (timer.current !== undefined)
+            clearTimeout(timer.current)
+        if (state?.searchByName?.trim())
+            timer.current = setTimeout(async () => {
+                const r = await fetchData(`${getApiUrl()}/products/search?search=${state.searchByName}`)
+                if (!r.response || !r.response.ok) {
+                    feedback.pushError({ node: t('ProductsDataGrid.ProductSearchFailed') })
+                    dispatch({ operation: 'searchedByName', data: [] })
+                }
+                else
+                    dispatch({ operation: 'searchedByName', data: r.data })
+            }, 1500)
+        else
+            dispatch({ operation: 'searchedByName', data: [] })
+    }, [state?.searchByName])
 
     useEffect(() => {
         if (state.updatingIsAvailable !== undefined) {
@@ -456,6 +485,7 @@ export function ProductsDataGrid({
         functionality.filter === true && <Button buttonRef={filterButtonRef} variant='outline' onClick={() => setOpenFilter(true)}><FilterIcon />{t('Products.Filters')}</Button>,
         functionality.sort === true && <Button buttonRef={sortButtonRef} variant='outline' onClick={() => setOpenSort(true)}><ListFilterIcon />{t('Products.Sorts')}</Button>,
         functionality.create === true && <Button fgColor='success' variant='outline' onClick={() => dispatch({ operation: 'createStarted' })}><PlusIcon />{t('Products.Create')}</Button>,
+        functionality.search === true && <Input startIcon={state?.searching ? <CircularLoading size="xs" /> : <SearchIcon />} placeholder={t('ProductsDataGrid.SearchByName')} value={state.searchByName ?? ''} onChange={(e) => dispatch({ operation: 'searchByName', data: e.target.value.trim() })} />,
     ]
 
     console.log('ProductsDataGrid', { loading, products, state, afterDataFetchHook, allFunctionalitiesToggle, functionality, options, columns, headerNodes, onChange, dataGridProps })
@@ -464,7 +494,7 @@ export function ProductsDataGrid({
         <>
             <DataGrid
                 {...dataGridProps}
-                data={products}
+                data={state?.searchByName?.trim() ? state.searchedProducts : products}
                 loading={initialLoading}
                 columns={options?.appendDefaults === true || options?.appendDefaultColumns === true ? (columns?.columns ?? []).concat(defaultColumns) : columns?.columns}
                 additionalColumns={options?.appendDefaults === true || options?.appendDefaultAdditionalColumns === true ? (columns?.additionalColumns ?? []).concat(defaultAdditionalColumns) : columns?.additionalColumns}

@@ -257,6 +257,21 @@ export class MongoDB {
         if (indexes.find(i => i.name === 'unique-name') === undefined)
             await db.createIndex(productCollectionName, { name: 1 }, { unique: true, name: 'unique-name' })
 
+        if (indexes.find(i => i.name === 'search') === undefined)
+            await db.createIndex(
+                productCollectionName,
+                { name: 'text', 'displayName.en': 'text', 'displayName.fa': 'text', 'description.en': 'text', 'description.fa': 'text' },
+                {
+                    weights: {
+                        'name': 10,
+                        'displayName.en': 5,
+                        'displayName.fa': 5,
+                        'description.en': 1,
+                        'description.fa': 1,
+                    }, name: 'search'
+                }
+            )
+
         if (indexes.find(i => i.name === 'createdAt') === undefined)
             await db.createIndex(productCollectionName, { createdAt: 1 }, { name: 'createdAt' })
 

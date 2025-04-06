@@ -124,6 +124,16 @@ export class ProductRepository extends MongoDB {
         catch (e) { console.error(e); return false }
     }
 
+    async search(search: string): Promise<Product[] | false> {
+        try {
+            return this.collection
+                .find({ $text: { $search: search } })
+                .sort({ score: { $meta: "textScore" } })
+                .toArray()
+        }
+        catch (e) { console.error(e); return false }
+    }
+
     async sumPriceOfAvailable(selectedProducts: { productId: string, quantity: number }[], unit: string): Promise<number | false> {
         try {
             let products = await this.collection.find({ isAvailable: true, _id: { $in: selectedProducts.map(p => ObjectId.createFromHexString(p.productId)) } }).toArray()

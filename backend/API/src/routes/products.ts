@@ -67,6 +67,28 @@ products.get('/ids', async (req, res) => {
     }
 })
 
+products.get('/search', async (req, res) => {
+    try {
+        const { search } = req.query
+
+        if (!string().required().isValidSync(search)) {
+            res.status(400).json({ errors: ['invalid limit'] })
+            return
+        }
+
+        const productRepository = await ProductRepository.getInstance()
+        const products = await productRepository.search(search)
+        console.log('products', products)
+        if (products === false)
+            res.sendStatus(500)
+        else
+            res.status(200).json(products)
+    } catch (e) {
+        console.error(e)
+        res.sendStatus(500)
+    }
+})
+
 products.get('/', async (req, res) => {
     try {
         const { filter: filterJson, sort: sortJson, limit: limitStr, skip: skipStr } = req.query

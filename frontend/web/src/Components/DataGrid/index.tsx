@@ -416,8 +416,8 @@ export function DataGrid({
                         sensors={sensors}
                     >
                         {headerNodes.length > 0 &&
-                            <div className="overflow-x-auto overflow-y-hidden py-1">
-                                <Stack  {...headerNodesContainerProps} stackProps={{ ...headerNodesContainerProps?.stackProps, id: headerNodesContainerProps?.stackProps?.id ?? 'headerNodesContainer', className: cn('bg-surface-container p-2 rounded-md w-max', headerNodesContainerProps?.stackProps?.className) }}>
+                            <div className="overflow-x-auto overflow-y-hidden py-1 w-full">
+                                <Stack  {...headerNodesContainerProps} stackProps={{ ...headerNodesContainerProps?.stackProps, id: headerNodesContainerProps?.stackProps?.id ?? 'headerNodesContainer', className: cn('bg-surface-container p-2 rounded-md min-w-full w-max', headerNodesContainerProps?.stackProps?.className) }}>
                                     {...headerNodes.map((n, i) =>
                                         <Fragment key={i}>
                                             {n}
