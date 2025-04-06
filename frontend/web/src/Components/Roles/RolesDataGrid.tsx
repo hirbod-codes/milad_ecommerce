@@ -16,8 +16,6 @@ import { Ask } from "../Ask";
 import { Auth } from "@/src/Backend/Auth/Auth";
 import { useNavigate } from "react-router";
 import { Modal } from "../Base/Modal";
-import { CreateRole } from "@/src/Pages/Dashboard/Roles/CreateRole";
-import { UpdateRole } from "@/src/Pages/Dashboard/Roles/UpdateRole";
 import { ManageRole } from "./ManageRole";
 
 export type DataGridProps = {
@@ -43,8 +41,8 @@ export type DataGridProps = {
         appendDefaultHeaderNodes?: boolean
     }
     columns?: {
-        additionalColumns: ColumnDef<any>[]
-        overWriteColumns: ColumnDef<any>[]
+        additionalColumns?: ColumnDef<any>[]
+        overWriteColumns?: ColumnDef<any>[]
     }
     headerNodes?: ReactNode[]
     onChange?: (roles: Role[]) => void

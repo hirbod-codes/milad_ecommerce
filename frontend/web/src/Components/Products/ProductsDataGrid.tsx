@@ -45,9 +45,9 @@ export type DataGridProps = {
         appendDefaultHeaderNodes?: boolean
     }
     columns?: {
-        columns: ColumnDef<any>[]
-        additionalColumns: ColumnDef<any>[]
-        overWriteColumns: ColumnDef<any>[]
+        columns?: ColumnDef<any>[]
+        additionalColumns?: ColumnDef<any>[]
+        overWriteColumns?: ColumnDef<any>[]
     }
     headerNodes?: ReactNode[]
     onChange?: (products: Product[]) => void
@@ -322,34 +322,6 @@ export function ProductsDataGrid({
             accessorKey: '_id',
         },
         {
-            id: 'actions',
-            accessorKey: 'actions',
-            cell: ({ row }) =>
-                <Stack stackProps={{ className: "justify-center w-full" }}>
-                    {
-                        functionality.update === true &&
-                        <Button
-                            isIcon
-                            variant='text'
-                            onClick={() => dispatch({ operation: 'updateStarted', data: row })}
-                        >
-                            {state.updatingRow === undefined || state.updatingRow.original._id !== row.original._id ? <EditIcon /> : <CircularLoadingIcon />}
-                        </Button>
-                    }
-                    {
-                        functionality.delete === true &&
-                        <Button
-                            isIcon
-                            variant='text'
-                            fgColor='error'
-                            onClick={() => dispatch({ operation: 'deleteStarted', data: row })}
-                        >
-                            {state.deletingRow === undefined || state.deletingRow.original._id !== row.original._id ? <Trash2Icon /> : <CircularLoadingIcon />}
-                        </Button>
-                    }
-                </Stack>
-        },
-        {
             id: 'name',
             accessorKey: 'name',
         },
@@ -448,6 +420,36 @@ export function ProductsDataGrid({
             cell: ({ getValue }) => typeof getValue() === 'number' ? toFormat(getValue() as number, configuration.local, undefined, DATE) : '-',
         },
     ]
+
+    if (functionality.update === true || functionality.delete === true)
+        defaultColumns.push({
+            id: 'actions',
+            accessorKey: 'actions',
+            cell: ({ row }) =>
+                <Stack stackProps={{ className: "justify-center w-full" }}>
+                    {
+                        functionality.update === true &&
+                        <Button
+                            isIcon
+                            variant='text'
+                            onClick={() => dispatch({ operation: 'updateStarted', data: row })}
+                        >
+                            {state.updatingRow === undefined || state.updatingRow.original._id !== row.original._id ? <EditIcon /> : <CircularLoadingIcon />}
+                        </Button>
+                    }
+                    {
+                        functionality.delete === true &&
+                        <Button
+                            isIcon
+                            variant='text'
+                            fgColor='error'
+                            onClick={() => dispatch({ operation: 'deleteStarted', data: row })}
+                        >
+                            {state.deletingRow === undefined || state.deletingRow.original._id !== row.original._id ? <Trash2Icon /> : <CircularLoadingIcon />}
+                        </Button>
+                    }
+                </Stack>
+        })
 
     const defaultHeaderNodes = [
         <Button variant='outline' onClick={() => dispatch({ operation: 'fetch' })}>{state.fetching === true ? <CircularLoadingIcon /> : <RefreshCwIcon />}{t('Products.Refresh')}</Button>,

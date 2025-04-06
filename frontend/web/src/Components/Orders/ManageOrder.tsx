@@ -68,8 +68,8 @@ export function ManageOrder({ order: orderInput, onFinish }: { order?: Order, on
                     onClose={() => setShowChooseProductModal(false)}
                 >
                     <ProductsDataGrid
-                        options={{
-                            defaultAdditionalColumns: [
+                        columns={{
+                            additionalColumns: [
                                 {
                                     id: 'quantity',
                                     header(props) {

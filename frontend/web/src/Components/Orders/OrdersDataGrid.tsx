@@ -47,9 +47,9 @@ export type DataGridProps = {
         appendDefaultHeaderNodes?: boolean
     }
     columns?: {
-        columns: ColumnDef<any>[]
-        additionalColumns: ColumnDef<any>[]
-        overWriteColumns: ColumnDef<any>[]
+        columns?: ColumnDef<any>[]
+        additionalColumns?: ColumnDef<any>[]
+        overWriteColumns?: ColumnDef<any>[]
     }
     headerNodes?: ReactNode[]
     onChange?: (orders: Order[]) => void
@@ -105,7 +105,7 @@ export function OrdersDataGrid({
         try {
             const res = await authFetchData(`${getApiUrl()}/orders?limit=${limit}&skip=${limit * offset}${filters === undefined ? '' : '&filter=' + JSON.stringify(formatFilters(filters))}`)
             if (!res.response || !res.response.ok || !array().required().isValidSync(res.data)) {
-                feedback.push({ node: t('Orders.failedToFetchOrders'), color: { bgColor: 'error', fgColor: 'error-foreground' } })
+                feedback.pushError({ node: t('Orders.failedToFetchOrders') })
                 return false
             }
 
@@ -121,7 +121,7 @@ export function OrdersDataGrid({
     const fetch = async (offset: number = 0, limit: number = 0) => {
         const res = await authFetchData(`${getApiUrl()}/orders?limit=${limit}&skip=${limit * offset}${filters === undefined ? '' : '&filter=' + JSON.stringify(formatFilters(filters))}`)
         if (!res.response || !res.response.ok || !array().required().isValidSync(res.data)) {
-            feedback.push({ node: t('Orders.failedToFetchOrders'), color: { bgColor: 'error', fgColor: 'error-foreground' } })
+            feedback.pushError({ node: t('Orders.failedToFetchOrders') })
             return false
         }
 
@@ -219,7 +219,7 @@ export function OrdersDataGrid({
                             authFetchData(`${getAuthApiUrl()}/orders`, { method: 'delete', body: JSON.stringify({ id: arg.data.original._id }) })
                                 .then(async r => {
                                     if (!r.response?.ok) {
-                                        feedback.push({ node: t('Orders.DeletionFailure'), color: { bgColor: 'error', fgColor: 'error-foreground' } })
+                                        feedback.pushError({ node: t('Orders.DeletionFailure') })
                                         return
                                     }
 
@@ -254,7 +254,7 @@ export function OrdersDataGrid({
                 return { ...state, fetchedProducts: arg.data, showProductsFetching: false, }
 
             case 'showProductsEnd':
-                return { ...state, showProducts: undefined }
+                return { ...state, fetchedProducts: undefined, showProducts: undefined }
 
             default:
                 throw new Error(`Invalid operation requested in OrdersDataGrid component reducer!${typeof (arg as any).operation === 'string' ? ': ' + (arg as any).operation : ''}`)
@@ -285,13 +285,13 @@ export function OrdersDataGrid({
 
     useEffect(() => {
         if (state.showProductsFetching === true && state.showProducts !== undefined) {
-            fetchData(`${getApiUrl()}/products/${state.showProducts.original.products.map(m => m.productId).join(',')}`)
+            fetchData(`${getApiUrl()}/products/ids?ids=${state.showProducts.original.products.map(m => m.productId).join(',')}`)
                 .then(r => {
                     if (!r.response || !r.response.ok) {
                         if (r.response && r.response.status === 404)
-                            feedback.push({ node: t('OrdersDataGrid.ProductsNotFound'), color: { bgColor: 'error', fgColor: 'error-foreground' } })
+                            feedback.pushError({ node: t('OrdersDataGrid.ProductsNotFound') })
                         else
-                            feedback.push({ node: t('OrdersDataGrid.ProductsFetchFailed'), color: { bgColor: 'error', fgColor: 'error-foreground' } })
+                            feedback.pushError({ node: t('OrdersDataGrid.ProductsFetchFailed') })
                         dispatch({ operation: 'showProductsFetchEnd', data: undefined })
                     } else
                         dispatch({ operation: 'showProductsFetchEnd', data: r.data })
@@ -304,7 +304,7 @@ export function OrdersDataGrid({
             authFetchData(`${getApiUrl()}/orders`, { method: 'PATCH', body: JSON.stringify({ orderId: state.updatingIsSent.original._id, order: { isSent: !state.updatingIsSent.original.isSent } }) })
                 .then(async r => {
                     if (!r.response || !r.response.ok) {
-                        feedback.push({ node: t('UpdateOrder.updateFailed'), color: { bgColor: 'error', fgColor: 'error-foreground' } });
+                        feedback.pushError({ node: t('UpdateOrder.updateFailed') });
                         return;
                     }
 
@@ -321,7 +321,7 @@ export function OrdersDataGrid({
             authFetchData(`${getApiUrl()}/orders`, { method: 'PATCH', body: JSON.stringify({ orderId: state.updatingIsPayed.original._id, order: { isPayed: !state.updatingIsPayed.original.isPayed } }) })
                 .then(async r => {
                     if (!r.response || !r.response.ok) {
-                        feedback.push({ node: t('UpdateOrder.updateFailed'), color: { bgColor: 'error', fgColor: 'error-foreground' } });
+                        feedback.pushError({ node: t('UpdateOrder.updateFailed') });
                         return;
                     }
 
@@ -515,18 +515,40 @@ export function OrdersDataGrid({
             </Modal>
 
             <Modal
-                modalContainerProps={{ className: 'overflow-y-auto' }}
+                modalContainerProps={{ className: 'h-[15cm]' }}
                 open={state?.showProducts !== undefined}
                 onClose={() => dispatch({ operation: 'showProductsEnd' })}
             >
-                <Stack direction="vertical" stackProps={{ className: 'w-full items-center justify-between' }}>
+                <Stack direction="vertical" stackProps={{ className: 'w-full items-center justify-between size-full' }}>
                     {state.showProductsFetching !== false
                         ? <CircularLoading />
                         : (state.fetchedProducts === undefined || state.fetchedProducts.length === 0
                             ? t('OrderDataGrid.ProductsFetchError')
                             : <ProductsDataGrid
+                                dataGridProps={{
+                                    containerProps: { stackProps: { className: 'w-full' } },
+                                }}
                                 products={state.fetchedProducts}
                                 functionality={{}}
+                                columns={{
+                                    additionalColumns: [
+                                        {
+                                            id: 'qnt',
+                                            header(props) {
+                                                return t('Columns.quantity')
+                                            },
+                                            cell: ({ row, cell }) =>
+                                                <div className="w-full flex flex-row justify-center">
+                                                    <Input
+                                                        containerProps={{ className: 'w-fit' }}
+                                                        type="number"
+                                                        readOnly
+                                                        value={state.showProducts?.original?.products?.find(f => f.productId === row.original._id)?.quantity}
+                                                    />
+                                                </div>
+                                        }
+                                    ],
+                                }}
                             />
                         )
                     }
