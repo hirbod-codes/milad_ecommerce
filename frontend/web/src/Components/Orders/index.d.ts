@@ -7,7 +7,7 @@ export type Order = {
     isPayed: boolean
     isSent: boolean
     address: {
-        address: string
+        text: string
         googleMap?: string
     }
     createdAt: number

@@ -21,15 +21,15 @@ export function SearchUser({ onSelect, containerProps }: { onSelect?: (user: { _
             let r
             switch (mode) {
                 case 'email':
-                    r = await authFetchData(`${getAuthApiUrl()}/users?filter={$and:[{"email": ${search}}]}`)
+                    r = await authFetchData(`${getAuthApiUrl()}/users?filter=${JSON.stringify({ $and: [{ "email": search }] })}`)
                     break;
 
                 case 'phoneNumber':
-                    r = await authFetchData(`${getAuthApiUrl()}/users?filter={$and:[{"phoneNumber": ${search}}]}`)
+                    r = await authFetchData(`${getAuthApiUrl()}/users?filter=${JSON.stringify({ $and: [{ "phoneNumber": search }] })}`)
                     break;
 
                 case 'username':
-                    r = await authFetchData(`${getAuthApiUrl()}/users?filter={$and:[{"username": ${search}}]}`)
+                    r = await authFetchData(`${getAuthApiUrl()}/users?filter=${JSON.stringify({ $and: [{ "username": search }] })}`)
                     break;
 
                 default:
@@ -55,18 +55,14 @@ export function SearchUser({ onSelect, containerProps }: { onSelect?: (user: { _
 
     return (
         <Stack direction="vertical" {...containerProps}>
-            <div className="text-lg text-center">{t('SearchUser.Title')}</div>
-
-            <Separator />
-
             <Select
                 onValueSelect={e => setMode(e)}
                 listContainerProps={{ stackProps: { className: 'max-h-[10cm] overflow-y-auto' } }}
+                label={t('SearchUser.Mode')}
                 inputProps={{
                     containerProps: { className: "flex-grow" },
                     labelContainerProps: { stackProps: { className: 'w-full justify-between' } },
                     className: 'pl-8',
-                    startIcon: <SearchIcon />,
                     value: mode ?? '',
                     readOnly: true
                 }}
@@ -84,8 +80,6 @@ export function SearchUser({ onSelect, containerProps }: { onSelect?: (user: { _
                     {t('common.username')}
                 </Select.Item>
             </Select>
-
-            <Separator />
 
             <Select
                 onValueSelect={e => { if (onSelect) onSelect(searchedUsers.find(f => f._id === e)) }}

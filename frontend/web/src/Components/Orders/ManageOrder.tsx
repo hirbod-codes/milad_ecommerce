@@ -1,23 +1,26 @@
-import { authFetchData, fetchData, getApiUrl } from "@/src/Backend/helpers"
+import { authFetchData, formatCurrency, getApiUrl } from "@/src/Backend/helpers"
 import { Button } from "@/src/Components/Base/Button"
 import { CheckBox } from "@/src/Components/Base/CheckBox"
 import { CircularLoading } from "@/src/Components/Base/CircularLoading"
-import { CircularLoadingIcon } from "@/src/Components/Base/CircularLoadingIcon"
 import { Input } from "@/src/Components/Base/Input"
 import { Stack } from "@/src/Components/Base/Stack"
 import { FeedbackContext } from "@/src/Contexts/Feedback/FeedbackContext"
 import { Separator } from "@/src/shadcn/components/ui/separator"
 import { t } from "i18next"
-import { useContext, useEffect, useRef, useState } from "react"
+import { useContext, useEffect, useState } from "react"
 import { string } from "yup"
-import { Order, staticFields } from "."
+import { Order } from "."
 import { Modal } from "../Base/Modal"
 import { SearchUser } from "../SearchUser"
 import { ProductsDataGrid } from "../Products/ProductsDataGrid"
 import { Product } from "../Products"
 import { Row } from "@tanstack/react-table"
+import { RefreshCwIcon } from "lucide-react"
+import { ConfigurationContext } from "@/src/Contexts/Configuration/ConfigurationContext"
+import { Textarea } from "@/src/shadcn/components/ui/textarea"
 
 export function ManageOrder({ order: orderInput, onFinish }: { order?: Order, onFinish?: (order: Order, hasChanged: boolean) => void }) {
+    const configuration = useContext(ConfigurationContext)
     const feedback = useContext(FeedbackContext)
 
     const [user, setUser] = useState(undefined)
@@ -30,17 +33,20 @@ export function ManageOrder({ order: orderInput, onFinish }: { order?: Order, on
     const [showChooseProductModal, setShowChooseProductModal] = useState(false)
     const [selectedProducts, setSelectedProducts] = useState<{ [k: string]: { row: Row<Product>, quantity: number } }>({})
 
-    // console.log('ManageOrder', { order, loading, submitting })
+    console.log('ManageOrder', { user, order, loading, submitting, showChooseProductModal, selectedProducts, })
 
     useEffect(() => {
-        // Promise.all([
-        // ])
-        //     .then(async r => {
-        //         const ps = r[0]
-        //         if (r[0].ok)
-        //         setLoading(false)
-        //     })
-    }, [])
+        if (Object.entries(selectedProducts).length > 0)
+            setOrder({
+                ...order,
+                cost: {
+                    IRR: Object.entries(selectedProducts).map(m => m[1]).reduce((p, c) => p + (c.quantity * c.row.original.price.IRR), 0),
+                    USD: Object.entries(selectedProducts).map(m => m[1]).reduce((p, c) => p + (c.quantity * c.row.original.price.USD), 0),
+                }
+            })
+        else
+            setOrder({ ...order, cost: undefined })
+    }, [selectedProducts])
 
     return (
         loading
@@ -53,16 +59,25 @@ export function ManageOrder({ order: orderInput, onFinish }: { order?: Order, on
 
                 <Separator />
 
-                {orderInput &&
-                    <SearchUser
-                        onSelect={(user) => setUser(user)}
+                <div className="rounded-lg border p-4 my-4">
+                    <div className="text-lg text-center pb-4">{t('ManageOrder.SearchUser')}</div>
+                    <Input
+                        label={t('ManageOrder.ChosenUser')}
+                        className="w-full"
+                        innerContainerProps={{ className: 'w-full' }}
+                        labelId={t('ManageOrder.ChosenUser')}
+                        value={order?.userId}
+                        disabled
+                        endIcon={orderInput !== undefined ? undefined : <RefreshCwIcon onClick={(e) => { e.stopPropagation(); setOrder({ ...order, userId: undefined }) }} />}
                     />
-                }
 
-                <Separator />
+                    {orderInput === undefined &&
+                        <SearchUser onSelect={(user) => { setUser(user); setOrder({ ...order, userId: user._id }) }} />
+                    }
+                </div>
 
-                {/* First Row */}
-                <Button onClick={() => setShowChooseProductModal(true)}>{t('ManageOrder.ChooseProducts')}</Button>
+
+                <Button variant='outline' onClick={() => setShowChooseProductModal(true)}>{t('ManageOrder.ChooseProducts')}</Button>
                 <Modal
                     modalContainerProps={{ className: 'h-[15cm]' }}
                     open={showChooseProductModal}
@@ -108,7 +123,44 @@ export function ManageOrder({ order: orderInput, onFinish }: { order?: Order, on
                     />
                 </Modal>
 
-                <Separator />
+
+                {order?.cost?.IRR !== undefined &&
+                    <div className="text-md">
+                        {formatCurrency(configuration, order?.cost?.IRR)}
+                    </div>
+                }
+
+                {order?.cost?.USD !== undefined &&
+                    <div className="text-md">
+                        {formatCurrency(configuration, order?.cost?.USD)}
+                    </div>
+                }
+
+                <CheckBox
+                    containerProps={{ className: 'w-fit' }}
+                    colorForeground='success'
+                    label={t('ManageOrder.isSent')}
+                    inputProps={{
+                        checked: order?.isSent ?? false,
+                        onChange: () => setOrder({ ...order, isSent: !(order?.isSent ?? false) })
+                    }}
+                />
+
+                <CheckBox
+                    containerProps={{ className: 'w-fit' }}
+                    colorForeground='success'
+                    label={t('ManageOrder.isPayed')}
+                    inputProps={{
+                        checked: order?.isPayed ?? false,
+                        onChange: () => setOrder({ ...order, isPayed: !(order?.isPayed ?? false) })
+                    }}
+                />
+
+                <Textarea
+                    placeholder={t('ManageOrder.address')}
+                    value={order?.address?.text ?? ''}
+                    onChange={(e) => setOrder({ ...order, address: { ...order?.address, text: e.target.value.trim() } })}
+                />
 
                 <Button
                     disabled={submitting}
@@ -117,7 +169,7 @@ export function ManageOrder({ order: orderInput, onFinish }: { order?: Order, on
                         try {
                             if (orderInput !== undefined) {
                                 const data: any = {
-                                    id: order._id,
+                                    id: order?._id,
                                     order,
                                 }
                                 console.log('data', data)
