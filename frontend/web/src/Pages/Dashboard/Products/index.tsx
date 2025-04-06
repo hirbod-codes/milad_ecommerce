@@ -18,7 +18,7 @@ export function Products() {
             dataGridProps={{
                 configName: 'Products',
                 defaultColumnVisibilityModel: { _id: false },
-                defaultColumnOrderModel: ['actions', 'name', 'displayName', 'privileges']
+                defaultColumnOrderModel: ['actions', 'name', 'displayName', 'isAvailable', 'price']
             }}
             functionality={{
                 create: createsProduct,

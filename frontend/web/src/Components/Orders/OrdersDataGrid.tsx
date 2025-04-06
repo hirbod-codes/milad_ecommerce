@@ -526,8 +526,10 @@ export function OrdersDataGrid({
                             ? t('OrderDataGrid.ProductsFetchError')
                             : <ProductsDataGrid
                                 dataGridProps={{
+                                    configName: 'OrderProductsList',
+                                    defaultColumnVisibilityModel: { _id: false },
+                                    defaultColumnOrderModel: ['actions', 'name', 'displayName', 'isAvailable', 'price'],
                                     containerProps: { stackProps: { className: 'w-full' } },
-                                    defaultColumnOrderModel: ['quantity']
                                 }}
                                 products={state.fetchedProducts}
                                 functionality={{}}

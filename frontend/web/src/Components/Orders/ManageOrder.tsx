@@ -64,10 +64,17 @@ export function ManageOrder({ order: orderInput, onFinish }: { order?: Order, on
                 {/* First Row */}
                 <Button onClick={() => setShowChooseProductModal(true)}>{t('ManageOrder.ChooseProducts')}</Button>
                 <Modal
+                    modalContainerProps={{ className: 'h-[15cm]' }}
                     open={showChooseProductModal}
                     onClose={() => setShowChooseProductModal(false)}
                 >
                     <ProductsDataGrid
+                        dataGridProps={{
+                            configName: 'OrderProductsList',
+                            defaultColumnVisibilityModel: { _id: false },
+                            defaultColumnOrderModel: ['actions', 'name', 'displayName', 'isAvailable', 'price'],
+                            containerProps: { stackProps: { className: 'w-full' } },
+                        }}
                         columns={{
                             additionalColumns: [
                                 {
