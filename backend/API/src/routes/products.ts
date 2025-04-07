@@ -156,14 +156,9 @@ products.get('/', async (req, res) => {
     }
 })
 
-products.get('/picture/:fileId', async (req, res) => {
+products.get('/picture/fileId', async (req, res) => {
     try {
-        const { fileId } = req.params
-
-        if (!fileId) {
-            res.sendStatus(400)
-            return
-        }
+        const { fileId } = req.query
 
         if (!stringObjectId.required().isValidSync(fileId)) {
             res.sendStatus(400)
@@ -191,11 +186,11 @@ products.get('/picture/:fileId', async (req, res) => {
     }
 })
 
-products.get('/pictures/:productIds', async (req, res) => {
+products.get('/pictures/productIds', async (req, res) => {
     try {
-        const { productIds: idsStr } = req.params
+        const { productIds: idsStr } = req.query
 
-        if (!idsStr) {
+        if (!string().required().isValidSync(idsStr)) {
             res.sendStatus(400)
             return
         }

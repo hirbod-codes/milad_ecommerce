@@ -54,14 +54,25 @@ export function ManageProduct({ product: productInput, onFinish }: { product?: P
 
         Promise.all([
             fetch(`${getApiUrl()}/languages`, { headers: { 'Accept': 'application/json' } }),
-            fetchData(`${getApiUrl()}/products/pictures`)
+            productInput !== undefined && fetchData(`${getApiUrl()}/products/pictures/productIds?productIds=${productInput._id}`)
         ])
             .then(async r => {
-                const ps = r[0]
                 if (r[0].ok)
                     setLanguages(await r[0].json())
 
                 setLoading(false)
+
+                if (r[1].response && r[1].response.ok && array().required().isValidSync(r[1].data)) {
+                    const picturesResponses = await Promise.all(r[1]?.data?.map(m =>
+                        fetchData(`${getApiUrl()}/products/pictures/fileId?fileId=${m._id}`)
+                    ))
+
+                    for (const picturesResponse of picturesResponses)
+                        if (!picturesResponse?.response || !picturesResponse.response?.ok || !array().required().isValidSync(picturesResponse.data))
+                            feedback.pushError({ node: t('ManageProduct.failedToFetchPictures') })
+
+                    setFiles(picturesResponses.map((m, i) => ({ _id: r[1]?.data[i], file: m.data, url: URL.createObjectURL(m.data) })))
+                }
             })
 
         return () => {
