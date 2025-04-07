@@ -31,6 +31,7 @@ export function ManageOrder({ order: orderInput, onFinish }: { order?: Order, on
     const [submitting, setSubmitting] = useState<boolean>(false)
 
     const [showChooseProductModal, setShowChooseProductModal] = useState(false)
+    const [showChosenProductModal, setShowChosenProductModal] = useState(false)
     const [selectedProducts, setSelectedProducts] = useState<{ [k: string]: { row: Row<Product>, quantity: number } }>({})
 
     console.log('ManageOrder', { user, order, loading, submitting, showChooseProductModal, selectedProducts, })
@@ -59,7 +60,7 @@ export function ManageOrder({ order: orderInput, onFinish }: { order?: Order, on
 
                 <Separator />
 
-                <div className="rounded-lg border p-4 my-4">
+                <Stack direction="vertical" stackProps={{ className: 'rounded-lg border p-4 my-4' }}>
                     <div className="text-lg text-center pb-4">{t('ManageOrder.SearchUser')}</div>
                     <Input
                         label={t('ManageOrder.ChosenUser')}
@@ -74,8 +75,7 @@ export function ManageOrder({ order: orderInput, onFinish }: { order?: Order, on
                     {orderInput === undefined &&
                         <SearchUser onSelect={(user) => { setUser(user); setOrder({ ...order, userId: user._id }) }} />
                     }
-                </div>
-
+                </Stack>
 
                 <Button variant='outline' onClick={() => setShowChooseProductModal(true)}>{t('ManageOrder.ChooseProducts')}</Button>
                 <Modal
@@ -119,6 +119,45 @@ export function ManageOrder({ order: orderInput, onFinish }: { order?: Order, on
                             pagination: true,
                             filter: true,
                             sort: true
+                        }}
+                    />
+                </Modal>
+
+                <Button variant='outline' onClick={() => setShowChosenProductModal(true)}>{t('ManageOrder.ShowProducts')}</Button>
+                <Modal
+                    modalContainerProps={{ className: 'h-[15cm]' }}
+                    open={showChosenProductModal}
+                    onClose={() => setShowChosenProductModal(false)}
+                >
+                    <ProductsDataGrid
+                        products={Object.entries(selectedProducts)?.map(m => m[1].row.original) ?? []}
+                        dataGridProps={{
+                            configName: 'OrderProductsList',
+                            defaultColumnVisibilityModel: { _id: false },
+                            defaultColumnOrderModel: ['actions', 'name', 'displayName', 'isAvailable', 'price'],
+                            containerProps: { stackProps: { className: 'w-full' } },
+                        }}
+                        columns={{
+                            additionalColumns: [
+                                {
+                                    id: 'quantity',
+                                    header(props) {
+                                        return t('Columns.qnt')
+                                    },
+                                    cell: ({ row, cell }) =>
+                                        <div className="w-full flex flex-row justify-center">
+                                            <Input
+                                                containerProps={{ className: 'w-fit' }}
+                                                type="number"
+                                                value={selectedProducts[row.original._id]?.quantity ?? 0}
+                                                disabled
+                                            />
+                                        </div>
+                                }
+                            ]
+                        }}
+                        functionality={{
+                            pagination: true,
                         }}
                     />
                 </Modal>

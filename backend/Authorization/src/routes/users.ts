@@ -2,13 +2,15 @@ import { Router } from "express";
 import { array, number, object, string } from "yup";
 import { stringObjectId } from "../DB/Models/common_schemas";
 import { UserRepository } from "../DB/Repositories/UserRepository";
-import { readableFields, User, userSchema } from "../DB/Models/User";
+import { readableFields, User, userSchema, userUpdateSchema } from "../DB/Models/User";
 import { Filter, SortDirection } from "mongodb";
 import { FilterManagement } from "../DB/FilterManagement";
+import { authenticate } from "../middlewares/authenticate";
+import { authorize } from "../middlewares/authorize";
 
 const users = Router()
 
-users.get('/ids', async (req, res) => {
+users.get('/ids', authenticate, async (req, res) => {
     try {
         const { ids: idsStr } = req.query
 
@@ -35,8 +37,13 @@ users.get('/ids', async (req, res) => {
     }
 })
 
-users.get('/', async (req, res) => {
+users.get('/', authenticate, async (req, res) => {
     try {
+        if (await authorize(req, 'get-user') !== true) {
+            res.sendStatus(403)
+            return
+        }
+
         const { filter: filterJson, sort: sortJson, limit: limitStr, skip: skipStr } = req.query
 
         if (!number().optional().min(0).integer().isValidSync(limitStr)) {
@@ -96,6 +103,60 @@ users.get('/', async (req, res) => {
             res.sendStatus(500)
         else
             res.status(200).json(users)
+    } catch (e) {
+        console.error(e)
+        res.sendStatus(500)
+    }
+})
+
+users.patch('/', authenticate, async (req, res) => {
+    try {
+        if (await authorize(req, 'update-user') !== true) {
+            res.sendStatus(403)
+            return
+        }
+
+        const { userId, user } = req.body
+
+        if (!stringObjectId.required().isValidSync(userId) || !userUpdateSchema.isValidSync(user) || Object.entries(user).length === 0) {
+            res.sendStatus(400)
+            return
+        }
+
+        const userRepository = await UserRepository.getInstance()
+        const r = await userRepository.update(userId, userUpdateSchema.cast(user))
+
+        if (r === false)
+            res.sendStatus(500)
+        else
+            res.status(200).json(r)
+    } catch (e) {
+        console.error(e)
+        res.sendStatus(500)
+    }
+})
+
+users.delete('/', authenticate, async (req, res) => {
+    try {
+        if (await authorize(req, 'delete-user') !== true) {
+            res.sendStatus(403)
+            return
+        }
+
+        const userId = req.body
+
+        if (!stringObjectId.required().isValidSync(userId)) {
+            res.sendStatus(400)
+            return
+        }
+
+        const userRepository = await UserRepository.getInstance()
+        const r = await userRepository.delete(userId)
+
+        if (r === false)
+            res.sendStatus(500)
+        else
+            res.status(200).json(r)
     } catch (e) {
         console.error(e)
         res.sendStatus(500)
