@@ -44,6 +44,7 @@ import { Stack } from '../Base/Stack'
 import { cn } from '../../shadcn/lib/utils'
 import { StorageApi } from '@/src/Backend/Storage/StorageApi'
 import { CheckBox } from '../Base/CheckBox'
+import { CircularLoading } from '../Base/CircularLoading'
 
 export type DataGridProps = {
     configName?: string
@@ -426,13 +427,13 @@ export function DataGrid({
                                 </Stack>
                             </div>
                         }
-                        {loading
-                            ? <CircularLoadingIcon />
-                            : (
-                                data.length === 0
-                                    ? <p style={{ textAlign: 'center' }}>{t('DataGrid.noData')}</p>
-                                    :
-                                    <div id='tableContainer' {...tableContainerProps} className={cn('overflow-auto flex-grow border rounded-md', tableContainerProps?.className)}>
+                        <div id='tableContainer' {...tableContainerProps} className={cn('overflow-auto flex-grow border rounded-md', tableContainerProps?.className)}>
+                            {loading
+                                ? <Stack stackProps={{ className: 'size-full items-center justify-center' }}><CircularLoading /></Stack>
+                                : (
+                                    data.length === 0
+                                        ? <p style={{ textAlign: 'center' }}>{t('DataGrid.noData')}</p>
+                                        :
                                         <table {...tableProps} className={cn('min-w-full border-separate', tableProps?.className)}>
                                             {showColumnHeaders &&
                                                 <thead {...tHeadProps} className={cn('sticky select-none z-[1] top-0', tableProps?.className)}>
@@ -464,9 +465,9 @@ export function DataGrid({
                                                 ))}
                                             </tbody>
                                         </table>
-                                    </div>
-                            )
-                        }
+                                )
+                            }
+                        </div>
                         {footerNodes.length > 0 &&
                             <Stack {...footerNodesContainerProps} stackProps={{ ...footerNodesContainerProps?.stackProps, id: footerNodesContainerProps?.stackProps?.id ?? 'footerNodesContainer', className: cn('bg-surface-container p-2 rounded-md justify-end', footerNodesContainerProps?.stackProps?.className) }}>
                                 {...footerNodes.map((n, i) =>
