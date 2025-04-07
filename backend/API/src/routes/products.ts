@@ -279,7 +279,6 @@ products.post('/pictures/:productId', authenticate, async (req, res) => {
 
             const uploadedFiles: { filename: string, id: string }[] = [];
 
-            console.log('files', files)
             files.forEach(async (file) => {
                 const productPictureRepository = await ProductPictureRepository.getInstance()
                 const writeStream = productPictureRepository.getWriteStream(file.filename, productId, file.mimeType)

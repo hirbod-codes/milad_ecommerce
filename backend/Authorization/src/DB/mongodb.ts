@@ -178,6 +178,34 @@ export class MongoDB {
         await this.addCollections()
     }
 
+    async dropAllCollections() {
+        const db = await this.getDb()
+        await this.dropRefreshTokenCollection(db)
+        await this.dropUserCollection(db)
+        await this.dropPrivilegeCollection(db)
+        await this.dropRoleCollection(db)
+    }
+
+    async dropRefreshTokenCollection(db: Db) {
+        if ((await db.listCollections().toArray()).map(e => e.name).includes(refreshTokensCollectionName))
+            await db.dropCollection(refreshTokensCollectionName)
+    }
+
+    async dropUserCollection(db: Db) {
+        if ((await db.listCollections().toArray()).map(e => e.name).includes(userCollectionName))
+            await db.dropCollection(userCollectionName)
+    }
+
+    async dropPrivilegeCollection(db: Db) {
+        if ((await db.listCollections().toArray()).map(e => e.name).includes(privilegeCollectionName))
+            await db.dropCollection(privilegeCollectionName)
+    }
+
+    async dropRoleCollection(db: Db) {
+        if ((await db.listCollections().toArray()).map(e => e.name).includes(roleCollectionName))
+            await db.dropCollection(roleCollectionName)
+    }
+
     async addCollections() {
         const db = await this.getDb()
         await this.addRefreshTokenCollection(db)

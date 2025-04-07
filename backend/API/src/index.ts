@@ -67,6 +67,9 @@ export const queueManagement = new QueueManagement(messageBrokerUrl, messageBrok
 
 (async () => {
     await tryAndWait(async () => {
+        if (!isProduction)
+            await MongoDB.getDbInstance().dropAllCollections()
+
         await MongoDB.getDbInstance().initializeDb();
 
         if (isProduction !== true) {

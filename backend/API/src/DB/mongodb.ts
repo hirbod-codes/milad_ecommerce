@@ -173,6 +173,40 @@ export class MongoDB {
         await this.addCollections()
     }
 
+    async dropAllCollections() {
+        const db = await this.getDb()
+        await this.dropCategoryCollection(db)
+        await this.dropOrderCollection(db)
+        await this.dropProductCollection(db)
+        await this.dropProductReviewsCollection(db)
+        await this.dropTagCollection(db)
+    }
+
+    async dropCategoryCollection(db: Db) {
+        if ((await db.listCollections().toArray()).map(e => e.name).includes(categoryCollectionName))
+            await db.dropCollection(categoryCollectionName)
+    }
+
+    async dropOrderCollection(db: Db) {
+        if ((await db.listCollections().toArray()).map(e => e.name).includes(orderCollectionName))
+            await db.dropCollection(orderCollectionName)
+    }
+
+    async dropProductCollection(db: Db) {
+        if ((await db.listCollections().toArray()).map(e => e.name).includes(productCollectionName))
+            await db.dropCollection(productCollectionName)
+    }
+
+    async dropProductReviewsCollection(db: Db) {
+        if ((await db.listCollections().toArray()).map(e => e.name).includes(productReviewCollectionName))
+            await db.dropCollection(productReviewCollectionName)
+    }
+
+    async dropTagCollection(db: Db) {
+        if ((await db.listCollections().toArray()).map(e => e.name).includes(tagCollectionName))
+            await db.dropCollection(tagCollectionName)
+    }
+
     async addCollections() {
         const db = await this.getDb()
 

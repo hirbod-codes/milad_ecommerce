@@ -7,6 +7,8 @@ import { Filter, SortDirection } from "mongodb";
 import { FilterManagement } from "../DB/FilterManagement";
 import { authenticate } from "../middlewares/authenticate";
 import { authorize } from "../middlewares/authorize";
+import busboy from "busboy";
+import { UserProfilePictureRepository } from "../DB/Repositories/UserProfilePictureRepository";
 
 const users = Router()
 
@@ -103,6 +105,144 @@ users.get('/', authenticate, async (req, res) => {
             res.sendStatus(500)
         else
             res.status(200).json(users)
+    } catch (e) {
+        console.error(e)
+        res.sendStatus(500)
+    }
+})
+
+users.get('/picture', async (req, res) => {
+    try {
+        const { fileId } = req.query
+
+        if (!stringObjectId.required().isValidSync(fileId)) {
+            res.sendStatus(400)
+            return
+        }
+        const userPictureRepository = await UserProfilePictureRepository.getInstance()
+        const file = await userPictureRepository.getFile(fileId)
+        if (file === undefined) {
+            res.sendStatus(404)
+            return
+        }
+
+        const readstream = userPictureRepository.getReadStream(file._id);
+        console.log('readstream', readstream)
+
+        readstream.pipe(res)
+
+        readstream.on('error', e => {
+            console.error(e)
+            res.sendStatus(500)
+        })
+    } catch (e) {
+        console.error(e)
+        res.sendStatus(500)
+    }
+})
+
+users.post('/picture/:userId', authenticate, async (req, res) => {
+    try {
+        if (await authorize(req, 'update-user') !== true) {
+            res.sendStatus(403)
+            return
+        }
+
+        const { userId } = req.params
+        if (!stringObjectId.required().isValidSync(userId)) {
+            res.sendStatus(403)
+            return
+        }
+
+        const files: {
+            filename: string,
+            mimeType: string,
+            size: number,
+            buffer: Buffer,
+        }[] = [];
+        const maxFiles = 1; // Maximum number of files allowed
+        const maxFileSize = 5 * 1024 * 1024; // 5MB
+        const allowedTypes = ["image/jpeg", "image/png", "application/jpg"];
+
+        const bb = busboy({ limits: { fileSize: maxFileSize, parts: maxFiles }, headers: req.headers });
+
+        bb.on("file", (name, stream, { filename, mimeType, encoding }) => {
+            if (files.length > maxFiles) {
+                stream.resume(); // Discard the file if the maximum number of files is reached
+                return
+            }
+
+            const chunks: Uint8Array[] = []
+            stream.on("data", (chunk) => {
+                chunks.push(chunk)
+            })
+
+            stream.on("end", () => {
+                const buffer = Buffer.concat(chunks)
+                const fileData = {
+                    filename,
+                    mimeType,
+                    size: buffer.length,
+                    buffer,
+                }
+
+                // Validate the file
+                if (fileData.size > maxFileSize)
+                    return res.status(400).json({ message: `File size exceeds valid range` })
+
+                if (!allowedTypes.includes(fileData.mimeType))
+                    return res.status(400).json({ message: `Invalid file extension` })
+
+                files.push(fileData)
+            })
+        })
+
+        bb.on("finish", () => {
+            if (files.length === 0)
+                return res.status(400).json({ message: "No files uploaded" })
+
+            console.log('files', files)
+            files.forEach(async (file) => {
+                const userProfilePictureRepository = await UserProfilePictureRepository.getInstance()
+                const writeStream = userProfilePictureRepository.getWriteStream(file.filename, userId, file.mimeType)
+
+                writeStream.on("finish", () => {
+                    res.status(201).json({ filename: file.filename, id: writeStream.id.toString() })
+                })
+
+                writeStream.on("error", (err) => {
+                    console.error("File upload failed:", err)
+                    res.status(500).json({ message: "File upload failed", error: err.message })
+                })
+
+                writeStream.write(file.buffer)
+                writeStream.end()
+            })
+        })
+
+        req.pipe(bb)
+    } catch (e) {
+        console.error(e)
+        res.sendStatus(500)
+    }
+})
+
+users.delete('/picture', async (req, res) => {
+    try {
+        const { fileId } = req.body
+        if (!stringObjectId.required().isValidSync(fileId)) {
+            res.sendStatus(400)
+            return
+        }
+
+        const userPictureRepository = await UserProfilePictureRepository.getInstance()
+        const file = await userPictureRepository.deleteFile(fileId)
+        if (file === false) {
+            res.sendStatus(404)
+            return
+        }
+
+        res.sendStatus(200)
     } catch (e) {
         console.error(e)
         res.sendStatus(500)

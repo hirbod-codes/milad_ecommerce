@@ -54,6 +54,7 @@ export function ManageProduct({ product: productInput, onFinish }: { product?: P
 
         Promise.all([
             fetch(`${getApiUrl()}/languages`, { headers: { 'Accept': 'application/json' } }),
+            fetchData(`${getApiUrl()}/products/pictures`)
         ])
             .then(async r => {
                 const ps = r[0]
@@ -206,20 +207,30 @@ export function ManageProduct({ product: productInput, onFinish }: { product?: P
                                 <div className="size-full absolute top-0 *:hover:block z-50">
                                     <div className="size-full absolute top-0 hidden bg-[#00000080]" onClick={() => setImage(m.url)} />
                                     <div className="hidden absolute bottom-1 right-1">
-                                        <Button isIcon variant="text" size='xs' fgColor="error" onClick={async (e) => {
-                                            e.stopPropagation()
+                                        <Button
+                                            isIcon
+                                            variant="text"
+                                            size='xs'
+                                            fgColor="error"
+                                            onClick={async (e) => {
+                                                e.stopPropagation()
 
-                                            if (m._id !== undefined)
-                                                authFetchData(`${getApiUrl()}/products/picture`, { method: 'delete', body: JSON.stringify({ fileId: m._id }) })
-                                                    .then(r => {
-                                                        if (!r.response || !r.response.ok)
-                                                            feedback.push({ node: t('ManageProduct.pictureDeleteFailed'), color: { bgColor: 'error', fgColor: 'error-foreground' } })
-                                                    })
+                                                if (m._id !== undefined)
+                                                    authFetchData(`${getApiUrl()}/products/picture`, { method: 'delete', body: JSON.stringify({ fileId: m._id }) })
+                                                        .then(r => {
+                                                            if (!r.response || !r.response.ok) {
+                                                                feedback.push({ node: t('ManageProduct.pictureDeleteFailed'), color: { bgColor: 'error', fgColor: 'error-foreground' } })
+                                                                return
+                                                            }
 
-                                            URL.revokeObjectURL(m.url)
+                                                            URL.revokeObjectURL(m.url)
 
-                                            setFiles([...files.filter(f => f.file.name !== m.file.name)])
-                                        }}><Trash2Icon /></Button>
+                                                            setFiles([...files.filter(f => f.file.name !== m.file.name)])
+                                                        })
+                                            }}
+                                        >
+                                            <Trash2Icon />
+                                        </Button>
                                     </div>
                                 </div>
                             </div>
