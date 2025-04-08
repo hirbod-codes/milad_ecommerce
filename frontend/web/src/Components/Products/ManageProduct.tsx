@@ -61,16 +61,16 @@ export function ManageProduct({ product: productInput, onFinish }: { product?: P
                 setLoading(false)
 
                 if (r[1].response && r[1].response.ok && array().required().isValidSync(r[1].data)) {
-                    const picturesResponses = await Promise.all(r[1]?.data?.map(m =>
-                        fetchData(`${getApiUrl()}/products/picture/fileId?fileId=${m._id}`)
-                    ))
-
-                    for (const picturesResponse of picturesResponses)
-                        if (!picturesResponse?.response || !picturesResponse?.response?.ok)
-                            feedback.pushError({ node: t('ManageProduct.failedToFetchPictures') })
-
-                    console.log('picturesResponses', picturesResponses)
-                    setFiles(picturesResponses.map((m, i) => ({ _id: r[1]?.data[i], file: new File([m.data], r[1]?.data[i]?.filename), url: URL.createObjectURL(m.data) })))
+                    for (let i = 0; i < r[1].data.length; i++)
+                        if (r[1].data[i])
+                            fetchData(`${getApiUrl()}/products/picture/fileId?fileId=${r[1].data[i]._id}`)
+                                .then(rr => {
+                                    const file = r[1].data[i];
+                                    if (rr.response && rr.response.ok && rr?.data && files.find(f => f._id === file._id) === undefined) {
+                                        files.push({ _id: file._id, file: new File([rr.data], file.filename), url: URL.createObjectURL(rr.data) })
+                                        setFiles([...files])
+                                    }
+                                })
                 }
             })
 

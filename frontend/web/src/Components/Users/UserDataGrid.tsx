@@ -107,15 +107,14 @@ export function UsersDataGrid({
 
         Object.entries(state.images).forEach(f => URL.revokeObjectURL(f[1]))
 
-        Promise.all(res.data?.map(m => authFetchData(`${getAuthApiUrl()}/users/picture?userId=${m._id}`)))
-            .then(r => {
-                const fetchedImages = {}
-                for (let i = 0; i < r.length; i++)
+        for (let i = 0; i < res.data.length; i++) {
+            const user = res.data[i];
+            authFetchData(`${getAuthApiUrl()}/users/picture?userId=${user._id}`)
+                .then(r => {
                     if (r[i].response && r[i].response.ok && r[i]?.data)
-                        fetchedImages[res.data[i]._id] = URL.createObjectURL(r[i]?.data)
-
-                return dispatch({ operation: 'fetchedImages', data: fetchedImages });
-            })
+                        dispatch({ operation: 'fetchedImages', data: { ...state.images, [user._id]: URL.createObjectURL(r[i]?.data) } })
+                })
+        }
 
         setUsers(res.data)
 
