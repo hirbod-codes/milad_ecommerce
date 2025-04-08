@@ -111,8 +111,9 @@ export function UsersDataGrid({
             const user = res.data[i];
             authFetchData(`${getAuthApiUrl()}/users/picture?userId=${user._id}`)
                 .then(r => {
-                    if (r[i].response && r[i].response.ok && r[i]?.data)
-                        dispatch({ operation: 'fetchedImages', data: { ...state.images, [user._id]: URL.createObjectURL(r[i]?.data) } })
+                    console.log('r', r)
+                    if (r.response && r.response.ok && r.data !== undefined)
+                        dispatch({ operation: 'fetchedImages', data: { ...state.images, [user._id]: URL.createObjectURL(r.data) } })
                 })
         }
 
