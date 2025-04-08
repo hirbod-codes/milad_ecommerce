@@ -1,6 +1,5 @@
-import { authFetchData, fetchData, getApiUrl, getAuthApiUrl } from "@/src/Backend/helpers"
+import { authFetchData, getApiUrl, getAuthApiUrl } from "@/src/Backend/helpers"
 import { Button } from "@/src/Components/Base/Button"
-import { CheckBox } from "@/src/Components/Base/CheckBox"
 import { CircularLoading } from "@/src/Components/Base/CircularLoading"
 import { CircularLoadingIcon } from "@/src/Components/Base/CircularLoadingIcon"
 import { Input } from "@/src/Components/Base/Input"
@@ -9,13 +8,9 @@ import { FeedbackContext } from "@/src/Contexts/Feedback/FeedbackContext"
 import { Separator } from "@/src/shadcn/components/ui/separator"
 import { t } from "i18next"
 import { useContext, useEffect, useRef, useState } from "react"
-import { string } from "yup"
 import { User } from "."
-import { Textarea } from "@/src/shadcn/components/ui/textarea"
 import { PlusIcon, Trash2Icon } from "lucide-react"
 import { Modal } from "../Base/Modal"
-import { SearchCategory } from "../SearchCategory"
-import { SearchTag } from "../SearchTag"
 
 export function ManageUser({ user: userInput, onFinish }: { user: User, onFinish?: (user: User, hasChanged: boolean) => void }) {
     const feedback = useContext(FeedbackContext)

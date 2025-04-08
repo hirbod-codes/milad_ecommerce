@@ -166,7 +166,7 @@ export async function authFetchData(input: string | URL | globalThis.Request, in
     if (response?.headers?.get('content-type')?.includes('application/json'))
         return { response, data: response && response?.ok ? await response.json() : undefined }
 
-    if (response?.headers?.get('content-type')?.includes('plain/text'))
+    if (response?.headers?.get('content-type')?.includes('text/plain'))
         return { response, data: response && response?.ok ? await response.text() : undefined }
 
     if (response?.headers?.get('content-type')?.includes('image'))
@@ -194,7 +194,7 @@ export async function fetchData(input: string | URL | globalThis.Request, init?:
     if (response?.headers?.get('content-type')?.includes('application/json'))
         return { response, data: response && response?.ok ? await response.json() : undefined }
 
-    if (response?.headers?.get('content-type')?.includes('plain/text'))
+    if (response?.headers?.get('content-type')?.includes('text/plain'))
         return { response, data: response && response?.ok ? await response.text() : undefined }
 
     if (response?.headers?.get('content-type')?.includes('image'))

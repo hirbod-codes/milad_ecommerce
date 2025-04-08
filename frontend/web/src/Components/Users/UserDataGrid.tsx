@@ -1,6 +1,6 @@
-import { ActionDispatch, ComponentProps, Fragment, ReactNode, useContext, useEffect, useReducer, useRef, useState } from "react";
-import { Product } from ".";
-import { authFetchData, fetchData, formatCurrency, formatFilters, formatNumber, getApiUrl, getAuthApiUrl } from "@/src/Backend/helpers";
+import { ActionDispatch, ComponentProps, ReactNode, useContext, useEffect, useReducer, useRef, useState } from "react";
+import { User } from ".";
+import { authFetchData, formatFilters, getAuthApiUrl } from "@/src/Backend/helpers";
 import { array } from "yup";
 import { t } from "i18next";
 import { FeedbackContext } from "@/src/Contexts/Feedback/FeedbackContext";
@@ -10,19 +10,18 @@ import { Stack } from "../Base/Stack";
 import { Button } from "../Base/Button";
 import { ConfigurationContext } from "@/src/Contexts/Configuration/ConfigurationContext";
 import { DATE, toFormat } from "@/src/Lib/DateTime/date-time-helpers";
-import { EditIcon, EyeIcon, FilterIcon, ListFilterIcon, PlusIcon, RefreshCwIcon, SearchIcon, Trash2Icon } from "lucide-react";
+import { EditIcon, FilterIcon, ListFilterIcon, PlusIcon, RefreshCwIcon, SearchIcon, Trash2Icon } from "lucide-react";
 import { CircularLoadingIcon } from "../Base/CircularLoadingIcon";
 import { Ask } from "../Ask";
 import { Modal } from "../Base/Modal";
-import { ManageProduct } from "./ManageUser";
-import { Filters } from "../SearchFilter";
-import { CheckBox } from "../Base/CheckBox";
+import { ManageUser } from "./ManageUser";
 import { Input } from "../Base/Input";
 import { CircularLoading } from "../Base/CircularLoading";
+import { Filters } from "../SearchFilter/index.d";
 
 export type DataGridProps = {
-    products?: Product[]
-    afterDataFetchHook?: (products: Product[]) => Product[]
+    users?: User[]
+    afterDataFetchHook?: (users: User[]) => User[]
     allFunctionalitiesToggle?: boolean
     functionality?: {
         search?: boolean
@@ -50,13 +49,13 @@ export type DataGridProps = {
         overWriteColumns?: ColumnDef<any>[]
     }
     headerNodes?: ReactNode[]
-    onChange?: (products: Product[]) => void
+    onChange?: (users: User[]) => void
     onRowSelectionChange?: (rowSelectionState: RowSelectionState) => void
     dataGridProps?: Omit<ComponentProps<typeof DataGrid>, 'data'>
 }
 
-export function ProductsDataGrid({
-    products: inputProducts = [],
+export function UsersDataGrid({
+    users: inputUsers = [],
     afterDataFetchHook,
     allFunctionalitiesToggle = false,
     functionality,
@@ -66,11 +65,7 @@ export function ProductsDataGrid({
         appendDefaultAdditionalColumns: true,
         appendDefaultHeaderNodes: true,
     },
-    columns = {
-        columns: [],
-        additionalColumns: [],
-        overWriteColumns: [],
-    },
+    columns,
     headerNodes,
     onChange,
     onRowSelectionChange,
@@ -79,7 +74,7 @@ export function ProductsDataGrid({
     const feedback = useContext(FeedbackContext)
     const configuration = useContext(ConfigurationContext)
 
-    const [products, setProducts] = useState<Product[]>(inputProducts)
+    const [users, setUsers] = useState<User[]>(inputUsers)
 
     if (!functionality)
         functionality = {}
@@ -103,14 +98,14 @@ export function ProductsDataGrid({
     const init = async (offset: number = 0, limit: number = 0) => {
         setLoading(true)
         try {
-            const res = await fetchData(`${getApiUrl()}/products?limit=${limit}&skip=${limit * offset}${filters === undefined ? '' : '&filter=' + JSON.stringify(formatFilters(filters))}`)
+            const res = await authFetchData(`${getAuthApiUrl()}/users?limit=${limit}&skip=${limit * offset}${filters === undefined ? '' : '&filter=' + JSON.stringify(formatFilters(filters))}`)
             if (!res.response || !res.response.ok || !array().required().isValidSync(res.data)) {
-                feedback.push({ node: t('Products.failedToFetchProducts'), color: { bgColor: 'error', fgColor: 'error-foreground' } })
+                feedback.push({ node: t('Users.failedToFetchUsers'), color: { bgColor: 'error', fgColor: 'error-foreground' } })
                 return false
             }
 
             if (res.data.length >= 0) {
-                setProducts(res.data)
+                setUsers(res.data)
                 return true
             }
 
@@ -119,14 +114,14 @@ export function ProductsDataGrid({
     }
 
     const fetch = async (offset: number = 0, limit: number = 0) => {
-        const res = await fetchData(`${getApiUrl()}/products?limit=${limit}&skip=${limit * offset}${filters === undefined ? '' : '&filter=' + JSON.stringify(formatFilters(filters))}`)
+        const res = await authFetchData(`${getAuthApiUrl()}/users?limit=${limit}&skip=${limit * offset}${filters === undefined ? '' : '&filter=' + JSON.stringify(formatFilters(filters))}`)
         if (!res.response || !res.response.ok || !array().required().isValidSync(res.data)) {
-            feedback.push({ node: t('Products.failedToFetchProducts'), color: { bgColor: 'error', fgColor: 'error-foreground' } })
+            feedback.push({ node: t('Users.failedToFetchUsers'), color: { bgColor: 'error', fgColor: 'error-foreground' } })
             return false
         }
 
         if (res.data.length >= 0) {
-            setProducts(res.data)
+            setUsers(res.data)
             return true
         }
 
@@ -138,7 +133,7 @@ export function ProductsDataGrid({
         additionalColumns?: ColumnDef<any>[]
         overWriteColumns?: ColumnDef<any>[]
         headerNodes: ReactNode[]
-        searchedProducts: Product[]
+        searchedUsers: User[]
         searching: boolean
         creating: boolean
         updatingRow: Row<any> | undefined
@@ -150,12 +145,12 @@ export function ProductsDataGrid({
         showTags: Row<any> | undefined
         showCategories: Row<any> | undefined
         showCustomFields: Row<any> | undefined
-        searchByName: string
+        searchByPhoneNumber: string
     }
 
     type Actions =
-        { operation: 'searchedByName', data: Product[] } |
-        { operation: 'searchByName', data: string } |
+        { operation: 'searchedByPhoneNumber', data: User[] } |
+        { operation: 'searchByPhoneNumber', data: string } |
         { operation: 'fetch' | 'fetched' | 'createStarted' | 'createEnded' | 'updateEnded' | 'deleteEnded' | 'updatedIsAvailable' } |
         { operation: 'updateStarted' | 'updateIsAvailable' | 'deleteStarted' | 'showCategories' | 'showTags' | 'showCustomFields', data: Row<any> } |
         { operation: 'setPage', data: { offset: number, limit: number } }
@@ -206,13 +201,13 @@ export function ProductsDataGrid({
                     deletingRow: arg.data,
                     ask: {
                         open: true,
-                        title: t('Products.deletionTitle'),
-                        content: t('Products.deletionContent'),
+                        title: t('Users.deletionTitle'),
+                        content: t('Users.deletionContent'),
                         successAction: () =>
-                            authFetchData(`${getAuthApiUrl()}/products`, { method: 'delete', body: JSON.stringify({ id: arg.data.original._id }) })
+                            authFetchData(`${getAuthApiUrl()}/users`, { method: 'delete', body: JSON.stringify({ id: arg.data.original._id }) })
                                 .then(async r => {
                                     if (!r.response?.ok) {
-                                        feedback.push({ node: t('Products.DeletionFailure'), color: { bgColor: 'error', fgColor: 'error-foreground' } })
+                                        feedback.push({ node: t('Users.DeletionFailure'), color: { bgColor: 'error', fgColor: 'error-foreground' } })
                                         return
                                     }
 
@@ -255,14 +250,14 @@ export function ProductsDataGrid({
                     showCustomFields: arg.data
                 }
 
-            case 'searchByName':
-                return { ...state, searchByName: arg.data, searching: true }
+            case 'searchByPhoneNumber':
+                return { ...state, searchByPhoneNumber: arg.data, searching: true }
 
-            case 'searchedByName':
-                return { ...state, searchedProducts: arg.data, searching: false }
+            case 'searchedByPhoneNumber':
+                return { ...state, searchedUsers: arg.data, searching: false }
 
             default:
-                throw new Error(`Invalid operation requested in ProductsDataGrid component reducer!${typeof (arg as any).operation === 'string' ? ': ' + (arg as any).operation : ''}`)
+                throw new Error(`Invalid operation requested in UsersDataGrid component reducer!${typeof (arg as any).operation === 'string' ? ': ' + (arg as any).operation : ''}`)
         }
     }
 
@@ -271,9 +266,9 @@ export function ProductsDataGrid({
         additionalColumns: [],
         overWriteColumns: [],
         headerNodes: [],
-        searchedProducts: [],
+        searchedUsers: [],
         searching: false,
-        searchByName: '',
+        searchByPhoneNumber: '',
         creating: false,
         updatingRow: undefined,
         updatingIsAvailable: undefined,
@@ -291,23 +286,23 @@ export function ProductsDataGrid({
     useEffect(() => {
         if (timer.current !== undefined)
             clearTimeout(timer.current)
-        if (state?.searchByName?.trim())
+        if (state?.searchByPhoneNumber?.trim())
             timer.current = setTimeout(async () => {
-                const r = await fetchData(`${getApiUrl()}/products/search?search=${state.searchByName}`)
+                const r = await authFetchData(`${getAuthApiUrl()}/users/search?search=${state.searchByPhoneNumber}`)
                 if (!r.response || !r.response.ok) {
-                    feedback.pushError({ node: t('ProductsDataGrid.ProductSearchFailed') })
-                    dispatch({ operation: 'searchedByName', data: [] })
+                    feedback.pushError({ node: t('UsersDataGrid.UserSearchFailed') })
+                    dispatch({ operation: 'searchedByPhoneNumber', data: [] })
                 }
                 else
-                    dispatch({ operation: 'searchedByName', data: r.data })
+                    dispatch({ operation: 'searchedByPhoneNumber', data: r.data })
             }, 1500)
         else
-            dispatch({ operation: 'searchedByName', data: [] })
-    }, [state?.searchByName])
+            dispatch({ operation: 'searchedByPhoneNumber', data: [] })
+    }, [state?.searchByPhoneNumber])
 
     useEffect(() => {
         if (state.updatingIsAvailable !== undefined) {
-            authFetchData(`${getApiUrl()}/products`, { method: 'PATCH', body: JSON.stringify({ id: state.updatingIsAvailable.original._id, product: { isAvailable: !state.updatingIsAvailable.original.isAvailable } }) })
+            authFetchData(`${getAuthApiUrl()}/users`, { method: 'PATCH', body: JSON.stringify({ id: state.updatingIsAvailable.original._id, user: { isAvailable: !state.updatingIsAvailable.original.isAvailable } }) })
                 .then(async r => {
                     if (!r.response || !r.response.ok) {
                         feedback.push({ node: t('UpdateOrder.updateFailed'), color: { bgColor: 'error', fgColor: 'error-foreground' } });
@@ -330,11 +325,11 @@ export function ProductsDataGrid({
 
     useEffect(() => {
         if (onChange)
-            onChange(products)
-    }, [products])
+            onChange(users)
+    }, [users])
 
     useEffect(() => {
-        if (products.length === 0) {
+        if (users.length === 0) {
             setInitialLoading(true)
             init(state.page.offset, state.page.limit)
                 .finally(() => setInitialLoading(false))
@@ -342,102 +337,7 @@ export function ProductsDataGrid({
             setInitialLoading(false)
     }, [])
 
-    const defaultOverWriteColumns = []
-    const defaultAdditionalColumns = []
-
-    const defaultColumns: ColumnDef<Product>[] = [
-        {
-            id: '_id',
-            accessorKey: '_id',
-        },
-        {
-            id: 'name',
-            accessorKey: 'name',
-        },
-        {
-            id: 'displayName',
-            accessorKey: 'displayName',
-            cell: ({ getValue }) => getValue()[configuration.local.language],
-        },
-        {
-            id: 'description',
-            accessorKey: 'description',
-            cell: ({ getValue }) => getValue()[configuration.local.language],
-        },
-        {
-            id: 'isAvailable',
-            accessorKey: 'isAvailable',
-            cell: ({ row, cell, getValue }) =>
-                <div className="w-full flex flex-row justify-center">
-                    {functionality.update === true
-                        ? (
-                            state.updatingIsAvailable !== undefined && state.updatingIsAvailable.id === row.id
-                                ? <CircularLoading />
-                                : <CheckBox
-                                    containerProps={{ className: 'w-fit' }}
-                                    colorForeground='success'
-                                    inputId={cell.id}
-                                    inputProps={{
-                                        checked: row.original.isAvailable,
-                                        readOnly: functionality.update !== true ? undefined : true,
-                                        onChange: functionality.update !== true ? undefined : () => dispatch({ operation: 'updateIsAvailable', data: row })
-                                    }}
-                                />
-                        )
-                        : <div className="w-full flex flex-row justify-center">{Boolean(getValue()) ? <CheckBox containerProps={{ className: 'w-fit' }} colorForeground='success' inputProps={{ checked: true, readOnly: true }} /> : <CheckBox containerProps={{ className: 'w-fit' }} colorForeground='error' inputProps={{ checked: false, readOnly: true }} />}</div>}
-                </div>
-        },
-        {
-            id: 'customFields',
-            accessorKey: 'customFields',
-            cell: ({ row }) => <div className="w-full flex flex-row justify-center"><Button isIcon variant="text" onClick={() => dispatch({ operation: 'showCustomFields', data: row })}><EyeIcon /></Button></div>,
-        },
-        {
-            id: 'tags',
-            accessorKey: 'tags',
-            cell: ({ row, getValue }) =>
-                <Stack stackProps={{ className: 'w-full justify-center' }}>
-                    <div className="w-[5cm] text-center cursor-pointer rounded-lg hover:border text-nowrap text-ellipsis overflow-hidden" onClick={() => dispatch({ operation: 'showTags', data: row })}>
-                        {(getValue() as string[]).join(', ')}
-                    </div>
-                </Stack>
-        },
-        {
-            id: 'categories',
-            accessorKey: 'categories',
-            cell: ({ row, getValue }) =>
-                <Stack stackProps={{ className: 'w-full justify-center' }}>
-                    <div className="w-[5cm] text-center cursor-pointer rounded-lg hover:border text-nowrap text-ellipsis overflow-hidden" onClick={() => dispatch({ operation: 'showCategories', data: row })}>
-                        {(getValue() as string[]).join(', ')}
-                    </div>
-                </Stack>
-        },
-        {
-            id: 'views',
-            accessorKey: 'views',
-            cell: ({ getValue }) => formatNumber(configuration, getValue() as number),
-        },
-        {
-            id: 'purchaseCount',
-            accessorKey: 'purchaseCount',
-            cell: ({ getValue }) => formatNumber(configuration, getValue() as number),
-        },
-        {
-            id: 'reviewsCount',
-            accessorKey: 'reviewsCount',
-            cell: ({ getValue }) => formatNumber(configuration, getValue() as number),
-        },
-        {
-            id: 'averageRating',
-            accessorKey: 'averageRating',
-            cell: ({ getValue }) => formatNumber(configuration, getValue() as number, { maximumFractionDigits: 2 }),
-        },
-        {
-            id: 'price',
-            accessorKey: 'price',
-            maxSize: 200,
-            cell: ({ getValue }) => formatCurrency(configuration, getValue()['IRR'] as number),
-        },
+    const defaultOverWriteColumns = [
         {
             id: 'createdAt',
             accessorKey: 'createdAt',
@@ -449,9 +349,10 @@ export function ProductsDataGrid({
             cell: ({ getValue }) => typeof getValue() === 'number' ? toFormat(getValue() as number, configuration.local, undefined, DATE) : '-',
         },
     ]
+    const defaultAdditionalColumns = []
 
     if (functionality.update === true || functionality.delete === true)
-        defaultColumns.push({
+        defaultAdditionalColumns.push({
             id: 'actions',
             accessorKey: 'actions',
             cell: ({ row }) =>
@@ -481,22 +382,22 @@ export function ProductsDataGrid({
         })
 
     const defaultHeaderNodes = [
-        <Button variant='outline' onClick={() => dispatch({ operation: 'fetch' })}>{state.fetching === true ? <CircularLoadingIcon /> : <RefreshCwIcon />}{t('Products.Refresh')}</Button>,
-        functionality.filter === true && <Button buttonRef={filterButtonRef} variant='outline' onClick={() => setOpenFilter(true)}><FilterIcon />{t('Products.Filters')}</Button>,
-        functionality.sort === true && <Button buttonRef={sortButtonRef} variant='outline' onClick={() => setOpenSort(true)}><ListFilterIcon />{t('Products.Sorts')}</Button>,
-        functionality.create === true && <Button fgColor='success' variant='outline' onClick={() => dispatch({ operation: 'createStarted' })}><PlusIcon />{t('Products.Create')}</Button>,
-        functionality.search === true && <Input startIcon={state?.searching ? <CircularLoading size="xs" /> : <SearchIcon />} placeholder={t('ProductsDataGrid.SearchByName')} value={state.searchByName ?? ''} onChange={(e) => dispatch({ operation: 'searchByName', data: e.target.value.trim() })} />,
+        <Button variant='outline' disabled={state.fetching} onClick={() => dispatch({ operation: 'fetch' })}>{state.fetching === true ? <CircularLoadingIcon /> : <RefreshCwIcon />}{t('Users.Refresh')}</Button>,
+        functionality.filter === true && <Button buttonRef={filterButtonRef} variant='outline' onClick={() => setOpenFilter(true)}><FilterIcon />{t('Users.Filters')}</Button>,
+        functionality.sort === true && <Button buttonRef={sortButtonRef} variant='outline' onClick={() => setOpenSort(true)}><ListFilterIcon />{t('Users.Sorts')}</Button>,
+        functionality.create === true && <Button fgColor='success' variant='outline' onClick={() => dispatch({ operation: 'createStarted' })}><PlusIcon />{t('Users.Create')}</Button>,
+        functionality.search === true && <Input startIcon={state?.searching ? <CircularLoading size="xs" /> : <SearchIcon />} placeholder={t('UsersDataGrid.SearchByPhoneNumber')} value={state.searchByPhoneNumber ?? ''} onChange={(e) => dispatch({ operation: 'searchByPhoneNumber', data: e.target.value.trim() })} />,
     ]
 
-    console.log('ProductsDataGrid', { loading, products, state, afterDataFetchHook, allFunctionalitiesToggle, functionality, options, columns, headerNodes, onChange, dataGridProps })
+    console.log('UsersDataGrid', { loading, users, state, afterDataFetchHook, allFunctionalitiesToggle, functionality, options, columns, headerNodes, onChange, dataGridProps })
 
     return (
         <>
             <DataGrid
                 {...dataGridProps}
-                data={state?.searchByName?.trim() ? state.searchedProducts : products}
+                data={state?.searchByPhoneNumber?.trim() ? state.searchedUsers : users}
                 loading={initialLoading}
-                columns={options?.appendDefaults === true || options?.appendDefaultColumns === true ? (columns?.columns ?? []).concat(defaultColumns) : columns?.columns}
+                columns={columns?.columns}
                 additionalColumns={options?.appendDefaults === true || options?.appendDefaultAdditionalColumns === true ? (columns?.additionalColumns ?? []).concat(defaultAdditionalColumns) : columns?.additionalColumns}
                 overWriteColumns={options?.appendDefaults === true || options?.appendDefaultOverWriteColumns === true ? (columns?.overWriteColumns ?? []).concat(defaultOverWriteColumns) : columns?.overWriteColumns}
                 pagination={functionality.pagination !== true ? undefined : { pageSize: state.page.limit, pageIndex: state.page.offset }}
@@ -516,57 +417,13 @@ export function ProductsDataGrid({
                 open={state.creating || state?.updatingRow !== undefined}
                 onClose={() => dispatch({ operation: state.creating ? 'createEnded' : 'updateEnded' })}
             >
-                <ManageProduct
-                    product={state.creating ? undefined : state?.updatingRow?.original as any}
+                <ManageUser
+                    user={state.creating ? undefined : state?.updatingRow?.original as any}
                     onFinish={async () => {
-
                         dispatch({ operation: state.creating ? 'createEnded' : 'updateEnded' })
                         await init(state.page.offset, state.page.limit)
                     }}
                 />
-            </Modal>
-
-            <Modal
-                modalContainerProps={{ className: 'overflow-y-auto' }}
-                open={state?.showCustomFields !== undefined}
-                onClose={() => dispatch({ operation: 'showCustomFields', data: undefined })}
-            >
-                <Stack direction="vertical" stackProps={{ className: 'w-full items-center justify-between' }}>
-                    {state?.showCustomFields && Object.entries(products.find(f => f._id === state?.showCustomFields?.original?._id) ?? {}).filter(f => ['schemaVersion', '_id', 'tags', 'categories', 'name', 'displayName', 'description', 'price', 'isAvailable', 'thumbnail', 'purchaseCount', 'reviewsCount', 'views', 'averageRating', 'createdAt', 'updatedAt',].includes(f[0]) === false).map(m =>
-                        <Stack key={m[0]}>
-                            <Input containerProps={{ className: "flex-grow" }} readOnly value={m[0]} />
-                            <Input containerProps={{ className: "flex-grow" }} placeholder={t('ProductsDataGrid.Value')} readOnly value={m[1] as any} />
-                        </Stack>
-                    )}
-                </Stack>
-            </Modal>
-
-            <Modal
-                modalContainerProps={{ className: 'overflow-y-auto' }}
-                open={state?.showTags !== undefined}
-                onClose={() => dispatch({ operation: 'showTags', data: undefined })}
-            >
-                <Stack direction="vertical">
-                    {products?.find(f => f._id === state?.showTags?.original?._id)?.tags?.map(m =>
-                        <div key={m} className="text-lg">
-                            {m}
-                        </div>
-                    )}
-                </Stack>
-            </Modal>
-
-            <Modal
-                modalContainerProps={{ className: 'overflow-y-auto' }}
-                open={state?.showCategories !== undefined}
-                onClose={() => dispatch({ operation: 'showCategories', data: undefined })}
-            >
-                <Stack direction="vertical">
-                    {products?.find(f => f._id === state?.showCategories?.original?._id)?.categories?.map(m =>
-                        <div key={m} className="text-lg">
-                            {m}
-                        </div>
-                    )}
-                </Stack>
             </Modal>
         </>
     )

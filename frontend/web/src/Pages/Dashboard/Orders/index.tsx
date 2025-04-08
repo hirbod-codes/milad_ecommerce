@@ -9,9 +9,9 @@ import { OrdersDataGrid } from "@/src/Components/Orders/OrdersDataGrid";
 export function Orders() {
     const privileges = useContext(AuthContext).privileges
 
-    const createsOrder = privileges?.find(f => f === 'create-product') !== undefined
-    const updatesOrder = privileges?.find(f => f === 'update-product') !== undefined
-    const deletesOrder = privileges?.find(f => f === 'delete-product') !== undefined
+    const createsOrder = privileges?.find(f => f === 'create-order') !== undefined
+    const updatesOrder = privileges?.find(f => f === 'update-order') !== undefined
+    const deletesOrder = privileges?.find(f => f === 'delete-order') !== undefined
 
     return (
         <OrdersDataGrid

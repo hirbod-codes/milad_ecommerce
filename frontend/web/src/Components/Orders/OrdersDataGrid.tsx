@@ -67,11 +67,7 @@ export function OrdersDataGrid({
         appendDefaultAdditionalColumns: true,
         appendDefaultHeaderNodes: true,
     },
-    columns = {
-        columns: [],
-        additionalColumns: [],
-        overWriteColumns: [],
-    },
+    columns,
     headerNodes,
     onChange,
     dataGridProps
@@ -353,45 +349,7 @@ export function OrdersDataGrid({
             setInitialLoading(false)
     }, [])
 
-    const defaultOverWriteColumns = []
-    const defaultAdditionalColumns = []
-
-    const defaultColumns: ColumnDef<Order>[] = [
-        {
-            id: '_id',
-            accessorKey: '_id',
-        },
-        {
-            id: 'userId',
-            accessorKey: 'userId',
-        },
-        {
-            id: 'actions',
-            cell: ({ row }) =>
-                <Stack stackProps={{ className: "justify-center w-full" }}>
-                    {
-                        functionality.update === true &&
-                        <Button
-                            isIcon
-                            variant='text'
-                            onClick={() => dispatch({ operation: 'updateStarted', data: row })}
-                        >
-                            {state.updatingRow === undefined || state.updatingRow.original._id !== row.original._id ? <EditIcon /> : <CircularLoadingIcon />}
-                        </Button>
-                    }
-                    {
-                        functionality.delete === true &&
-                        <Button
-                            isIcon
-                            variant='text'
-                            fgColor='error'
-                            onClick={() => dispatch({ operation: 'deleteStarted', data: row })}
-                        >
-                            {state.deletingRow === undefined || state.deletingRow.original._id !== row.original._id ? <Trash2Icon /> : <CircularLoadingIcon />}
-                        </Button>
-                    }
-                </Stack>
-        },
+    const defaultOverWriteColumns = [
         {
             id: 'cost',
             accessorKey: 'cost',
@@ -469,9 +427,41 @@ export function OrdersDataGrid({
             cell: ({ getValue }) => typeof getValue() === 'number' ? toFormat(getValue() as number, configuration.local, undefined, DATE) : '-',
         },
     ]
+    const defaultAdditionalColumns = []
+
+    if (functionality.update === true || functionality.delete === true)
+        defaultAdditionalColumns.push(
+            {
+                id: 'actions',
+                cell: ({ row }) =>
+                    <Stack stackProps={{ className: "justify-center w-full" }}>
+                        {
+                            functionality.update === true &&
+                            <Button
+                                isIcon
+                                variant='text'
+                                onClick={() => dispatch({ operation: 'updateStarted', data: row })}
+                            >
+                                {state.updatingRow === undefined || state.updatingRow.original._id !== row.original._id ? <EditIcon /> : <CircularLoadingIcon />}
+                            </Button>
+                        }
+                        {
+                            functionality.delete === true &&
+                            <Button
+                                isIcon
+                                variant='text'
+                                fgColor='error'
+                                onClick={() => dispatch({ operation: 'deleteStarted', data: row })}
+                            >
+                                {state.deletingRow === undefined || state.deletingRow.original._id !== row.original._id ? <Trash2Icon /> : <CircularLoadingIcon />}
+                            </Button>
+                        }
+                    </Stack>
+            },
+        )
 
     const defaultHeaderNodes = [
-        <Button variant='outline' onClick={() => dispatch({ operation: 'fetch' })}>{state.fetching === true ? <CircularLoadingIcon /> : <RefreshCwIcon />}{t('Orders.Refresh')}</Button>,
+        <Button variant='outline' disabled={state.fetching} onClick={() => dispatch({ operation: 'fetch' })}>{state.fetching === true ? <CircularLoadingIcon /> : <RefreshCwIcon />}{t('Orders.Refresh')}</Button>,
         functionality.filter === true && <Button buttonRef={filterButtonRef} variant='outline' onClick={() => setOpenFilter(true)}><FilterIcon />{t('Orders.Filters')}</Button>,
         functionality.sort === true && <Button buttonRef={sortButtonRef} variant='outline' onClick={() => setOpenSort(true)}><ListFilterIcon />{t('Orders.Sorts')}</Button>,
         functionality.create === true && <Button fgColor='success' variant='outline' onClick={() => dispatch({ operation: 'createStarted' })}><PlusIcon />{t('Orders.Create')}</Button>,
@@ -485,7 +475,7 @@ export function OrdersDataGrid({
                 {...dataGridProps}
                 data={orders}
                 loading={initialLoading}
-                columns={options?.appendDefaults === true || options?.appendDefaultColumns === true ? (columns?.columns ?? []).concat(defaultColumns) : columns?.columns}
+                columns={columns?.columns}
                 additionalColumns={options?.appendDefaults === true || options?.appendDefaultAdditionalColumns === true ? (columns?.additionalColumns ?? []).concat(defaultAdditionalColumns) : columns?.additionalColumns}
                 overWriteColumns={options?.appendDefaults === true || options?.appendDefaultOverWriteColumns === true ? (columns?.overWriteColumns ?? []).concat(defaultOverWriteColumns) : columns?.overWriteColumns}
                 pagination={functionality.pagination !== true ? undefined : { pageSize: state.page.limit, pageIndex: state.page.offset }}
