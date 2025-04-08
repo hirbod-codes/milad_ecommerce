@@ -20,6 +20,7 @@ export function ManageUser({ user: userInput, onFinish }: { user: User, onFinish
     const [loading, setLoading] = useState<boolean>(false)
     const [submitting, setSubmitting] = useState<boolean>(false)
 
+    const [downloading, setDownloading] = useState(user.avatarUrl !== undefined)
     const [uploading, setUploading] = useState(false)
     const uploadRef = useRef<HTMLInputElement>(null)
     const [image, setImage] = useState<string>(undefined)
@@ -43,6 +44,7 @@ export function ManageUser({ user: userInput, onFinish }: { user: User, onFinish
             authFetchData(`${getAuthApiUrl()}/users/picture?fileId=${user.avatarUrl}`)
                 .then(r => {
                     setFile({ _id: user.avatarUrl, file: r.data, url: URL.createObjectURL(r.data) })
+                    setDownloading(false)
                 })
 
         return () => {
@@ -63,38 +65,44 @@ export function ManageUser({ user: userInput, onFinish }: { user: User, onFinish
                 <Separator />
 
                 <Stack stackProps={{ className: 'flex-wrap items-center justify-center *:py-1' }}>
-                    {file &&
-                        <div key={file.file.name} className="relative w-56">
-                            <img src={file.url} className="w-full relative top-0" loading="lazy" />
-                            <div className="size-full absolute top-0 *:hover:block z-50">
-                                <div className="size-full absolute top-0 hidden bg-[#00000080]" onClick={() => setImage(file.url)} />
-                                <div className="hidden absolute bottom-1 right-1">
-                                    <Button
-                                        isIcon
-                                        variant="text"
-                                        size='xs'
-                                        fgColor="error"
-                                        onClick={async (e) => {
-                                            e.stopPropagation()
+                    {
+                        downloading
+                            ? <CircularLoading />
+                            : (
+                                file
+                                    ? <div key={file.file.name} className="relative w-56">
+                                        <img src={file.url} className="w-full relative top-0" loading="lazy" />
+                                        <div className="size-full absolute top-0 *:hover:block z-50">
+                                            <div className="size-full absolute top-0 hidden bg-[#00000080]" onClick={() => setImage(file.url)} />
+                                            <div className="hidden absolute bottom-1 right-1">
+                                                <Button
+                                                    isIcon
+                                                    variant="text"
+                                                    size='xs'
+                                                    fgColor="error"
+                                                    onClick={async (e) => {
+                                                        e.stopPropagation()
 
-                                            if (file._id === undefined)
-                                                return
+                                                        if (file._id === undefined)
+                                                            return
 
-                                            const r = await authFetchData(`${getAuthApiUrl()}/users/picture`, { method: 'delete', body: JSON.stringify({ fileId: file._id }) })
+                                                        const r = await authFetchData(`${getAuthApiUrl()}/users/picture`, { method: 'delete', body: JSON.stringify({ fileId: file._id }) })
 
-                                            if (!r.response || !r.response.ok)
-                                                feedback.pushError({ node: t('ManageUser.pictureDeleteFailed') })
+                                                        if (!r.response || !r.response.ok)
+                                                            feedback.pushError({ node: t('ManageUser.pictureDeleteFailed') })
 
-                                            URL.revokeObjectURL(file.url)
+                                                        URL.revokeObjectURL(file.url)
 
-                                            setFile(undefined)
-                                        }}
-                                    >
-                                        <Trash2Icon />
-                                    </Button>
-                                </div>
-                            </div>
-                        </div>
+                                                        setFile(undefined)
+                                                    }}
+                                                >
+                                                    <Trash2Icon />
+                                                </Button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    : <Button isIcon variant="text" fgColor='success' onClick={() => { if (uploadRef) uploadRef.current.click() }}>{uploading ? <CircularLoadingIcon /> : <PlusIcon />}</Button>
+                            )
                     }
 
                     <Input
@@ -135,8 +143,6 @@ export function ManageUser({ user: userInput, onFinish }: { user: User, onFinish
                             }
                         }}
                     />
-
-                    {!file && <Button isIcon variant="text" fgColor='success' onClick={() => { if (uploadRef) uploadRef.current.click() }}>{uploading ? <CircularLoadingIcon /> : <PlusIcon />}</Button>}
                 </Stack>
                 <Modal
                     modalContainerProps={{ className: 'max-h-screen h-max' }}
