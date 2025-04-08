@@ -1,4 +1,4 @@
-import { authFetchData, fetchData, getApiUrl, getAuthApiUrl } from "@/src/Backend/helpers"
+import { authFetchData, fetchData, getApiUrl } from "@/src/Backend/helpers"
 import { Button } from "@/src/Components/Base/Button"
 import { CheckBox } from "@/src/Components/Base/CheckBox"
 import { CircularLoading } from "@/src/Components/Base/CircularLoading"
@@ -9,12 +9,10 @@ import { FeedbackContext } from "@/src/Contexts/Feedback/FeedbackContext"
 import { Separator } from "@/src/shadcn/components/ui/separator"
 import { t } from "i18next"
 import { useContext, useEffect, useRef, useState } from "react"
-import { array, object, string } from "yup"
+import { array, string } from "yup"
 import { Product, staticFields } from "./index.d"
-import { CircularLoadingScreen } from "../Base/CircularLoadingScreen"
 import { Textarea } from "@/src/shadcn/components/ui/textarea"
-import { Select } from "../Base/Select"
-import { PlusIcon, SearchIcon, Trash2Icon } from "lucide-react"
+import { PlusIcon, Trash2Icon } from "lucide-react"
 import { Modal } from "../Base/Modal"
 import { SearchCategory } from "../SearchCategory"
 import { SearchTag } from "../SearchTag"
@@ -40,7 +38,7 @@ export function ManageProduct({ product: productInput, onFinish }: { product?: P
         return id.current
     }
 
-    console.log('ManageProduct', { product, loading, submitting })
+    console.log('ManageProduct', { product, loading, submitting, languages, uploading, image, files })
 
     const revokeImages = () => {
         files?.forEach((f) => URL.revokeObjectURL(f.url));
@@ -64,14 +62,15 @@ export function ManageProduct({ product: productInput, onFinish }: { product?: P
 
                 if (r[1].response && r[1].response.ok && array().required().isValidSync(r[1].data)) {
                     const picturesResponses = await Promise.all(r[1]?.data?.map(m =>
-                        fetchData(`${getApiUrl()}/products/pictures/fileId?fileId=${m._id}`)
+                        fetchData(`${getApiUrl()}/products/picture/fileId?fileId=${m._id}`)
                     ))
 
                     for (const picturesResponse of picturesResponses)
-                        if (!picturesResponse?.response || !picturesResponse.response?.ok || !array().required().isValidSync(picturesResponse.data))
+                        if (!picturesResponse?.response || !picturesResponse?.response?.ok)
                             feedback.pushError({ node: t('ManageProduct.failedToFetchPictures') })
 
-                    setFiles(picturesResponses.map((m, i) => ({ _id: r[1]?.data[i], file: m.data, url: URL.createObjectURL(m.data) })))
+                    console.log('picturesResponses', picturesResponses)
+                    setFiles(picturesResponses.map((m, i) => ({ _id: r[1]?.data[i], file: new File([m.data], r[1]?.data[i]?.filename), url: URL.createObjectURL(m.data) })))
                 }
             })
 
@@ -285,12 +284,12 @@ export function ManageProduct({ product: productInput, onFinish }: { product?: P
                                         return
                                     }
 
-                                    const picturesResult = await fetchData(`${getApiUrl()}/products/pictures/${product._id}`)
+                                    const picturesResult = await fetchData(`${getApiUrl()}/products/pictures/productIds?productIds=${product._id}`)
                                     if (!picturesResult.response || !picturesResult?.response?.ok)
                                         feedback.push({ node: t('ManageProduct.FailedToFetchIMages'), color: { bgColor: 'error', fgColor: 'error-foreground' } })
 
                                     for (const file of fs)
-                                        file._id = picturesResult.data.find(f => f.filename === file.file.name)?._id
+                                        file._id = picturesResult?.data?.find(f => f.filename === file.file.name)?._id
                                     fs = fs.filter(f => f._id !== undefined)
                                 } finally { setUploading(false) }
                             }
@@ -347,7 +346,7 @@ export function ManageProduct({ product: productInput, onFinish }: { product?: P
                                 }
 
                                 const uploadResult = await authFetchData(`${getApiUrl()}/products/pictures/${r.data.id}`, {
-                                    method: 'post',
+                                    method: 'POST',
                                     body: formData,
                                     headers: {
                                         Accept: 'application/json',

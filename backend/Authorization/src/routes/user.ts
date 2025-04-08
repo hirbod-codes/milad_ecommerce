@@ -1,5 +1,5 @@
 import { Router } from "express"
-import { likeObjectId, stringObjectId } from "@/src/DB/Models/common_schemas"
+import { stringObjectId } from "@/src/DB/Models/common_schemas"
 import { authenticate } from "@/src/middlewares/authenticate"
 import { authorize } from "@/src/middlewares/authorize"
 import Jwt from "jsonwebtoken";
@@ -53,15 +53,19 @@ user.get('/avatar', async (req, res) => {
 
         const userProfilePictureRepository = await UserProfilePictureRepository.getInstance()
         const file = await userProfilePictureRepository.getFileByUserId(userId)
-        if (file.length === 0) {
+        if (file === undefined) {
             res.sendStatus(404)
             return
         }
 
-        res.setHeader("Content-Disposition", `attachment;`);
-        res.setHeader("Content-Type", "application/octet-stream");
+        const readstream = userProfilePictureRepository.getReadStream(file._id);
 
-        console.log('result', await userProfilePictureRepository.downloadFile(res, file[0]._id))
+        readstream.pipe(res)
+
+        readstream.on('error', e => {
+            console.error(e)
+            res.sendStatus(500)
+        })
     } catch (e) {
         console.error(e)
         res.sendStatus(500)
@@ -135,14 +139,15 @@ user.post('/avatar', authenticate, async (req, res) => {
 
         bb.on('error', e => { console.error(e); res.sendStatus(500) })
 
-        bb.on("finish", () => {
+        bb.on("finish", async () => {
             if (files.length !== 1)
                 return res.status(400).json({ errors: ['only one file is allowed'] })
 
             const uploadedFiles: { filename: string, id: string }[] = [];
 
-            files.forEach(async (file) => {
-                const userProfilePictureRepository = await UserProfilePictureRepository.getInstance()
+            const userProfilePictureRepository = await UserProfilePictureRepository.getInstance()
+
+            files.forEach((file) => {
                 const writeStream = userProfilePictureRepository.getWriteStream(file.filename, userId, file.mimeType)
 
                 writeStream.on("finish", async () => {
@@ -186,12 +191,12 @@ user.delete('/avatar', authenticate, async (req, res) => {
 
         const userProfilePictureRepository = await UserProfilePictureRepository.getInstance()
         const file = await userProfilePictureRepository.getFileByUserId(userId)
-        if (file.length === 0) {
+        if (file === undefined) {
             res.sendStatus(404)
             return
         }
 
-        if ((await userProfilePictureRepository.deleteFile(file[0]._id)) !== true) {
+        if ((await userProfilePictureRepository.deleteFile(file._id)) !== true) {
             res.sendStatus(500)
             return
         }

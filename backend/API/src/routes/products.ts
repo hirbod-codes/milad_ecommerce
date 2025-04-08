@@ -171,6 +171,8 @@ products.get('/picture/fileId', async (req, res) => {
             return
         }
 
+        res.setHeader('Content-Type', file?.metadata?.contentType)
+
         const readstream = productPictureRepository.getReadStream(file._id);
         console.log('readstream', readstream)
 
@@ -233,7 +235,7 @@ products.post('/pictures/:productId', authenticate, async (req, res) => {
         }[] = [];
         const maxFiles = 50; // Maximum number of files allowed
         const maxFileSize = 5 * 1024 * 1024; // 5MB
-        const allowedTypes = ["image/jpeg", "image/png", "application/jpg"];
+        const allowedTypes = ["image/jpeg", "image/jpg", "image/png", "application/jpg"];
 
         const bb = busboy({ limits: { fileSize: maxFileSize, parts: maxFiles }, headers: req.headers });
 
@@ -268,6 +270,8 @@ products.post('/pictures/:productId', authenticate, async (req, res) => {
             });
         })
 
+        const productPictureRepository = await ProductPictureRepository.getInstance()
+
         bb.on("finish", () => {
             if (files.length === 0)
                 return res.status(400).json({ message: "No files uploaded" });
@@ -275,7 +279,6 @@ products.post('/pictures/:productId', authenticate, async (req, res) => {
             const uploadedFiles: { filename: string, id: string }[] = [];
 
             files.forEach(async (file) => {
-                const productPictureRepository = await ProductPictureRepository.getInstance()
                 const writeStream = productPictureRepository.getWriteStream(file.filename, productId, file.mimeType)
 
                 writeStream.on("finish", () => {

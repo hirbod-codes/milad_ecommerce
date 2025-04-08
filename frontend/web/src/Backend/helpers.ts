@@ -162,10 +162,17 @@ export async function authFetchData(input: string | URL | globalThis.Request, in
     console.log('authFetch()')
 
     const response = await authFetch(input, init, json)
+
     if (response?.headers?.get('content-type')?.includes('application/json'))
         return { response, data: response && response?.ok ? await response.json() : undefined }
-    else
+
+    if (response?.headers?.get('content-type')?.includes('plain/text'))
         return { response, data: response && response?.ok ? await response.text() : undefined }
+
+    if (response?.headers?.get('content-type')?.includes('image'))
+        return { response, data: response && response?.ok ? await response.blob() : undefined }
+
+    throw new Error('Unsupported Content type encountered in fetchData!')
 }
 
 export async function fetchData(input: string | URL | globalThis.Request, init?: RequestInit, json: boolean = true): Promise<{ response?: Response, data: any }> {
@@ -183,10 +190,17 @@ export async function fetchData(input: string | URL | globalThis.Request, init?:
     }
 
     let response = await fetch(input, init)
+
     if (response?.headers?.get('content-type')?.includes('application/json'))
         return { response, data: response && response?.ok ? await response.json() : undefined }
-    else
+
+    if (response?.headers?.get('content-type')?.includes('plain/text'))
         return { response, data: response && response?.ok ? await response.text() : undefined }
+
+    if (response?.headers?.get('content-type')?.includes('image'))
+        return { response, data: response && response?.ok ? await response.blob() : undefined }
+
+    throw new Error('Unsupported Content type encountered in fetchData!')
 }
 
 export async function tryAndWait(callback: CallableFunction, secondsToWaitForEachTry: number = 5): Promise<boolean> {

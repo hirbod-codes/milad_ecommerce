@@ -113,21 +113,28 @@ users.get('/', authenticate, async (req, res) => {
 
 users.get('/picture', async (req, res) => {
     try {
-        const { fileId } = req.query
+        const { fileId, userId } = req.query
 
-        if (!stringObjectId.required().isValidSync(fileId)) {
+        if (!stringObjectId.required().isValidSync(fileId) || !stringObjectId.required().isValidSync(userId)) {
             res.sendStatus(400)
             return
         }
-        const userPictureRepository = await UserProfilePictureRepository.getInstance()
-        const file = await userPictureRepository.getFile(fileId)
+        const userProfilePictureRepository = await UserProfilePictureRepository.getInstance()
+
+        let file
+        if (fileId)
+            file = await userProfilePictureRepository.getFile(fileId)
+        else
+            file = await userProfilePictureRepository.getFileByUserId(userId)
+
         if (file === undefined) {
             res.sendStatus(404)
             return
         }
 
-        const readstream = userPictureRepository.getReadStream(file._id);
-        console.log('readstream', readstream)
+        res.setHeader('Content-Type', file?.metadata?.contentType)
+
+        const readstream = userProfilePictureRepository.getReadStream(file._id);
 
         readstream.pipe(res)
 
@@ -197,13 +204,15 @@ users.post('/picture/:userId', authenticate, async (req, res) => {
             })
         })
 
-        bb.on("finish", () => {
+        bb.on("finish", async () => {
             if (files.length === 0)
                 return res.status(400).json({ message: "No files uploaded" })
 
             console.log('files', files)
-            files.forEach(async (file) => {
-                const userProfilePictureRepository = await UserProfilePictureRepository.getInstance()
+
+            const userProfilePictureRepository = await UserProfilePictureRepository.getInstance()
+
+            files.forEach((file) => {
                 const writeStream = userProfilePictureRepository.getWriteStream(file.filename, userId, file.mimeType)
 
                 writeStream.on("finish", () => {

@@ -82,8 +82,8 @@ export class UserProfilePictureRepository {
         return await this.collection.find({ userId: { $in: fileIds.map(id => typeof id === 'string' ? ObjectId.createFromHexString(id) : id) } }).toArray();
     }
 
-    async getFileByUserId(userId: string | ObjectId): Promise<GridFSFile[]> {
-        return await this.collection.find({ 'metadata.userId': typeof userId === 'string' ? ObjectId.createFromHexString(userId) : userId }).toArray();
+    async getFileByUserId(userId: string | ObjectId): Promise<GridFSFile> {
+        return (await this.collection.find({ 'metadata.userId': typeof userId === 'string' ? ObjectId.createFromHexString(userId) : userId }).toArray())[0];
     }
 
     async downloadFile(writeStream: NodeJS.WritableStream, fileId: string | ObjectId): Promise<boolean> {
