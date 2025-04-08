@@ -1,4 +1,4 @@
-import { authFetchData, getApiUrl, getAuthApiUrl } from "@/src/Backend/helpers"
+import { authFetchData, getAuthApiUrl } from "@/src/Backend/helpers"
 import { Button } from "@/src/Components/Base/Button"
 import { CircularLoading } from "@/src/Components/Base/CircularLoading"
 import { CircularLoadingIcon } from "@/src/Components/Base/CircularLoadingIcon"
@@ -17,10 +17,8 @@ export function ManageUser({ user: userInput, onFinish }: { user: User, onFinish
 
     const [user, setUser] = useState<User>(userInput)
 
-    const [loading, setLoading] = useState<boolean>(true)
+    const [loading, setLoading] = useState<boolean>(false)
     const [submitting, setSubmitting] = useState<boolean>(false)
-
-    const [languages, setLanguages] = useState<string[] | undefined>(undefined)
 
     const [uploading, setUploading] = useState(false)
     const uploadRef = useRef<HTMLInputElement>(null)
@@ -30,7 +28,8 @@ export function ManageUser({ user: userInput, onFinish }: { user: User, onFinish
     console.log('ManageUser', { user, loading, submitting })
 
     const revokeImages = () => {
-        URL.revokeObjectURL(file.url)
+        if (file?.url !== undefined)
+            URL.revokeObjectURL(file.url)
 
         if (image !== undefined)
             URL.revokeObjectURL(image)
@@ -63,30 +62,9 @@ export function ManageUser({ user: userInput, onFinish }: { user: User, onFinish
 
                 <Separator />
 
-                <Stack>
-                    <Input
-                        innerContainerProps={{ className: 'flex-grow' }}
-                        containerProps={{ className: 'w-full' }}
-                        label={t('ManageUser.firstName')}
-                        labelId={t('ManageUser.firstName')}
-                        value={user?.firstName ?? ''}
-                        onChange={(e) => setUser({ ...user, firstName: e.target.value.trim() })}
-                    />
-                    <Input
-                        innerContainerProps={{ className: 'flex-grow' }}
-                        containerProps={{ className: 'w-full' }}
-                        label={t('ManageUser.lastName')}
-                        labelId={t('ManageUser.lastName')}
-                        value={user?.lastName ?? ''}
-                        onChange={(e) => setUser({ ...user, lastName: e.target.value.trim() })}
-                    />
-                </Stack>
-
-                <Separator />
-
-                <Stack stackProps={{ className: 'flex-wrap items-start *:py-1' }}>
+                <Stack stackProps={{ className: 'flex-wrap items-center justify-center *:py-1' }}>
                     {file &&
-                        <div key={file.file.name} className="relative w-[6cm]">
+                        <div key={file.file.name} className="relative w-56">
                             <img src={file.url} className="w-full relative top-0" loading="lazy" />
                             <div className="size-full absolute top-0 *:hover:block z-50">
                                 <div className="size-full absolute top-0 hidden bg-[#00000080]" onClick={() => setImage(file.url)} />
@@ -102,7 +80,7 @@ export function ManageUser({ user: userInput, onFinish }: { user: User, onFinish
                                             if (file._id === undefined)
                                                 return
 
-                                            const r = await authFetchData(`${getApiUrl()}/users/picture`, { method: 'delete', body: JSON.stringify({ fileId: file._id }) })
+                                            const r = await authFetchData(`${getAuthApiUrl()}/users/picture`, { method: 'delete', body: JSON.stringify({ fileId: file._id }) })
 
                                             if (!r.response || !r.response.ok)
                                                 feedback.pushError({ node: t('ManageUser.pictureDeleteFailed') })
@@ -139,8 +117,8 @@ export function ManageUser({ user: userInput, onFinish }: { user: User, onFinish
                                     formData.append(f.file.name, f.file)
                                     size += f.file.size
 
-                                    const r = await authFetchData(`${getApiUrl()}/users/picture/${user._id}`, {
-                                        method: 'post',
+                                    const r = await authFetchData(`${getAuthApiUrl()}/users/picture/${user._id}`, {
+                                        method: 'POST',
                                         body: formData,
                                         headers: {
                                             Accept: 'application/json',
@@ -156,7 +134,8 @@ export function ManageUser({ user: userInput, onFinish }: { user: User, onFinish
                             }
                         }}
                     />
-                    <Button isIcon variant="text" fgColor='success' onClick={() => { if (uploadRef) uploadRef.current.click() }}>{uploading ? <CircularLoadingIcon /> : <PlusIcon />}</Button>
+
+                    {!file && <Button isIcon variant="text" fgColor='success' onClick={() => { if (uploadRef) uploadRef.current.click() }}>{uploading ? <CircularLoadingIcon /> : <PlusIcon />}</Button>}
                 </Stack>
                 <Modal
                     modalContainerProps={{ className: 'max-h-screen h-max' }}
@@ -168,6 +147,27 @@ export function ManageUser({ user: userInput, onFinish }: { user: User, onFinish
                     <img src={image} className="h-max relative" loading="lazy" />
                 </Modal>
 
+                <Stack>
+                    <Input
+                        innerContainerProps={{ className: 'flex-grow' }}
+                        containerProps={{ className: 'w-full' }}
+                        label={t('ManageUser.firstName')}
+                        labelId={t('ManageUser.firstName')}
+                        value={user?.firstName ?? ''}
+                        onChange={(e) => setUser({ ...user, firstName: e.target.value.trim() })}
+                    />
+                    <Input
+                        innerContainerProps={{ className: 'flex-grow' }}
+                        containerProps={{ className: 'w-full' }}
+                        label={t('ManageUser.lastName')}
+                        labelId={t('ManageUser.lastName')}
+                        value={user?.lastName ?? ''}
+                        onChange={(e) => setUser({ ...user, lastName: e.target.value.trim() })}
+                    />
+                </Stack>
+
+                <Separator />
+
                 <Separator />
 
                 <Button
@@ -176,14 +176,20 @@ export function ManageUser({ user: userInput, onFinish }: { user: User, onFinish
                         setSubmitting(true)
                         try {
                             const data: any = {
-                                id: user._id,
-                                user,
+                                userId: user._id,
+                                user: {
+                                    firstName: user.firstName,
+                                    lastName: user.lastName,
+                                    avatarUrl: user.avatarUrl,
+                                },
                             }
                             console.log('data', data)
 
-                            const r = await authFetchData(`${getApiUrl()}/users`, { method: 'PATCH', body: JSON.stringify(data) })
+                            const r = await authFetchData(`${getAuthApiUrl()}/users`, { method: 'PATCH', body: JSON.stringify(data) })
                             if (!r.response || !r.response?.ok)
                                 feedback.pushError({ node: t('ManageUser.UpdateFailed') })
+                            else if (onFinish)
+                                onFinish(user, true)
                         } finally { setSubmitting(false) }
                     }}
                 >

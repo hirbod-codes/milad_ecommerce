@@ -75,6 +75,7 @@ export function UsersDataGrid({
     const configuration = useContext(ConfigurationContext)
 
     const [users, setUsers] = useState<User[]>(inputUsers)
+    const [images, setImages] = useState<{ [k: string]: string }>({})
 
     if (!functionality)
         functionality = {}
@@ -97,35 +98,45 @@ export function UsersDataGrid({
 
     const init = async (offset: number = 0, limit: number = 0) => {
         setLoading(true)
-        try {
-            const res = await authFetchData(`${getAuthApiUrl()}/users?limit=${limit}&skip=${limit * offset}${filters === undefined ? '' : '&filter=' + JSON.stringify(formatFilters(filters))}`)
-            if (!res.response || !res.response.ok || !array().required().isValidSync(res.data)) {
-                feedback.push({ node: t('Users.failedToFetchUsers'), color: { bgColor: 'error', fgColor: 'error-foreground' } })
-                return false
-            }
-
-            if (res.data.length >= 0) {
-                setUsers(res.data)
-                return true
-            }
-
-            return false
-        } finally { setLoading(false) }
+        try { return fetchUsers(offset, limit) }
+        finally { setLoading(false) }
     }
 
-    const fetch = async (offset: number = 0, limit: number = 0) => {
+    const fetchUsers = async (offset: number = 0, limit: number = 0) => {
         const res = await authFetchData(`${getAuthApiUrl()}/users?limit=${limit}&skip=${limit * offset}${filters === undefined ? '' : '&filter=' + JSON.stringify(formatFilters(filters))}`)
         if (!res.response || !res.response.ok || !array().required().isValidSync(res.data)) {
             feedback.push({ node: t('Users.failedToFetchUsers'), color: { bgColor: 'error', fgColor: 'error-foreground' } })
             return false
         }
 
-        if (res.data.length >= 0) {
-            setUsers(res.data)
-            return true
-        }
+        if (res.data.length === 0)
+            return false
 
-        return false
+        setUsers(res.data)
+
+        Object.entries(images).forEach(f => URL.revokeObjectURL(f[1]))
+        setImages({})
+
+        const fetchedImages = {}
+        Promise.all([
+            res.data?.map(m =>
+                authFetchData(`${getAuthApiUrl()}/users/picture?userId=${m._id}`)
+                    .then(r => {
+                        return new Promise<void>((res, rej) => {
+                            if (!r.data)
+                                res()
+
+                            fetchedImages[m._id] = URL.createObjectURL(r.data)
+                            res()
+                        })
+                    })
+            )
+        ])
+            .then(r => {
+                dispatch({ operation: 'setImages', data: fetchedImages })
+            })
+
+        return true
     }
 
     type State = {
@@ -146,9 +157,11 @@ export function UsersDataGrid({
         showCategories: Row<any> | undefined
         showCustomFields: Row<any> | undefined
         searchByPhoneNumber: string
+        images: { [k: string]: string }
     }
 
     type Actions =
+        { operation: 'setImages', data: { [k: string]: string } } |
         { operation: 'searchedByPhoneNumber', data: User[] } |
         { operation: 'searchByPhoneNumber', data: string } |
         { operation: 'fetch' | 'fetched' | 'createStarted' | 'createEnded' | 'updateEnded' | 'deleteEnded' | 'updatedIsAvailable' } |
@@ -157,6 +170,9 @@ export function UsersDataGrid({
 
     const reducer = (state: State, arg: Actions): State => {
         switch (arg.operation) {
+            case 'setImages':
+                return { ...state, images: arg.data }
+
             case 'fetch':
                 return { ...state, fetching: true, headerNodes: [...state.headerNodes] }
 
@@ -279,6 +295,7 @@ export function UsersDataGrid({
         showTags: undefined,
         showCategories: undefined,
         showCustomFields: undefined,
+        images: {},
     })
 
     const timer = useRef(undefined)
@@ -319,7 +336,7 @@ export function UsersDataGrid({
 
     useEffect(() => {
         if (state.fetching === true)
-            fetch(state.page.offset, state.page.limit)
+            fetchUsers(state.page.offset, state.page.limit)
                 .finally(() => dispatch({ operation: 'fetched' }))
     }, [state.fetching])
 
@@ -349,7 +366,17 @@ export function UsersDataGrid({
             cell: ({ getValue }) => typeof getValue() === 'number' ? toFormat(getValue() as number, configuration.local, undefined, DATE) : '-',
         },
     ]
-    const defaultAdditionalColumns = []
+    const defaultAdditionalColumns: ColumnDef<User>[] = [
+        {
+            id: 'avatar',
+            header(props) {
+                return t('columns.avatar')
+            },
+            cell(props) {
+                return <Stack stackProps={{ className: 'justify-center' }}><img loading="lazy" src={images[props.row.original._id]} className="rounded-full border size-10" /></Stack>
+            },
+        }
+    ]
 
     if (functionality.update === true || functionality.delete === true)
         defaultAdditionalColumns.push({
@@ -402,7 +429,7 @@ export function UsersDataGrid({
                 overWriteColumns={options?.appendDefaults === true || options?.appendDefaultOverWriteColumns === true ? (columns?.overWriteColumns ?? []).concat(defaultOverWriteColumns) : columns?.overWriteColumns}
                 pagination={functionality.pagination !== true ? undefined : { pageSize: state.page.limit, pageIndex: state.page.offset }}
                 onPagination={functionality.pagination !== true ? undefined : async (p) => {
-                    const result = await fetch(p.pageIndex, p.pageSize)
+                    const result = await fetchUsers(p.pageIndex, p.pageSize)
                     if (result)
                         dispatch({ operation: 'setPage', data: { limit: p.pageSize, offset: p.pageIndex } })
                     return result

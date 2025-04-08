@@ -6,8 +6,7 @@ import { DataGridContext } from "./Context";
 import { t } from "i18next";
 import { getCommonPinningStyles } from "./helpers";
 import { Button } from "../../Components/Base/Button";
-import { ArrowLeftToLineIcon, ArrowRightToLineIcon, PinIcon } from "lucide-react";
-import { Stack } from "../Base/Stack";
+import { ArrowLeftToLineIcon, ArrowRightToLineIcon } from "lucide-react";
 import { ConfigurationContext } from "../../Contexts/Configuration/ConfigurationContext";
 
 export const DraggableTableHeader = ({ header }: { header: Header<any, unknown>; }) => {
@@ -72,9 +71,8 @@ export const DraggableTableHeader = ({ header }: { header: Header<any, unknown>;
                 className="relative"
                 {...attributes}
             >
-                <Stack stackProps={{ className: 'items-center justify-center' }}>
+                <div className="items-center justify-center flex flex-row">
                     <Button
-                        className="ml-1"
                         isIcon
                         variant="text"
                         size="xs"
@@ -96,7 +94,6 @@ export const DraggableTableHeader = ({ header }: { header: Header<any, unknown>;
                     </p>
 
                     <Button
-                        className="ml-1"
                         isIcon
                         variant="text"
                         size="xs"
@@ -112,7 +109,7 @@ export const DraggableTableHeader = ({ header }: { header: Header<any, unknown>;
                     >
                         {local.direction === 'ltr' ? <ArrowRightToLineIcon fontSize="inherit" /> : <ArrowLeftToLineIcon fontSize="inherit" />}
                     </Button>
-                </Stack>
+                </div>
 
                 <div id='border' className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-4/6 z-[-1] w-full${header.column.getIsLastColumn() ? '' : ' border-r'}`} />
             </th >

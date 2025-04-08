@@ -115,17 +115,28 @@ users.get('/picture', async (req, res) => {
     try {
         const { fileId, userId } = req.query
 
-        if (!stringObjectId.required().isValidSync(fileId) || !stringObjectId.required().isValidSync(userId)) {
+        if (fileId && !stringObjectId.required().isValidSync(fileId)) {
             res.sendStatus(400)
             return
         }
+
+        if (userId && !stringObjectId.required().isValidSync(userId)) {
+            res.sendStatus(400)
+            return
+        }
+
+        if (!fileId && !userId) {
+            res.sendStatus(400)
+            return
+        }
+
         const userProfilePictureRepository = await UserProfilePictureRepository.getInstance()
 
         let file
         if (fileId)
             file = await userProfilePictureRepository.getFile(fileId)
         else
-            file = await userProfilePictureRepository.getFileByUserId(userId)
+            file = await userProfilePictureRepository.getFileByUserId(userId!)
 
         if (file === undefined) {
             res.sendStatus(404)
