@@ -125,6 +125,7 @@ export function ManageUser({ user: userInput, onFinish }: { user: User, onFinish
                                             'Content-Length': size.toString(),
                                         }
                                     }, false)
+                                    console.log('r', r)
 
                                     if (!r.response || !r?.response?.ok)
                                         feedback.pushError({ node: t('ManageUser.failedToUploadImage') })
