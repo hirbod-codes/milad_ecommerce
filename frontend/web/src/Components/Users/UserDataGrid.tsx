@@ -1,6 +1,6 @@
-import { ActionDispatch, ComponentProps, ReactNode, useContext, useEffect, useReducer, useRef, useState } from "react";
+import { ActionDispatch, ComponentProps, ReactNode, useContext, useEffect, useMemo, useReducer, useRef, useState } from "react";
 import { User } from ".";
-import { authFetchData, formatFilters, getAuthApiUrl } from "@/src/Backend/helpers";
+import { authFetchData, formatFilters, formatNumber, getAuthApiUrl } from "@/src/Backend/helpers";
 import { array } from "yup";
 import { t } from "i18next";
 import { FeedbackContext } from "@/src/Contexts/Feedback/FeedbackContext";
@@ -10,7 +10,7 @@ import { Stack } from "../Base/Stack";
 import { Button } from "../Base/Button";
 import { ConfigurationContext } from "@/src/Contexts/Configuration/ConfigurationContext";
 import { DATE, toFormat } from "@/src/Lib/DateTime/date-time-helpers";
-import { EditIcon, FilterIcon, ListFilterIcon, PlusIcon, RefreshCwIcon, SearchIcon, Trash2Icon } from "lucide-react";
+import { EditIcon, FilterIcon, ListFilterIcon, PlusIcon, RefreshCwIcon, SearchIcon, Trash2Icon, UserIcon } from "lucide-react";
 import { CircularLoadingIcon } from "../Base/CircularLoadingIcon";
 import { Ask } from "../Ask";
 import { Modal } from "../Base/Modal";
@@ -75,7 +75,7 @@ export function UsersDataGrid({
     const configuration = useContext(ConfigurationContext)
 
     const [users, setUsers] = useState<User[]>(inputUsers)
-    const [images, setImages] = useState<{ [k: string]: string }>({})
+    // const [images, setImages] = useState<{ [k: string]: string }>({})
 
     if (!functionality)
         functionality = {}
@@ -94,13 +94,6 @@ export function UsersDataGrid({
     const [openSort, setOpenSort] = useState(false)
 
     const [initialLoading, setInitialLoading] = useState(true)
-    const [loading, setLoading] = useState(true)
-
-    const init = async (offset: number = 0, limit: number = 0) => {
-        setLoading(true)
-        try { return fetchUsers(offset, limit) }
-        finally { setLoading(false) }
-    }
 
     const fetchUsers = async (offset: number = 0, limit: number = 0) => {
         const res = await authFetchData(`${getAuthApiUrl()}/users?limit=${limit}&skip=${limit * offset}${filters === undefined ? '' : '&filter=' + JSON.stringify(formatFilters(filters))}`)
@@ -112,29 +105,19 @@ export function UsersDataGrid({
         if (res.data.length === 0)
             return false
 
-        setUsers(res.data)
+        Object.entries(state.images).forEach(f => URL.revokeObjectURL(f[1]))
 
-        Object.entries(images).forEach(f => URL.revokeObjectURL(f[1]))
-        setImages({})
-
-        const fetchedImages = {}
-        Promise.all([
-            res.data?.map(m =>
-                authFetchData(`${getAuthApiUrl()}/users/picture?userId=${m._id}`)
-                    .then(r => {
-                        return new Promise<void>((res, rej) => {
-                            if (!r.data)
-                                res()
-
-                            fetchedImages[m._id] = URL.createObjectURL(r.data)
-                            res()
-                        })
-                    })
-            )
-        ])
+        Promise.all(res.data?.map(m => authFetchData(`${getAuthApiUrl()}/users/picture?userId=${m._id}`)))
             .then(r => {
-                dispatch({ operation: 'setImages', data: fetchedImages })
+                const fetchedImages = {}
+                for (let i = 0; i < r.length; i++)
+                    if (r[i].response && r[i].response.ok && r[i]?.data)
+                        fetchedImages[res.data[i]._id] = URL.createObjectURL(r[i]?.data)
+
+                return dispatch({ operation: 'fetchedImages', data: fetchedImages });
             })
+
+        setUsers(res.data)
 
         return true
     }
@@ -161,7 +144,7 @@ export function UsersDataGrid({
     }
 
     type Actions =
-        { operation: 'setImages', data: { [k: string]: string } } |
+        { operation: 'fetchedImages', data: { [k: string]: string } } |
         { operation: 'searchedByPhoneNumber', data: User[] } |
         { operation: 'searchByPhoneNumber', data: string } |
         { operation: 'fetch' | 'fetched' | 'createStarted' | 'createEnded' | 'updateEnded' | 'deleteEnded' | 'updatedIsAvailable' } |
@@ -170,7 +153,7 @@ export function UsersDataGrid({
 
     const reducer = (state: State, arg: Actions): State => {
         switch (arg.operation) {
-            case 'setImages':
+            case 'fetchedImages':
                 return { ...state, images: arg.data }
 
             case 'fetch':
@@ -186,7 +169,7 @@ export function UsersDataGrid({
                 }
 
             case 'createEnded':
-                init(state.page.offset, state.page.limit)
+                fetchUsers(state.page.offset, state.page.limit)
                 return {
                     ...state,
                     creating: false
@@ -199,7 +182,7 @@ export function UsersDataGrid({
                 }
 
             case 'updateEnded':
-                init(state.page.offset, state.page.limit)
+                fetchUsers(state.page.offset, state.page.limit)
                 return {
                     ...state,
                     updatingRow: undefined
@@ -290,12 +273,12 @@ export function UsersDataGrid({
         updatingIsAvailable: undefined,
         deletingRow: undefined,
         ask: { open: false },
-        fetching: false,
         page: { limit: 10, offset: 0 },
         showTags: undefined,
         showCategories: undefined,
         showCustomFields: undefined,
         images: {},
+        fetching: false,
     })
 
     const timer = useRef(undefined)
@@ -326,7 +309,7 @@ export function UsersDataGrid({
                         return;
                     }
 
-                    await init(state.page.offset, state.page.limit)
+                    await fetchUsers(state.page.offset, state.page.limit)
 
                     feedback.push({ node: t('UpdateOrder.updateSucceeded'), color: { bgColor: 'success', fgColor: 'success-foreground' } });
                 })
@@ -348,13 +331,18 @@ export function UsersDataGrid({
     useEffect(() => {
         if (users.length === 0) {
             setInitialLoading(true)
-            init(state.page.offset, state.page.limit)
+            fetchUsers(state.page.offset, state.page.limit)
                 .finally(() => setInitialLoading(false))
         } else
             setInitialLoading(false)
     }, [])
 
     const defaultOverWriteColumns = [
+        {
+            id: 'phoneNumber',
+            accessorKey: 'phoneNumber',
+            cell: ({ getValue }) => formatNumber(configuration, getValue(), { useGrouping: false, minimumIntegerDigits: 11 }).replace(/(\d{4})(\d{3})(\d{4})/, '$1 $2 $3'),
+        },
         {
             id: 'createdAt',
             accessorKey: 'createdAt',
@@ -369,11 +357,16 @@ export function UsersDataGrid({
     const defaultAdditionalColumns: ColumnDef<User>[] = [
         {
             id: 'avatar',
-            header(props) {
-                return t('columns.avatar')
-            },
             cell(props) {
-                return <Stack stackProps={{ className: 'justify-center' }}><img loading="lazy" src={images[props.row.original._id]} className="rounded-full border size-10" /></Stack>
+                return <Stack stackProps={{ className: 'justify-center' }}>
+                    {
+                        state.images[props.row.original._id]
+                            ? <div className="rounded-full shadow-md border size-10 overflow-hidden flex flex-row justify-center items-center">
+                                <img loading="lazy" src={state.images[props.row.original._id]} className="size-full object-cover" />
+                            </div>
+                            : <Button className="size-10" variant="outline" isIcon><UserIcon /> </Button>
+                    }
+                </Stack>
             },
         }
     ]
@@ -381,7 +374,6 @@ export function UsersDataGrid({
     if (functionality.update === true || functionality.delete === true)
         defaultAdditionalColumns.push({
             id: 'actions',
-            accessorKey: 'actions',
             cell: ({ row }) =>
                 <Stack stackProps={{ className: "justify-center w-full" }}>
                     {
@@ -416,11 +408,14 @@ export function UsersDataGrid({
         functionality.search === true && <Input startIcon={state?.searching ? <CircularLoading size="xs" /> : <SearchIcon />} placeholder={t('UsersDataGrid.SearchByPhoneNumber')} value={state.searchByPhoneNumber ?? ''} onChange={(e) => dispatch({ operation: 'searchByPhoneNumber', data: e.target.value.trim() })} />,
     ]
 
-    console.log('UsersDataGrid', { loading, users, state, afterDataFetchHook, allFunctionalitiesToggle, functionality, options, columns, headerNodes, onChange, dataGridProps })
+    console.log('UsersDataGrid', { users, state, afterDataFetchHook, allFunctionalitiesToggle, functionality, options, columns, headerNodes, onChange, dataGridProps })
 
     return (
         <>
             <DataGrid
+                configName={'Users'}
+                defaultColumnVisibilityModel={{ _id: false }}
+                defaultColumnOrderModel={['actions', 'avatar', 'role', 'firstName', 'lastName', 'username', 'phoneNumber', 'email']}
                 {...dataGridProps}
                 data={state?.searchByPhoneNumber?.trim() ? state.searchedUsers : users}
                 loading={initialLoading}
@@ -448,7 +443,7 @@ export function UsersDataGrid({
                     user={state.creating ? undefined : state?.updatingRow?.original as any}
                     onFinish={async () => {
                         dispatch({ operation: state.creating ? 'createEnded' : 'updateEnded' })
-                        await init(state.page.offset, state.page.limit)
+                        await fetchUsers(state.page.offset, state.page.limit)
                     }}
                 />
             </Modal>

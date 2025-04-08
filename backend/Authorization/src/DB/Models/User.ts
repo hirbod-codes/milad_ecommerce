@@ -43,5 +43,5 @@ for (const field in userImmutableSchema.fields)
 export type UserImmutable = InferType<typeof userImmutableSchema>
 
 export const fields: (keyof User)[] = Object.keys(userSchema.fields) as any
-export const readableFields: (keyof Omit<User, 'schemaVersion'>)[] = fields.filter(f => !['schemaVersion'].includes(f)) as any
+export const readableFields: (keyof Omit<User, 'schemaVersion' | 'password' | 'passwordSalt' | 'passwordIterations'>)[] = fields.filter(f => !['schemaVersion', 'password', 'passwordSalt', 'passwordIterations'].includes(f)) as any
 export const updatableFields: (keyof UserUpdate)[] = Object.keys(userUpdateSchema.fields) as any

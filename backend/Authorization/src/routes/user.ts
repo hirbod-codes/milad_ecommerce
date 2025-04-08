@@ -3,7 +3,7 @@ import { stringObjectId } from "@/src/DB/Models/common_schemas"
 import { authenticate } from "@/src/middlewares/authenticate"
 import { authorize } from "@/src/middlewares/authorize"
 import Jwt from "jsonwebtoken";
-import { userSchema, userUpdateSchema } from "@/src/DB/Models/User"
+import { readableFields, userSchema, userUpdateSchema } from "@/src/DB/Models/User"
 import { SessionManager } from "@/src/DB/Session/SessionManager"
 import { DateTime } from "luxon"
 import crypto from "crypto";
@@ -30,7 +30,13 @@ user.get('/', authenticate, async (req, res) => {
         }
 
         const userRepository = await UserRepository.getInstance()
-        res.json(await userRepository.getById(userId))
+        const user = await userRepository.getById(userId)
+        if (!user) {
+            res.sendStatus(404)
+            return
+        }
+
+        res.json(Object.fromEntries(Object.entries(user).filter(f => readableFields.includes(f[0] as any))))
     } catch (e) {
         console.error(e)
         res.sendStatus(500)

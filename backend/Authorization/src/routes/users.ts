@@ -28,11 +28,11 @@ users.get('/ids', authenticate, async (req, res) => {
         }
 
         const userRepository = await UserRepository.getInstance()
-        const r = await userRepository.getByIds(ids)
-        if (!r)
+        const users = await userRepository.getByIds(ids)
+        if (!users)
             res.sendStatus(404)
         else
-            res.json(r)
+            res.json(users.map(user => Object.fromEntries(Object.entries(user).filter(f => readableFields.includes(f[0] as any)))))
     } catch (e) {
         console.error(e)
         res.sendStatus(500)
@@ -104,7 +104,7 @@ users.get('/', authenticate, async (req, res) => {
         if (users === false)
             res.sendStatus(500)
         else
-            res.status(200).json(users)
+            res.status(200).json(users.map(user => Object.fromEntries(Object.entries(user).filter(f => readableFields.includes(f[0] as any)))))
     } catch (e) {
         console.error(e)
         res.sendStatus(500)

@@ -15,11 +15,6 @@ export function Users() {
 
     return (
         <UsersDataGrid
-            dataGridProps={{
-                configName: 'Users',
-                defaultColumnVisibilityModel: { _id: false },
-                defaultColumnOrderModel: ['firstName', 'lastName', 'username', 'phoneNumber', 'email']
-            }}
             functionality={{
                 create: createsUser,
                 update: updatesUser,
