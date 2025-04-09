@@ -67,6 +67,15 @@ export class Auth {
         catch (e) { console.error(e); return undefined }
     }
 
+    static getId(): string | undefined {
+        const token = Auth.getToken()
+        if (token === undefined)
+            return undefined
+
+        try { return JSON.parse(atob(token.split('.')[1]))?.sub }
+        catch (e) { console.error(e); return undefined }
+    }
+
     static async getPrivileges(): Promise<string[] | undefined> {
         try {
             console.log('getPrivileges()')

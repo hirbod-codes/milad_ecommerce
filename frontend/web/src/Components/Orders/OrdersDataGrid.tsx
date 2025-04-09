@@ -21,8 +21,10 @@ import { Input } from "../Base/Input";
 import { CircularLoading } from "../Base/CircularLoading";
 import { ProductsDataGrid } from "../Products/ProductsDataGrid";
 import { Product } from "../Products";
+import { Auth } from "@/src/Backend/Auth/Auth";
 
 export type DataGridProps = {
+    mode?: 'self' | 'others'
     orders?: Order[]
     afterDataFetchHook?: (orders: Order[]) => Order[]
     allFunctionalitiesToggle?: boolean
@@ -57,6 +59,7 @@ export type DataGridProps = {
 }
 
 export function OrdersDataGrid({
+    mode = 'self',
     orders: inputOrders = [],
     afterDataFetchHook,
     allFunctionalitiesToggle = false,
@@ -96,10 +99,13 @@ export function OrdersDataGrid({
     const [initialLoading, setInitialLoading] = useState(true)
     const [loading, setLoading] = useState(true)
 
+    const getUpdateUrl = () => mode !== 'others' ? `${getApiUrl()}/me/orders` : `${getApiUrl()}/orders`
+    const getReadUrl = () => mode !== 'others' ? `${getApiUrl()}/me/orders` : `${getApiUrl()}/orders`
+
     const init = async (offset: number = 0, limit: number = 0) => {
         setLoading(true)
         try {
-            const res = await authFetchData(`${getApiUrl()}/orders?limit=${limit}&skip=${limit * offset}${filters === undefined ? '' : '&filter=' + JSON.stringify(formatFilters(filters))}`)
+            const res = await authFetchData(`${getReadUrl()}/?limit=${limit}&skip=${limit * offset}${filters === undefined ? '' : '&filter=' + JSON.stringify(formatFilters(filters))}`)
             if (!res.response || !res.response.ok || !array().required().isValidSync(res.data)) {
                 feedback.pushError({ node: t('Orders.failedToFetchOrders') })
                 return false
@@ -115,7 +121,7 @@ export function OrdersDataGrid({
     }
 
     const fetch = async (offset: number = 0, limit: number = 0) => {
-        const res = await authFetchData(`${getApiUrl()}/orders?limit=${limit}&skip=${limit * offset}${filters === undefined ? '' : '&filter=' + JSON.stringify(formatFilters(filters))}`)
+        const res = await authFetchData(`${getReadUrl()}/?limit=${limit}&skip=${limit * offset}${filters === undefined ? '' : '&filter=' + JSON.stringify(formatFilters(filters))}`)
         if (!res.response || !res.response.ok || !array().required().isValidSync(res.data)) {
             feedback.pushError({ node: t('Orders.failedToFetchOrders') })
             return false
@@ -149,9 +155,11 @@ export function OrdersDataGrid({
         showProducts: Row<Order> | undefined
         showProductsFetching: boolean
         fetchedProducts: Product[] | undefined
+        showAddress?: string
     }
 
     type Actions =
+        { operation: 'showAddress', data?: string } |
         { operation: 'showProductsFetchEnd', data: Product[] | undefined } |
         { operation: 'fetch' | 'fetched' | 'createStarted' | 'createEnded' | 'updateEnded' | 'deleteEnded' | 'updatedIsSent' | 'updatedIsPayed' | 'showProductsEnd' } |
         { operation: 'updateStarted' | 'updateIsSent' | 'updateIsPayed' | 'deleteStarted' | 'showCategories' | 'showTags' | 'showProducts', data: Row<any> } |
@@ -159,6 +167,9 @@ export function OrdersDataGrid({
 
     const reducer = (state, arg) => {
         switch (arg.operation) {
+            case 'showAddress':
+                return { ...state, showAddress: arg.data }
+
             case 'fetch':
                 return { ...state, fetching: true, headerNodes: [...state.headerNodes] }
 
@@ -297,7 +308,7 @@ export function OrdersDataGrid({
 
     useEffect(() => {
         if (state.updatingIsSent !== undefined) {
-            authFetchData(`${getApiUrl()}/orders`, { method: 'PATCH', body: JSON.stringify({ orderId: state.updatingIsSent.original._id, order: { isSent: !state.updatingIsSent.original.isSent } }) })
+            authFetchData(getUpdateUrl(), { method: 'PATCH', body: JSON.stringify({ orderId: state.updatingIsSent.original._id, order: { isSent: !state.updatingIsSent.original.isSent } }) })
                 .then(async r => {
                     if (!r.response || !r.response.ok) {
                         feedback.pushError({ node: t('UpdateOrder.updateFailed') });
@@ -314,7 +325,7 @@ export function OrdersDataGrid({
 
     useEffect(() => {
         if (state.updatingIsPayed !== undefined) {
-            authFetchData(`${getApiUrl()}/orders`, { method: 'PATCH', body: JSON.stringify({ orderId: state.updatingIsPayed.original._id, order: { isPayed: !state.updatingIsPayed.original.isPayed } }) })
+            authFetchData(getUpdateUrl(), { method: 'PATCH', body: JSON.stringify({ orderId: state.updatingIsPayed.original._id, order: { isPayed: !state.updatingIsPayed.original.isPayed } }) })
                 .then(async r => {
                     if (!r.response || !r.response.ok) {
                         feedback.pushError({ node: t('UpdateOrder.updateFailed') });
@@ -404,7 +415,7 @@ export function OrdersDataGrid({
         {
             id: 'address',
             accessorKey: 'address',
-            cell: ({ getValue }) => getValue()['text'],
+            cell: ({ getValue }) => <div className="w-[5cm] text-ellipsis overflow-hidden px-1 hover:cursor-pointer hover:border rounded-lg" onClick={() => dispatch({ operation: 'showAddress', data: getValue()['text'] })} >{getValue()['text']}</div>,
         },
         {
             id: 'map',
@@ -489,6 +500,13 @@ export function OrdersDataGrid({
             />
 
             <Ask {...state.ask} />
+
+            <Modal
+                open={state.showAddress !== undefined}
+                onClose={() => dispatch({ operation: 'showAddress', data: undefined })}
+            >
+                {state.showAddress}
+            </Modal>
 
             <Modal
                 open={state.creating || state?.updatingRow !== undefined}

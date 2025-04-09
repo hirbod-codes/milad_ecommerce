@@ -78,7 +78,7 @@ orders.get('/', authenticate, async (req, res) => {
         let limit = number().required().min(1).integer().cast(limitStr ?? 25)
         let skip = number().required().min(0).integer().cast(skipStr ?? 0)
 
-        let sort: { field: keyof Order, direction: SortDirection }[] = []
+        let sort: { field: keyof Order, direction: SortDirection }[] | undefined = undefined
         if (sortJson) {
             sort = JSON.parse(sortJson.toString())
 
@@ -95,7 +95,7 @@ orders.get('/', authenticate, async (req, res) => {
             }
         }
 
-        let filter: Filter<Order> = {}
+        let filter: Filter<Order> | undefined = undefined
         if (filterJson) {
             filter = JSON.parse(filterJson.toString())
 
@@ -117,7 +117,7 @@ orders.get('/', authenticate, async (req, res) => {
         }
 
         const orderRepository = await OrderRepository.getInstance()
-        const orders = await orderRepository.get(filter, sort, limit, skip, userId)
+        const orders = await orderRepository.get(limit, skip, filter, sort, userId)
         if (orders === false)
             res.sendStatus(500)
         else

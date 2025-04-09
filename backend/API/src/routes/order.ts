@@ -60,7 +60,7 @@ order.get('/', authenticate, async (req, res) => {
             return
         }
 
-        let userId = (Jwt.decode(req.headers['authorization']!.replace('Bearer ', '')!) as Jwt.JwtPayload)?.sub ?? ''
+        const userId = (Jwt.decode(req.headers['authorization']!.replace('Bearer ', '')!) as Jwt.JwtPayload)?.sub ?? ''
         if (!stringObjectId.required().isValidSync(userId)) {
             res.sendStatus(403)
             return
@@ -68,25 +68,25 @@ order.get('/', authenticate, async (req, res) => {
 
         const { filter: filterJson, sort: sortJson, limit: limitStr, skip: skipStr } = req.query
 
-        if (!stringObjectId.required().isValidSync(userId)) {
+        if (!stringObjectId.optional().isValidSync(userId)) {
             res.status(400).json({ errors: ['invalid userId'] })
             return
         }
 
-        if (!number().optional().positive().integer().isValidSync(limitStr)) {
+        if (!number().optional().min(0).integer().isValidSync(limitStr)) {
             res.status(400).json({ errors: ['invalid limit'] })
             return
         }
 
-        if (!number().optional().positive().integer().isValidSync(skipStr)) {
+        if (!number().optional().min(0).integer().isValidSync(skipStr)) {
             res.status(400).json({ errors: ['invalid skip'] })
             return
         }
 
-        let limit = number().required().positive().integer().cast(limitStr ?? 25)
-        let skip = number().required().positive().integer().cast(skipStr ?? 0)
+        let limit = number().required().min(1).integer().cast(limitStr ?? 25)
+        let skip = number().required().min(0).integer().cast(skipStr ?? 0)
 
-        let sort: { field: keyof Order, direction: SortDirection }[] = []
+        let sort: { field: keyof Order, direction: SortDirection }[] | undefined = undefined
         if (sortJson) {
             sort = JSON.parse(sortJson.toString())
 
@@ -103,7 +103,7 @@ order.get('/', authenticate, async (req, res) => {
             }
         }
 
-        let filter: Filter<Order> = {}
+        let filter: Filter<Order> | undefined = undefined
         if (filterJson) {
             filter = JSON.parse(filterJson.toString())
 
@@ -125,7 +125,7 @@ order.get('/', authenticate, async (req, res) => {
         }
 
         const orderRepository = await OrderRepository.getInstance()
-        const orders = await orderRepository.get(filter, sort, limit, skip, userId)
+        const orders = await orderRepository.get(limit, skip, filter, sort, userId)
         if (orders === false)
             res.sendStatus(500)
         else
@@ -143,7 +143,7 @@ order.patch('/', authenticate, async (req, res) => {
             return
         }
 
-        let userId = (Jwt.decode(req.headers['authorization']!.replace('Bearer ', '')!) as Jwt.JwtPayload)?.sub ?? ''
+        const userId = (Jwt.decode(req.headers['authorization']!.replace('Bearer ', '')!) as Jwt.JwtPayload)?.sub ?? ''
         if (!stringObjectId.required().isValidSync(userId)) {
             res.sendStatus(403)
             return
@@ -176,7 +176,7 @@ order.patch('/immutables', authenticate, async (req, res) => {
             return
         }
 
-        let userId = (Jwt.decode(req.headers['authorization']!.replace('Bearer ', '')!) as Jwt.JwtPayload)?.sub ?? ''
+        const userId = (Jwt.decode(req.headers['authorization']!.replace('Bearer ', '')!) as Jwt.JwtPayload)?.sub ?? ''
         if (!stringObjectId.required().isValidSync(userId)) {
             res.sendStatus(403)
             return
@@ -209,7 +209,7 @@ order.delete('/', authenticate, async (req, res) => {
             return
         }
 
-        let userId = (Jwt.decode(req.headers['authorization']!.replace('Bearer ', '')!) as Jwt.JwtPayload)?.sub ?? ''
+        const userId = (Jwt.decode(req.headers['authorization']!.replace('Bearer ', '')!) as Jwt.JwtPayload)?.sub ?? ''
         if (!stringObjectId.required().isValidSync(userId)) {
             res.sendStatus(403)
             return

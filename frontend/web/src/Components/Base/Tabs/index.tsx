@@ -5,16 +5,18 @@ import { motion, AnimatePresence, MotionProps, Variants } from 'framer-motion'
 import { cn } from "@/src/shadcn/lib/utils";
 
 export type TabsProps = {
-    tabs: ReactNode[]
+    tabs: { node: ReactNode, props?: ComponentProps<'div'> }[]
     tabContents: ReactNode[]
     defaultTab?: number
     onActiveTabChange?: (index: number) => Promise<void> | void
     containerProps?: ComponentProps<typeof Stack>
+    tabContainerProps?: ComponentProps<typeof Stack>
+    tabContentsContainerProps?: ComponentProps<'div'>
     animatePresenceProps?: ComponentProps<typeof AnimatePresence>
     contentMotionProps?: ComponentProps<'div'> & MotionProps
 }
 
-export function Tabs({ tabs, tabContents, defaultTab, onActiveTabChange, containerProps, animatePresenceProps, contentMotionProps }: TabsProps) {
+export function Tabs({ tabs, tabContents, defaultTab, onActiveTabChange, containerProps, tabContainerProps, tabContentsContainerProps, animatePresenceProps, contentMotionProps }: TabsProps) {
     const variants: Variants = {
         animate: { x: '0%', opacity: 1 },
         right: { x: '100%', opacity: 0 },
@@ -47,15 +49,15 @@ export function Tabs({ tabs, tabContents, defaultTab, onActiveTabChange, contain
 
     return (
         <Stack {...containerProps} stackProps={{ className: cn('items-stretch', containerProps?.stackProps?.className), ...containerProps?.stackProps }} direction='vertical'>
-            <Stack>
+            <Stack {...tabContainerProps}>
                 {tabs.map((t, i) =>
-                    <div key={i} onClick={() => setActiveTab(i)}>
-                        {t}
+                    <div key={i} onClick={() => setActiveTab(i)} {...t.props}>
+                        {t.node}
                     </div>
                 )}
             </Stack>
             <Separator orientation='horizontal' />
-            <div className="relative flex-grow overflow-hidden">
+            <div className="relative flex-grow overflow-hidden" {...tabContentsContainerProps}>
                 <AnimatePresence initial={true} mode='sync' {...animatePresenceProps}>
                     <motion.div
                         variants={variants}

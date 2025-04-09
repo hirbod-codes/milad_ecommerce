@@ -32,8 +32,8 @@ export function AuthModal({ open, onClose, modalProps }: LoginModalProps) {
                 <Tabs
                     defaultTab={0}
                     tabs={[
-                        <Button variant="text" fgColor={tabIndex === 0 ? 'success' : 'surface-foreground'}>{t('common.sms')}</Button>,
-                        <Button variant="text" fgColor={tabIndex === 1 ? 'success' : 'surface-foreground'}>{t('common.email')}</Button>,
+                        { node: <Button variant="text" fgColor={tabIndex === 0 ? 'success' : 'surface-foreground'}>{t('common.sms')}</Button> },
+                        { node: <Button variant="text" fgColor={tabIndex === 1 ? 'success' : 'surface-foreground'}>{t('common.email')}</Button> },
                     ]}
                     tabContents={[
                         <SmsAuth done={() => { if (onClose) onClose() }} />,

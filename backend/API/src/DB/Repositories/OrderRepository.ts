@@ -18,7 +18,7 @@ export class OrderRepository extends MongoDB {
         return new OrderRepository(await MongoDB.getDbInstance().getOrderCollection())
     }
 
-    static async seed(count: number = 150) {
+    static async seed(countPerUser: number = 10) {
         const collection = await MongoDB.getDbInstance().getOrderCollection()
         const productRepository = await ProductRepository.getInstance()
         const userRepository = await UserRepository.getInstance()
@@ -37,41 +37,42 @@ export class OrderRepository extends MongoDB {
         const startTimeTS = DateTime.utc().minus({ years: 2 }).toUnixInteger()
         const endTimeTS = DateTime.utc().minus({ months: 2 }).toUnixInteger()
 
-        for (let i = 0; i < count; i++) {
-            let safety = 0
-            while (safety < 10) {
-                safety++
-                try {
-                    const ts = faker.number.int({ min: startTimeTS, max: endTimeTS })
+        for (const user of users)
+            for (let i = 0; i < countPerUser; i++) {
+                let safety = 0
+                while (safety < 10) {
+                    safety++
+                    try {
+                        const ts = faker.number.int({ min: startTimeTS, max: endTimeTS })
 
-                    const selectedProducts = faker.helpers.arrayElements(products, faker.number.int({ min: 3, max: 20 })).map(m => ({ productId: m._id, quantity: faker.number.int({ min: 1, max: 400 }) }))
-                    const cost = { IRR: selectedProducts.reduce((p, c) => p + products.find(f => f._id === c.productId)!.price.IRR * c.quantity, 0), USD: selectedProducts.reduce((p, c) => p + products.find(f => f._id === c.productId)!.price.USD * c.quantity, 0) }
+                        const selectedProducts = faker.helpers.arrayElements(products, faker.number.int({ min: 3, max: 20 })).map(m => ({ productId: m._id, quantity: faker.number.int({ min: 1, max: 400 }) }))
+                        const cost = { IRR: selectedProducts.reduce((p, c) => p + products.find(f => f._id === c.productId)!.price.IRR * c.quantity, 0), USD: selectedProducts.reduce((p, c) => p + products.find(f => f._id === c.productId)!.price.USD * c.quantity, 0) }
 
-                    let r = await collection.insertOne({
-                        schemaVersion,
-                        userId: faker.helpers.arrayElement(users)._id.toString(),
-                        isPayed: faker.datatype.boolean(0.8),
-                        isSent: faker.datatype.boolean(0.5),
-                        products: selectedProducts,
-                        cost,
-                        address: {
-                            text: faker.lorem.lines({ min: 1, max: 5 }),
-                            googleMap: faker.datatype.boolean() ? undefined : faker.internet.url()
-                        },
-                        createdAt: ts,
-                        updatedAt: ts,
-                    })
-                    if (r.acknowledged)
-                        break
-                } catch (e) {
-                    if (!(e instanceof MongoSystemError) || e.code !== 11000)
-                        throw e
+                        let r = await collection.insertOne({
+                            schemaVersion,
+                            userId: user._id,
+                            isPayed: faker.datatype.boolean(0.8),
+                            isSent: faker.datatype.boolean(0.5),
+                            products: selectedProducts,
+                            cost,
+                            address: {
+                                text: faker.lorem.lines({ min: 1, max: 5 }),
+                                googleMap: faker.datatype.boolean() ? undefined : faker.internet.url()
+                            },
+                            createdAt: ts,
+                            updatedAt: ts,
+                        })
+                        if (r.acknowledged)
+                            break
+                    } catch (e) {
+                        if (!(e instanceof MongoSystemError) || e.code !== 11000)
+                            throw e
+                    }
                 }
-            }
 
-            if (safety >= 10)
-                throw new Error('safety triggered while seeding orders!')
-        }
+                if (safety >= 10)
+                    throw new Error('safety triggered while seeding orders!')
+            }
     }
 
     async create(userId: string | ObjectId, order: OrderInput, cost: { [k: string]: number }): Promise<InsertOneResult | false> {
@@ -97,11 +98,21 @@ export class OrderRepository extends MongoDB {
         catch (e) { console.error(e); return false }
     }
 
-    async get(filter: Filter<Order>, sorts: { field: keyof Order, direction: SortDirection }[], limit: number, skip: number, userId?: string): Promise<Order[] | false> {
+    async get(limit: number, skip: number, filter?: Filter<Order>, sorts?: { field: keyof Order, direction: SortDirection }[], userId?: string): Promise<Order[] | false> {
         try {
-            let cursor = this.collection.find(userId === undefined ? filter : { $and: [filter, { userId: typeof userId === 'string' ? ObjectId.createFromHexString(userId) : userId }] })
+            let finalFilter: Filter<Order> | undefined = undefined
 
-            sorts.forEach(sort => cursor.sort(sort.field, sort.direction))
+            if (filter && userId)
+                finalFilter = { $and: [filter, { userId: typeof userId === 'string' ? ObjectId.createFromHexString(userId) : userId }] }
+            else if (userId)
+                finalFilter = { userId: typeof userId === 'string' ? ObjectId.createFromHexString(userId) : userId }
+            else if (filter)
+                finalFilter = filter
+
+            let cursor = finalFilter !== undefined ? this.collection.find(finalFilter) : this.collection.find()
+
+            if (sorts !== undefined)
+                sorts.forEach(sort => cursor.sort(sort.field, sort.direction))
 
             return await cursor.limit(limit).skip(skip).toArray()
         }

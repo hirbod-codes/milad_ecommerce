@@ -114,7 +114,7 @@ export const queueManagement = new QueueManagement(messageBrokerUrl, messageBrok
 
     app.use('/products', products)
     app.use('/orders', orders)
-    app.use('/order', order)
+    app.use('/me/orders', order)
     app.use('/categories', categories)
     app.use('/tags', tags)
 

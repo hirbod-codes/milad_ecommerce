@@ -163,7 +163,7 @@ export const queueManagement = new QueueManagement(messageBrokerUrl, messageBrok
     app.use('/oauth/google', oauthGoogleRouter)
 
     app.use('/users', users)
-    app.use('/user', user)
+    app.use('/me/users', user)
 
     app.use('/roles', roles)
 
