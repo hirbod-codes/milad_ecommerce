@@ -1,5 +1,5 @@
 import { DateTime } from "luxon";
-import { schemaVersion, User, UserCreate, UserInput, UserUpdate } from "../Models/User";
+import { schemaVersion, User, UserCreate, UserImmutable, UserInput, UserUpdate } from "../Models/User";
 import { Collection, DeleteResult, Filter, InsertOneResult, MongoSystemError, ObjectId, SortDirection, UpdateResult } from 'mongodb'
 import crypto from "crypto";
 import { MongoDB } from '../mongodb'
@@ -180,23 +180,8 @@ export class UserRepository {
         catch (e) { console.error(e); return false }
     }
 
-    async updateEmail(id: string, email: string): Promise<UpdateResult | false> {
-        try { return await this.collection.updateOne({ _id: ObjectId.createFromHexString(id) }, { $set: { email, updateAt: DateTime.utc().toUnixInteger() } }) }
-        catch (e) { console.error(e); return false }
-    }
-
-    async updatePhoneNumber(id: string, phoneNumber: string): Promise<UpdateResult | false> {
-        try { return await this.collection.updateOne({ _id: ObjectId.createFromHexString(id) }, { $set: { phoneNumber, updateAt: DateTime.utc().toUnixInteger() } }) }
-        catch (e) { console.error(e); return false }
-    }
-
-    async updateUsername(id: string, username: string): Promise<UpdateResult | false> {
-        try { return await this.collection.updateOne({ _id: ObjectId.createFromHexString(id) }, { $set: { username, updateAt: DateTime.utc().toUnixInteger() } }) }
-        catch (e) { console.error(e); return false }
-    }
-
-    async updatePassword(id: string, password: string, passwordSalt: string, passwordIteration: number): Promise<UpdateResult | false> {
-        try { return await this.collection.updateOne({ _id: ObjectId.createFromHexString(id) }, { $set: { password, passwordSalt, passwordIteration, updateAt: DateTime.utc().toUnixInteger() } }) }
+    async updateImmutable(id: string, user: UserImmutable): Promise<UpdateResult | false> {
+        try { return await this.collection.updateOne({ _id: ObjectId.createFromHexString(id) }, { $set: { ...user, updateAt: DateTime.utc().toUnixInteger() } }) }
         catch (e) { console.error(e); return false }
     }
 

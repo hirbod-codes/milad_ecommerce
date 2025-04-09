@@ -149,13 +149,6 @@ emailRouter.post('/signup', async (req, res) => {
             throw new Error('system failed to create tokens')
         }
 
-        res.cookie('token', tokens.refreshToken, {
-            httpOnly: true,
-            // secure: true, 
-            sameSite: true,
-            maxAge: 2 * 60 * 60 * 1000
-        })
-
         res
             .cookie('token', tokens.refreshToken, {
                 httpOnly: true,

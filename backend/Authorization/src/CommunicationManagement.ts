@@ -40,13 +40,29 @@ export class CommunicationManagement {
             throw new Error('system failed to send an otp message')
     }
 
-    static async notifyAndRemember(mode: 'email', notificationOptions: { content: string, to: string, subject: string }, sessionOptions: { content: string | object, identifier: string, expiresAfterSeconds: number }): Promise<void>
-    static async notifyAndRemember(mode: 'sms', notificationOptions: { content: string, to: string }, sessionOptions: { content: string | object, identifier: string, expiresAfterSeconds: number }): Promise<void>
-    static async notifyAndRemember(mode: 'email' | 'sms', notificationOptions: { content: string, to: string, subject?: string }, sessionOptions: { content: string | object, identifier: string, expiresAfterSeconds: number }): Promise<void> {
+    static async notify(mode: 'email', notificationOptions: { content: string, to: string, subject: string }): Promise<void>
+    static async notify(mode: 'sms', notificationOptions: { content: string, to: string }): Promise<void>
+    static async notify(mode: 'email' | 'sms', notificationOptions: { content: string, to: string, subject?: string }): Promise<void> {
         try {
             if (mode === 'email' && notificationOptions.subject)
                 await this.sendEmail(notificationOptions.content, notificationOptions.subject!, notificationOptions.to)
-            if (mode === 'sms')
+            else if (mode === 'sms')
+                await this.sendSms(notificationOptions.content, notificationOptions.to)
+            else
+                throw new Error('Unsupported communication mode requested')
+        } catch (e) {
+            console.error(e)
+            throw new Error('system failed to notify user')
+        }
+    }
+
+    static async notifyAndRemember(mode: 'email', notificationOptions: { content: string, to: string, subject: string }, sessionOptions: { content: string | object, identifier: string, expiresAfterSeconds: number }): Promise<string>
+    static async notifyAndRemember(mode: 'sms', notificationOptions: { content: string, to: string }, sessionOptions: { content: string | object, identifier: string, expiresAfterSeconds: number }): Promise<string>
+    static async notifyAndRemember(mode: 'email' | 'sms', notificationOptions: { content: string, to: string, subject?: string }, sessionOptions: { content: string | object, identifier: string, expiresAfterSeconds: number }): Promise<string> {
+        try {
+            if (mode === 'email' && notificationOptions.subject)
+                await this.sendEmail(notificationOptions.content, notificationOptions.subject!, notificationOptions.to)
+            else if (mode === 'sms')
                 await this.sendSms(notificationOptions.content, notificationOptions.to)
             else
                 throw new Error('Unsupported communication mode requested')
@@ -56,27 +72,26 @@ export class CommunicationManagement {
         }
 
         const expiresAt = DateTime.utc().plus({ seconds: sessionOptions.expiresAfterSeconds }).toUnixInteger()
-        const sessionId = sessionOptions.identifier + crypto.randomBytes(128).toString('base64')
         try {
             if (typeof sessionOptions.content === 'string')
-                await SessionManager.setSession(sessionId, JSON.stringify({ sessionOptions: sessionOptions.content, expiresAt }), expiresAt, sessionOptions.identifier)
+                return await SessionManager.setSession(sessionOptions.identifier, JSON.stringify({ sessionOptions: sessionOptions.content, expiresAt }), expiresAt, sessionOptions.identifier)
             else
-                await SessionManager.setSession(sessionId, JSON.stringify({ ...sessionOptions.content, expiresAt }), expiresAt, sessionOptions.identifier)
+                return await SessionManager.setSession(sessionOptions.identifier, JSON.stringify({ ...sessionOptions.content, expiresAt }), expiresAt, sessionOptions.identifier)
         } catch (e) {
             console.error(e)
             throw new Error('system failed to set session')
         }
     }
 
-    static async notifyAndRememberForVerificationCode(mode: 'email' | 'sms', to: string, sessionIdentifier: string, expiresAfterSeconds: number = 60): Promise<void> {
+    static async notifyAndRememberForVerificationCode(mode: 'email' | 'sms', to: string, sessionIdentifier: string, expiresAfterSeconds: number = 60): Promise<string> {
         const code = Math.round((Math.random() * (999_999 - 100_000)) + 100_000)
         console.log(code)
 
         const content = `Your verification code is: ${code}\n\nfrom sender`
 
         if (mode === 'email')
-            await CommunicationManagement.notifyAndRemember('email', { content, to, subject: 'Verification Code' }, { content: { code }, identifier: sessionIdentifier, expiresAfterSeconds })
+            return await CommunicationManagement.notifyAndRemember('email', { content, to, subject: 'Verification Code' }, { content: { code }, identifier: sessionIdentifier, expiresAfterSeconds })
         else
-            await CommunicationManagement.notifyAndRemember('sms', { content, to }, { content: { code }, identifier: sessionIdentifier, expiresAfterSeconds })
+            return await CommunicationManagement.notifyAndRemember('sms', { content, to }, { content: { code }, identifier: sessionIdentifier, expiresAfterSeconds })
     }
 }

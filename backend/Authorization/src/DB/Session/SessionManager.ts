@@ -31,7 +31,7 @@ export class SessionManager {
         }
     }
 
-    static async setSession(key: string, value: string, expiresAt?: number, uniquenessKey?: string): Promise<void> {
+    static async setSession(key: string, value: string, expiresAt?: number, uniquenessKey?: string): Promise<string> {
         try {
             if (uniquenessKey) {
                 const redisKey = await SessionManager.sessionRedisClient.incr(uniquenessKey)
@@ -41,6 +41,8 @@ export class SessionManager {
 
             if (result === null || result === undefined)
                 throw new SessionInsertionFailure()
+
+            return key
         } catch (e) {
             console.error(e)
             throw new SessionInsertionFailure()

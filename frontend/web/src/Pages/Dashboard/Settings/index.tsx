@@ -34,27 +34,33 @@ export function Settings() {
     }, [])
 
     type State = {
-        updatingEmail: { open: boolean, page: number, mode: 'email' | 'phoneNumber', code: string, sendingCode: boolean, submittingCode: boolean, email: string, sendingEmail: boolean, codeSentAt: number | undefined, counter: number | undefined }
+        updatingEmail: { open: boolean, page: number, email: string, sendingEmail: boolean }
         updatingPhoneNumber: { open: boolean, page: number }
         updatingPassword: { open: boolean, page: number }
+        mode: 'email' | 'phoneNumber'
+        code: string
+        sendingCode: boolean
+        submittingCode: boolean
+        codeSentAt: number | undefined
+        counter: number | undefined
     }
 
     type Action =
-        'emailUpdateCodeSent' |
+        'codeSent' |
         'updateEmail' |
         'updateEmailPreviousPage' |
         'updatePhoneNumber' |
         'updatePassword' |
-        'updatingEmailClose' |
-        'emailUpdateCodeSubmitted' |
-        'submitCodeForEmailUpdate' |
-        { operation: 'setModeForEmailUpdate', data: 'email' | 'phoneNumber' } |
-        { operation: 'setCodeForEmailUpdate', data: string } |
-        { operation: 'sendCodeForEmailUpdate' } |
-        { operation: 'submitCodeForEmailUpdate' } |
+        'updateEmailClose' |
+        'codeSubmitted' |
+        'submitCode' |
+        { operation: 'setMode', data: 'email' | 'phoneNumber' } |
+        { operation: 'setCode', data: string } |
+        { operation: 'sendCode' } |
+        { operation: 'submitCode' } |
         { operation: 'setEmailForEmailUpdate', data: string } |
         { operation: 'sendEmailForEmailUpdate' } |
-        { operation: 'setEmailUpdateCounter', data: number }
+        { operation: 'setCounter', data: number }
 
     const reducer = (state: State, arg: Action): State => {
         if (typeof arg === 'string')
@@ -65,14 +71,14 @@ export function Settings() {
                 case 'updateEmailPreviousPage':
                     return { ...state, updatingEmail: { ...state.updatingEmail, page: state.updatingEmail.page > 0 ? state.updatingEmail.page - 1 : 0 } }
 
-                case 'updatingEmailClose':
+                case 'updateEmailClose':
                     return { ...state, updatingEmail: { ...state.updatingEmail, open: false } }
 
-                case 'emailUpdateCodeSent':
-                    return { ...state, updatingEmail: { ...state.updatingEmail, sendingCode: false, codeSentAt: DateTime.utc().toUnixInteger() } }
+                case 'codeSent':
+                    return { ...state, sendingCode: false, codeSentAt: DateTime.utc().toUnixInteger() }
 
-                case 'emailUpdateCodeSubmitted':
-                    return { ...state, updatingEmail: { ...state.updatingEmail, submittingCode: false, page: 1 } }
+                case 'codeSubmitted':
+                    return { ...state, submittingCode: false, updatingEmail: { ...state.updatingEmail, page: 1 } }
 
                 case 'updatePhoneNumber':
                     return { ...state, updatingPhoneNumber: { open: true, page: 0 } }
@@ -82,20 +88,20 @@ export function Settings() {
             }
         else
             switch (arg.operation) {
-                case 'setModeForEmailUpdate':
-                    return { ...state, updatingEmail: { ...state.updatingEmail, mode: arg.data } }
-                case 'setCodeForEmailUpdate':
-                    return { ...state, updatingEmail: { ...state.updatingEmail, code: arg.data } }
-                case 'sendCodeForEmailUpdate':
-                    return { ...state, updatingEmail: { ...state.updatingEmail, sendingCode: true } }
-                case 'submitCodeForEmailUpdate':
-                    return { ...state, updatingEmail: { ...state.updatingEmail, submittingCode: true } }
+                case 'setMode':
+                    return { ...state, mode: arg.data }
+                case 'setCode':
+                    return { ...state, code: arg.data }
+                case 'sendCode':
+                    return { ...state, sendingCode: true }
+                case 'submitCode':
+                    return { ...state, submittingCode: true }
                 case 'setEmailForEmailUpdate':
                     return { ...state, updatingEmail: { ...state.updatingEmail, email: arg.data } }
                 case 'sendEmailForEmailUpdate':
                     return { ...state, updatingEmail: { ...state.updatingEmail, sendingEmail: true } }
-                case 'setEmailUpdateCounter':
-                    return { ...state, updatingEmail: { ...state.updatingEmail, counter: arg.data } }
+                case 'setCounter':
+                    return { ...state, counter: arg.data }
             }
 
         console.warn('in Settings component: invalid operation requested in reducer')
@@ -106,24 +112,24 @@ export function Settings() {
         updatingEmail: {
             open: false,
             page: 0,
-            mode: ((user?.email !== undefined && user?.phoneNumber !== undefined) || (user?.email === undefined && user?.phoneNumber === undefined)) ? undefined : (user?.email ? 'email' : 'phoneNumber'),
-            code: '',
-            sendingCode: false,
-            codeSentAt: undefined,
-            counter: undefined,
             email: '',
             sendingEmail: false,
-            submittingCode: false,
         },
         updatingPhoneNumber: { open: false, page: 0 },
         updatingPassword: { open: false, page: 0 },
+        mode: ((user?.email !== undefined && user?.phoneNumber !== undefined) || (user?.email === undefined && user?.phoneNumber === undefined)) ? undefined : (user?.email ? 'email' : 'phoneNumber'),
+        code: '',
+        codeSentAt: undefined,
+        counter: undefined,
+        sendingCode: false,
+        submittingCode: false,
     })
 
     useEffect(() => {
-        if (state.updatingEmail.sendingCode === true)
-            authFetchData(`${getAuthApiUrl()}/me/users/send-email-code`, { method: 'POST', body: JSON.stringify({ usePhoneNumber: state.updatingEmail.mode === 'phoneNumber' }) })
-                .finally(() => dispatch('emailUpdateCodeSent'))
-    }, [state.updatingEmail.sendingCode])
+        if (state.sendingCode === true)
+            authFetchData(`${getAuthApiUrl()}/me/users/notify-code`, { method: 'POST', body: JSON.stringify({ usePhoneNumber: state.mode === 'phoneNumber' }) })
+                .finally(() => dispatch('codeSent'))
+    }, [state.sendingCode])
 
     const timeout = useRef<NodeJS.Timeout | undefined>(undefined)
     useEffect(() => {
@@ -132,15 +138,15 @@ export function Settings() {
 
         if (state.updatingEmail.open)
             timeout.current = setTimeout(() => {
-                dispatch({ operation: 'setEmailUpdateCounter', data: 60 - (DateTime.utc().toUnixInteger() - state.updatingEmail.codeSentAt) })
+                dispatch({ operation: 'setCounter', data: 60 - (DateTime.utc().toUnixInteger() - state.codeSentAt) })
             }, 1000)
-    }, [state.updatingEmail.open, state.updatingEmail.codeSentAt])
+    }, [state.updatingEmail.open, state.codeSentAt])
 
     useEffect(() => {
-        if (state.updatingEmail.submittingCode === true)
-            authFetchData(`${getAuthApiUrl()}/me/users/email-code`, { method: 'POST', body: JSON.stringify({ code: state.updatingEmail.code }) })
-                .finally(() => dispatch('emailUpdateCodeSent'))
-    }, [state.updatingEmail.submittingCode])
+        if (state.submittingCode === true)
+            authFetchData(`${getAuthApiUrl()}/me/users/code`, { method: 'POST', body: JSON.stringify({ code: state.code }) })
+                .finally(() => dispatch('codeSent'))
+    }, [state.submittingCode])
 
     console.log('Settings', { state, user, loading })
 
@@ -182,7 +188,7 @@ export function Settings() {
 
             <Modal
                 open={state.updatingEmail.open}
-                onClose={() => dispatch('updatingEmailClose')}
+                onClose={() => dispatch('updateEmailClose')}
             >
                 <div className="relative w-full h-72 flex-grow overflow-x-hidden overflow-y-auto">
                     <AnimatePresence>
@@ -202,9 +208,9 @@ export function Settings() {
                                     {user?.phoneNumber && user?.email &&
                                         <Select
                                             inputProps={{
-                                                value: state.updatingEmail.mode
+                                                value: state.mode
                                             }}
-                                            onValueSelect={e => dispatch({ operation: 'setModeForEmailUpdate', data: e })}
+                                            onValueSelect={e => dispatch({ operation: 'setMode', data: e })}
                                         >
                                             <Select.Item value="email">
                                                 {t('common.email')}
@@ -215,15 +221,15 @@ export function Settings() {
                                         </Select>
                                     }
 
-                                    <Button disabled={state.updatingEmail.mode === undefined || DateTime.utc().minus({ seconds: 60 }).toUnixInteger() < state.updatingEmail.codeSentAt} onClick={() => dispatch({ operation: 'sendCodeForEmailUpdate' })}>{state.updatingEmail.sendingCode ? <CircularLoading /> : t('Settings.sendCode')}</Button>
+                                    <Button disabled={state.mode === undefined || DateTime.utc().minus({ seconds: 60 }).toUnixInteger() < state.codeSentAt} onClick={() => dispatch({ operation: 'sendCode' })}>{state.sendingCode ? <CircularLoading /> : t('Settings.sendCode')}</Button>
 
                                     {
-                                        state.updatingEmail.sendingCode
+                                        state.sendingCode
                                             ? <CircularLoading />
-                                            : <Input value={state.updatingEmail.code ?? ''} placeholder={t('common.code')} onChange={e => dispatch({ operation: 'setCodeForEmailUpdate', data: e.target.value.trim() })} />
+                                            : <Input value={state.code ?? ''} placeholder={t('common.code')} onChange={e => dispatch({ operation: 'setCode', data: e.target.value.trim() })} />
                                     }
 
-                                    <Button disabled={state.updatingEmail.submittingCode} onClick={() => dispatch('submitCodeForEmailUpdate')}>{state.updatingEmail.sendingCode ? <CircularLoading /> : t('common.submit')}</Button>
+                                    <Button disabled={state.submittingCode} onClick={() => dispatch('submitCode')}>{state.submittingCode ? <CircularLoading /> : t('common.submit')}</Button>
                                 </Stack>
                             </motion.div>
                         }
