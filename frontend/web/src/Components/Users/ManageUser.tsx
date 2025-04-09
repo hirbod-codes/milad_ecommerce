@@ -175,8 +175,6 @@ export function ManageUser({ user: userInput, onFinish }: { user: User, onFinish
 
                 <Separator />
 
-                <Separator />
-
                 <Button
                     disabled={submitting}
                     onClick={async () => {

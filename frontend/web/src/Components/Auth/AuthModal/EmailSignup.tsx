@@ -6,7 +6,6 @@ import { t } from "i18next";
 import { EyeIcon, MoveLeftIcon, MoveRightIcon } from "lucide-react";
 import { CheckBox } from "../../Base/CheckBox";
 import { motion, AnimatePresence } from 'framer-motion'
-
 import { number, string } from "yup";
 import { CircularLoadingIcon } from "../../Base/CircularLoadingIcon";
 import { FeedbackContext } from "@/src/Contexts/Feedback/FeedbackContext";
