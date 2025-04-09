@@ -43,6 +43,7 @@ export function Settings() {
         submittingCode: boolean
         codeSentAt: number | undefined
         counter: number | undefined
+        updateField: 'delete' | 'email' | 'phoneNumber' | 'password' | 'username'
     }
 
     type Action =
@@ -66,13 +67,13 @@ export function Settings() {
         if (typeof arg === 'string')
             switch (arg) {
                 case 'updateEmail':
-                    return { ...state, updatingEmail: { ...state.updatingEmail, open: true, page: 0 } }
+                    return { ...state, updateField: 'email', updatingEmail: { ...state.updatingEmail, open: true, page: 0 } }
 
                 case 'updateEmailPreviousPage':
                     return { ...state, updatingEmail: { ...state.updatingEmail, page: state.updatingEmail.page > 0 ? state.updatingEmail.page - 1 : 0 } }
 
                 case 'updateEmailClose':
-                    return { ...state, updatingEmail: { ...state.updatingEmail, open: false } }
+                    return { ...state, updateField: undefined, updatingEmail: { ...state.updatingEmail, open: false } }
 
                 case 'codeSent':
                     return { ...state, sendingCode: false, codeSentAt: DateTime.utc().toUnixInteger() }
@@ -123,12 +124,14 @@ export function Settings() {
         counter: undefined,
         sendingCode: false,
         submittingCode: false,
+        updateField: undefined,
     })
 
     useEffect(() => {
-        if (state.sendingCode === true)
-            authFetchData(`${getAuthApiUrl()}/me/users/notify-code`, { method: 'POST', body: JSON.stringify({ usePhoneNumber: state.mode === 'phoneNumber' }) })
+        if (state.sendingCode === true) {
+            authFetchData(`${getAuthApiUrl()}/me/users/notify-code`, { method: 'POST', body: JSON.stringify({ usePhoneNumber: state.mode === 'phoneNumber', updateField: state.updateField }) })
                 .finally(() => dispatch('codeSent'))
+        }
     }, [state.sendingCode])
 
     const timeout = useRef<NodeJS.Timeout | undefined>(undefined)
