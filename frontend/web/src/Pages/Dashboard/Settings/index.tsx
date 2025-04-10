@@ -43,6 +43,7 @@ export function Settings() {
         submittingCode: boolean
         codeSentAt: number | undefined
         counter: number | undefined
+        codeSent: boolean
         updateField: 'delete' | 'email' | 'phoneNumber' | 'password' | 'username'
     }
 
@@ -54,11 +55,10 @@ export function Settings() {
         'updatePassword' |
         'updateEmailClose' |
         'codeSubmitted' |
+        'sendCode' |
         'submitCode' |
         { operation: 'setMode', data: 'email' | 'phoneNumber' } |
         { operation: 'setCode', data: string } |
-        { operation: 'sendCode' } |
-        { operation: 'submitCode' } |
         { operation: 'setEmailForEmailUpdate', data: string } |
         { operation: 'sendEmailForEmailUpdate' } |
         { operation: 'setCounter', data: number }
@@ -75,8 +75,14 @@ export function Settings() {
                 case 'updateEmailClose':
                     return { ...state, updateField: undefined, updatingEmail: { ...state.updatingEmail, open: false } }
 
+                case 'sendCode':
+                    return { ...state, sendingCode: true }
+
+                case 'submitCode':
+                    return { ...state, submittingCode: true }
+
                 case 'codeSent':
-                    return { ...state, sendingCode: false, codeSentAt: DateTime.utc().toUnixInteger() }
+                    return { ...state, codeSent: true, sendingCode: false, codeSentAt: DateTime.utc().toUnixInteger() }
 
                 case 'codeSubmitted':
                     return { ...state, submittingCode: false, updatingEmail: { ...state.updatingEmail, page: 1 } }
@@ -93,10 +99,6 @@ export function Settings() {
                     return { ...state, mode: arg.data }
                 case 'setCode':
                     return { ...state, code: arg.data }
-                case 'sendCode':
-                    return { ...state, sendingCode: true }
-                case 'submitCode':
-                    return { ...state, submittingCode: true }
                 case 'setEmailForEmailUpdate':
                     return { ...state, updatingEmail: { ...state.updatingEmail, email: arg.data } }
                 case 'sendEmailForEmailUpdate':
@@ -125,6 +127,7 @@ export function Settings() {
         sendingCode: false,
         submittingCode: false,
         updateField: undefined,
+        codeSent: false,
     })
 
     useEffect(() => {
@@ -137,17 +140,22 @@ export function Settings() {
     const timeout = useRef<NodeJS.Timeout | undefined>(undefined)
     useEffect(() => {
         if (timeout.current !== undefined)
-            clearTimeout(timeout.current)
+            clearInterval(timeout.current)
 
-        if (state.updatingEmail.open)
-            timeout.current = setTimeout(() => {
-                dispatch({ operation: 'setCounter', data: 60 - (DateTime.utc().toUnixInteger() - state.codeSentAt) })
+        if (state.updatingEmail.open && state.codeSentAt !== undefined) {
+            timeout.current = setInterval(() => {
+                let c = 60 - (DateTime.utc().toUnixInteger() - state.codeSentAt)
+                if (c >= 0)
+                    dispatch({ operation: 'setCounter', data: c })
+                else
+                    clearInterval(timeout.current)
             }, 1000)
+        }
     }, [state.updatingEmail.open, state.codeSentAt])
 
     useEffect(() => {
         if (state.submittingCode === true)
-            authFetchData(`${getAuthApiUrl()}/me/users/code`, { method: 'POST', body: JSON.stringify({ code: state.code }) })
+            authFetchData(`${getAuthApiUrl()}/me/users/code`, { method: 'POST', body: JSON.stringify({ code: Number(state.code) }) })
                 .finally(() => dispatch('codeSent'))
     }, [state.submittingCode])
 
@@ -193,7 +201,7 @@ export function Settings() {
                 open={state.updatingEmail.open}
                 onClose={() => dispatch('updateEmailClose')}
             >
-                <div className="relative w-full h-72 flex-grow overflow-x-hidden overflow-y-auto">
+                <div className="relative w-full h-80 flex-grow overflow-x-hidden overflow-y-auto">
                     <AnimatePresence>
                         {state.updatingEmail.page === 0 &&
                             <motion.div
@@ -224,16 +232,36 @@ export function Settings() {
                                         </Select>
                                     }
 
-                                    <Button disabled={state.mode === undefined || DateTime.utc().minus({ seconds: 60 }).toUnixInteger() < state.codeSentAt} onClick={() => dispatch({ operation: 'sendCode' })}>{state.sendingCode ? <CircularLoading /> : t('Settings.sendCode')}</Button>
+                                    <Button disabled={state.mode === undefined || DateTime.utc().minus({ seconds: 60 }).toUnixInteger() < state.codeSentAt} onClick={() => dispatch('sendCode')}>{state.sendingCode ? <CircularLoading /> : t('Settings.sendCode')}</Button>
 
                                     {
                                         state.sendingCode
                                             ? <CircularLoading />
-                                            : <Input value={state.code ?? ''} placeholder={t('common.code')} onChange={e => dispatch({ operation: 'setCode', data: e.target.value.trim() })} />
+                                            : <Input
+                                                errorText={state.code && state.code.match(/^[0-9]+$/) === null ? t('Settings.invalidCode') : undefined}
+                                                animateHeight
+                                                value={state.code ?? ''}
+                                                placeholder={t('common.code')}
+                                                onChange={e => dispatch({ operation: 'setCode', data: e.target.value.trim() })}
+                                            />
                                     }
 
-                                    <Button disabled={state.submittingCode} onClick={() => dispatch('submitCode')}>{state.submittingCode ? <CircularLoading /> : t('common.submit')}</Button>
+                                    {state.codeSentAt !== undefined && <motion.div layout className="text-center text -2xl">{state.counter}</motion.div>}
+
+                                    <Button disabled={state.code.match(/^[0-9]+$/) === null || !state.codeSent || state.submittingCode || state.counter <= 0} onClick={() => dispatch('submitCode')}>{state.submittingCode ? <CircularLoading /> : t('common.submit')}</Button>
                                 </Stack>
+                            </motion.div>
+                        }
+
+                        {state.updatingEmail.page === 1 &&
+                            <motion.div
+                                key={state.updatingEmail.page}
+                                initial={{ x: '-100%', opacity: 0 }}
+                                animate={{ x: '0%', opacity: 1 }}
+                                exit={{ x: '100%', opacity: 0 }}
+                                className="absolute top-0 size-full"
+                            >
+                                'page1'
                             </motion.div>
                         }
                     </AnimatePresence>
