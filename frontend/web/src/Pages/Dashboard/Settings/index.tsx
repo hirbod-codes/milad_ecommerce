@@ -34,9 +34,24 @@ export function Settings() {
     }, [])
 
     type State = {
-        updatingEmail: { open: boolean, page: number, email: string, sendingEmail: boolean }
-        updatingPhoneNumber: { open: boolean, page: number }
-        updatingPassword: { open: boolean, page: number }
+        updatingEmail: {
+            open: boolean
+            page: number
+            email: string
+            sendingEmail: boolean
+        }
+        updatingPhoneNumber: {
+            open: boolean
+            page: number
+            phoneNumber: string
+            sendingPhoneNumber: boolean
+        }
+        updatingPassword: {
+            open: boolean
+            page: number
+            password: string
+            sendingPassword: boolean
+        }
         mode: 'email' | 'phoneNumber'
         code: string
         sendingCode: boolean
@@ -57,17 +72,23 @@ export function Settings() {
         'codeSubmitted' |
         'sendCode' |
         'submitCode' |
+        'sendEmail' |
         { operation: 'setMode', data: 'email' | 'phoneNumber' } |
         { operation: 'setCode', data: string } |
-        { operation: 'setEmailForEmailUpdate', data: string } |
-        { operation: 'sendEmailForEmailUpdate' } |
+        { operation: 'setEmail', data: string } |
         { operation: 'setCounter', data: number }
 
     const reducer = (state: State, arg: Action): State => {
         if (typeof arg === 'string')
             switch (arg) {
                 case 'updateEmail':
-                    return { ...state, updateField: 'email', updatingEmail: { ...state.updatingEmail, open: true, page: 0 } }
+                    return { ...state, updateField: 'email', updatingEmail: { email: '', sendingEmail: false, open: true, page: 0 } }
+
+                case 'updatePhoneNumber':
+                    return { ...state, updatingPhoneNumber: { phoneNumber: '', sendingPhoneNumber: false, open: true, page: 0 } }
+
+                case 'updatePassword':
+                    return { ...state, updatingPassword: { password: '', sendingPassword: false, open: true, page: 0 } }
 
                 case 'updateEmailPreviousPage':
                     return { ...state, updatingEmail: { ...state.updatingEmail, page: state.updatingEmail.page > 0 ? state.updatingEmail.page - 1 : 0 } }
@@ -81,17 +102,14 @@ export function Settings() {
                 case 'submitCode':
                     return { ...state, submittingCode: true }
 
+                case 'sendEmail':
+                    return { ...state, updatingEmail: { ...state.updatingEmail, sendingEmail: true } }
+
                 case 'codeSent':
                     return { ...state, codeSent: true, sendingCode: false, codeSentAt: DateTime.utc().toUnixInteger() }
 
                 case 'codeSubmitted':
                     return { ...state, submittingCode: false, updatingEmail: { ...state.updatingEmail, page: 1 } }
-
-                case 'updatePhoneNumber':
-                    return { ...state, updatingPhoneNumber: { open: true, page: 0 } }
-
-                case 'updatePassword':
-                    return { ...state, updatingPassword: { open: true, page: 0 } }
             }
         else
             switch (arg.operation) {
@@ -99,10 +117,8 @@ export function Settings() {
                     return { ...state, mode: arg.data }
                 case 'setCode':
                     return { ...state, code: arg.data }
-                case 'setEmailForEmailUpdate':
+                case 'setEmail':
                     return { ...state, updatingEmail: { ...state.updatingEmail, email: arg.data } }
-                case 'sendEmailForEmailUpdate':
-                    return { ...state, updatingEmail: { ...state.updatingEmail, sendingEmail: true } }
                 case 'setCounter':
                     return { ...state, counter: arg.data }
             }
@@ -118,8 +134,18 @@ export function Settings() {
             email: '',
             sendingEmail: false,
         },
-        updatingPhoneNumber: { open: false, page: 0 },
-        updatingPassword: { open: false, page: 0 },
+        updatingPhoneNumber: {
+            open: false,
+            page: 0,
+            phoneNumber: '',
+            sendingPhoneNumber: false,
+        },
+        updatingPassword: {
+            open: false,
+            page: 0,
+            password: '',
+            sendingPassword: false,
+        },
         mode: ((user?.email !== undefined && user?.phoneNumber !== undefined) || (user?.email === undefined && user?.phoneNumber === undefined)) ? undefined : (user?.email ? 'email' : 'phoneNumber'),
         code: '',
         codeSentAt: undefined,
@@ -156,8 +182,22 @@ export function Settings() {
     useEffect(() => {
         if (state.submittingCode === true)
             authFetchData(`${getAuthApiUrl()}/me/users/code`, { method: 'POST', body: JSON.stringify({ code: Number(state.code) }) })
-                .finally(() => dispatch('codeSent'))
+                .finally(() => dispatch('codeSubmitted'))
     }, [state.submittingCode])
+
+    useEffect(() => {
+        let updateValue: string | undefined = undefined
+        if (state.updatingEmail.sendingEmail === true)
+            updateValue = state.updatingEmail.email
+        else if (state.updatingPhoneNumber.sendingPhoneNumber === true)
+            updateValue = state.updatingPhoneNumber.phoneNumber
+        else if (state.updatingPassword.sendingPassword === true)
+            updateValue = state.updatingPassword.password
+
+        if (updateValue !== undefined && (state.updatingEmail.sendingEmail === true || state.updatingPhoneNumber.sendingPhoneNumber === true || state.updatingPassword.sendingPassword === true))
+            authFetchData(`${getAuthApiUrl()}/me/users/sensitive`, { method: 'PATCH', body: JSON.stringify({ updateValue }) })
+                .finally(() => dispatch('codeSubmitted'))
+    }, [state.updatingEmail.sendingEmail, state.updatingPhoneNumber.sendingPhoneNumber, state.updatingPassword.sendingPassword])
 
     console.log('Settings', { state, user, loading })
 
@@ -261,7 +301,10 @@ export function Settings() {
                                 exit={{ x: '100%', opacity: 0 }}
                                 className="absolute top-0 size-full"
                             >
-                                'page1'
+                                <Stack direction="vertical">
+                                    <Input placeholder={t('newEmail')} value={state.updatingEmail.email} onChange={(e) => dispatch({ operation: 'setEmail', data: e.target.value.trim() })} />
+                                    <Button disabled={state.updatingEmail.sendingEmail} onClick={() => dispatch('sendEmail')} >{t('Settings.submit')}</Button>
+                                </Stack>
                             </motion.div>
                         }
                     </AnimatePresence>

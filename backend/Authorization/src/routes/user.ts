@@ -362,7 +362,7 @@ user.post('/code', authenticate, async (req, res) => {
 user.patch('/sensitive', authenticate, async (req, res) => {
     const { updateValue } = req.body
 
-    if (!string().optional().isValidSync(updateValue)) {
+    if (!string().required().isValidSync(updateValue)) {
         res.status(400).json({ errors: ['invalid updateValue'] })
         return
     }
