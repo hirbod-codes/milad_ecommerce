@@ -13,6 +13,8 @@ import { t } from "i18next";
 import { UpdateEmail } from "./UpdateEmail";
 import { Trash2Icon } from "lucide-react";
 import { DeleteEmail } from "./DeleteEmail";
+import { UpdatePhoneNumber } from "./UpdatePhoneNumber";
+import { DeletePhoneNumber } from "./DeletePhoneNumber";
 
 export function Settings() {
     const feedback = useContext(FeedbackContext)
@@ -105,6 +107,34 @@ export function Settings() {
                     selectModes={user?.phoneNumber !== undefined && user?.email !== undefined}
                     onFinish={() => {
                         setModalOpen({ ...modalOpen, emailDelete: false });
+                        init()
+                    }}
+                />
+            </Modal>
+
+            <Modal
+                open={modalOpen.phoneNumber}
+                onClose={() => setModalOpen({ ...modalOpen, phoneNumber: false })}
+            >
+                <UpdatePhoneNumber
+                    sendTo={((user?.email !== undefined && user?.phoneNumber !== undefined) || (user?.email === undefined && user?.phoneNumber === undefined)) ? undefined : (user?.email ? 'email' : 'phoneNumber')}
+                    selectModes={user?.phoneNumber !== undefined && user?.email !== undefined}
+                    onFinish={() => {
+                        setModalOpen({ ...modalOpen, phoneNumber: false });
+                        init()
+                    }}
+                />
+            </Modal>
+
+            <Modal
+                open={modalOpen.phoneNumberDelete}
+                onClose={() => setModalOpen({ ...modalOpen, phoneNumberDelete: false })}
+            >
+                <DeletePhoneNumber
+                    sendTo={((user?.email !== undefined && user?.phoneNumber !== undefined) || (user?.email === undefined && user?.phoneNumber === undefined)) ? undefined : (user?.email ? 'email' : 'phoneNumber')}
+                    selectModes={user?.phoneNumber !== undefined && user?.email !== undefined}
+                    onFinish={() => {
+                        setModalOpen({ ...modalOpen, phoneNumberDelete: false });
                         init()
                     }}
                 />
