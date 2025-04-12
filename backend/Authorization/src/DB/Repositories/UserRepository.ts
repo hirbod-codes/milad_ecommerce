@@ -87,20 +87,28 @@ export class UserRepository {
                 try {
                     const ts = faker.number.int({ min: startTimeTS, max: endTimeTS })
 
-                    let r = await collection.insertOne({
+                    const setCred = faker.datatype.boolean(0.3) ? 2 : (faker.datatype.boolean(0.5) ? 1 : 0)
+
+                    const user: UserCreate = {
                         schemaVersion,
                         role: faker.helpers.arrayElement(roles.filter(f => f.name !== 'admin').map(m => m.name)),
                         firstName: faker.person.firstName(),
                         lastName: faker.person.lastName(),
-                        phoneNumber: '09' + faker.string.numeric({ length: 9, allowLeadingZeros: true }),
                         username: faker.internet.username(),
-                        email: faker.internet.exampleEmail(),
                         password: hashedPassword,
                         passwordIterations,
                         passwordSalt,
                         createdAt: ts,
                         updatedAt: ts,
-                    })
+                    }
+
+                    if (setCred === 2 || setCred === 0)
+                        user.phoneNumber = '09' + faker.string.numeric({ length: 9, allowLeadingZeros: true })
+
+                    if (setCred === 2 || setCred === 1)
+                        user.email = faker.internet.exampleEmail()
+
+                    let r = await collection.insertOne(user)
                     if (r.acknowledged)
                         break
                 } catch (e) {
@@ -187,6 +195,16 @@ export class UserRepository {
 
     async delete(id: string): Promise<DeleteResult | false> {
         try { return await this.collection.deleteOne({ _id: ObjectId.createFromHexString(id) }) }
+        catch (e) { console.error(e); return false }
+    }
+
+    async deleteEmail(id: string) {
+        try { return await this.collection.updateOne({ _id: ObjectId.createFromHexString(id) }, { $unset: { email: 1 } }) }
+        catch (e) { console.error(e); return false }
+    }
+
+    async deletePhoneNumber(id: string) {
+        try { return await this.collection.updateOne({ _id: ObjectId.createFromHexString(id) }, { $unset: { email: 1 } }) }
         catch (e) { console.error(e); return false }
     }
 }

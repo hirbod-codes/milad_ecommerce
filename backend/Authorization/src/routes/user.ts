@@ -11,6 +11,7 @@ import { CommunicationManagement } from "../CommunicationManagement"
 import busboy from "busboy";
 import { UserRepository } from "../DB/Repositories/UserRepository";
 import { UserProfilePictureRepository } from "../DB/Repositories/UserProfilePictureRepository";
+import { AuthManager } from "../AuthManager";
 
 const user = Router()
 
@@ -247,7 +248,7 @@ user.post('/notify-code', authenticate, async (req, res) => {
     try {
         const { usePhoneNumber, updateField } = req.body
 
-        if (!boolean().required().isValidSync(usePhoneNumber) || !mixed().required().oneOf(['email', 'phoneNumber', 'username', 'password', 'delete']).isValidSync(updateField)) {
+        if (!boolean().required().isValidSync(usePhoneNumber) || !mixed().required().oneOf(['email', 'phoneNumber', 'username', 'password']).isValidSync(updateField)) {
             res.sendStatus(400)
             return
         }
@@ -278,7 +279,7 @@ user.post('/notify-code', authenticate, async (req, res) => {
             await CommunicationManagement.notify('email', { content, to: user.email!, subject: 'Verification Code' })
 
         const expiresAt = DateTime.utc().plus({ seconds: 60 }).toUnixInteger()
-        let sessionId = updateField === 'delete' ? 'delete' : `update_field_${updateField}`
+        let sessionId = `update_field_${updateField}`
         try { sessionId = await SessionManager.setSession(sessionId, JSON.stringify({ code, expiresAt }), expiresAt, sessionId) }
         catch (e) {
             console.error(e)
@@ -289,7 +290,7 @@ user.post('/notify-code', authenticate, async (req, res) => {
             throw new Error('system failed to set session')
 
         res
-            .cookie('sessionId', sessionId, {
+            .cookie('sessionId', AuthManager.getInstance().generateTokenForSessionId(sessionId, '60000 milliseconds'), {
                 httpOnly: true,
                 secure: true,
                 maxAge: 60000,
@@ -306,9 +307,21 @@ user.post('/code', authenticate, async (req, res) => {
     try {
         const { code } = req.body
 
-        const sessionId = req?.cookies?.sessionId
+        const sessionIdToken = req?.cookies?.sessionId
 
-        if (!string().required().isValidSync(sessionId) || !number().required().isValidSync(code)) {
+        if (!string().required().isValidSync(sessionIdToken) || !number().required().strict(true).isValidSync(code)) {
+            res.sendStatus(400)
+            return
+        }
+
+        const payload = await AuthManager.getInstance().verifySessionIdToken(sessionIdToken)
+        if (payload === undefined) {
+            res.sendStatus(400)
+            return
+        }
+
+        const sessionId = payload?.sub
+        if (!string().required().isValidSync(sessionId) || !sessionId.includes('update_field_') || !['email', 'username', 'phoneNumber', 'password'].includes(sessionId.split('update_field_')[1])) {
             res.sendStatus(400)
             return
         }
@@ -335,7 +348,7 @@ user.post('/code', authenticate, async (req, res) => {
         }
 
         const expiresAt = DateTime.utc().plus({ seconds: 4 * 60 }).toUnixInteger()
-        let newSessionId = sessionId.includes('delete') ? 'delete' : `update_field_${sessionId.split('update_field_')[1]}`
+        let newSessionId = `update_field_${sessionId.split('update_field_')[1]}`
         try { newSessionId = await SessionManager.setSession(newSessionId, JSON.stringify({ verified: true, expiresAt }), expiresAt, newSessionId) }
         catch (e) {
             console.error(e)
@@ -367,15 +380,32 @@ user.patch('/sensitive', authenticate, async (req, res) => {
         return
     }
 
-    const sessionId = req?.cookies?.sessionId
-    if (!string().required().isValidSync(sessionId) || sessionId.includes('delete')) {
-        res.status(400).json({ errors: ['invalid sessionId'] })
+    const sessionIdToken = req?.cookies?.sessionId
+    if (!string().required().isValidSync(sessionIdToken)) {
+        res.status(400).json({ errors: ['invalid sessionIdToken'] })
+        return
+    }
+
+    const payload = await AuthManager.getInstance().verifySessionIdToken(sessionIdToken)
+    if (payload === undefined) {
+        res.sendStatus(400)
+        return
+    }
+
+    const sessionId = payload?.sub
+    if (!string().required().isValidSync(sessionId) || !sessionId.includes('update_field_') || !['email', 'username', 'phoneNumber', 'password'].includes(sessionId.split('update_field_')[1])) {
+        res.sendStatus(400)
         return
     }
 
     const field = sessionId.split('update_field_')[1]
     if (!mixed().required().oneOf(['email', 'phoneNumber', 'username', 'password']).isValidSync(field)) {
         res.status(400).json({ errors: ['invalid field'] })
+        return
+    }
+
+    if (await authorize(req, `update-user-self-${field}`) !== true) {
+        res.sendStatus(403)
         return
     }
 
@@ -420,6 +450,142 @@ user.patch('/sensitive', authenticate, async (req, res) => {
     res.json(r)
 })
 
+user.post('/notify-delete-code', authenticate, async (req, res) => {
+    try {
+        const { usePhoneNumber, deleteField } = req.body
+
+        if (!boolean().required().isValidSync(usePhoneNumber) || (deleteField && !mixed().required().oneOf(['email', 'phoneNumber']).isValidSync(deleteField))) {
+            res.sendStatus(400)
+            return
+        }
+
+        if ((deleteField && await authorize(req, `delete-user-self-${deleteField}`) !== true) || (!deleteField && await authorize(req, 'delete-user-self') !== true)) {
+            res.sendStatus(403)
+            return
+        }
+
+        const userId = (Jwt.decode(req.headers['authorization']!.replace('Bearer ', '')!) as Jwt.JwtPayload)?.sub ?? ''
+
+        const userRepository = await UserRepository.getInstance()
+        const user = await userRepository.getById(userId)
+
+        if (!user || (usePhoneNumber === true && !user.phoneNumber) || (usePhoneNumber !== true && !user.email)) {
+            res.sendStatus(400)
+            return
+        }
+
+        const code = Math.round((Math.random() * (999_999 - 100_000)) + 100_000)
+        console.log(code)
+
+        const content = `Your verification code is: ${code}\n\nfrom sender`
+
+        if (usePhoneNumber)
+            await CommunicationManagement.notify('sms', { content, to: user.phoneNumber! })
+        else
+            await CommunicationManagement.notify('email', { content, to: user.email!, subject: 'Verification Code' })
+
+        const expiresAt = DateTime.utc().plus({ seconds: 60 }).toUnixInteger()
+        let sessionId = deleteField ? `delete_field_${deleteField}` : 'delete_account'
+        try { sessionId = await SessionManager.setSession(sessionId, JSON.stringify({ code, expiresAt }), expiresAt, sessionId) }
+        catch (e) {
+            console.error(e)
+            throw new Error('system failed to set session')
+        }
+
+        if (!sessionId)
+            throw new Error('system failed to set session')
+
+        res
+            .cookie('sessionId', AuthManager.getInstance().generateTokenForSessionId(sessionId, '60000 milliseconds'), {
+                httpOnly: true,
+                secure: true,
+                maxAge: 60000,
+                sameSite: 'strict',
+            })
+            .sendStatus(200)
+    } catch (e) {
+        console.error(e)
+        res.sendStatus(500)
+    }
+})
+
+user.post('/delete-code', authenticate, async (req, res) => {
+    try {
+        const { code } = req.body
+
+        const sessionIdToken = req?.cookies?.sessionId
+
+        if (!string().required().isValidSync(sessionIdToken) || !number().required().strict(true).isValidSync(code)) {
+            res.sendStatus(400)
+            return
+        }
+
+        const payload = await AuthManager.getInstance().verifySessionIdToken(sessionIdToken)
+        if (payload === undefined) {
+            res.sendStatus(400)
+            return
+        }
+
+        const sessionId = payload?.sub
+        if (!string().required().isValidSync(sessionId)) {
+            res.sendStatus(400)
+            return
+        }
+        if (sessionId.includes('delete_field_') && !['email', 'phoneNumber'].includes(sessionId.split('delete_field_')[1])) {
+            res.sendStatus(400)
+            return
+        }
+        if (!sessionId.includes('delete_field_') && sessionId !== 'delete_account') {
+            res.sendStatus(400)
+            return
+        }
+
+        let json = undefined
+        try { json = await SessionManager.getSession(sessionId) }
+        catch (e) {
+            console.error(e)
+            throw new Error('session not found')
+        }
+
+        if (!json)
+            throw new Error('session not found')
+
+        let { code: inSessionCode, expiresAt: inSessionExpiresAt } = JSON.parse(json)
+        inSessionCode = Number(inSessionCode)
+        inSessionExpiresAt = Number(inSessionExpiresAt)
+
+        console.log('from redis', { inSessionCode, inSessionExpiresAt })
+
+        if (inSessionCode !== code || inSessionExpiresAt <= DateTime.utc().toUnixInteger()) {
+            res.sendStatus(400)
+            return
+        }
+
+        const expiresAt = DateTime.utc().plus({ seconds: 4 * 60 }).toUnixInteger()
+        let newSessionId = sessionId.includes('delete_field_') ? `delete_field_${sessionId.split('delete_field_')[1]}` : 'delete_account'
+        try { newSessionId = await SessionManager.setSession(newSessionId, JSON.stringify({ verified: true, expiresAt }), expiresAt, newSessionId) }
+        catch (e) {
+            console.error(e)
+            throw new Error('system failed to set session')
+        }
+
+        if (!sessionId)
+            throw new Error('system failed to set session')
+
+        res
+            .cookie('sessionId', newSessionId, {
+                httpOnly: true,
+                secure: true,
+                maxAge: 4 * 60 * 1000, // One Week
+                sameSite: 'strict',
+            })
+            .sendStatus(200)
+    } catch (e) {
+        console.error(e)
+        res.sendStatus(500)
+    }
+})
+
 user.delete('/', authenticate, async (req, res) => {
     try {
         if (await authorize(req, 'delete-user-self') !== true) {
@@ -427,9 +593,22 @@ user.delete('/', authenticate, async (req, res) => {
             return
         }
 
-        const sessionId = req?.cookies?.sessionId
-        if (!string().required().strict(true).isValidSync(sessionId) || !sessionId.includes('delete')) {
-            res.status(400).json({ errors: ['invalid sessionId'] })
+        const sessionIdToken = req?.cookies?.sessionId
+
+        if (!string().required().isValidSync(sessionIdToken)) {
+            res.sendStatus(400)
+            return
+        }
+
+        const payload = await AuthManager.getInstance().verifySessionIdToken(sessionIdToken)
+        if (payload === undefined) {
+            res.sendStatus(400)
+            return
+        }
+
+        const sessionId = payload?.sub
+        if (sessionId !== 'delete_account') {
+            res.sendStatus(400)
             return
         }
 
@@ -457,6 +636,152 @@ user.delete('/', authenticate, async (req, res) => {
 
         const userRepository = await UserRepository.getInstance()
         const r = await userRepository.delete(userId)
+        if (r === false || !r.acknowledged) {
+            res.sendStatus(500)
+            return
+        }
+
+        res.json(r)
+    } catch (e) {
+        console.error(e)
+        res.sendStatus(500)
+    }
+})
+
+user.delete('/email', authenticate, async (req, res) => {
+    try {
+        const sessionIdToken = req?.cookies?.sessionId
+
+        if (!string().required().isValidSync(sessionIdToken)) {
+            res.sendStatus(400)
+            return
+        }
+
+        const payload = await AuthManager.getInstance().verifySessionIdToken(sessionIdToken)
+        if (payload === undefined) {
+            res.sendStatus(400)
+            return
+        }
+
+        const sessionId = payload?.sub
+        if (!string().required().isValidSync(sessionId)) {
+            res.sendStatus(400)
+            return
+        }
+        if (!sessionId.includes('delete_field_') || sessionId.split('delete_field_')[1] !== 'email') {
+            res.sendStatus(400)
+            return
+        }
+
+        if (await authorize(req, `delete-user-self-email`) !== true) {
+            res.sendStatus(403)
+            return
+        }
+
+        let json = undefined
+        try { json = await SessionManager.getSession(sessionId) }
+        catch (e) {
+            console.error(e)
+            throw new Error('session not found')
+        }
+
+        if (!json)
+            throw new Error('session not found')
+
+        let { verified, expiresAt: inSessionExpiresAt } = JSON.parse(json)
+        inSessionExpiresAt = Number(inSessionExpiresAt)
+
+        console.log('from redis', { verified, inSessionExpiresAt })
+
+        if (verified !== true || inSessionExpiresAt <= DateTime.utc().toUnixInteger()) {
+            res.sendStatus(400)
+            return
+        }
+
+        let userId = (Jwt.decode(req.headers['authorization']!.replace('Bearer ', '')!) as Jwt.JwtPayload)?.sub ?? ''
+
+        const userRepository = await UserRepository.getInstance()
+
+        const user = await userRepository.getById(userId)
+        if (!user || !user.phoneNumber) {
+            res.sendStatus(400)
+            return
+        }
+
+        const r = await userRepository.deleteEmail(userId)
+        if (r === false || !r.acknowledged) {
+            res.sendStatus(500)
+            return
+        }
+
+        res.json(r)
+    } catch (e) {
+        console.error(e)
+        res.sendStatus(500)
+    }
+})
+
+user.delete('/phoneNumber', authenticate, async (req, res) => {
+    try {
+        const sessionIdToken = req?.cookies?.sessionId
+
+        if (!string().required().isValidSync(sessionIdToken)) {
+            res.sendStatus(400)
+            return
+        }
+
+        const payload = await AuthManager.getInstance().verifySessionIdToken(sessionIdToken)
+        if (payload === undefined) {
+            res.sendStatus(400)
+            return
+        }
+
+        const sessionId = payload?.sub
+        if (!string().required().isValidSync(sessionId)) {
+            res.sendStatus(400)
+            return
+        }
+        if (!sessionId.includes('delete_field_') || sessionId.split('delete_field_')[1] !== 'phoneNumber') {
+            res.sendStatus(400)
+            return
+        }
+
+        if (await authorize(req, `delete-user-self-phoneNumber`) !== true) {
+            res.sendStatus(403)
+            return
+        }
+
+        let json = undefined
+        try { json = await SessionManager.getSession(sessionId) }
+        catch (e) {
+            console.error(e)
+            throw new Error('session not found')
+        }
+
+        if (!json)
+            throw new Error('session not found')
+
+        let { verified, expiresAt: inSessionExpiresAt } = JSON.parse(json)
+        inSessionExpiresAt = Number(inSessionExpiresAt)
+
+        console.log('from redis', { verified, inSessionExpiresAt })
+
+        if (verified !== true || inSessionExpiresAt <= DateTime.utc().toUnixInteger()) {
+            res.sendStatus(400)
+            return
+        }
+
+        let userId = (Jwt.decode(req.headers['authorization']!.replace('Bearer ', '')!) as Jwt.JwtPayload)?.sub ?? ''
+
+        const userRepository = await UserRepository.getInstance()
+
+        const user = await userRepository.getById(userId)
+        if (!user || !user.email) {
+            res.sendStatus(400)
+            return
+        }
+
+        const r = await userRepository.deletePhoneNumber(userId)
         if (r === false || !r.acknowledged) {
             res.sendStatus(500)
             return

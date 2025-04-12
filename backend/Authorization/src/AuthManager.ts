@@ -30,6 +30,10 @@ export class AuthManager {
         this.refreshTokenExpiresIn = refreshTokenExpiresIn
     }
 
+    async generateTokenForSessionId(id: string, expiresIn: number | StringValue) {
+        return Jwt.sign({ sub: id }, this.jwtSecret, { issuer: this.issuer, expiresIn, algorithm: this.algorithm });
+    }
+
     async generateToken(sub: string, role: string, expiresIn: number | StringValue, tokenMode: 'accessToken' | 'refreshToken'): Promise<string> {
         return new Promise<string>((resolve) => {
             let t = Jwt.sign({ sub, role, tokenMode }, this.jwtSecret, { issuer: this.issuer, expiresIn, algorithm: this.algorithm });
@@ -186,6 +190,21 @@ export class AuthManager {
                 } else if (token!.payload.tokenMode !== tokenMode)
                     resolve(undefined)
                 else
+                    resolve(token!.payload)
+            })
+        })
+    }
+
+    verifySessionIdToken(token: string): Promise<Jwt.JwtPayload | undefined> {
+        return new Promise<Jwt.JwtPayload | undefined>((resolve, reject) => {
+            Jwt.verify(token, this.jwtSecret, { complete: true, issuer: this.issuer, algorithms: [this.algorithm] }, (e, token) => {
+                if (e) {
+                    console.error(e)
+                    resolve(undefined)
+                } else if (typeof token!.payload === 'string') {
+                    console.error('invalid token payload type was returned: ' + token!.payload)
+                    resolve(undefined)
+                } else
                     resolve(token!.payload)
             })
         })
