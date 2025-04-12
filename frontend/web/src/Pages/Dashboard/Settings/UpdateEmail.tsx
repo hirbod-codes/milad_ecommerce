@@ -26,7 +26,7 @@ export function UpdateEmail({ mode: initialMode, onFinish, selectModes }: { mode
 
     const [counter, setCounter] = useState(undefined)
 
-    const { state, dispatch } = useCode(mode, 'email')
+    const { state, dispatch } = useCode(mode, 'update', 'email')
 
     const timeout = useRef<NodeJS.Timeout | undefined>(undefined)
     useEffect(() => {

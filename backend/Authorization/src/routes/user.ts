@@ -290,7 +290,7 @@ user.post('/notify-code', authenticate, async (req, res) => {
             throw new Error('system failed to set session')
 
         res
-            .cookie('sessionId', AuthManager.getInstance().generateTokenForSessionId(sessionId, '60000 milliseconds'), {
+            .cookie('sessionId', await AuthManager.getInstance().generateTokenForSessionId(sessionId, '60000 milliseconds'), {
                 httpOnly: true,
                 secure: true,
                 maxAge: 60000,
@@ -359,7 +359,7 @@ user.post('/code', authenticate, async (req, res) => {
             throw new Error('system failed to set session')
 
         res
-            .cookie('sessionId', newSessionId, {
+            .cookie('sessionId', await AuthManager.getInstance().generateTokenForSessionId(newSessionId, '4 minutes'), {
                 httpOnly: true,
                 secure: true,
                 maxAge: 4 * 60 * 1000, // One Week
@@ -388,28 +388,25 @@ user.patch('/sensitive', authenticate, async (req, res) => {
 
     const payload = await AuthManager.getInstance().verifySessionIdToken(sessionIdToken)
     if (payload === undefined) {
-        res.sendStatus(400)
+        res.status(400).json({ errors: ['invalid session id'] })
         return
     }
+    console.log('payload', payload)
 
     const sessionId = payload?.sub
     if (!string().required().isValidSync(sessionId) || !sessionId.includes('update_field_') || !['email', 'username', 'phoneNumber', 'password'].includes(sessionId.split('update_field_')[1])) {
-        res.sendStatus(400)
+        res.status(400).json({ errors: ['invalid session id'] })
         return
     }
 
     const field = sessionId.split('update_field_')[1]
-    if (!mixed().required().oneOf(['email', 'phoneNumber', 'username', 'password']).isValidSync(field)) {
-        res.status(400).json({ errors: ['invalid field'] })
-        return
-    }
 
     if (await authorize(req, `update-user-self-${field}`) !== true) {
         res.sendStatus(403)
         return
     }
 
-    if (updateValue && !userSchema.pick([field as any]).required().isValidSync({ [field]: updateValue })) {
+    if (!userSchema.pick([field as any]).required().isValidSync({ [field]: updateValue })) {
         res.status(400).json({ errors: ['invalid updateValue'] })
         return
     }
@@ -430,13 +427,13 @@ user.patch('/sensitive', authenticate, async (req, res) => {
     console.log('from redis', { verified, inSessionExpiresAt })
 
     if (verified !== true || inSessionExpiresAt <= DateTime.utc().toUnixInteger()) {
-        res.sendStatus(400)
+        res.status(400).json({ errors: ['expired or invalid session'] })
         return
     }
 
     const userId = (Jwt.decode(req.headers['authorization']!.replace('Bearer ', '')!) as Jwt.JwtPayload)?.sub ?? ''
     if (!stringObjectId.required().isValidSync(userId)) {
-        res.sendStatus(403)
+        res.sendStatus(401)
         return
     }
 
@@ -496,7 +493,7 @@ user.post('/notify-delete-code', authenticate, async (req, res) => {
             throw new Error('system failed to set session')
 
         res
-            .cookie('sessionId', AuthManager.getInstance().generateTokenForSessionId(sessionId, '60000 milliseconds'), {
+            .cookie('sessionId', await AuthManager.getInstance().generateTokenForSessionId(sessionId, '60000 milliseconds'), {
                 httpOnly: true,
                 secure: true,
                 maxAge: 60000,
@@ -573,7 +570,7 @@ user.post('/delete-code', authenticate, async (req, res) => {
             throw new Error('system failed to set session')
 
         res
-            .cookie('sessionId', newSessionId, {
+            .cookie('sessionId', await AuthManager.getInstance().generateTokenForSessionId(newSessionId, '4 minutes'), {
                 httpOnly: true,
                 secure: true,
                 maxAge: 4 * 60 * 1000, // One Week

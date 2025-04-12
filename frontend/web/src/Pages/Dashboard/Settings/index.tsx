@@ -13,6 +13,7 @@ import { t } from "i18next";
 import { motion, AnimatePresence } from 'framer-motion'
 import { Select } from "@/src/Components/Base/Select";
 import { DateTime } from "luxon";
+import { UpdateEmail } from "./UpdateEmail";
 
 export function Settings() {
     const feedback = useContext(FeedbackContext)
@@ -241,74 +242,11 @@ export function Settings() {
                 open={state.updatingEmail.open}
                 onClose={() => dispatch('updateEmailClose')}
             >
-                <div className="relative w-full h-80 flex-grow overflow-x-hidden overflow-y-auto">
-                    <AnimatePresence>
-                        {state.updatingEmail.page === 0 &&
-                            <motion.div
-                                key={state.updatingEmail.page}
-                                initial={{ x: '-100%', opacity: 0 }}
-                                animate={{ x: '0%', opacity: 1 }}
-                                exit={{ x: '100%', opacity: 0 }}
-                                className="absolute top-0 size-full"
-                            >
-                                <Stack direction="vertical">
-                                    <div className="text-center text-4xl">
-                                        {t('Settings.updateEmailTitle')}
-                                    </div>
-
-                                    {user?.phoneNumber && user?.email &&
-                                        <Select
-                                            inputProps={{
-                                                value: state.mode
-                                            }}
-                                            onValueSelect={e => dispatch({ operation: 'setMode', data: e })}
-                                        >
-                                            <Select.Item value="email">
-                                                {t('common.email')}
-                                            </Select.Item>
-                                            <Select.Item value="phoneNumber">
-                                                {t('common.phoneNumber')}
-                                            </Select.Item>
-                                        </Select>
-                                    }
-
-                                    <Button disabled={state.mode === undefined || DateTime.utc().minus({ seconds: 60 }).toUnixInteger() < state.codeSentAt} onClick={() => dispatch('sendCode')}>{state.sendingCode ? <CircularLoading /> : t('Settings.sendCode')}</Button>
-
-                                    {
-                                        state.sendingCode
-                                            ? <CircularLoading />
-                                            : <Input
-                                                errorText={state.code && state.code.match(/^[0-9]+$/) === null ? t('Settings.invalidCode') : undefined}
-                                                animateHeight
-                                                value={state.code ?? ''}
-                                                placeholder={t('common.code')}
-                                                onChange={e => dispatch({ operation: 'setCode', data: e.target.value.trim() })}
-                                            />
-                                    }
-
-                                    {state.codeSentAt !== undefined && <motion.div layout className="text-center text -2xl">{state.counter}</motion.div>}
-
-                                    <Button disabled={state.code.match(/^[0-9]+$/) === null || !state.codeSent || state.submittingCode || state.counter <= 0} onClick={() => dispatch('submitCode')}>{state.submittingCode ? <CircularLoading /> : t('common.submit')}</Button>
-                                </Stack>
-                            </motion.div>
-                        }
-
-                        {state.updatingEmail.page === 1 &&
-                            <motion.div
-                                key={state.updatingEmail.page}
-                                initial={{ x: '-100%', opacity: 0 }}
-                                animate={{ x: '0%', opacity: 1 }}
-                                exit={{ x: '100%', opacity: 0 }}
-                                className="absolute top-0 size-full"
-                            >
-                                <Stack direction="vertical">
-                                    <Input placeholder={t('newEmail')} value={state.updatingEmail.email} onChange={(e) => dispatch({ operation: 'setEmail', data: e.target.value.trim() })} />
-                                    <Button disabled={state.updatingEmail.sendingEmail} onClick={() => dispatch('sendEmail')} >{t('Settings.submit')}</Button>
-                                </Stack>
-                            </motion.div>
-                        }
-                    </AnimatePresence>
-                </div>
+                <UpdateEmail
+                    mode={((user?.email !== undefined && user?.phoneNumber !== undefined) || (user?.email === undefined && user?.phoneNumber === undefined)) ? undefined : (user?.email ? 'email' : 'phoneNumber')}
+                    selectModes={user?.phoneNumber !== undefined && user?.email !== undefined}
+                    onFinish={() => dispatch('updateEmailClose')}
+                />
             </Modal>
         </>
     )
