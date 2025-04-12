@@ -13,7 +13,7 @@ import { Select } from "@/src/Components/Base/Select"
 import { ArrowLeftIcon, ArrowRightIcon } from "lucide-react"
 import { ConfigurationContext } from "@/src/Contexts/Configuration/ConfigurationContext"
 
-export function UpdateEmail({ mode: initialMode, onFinish, selectModes }: { mode: 'email' | 'phoneNumber', selectModes: boolean, onFinish?: () => void }) {
+export function UpdateEmail({ sendTo: initialMode, onFinish, selectModes }: { sendTo: 'email' | 'phoneNumber', selectModes: boolean, onFinish?: () => void }) {
     const feedback = useContext(FeedbackContext)
     const configuration = useContext(ConfigurationContext)
 
@@ -27,6 +27,12 @@ export function UpdateEmail({ mode: initialMode, onFinish, selectModes }: { mode
     const [counter, setCounter] = useState(undefined)
 
     const { state, dispatch } = useCode(mode, 'update', 'email')
+
+    useEffect(() => {
+        if (selectModes !== true)
+            dispatch('sendCode')
+
+    }, [])
 
     const timeout = useRef<NodeJS.Timeout | undefined>(undefined)
     useEffect(() => {
@@ -89,28 +95,30 @@ export function UpdateEmail({ mode: initialMode, onFinish, selectModes }: { mode
                             </div>
 
                             {selectModes &&
-                                <Select
-                                    inputProps={{
-                                        value: mode
-                                    }}
-                                    onValueSelect={e => setMode(e)}
-                                >
-                                    <Select.Item value="email">
-                                        {t('common.email')}
-                                    </Select.Item>
-                                    <Select.Item value="phoneNumber">
-                                        {t('common.phoneNumber')}
-                                    </Select.Item>
-                                </Select>
-                            }
+                                <>
+                                    <Select
+                                        inputProps={{
+                                            value: mode
+                                        }}
+                                        onValueSelect={e => setMode(e)}
+                                    >
+                                        <Select.Item value="email">
+                                            {t('common.email')}
+                                        </Select.Item>
+                                        <Select.Item value="phoneNumber">
+                                            {t('common.phoneNumber')}
+                                        </Select.Item>
+                                    </Select>
 
-                            <Button disabled={mode === undefined || DateTime.utc().minus({ seconds: 60 }).toUnixInteger() < state.codeSentAt} onClick={() => dispatch('sendCode')}>
-                                {state.sendingCode ? <CircularLoading /> : t('Settings.sendCode')}
-                            </Button>
+                                    <Button disabled={mode === undefined || DateTime.utc().minus({ seconds: 60 }).toUnixInteger() < state.codeSentAt} onClick={() => dispatch('sendCode')}>
+                                        {state.sendingCode ? <CircularLoading /> : t('Settings.sendCode')}
+                                    </Button>
+                                </>
+                            }
 
                             {
                                 state.sendingCode
-                                    ? <CircularLoading />
+                                    ? <Stack stackProps={{ className: 'justify-center' }}><CircularLoading /></Stack>
                                     : <Input
                                         errorText={state.code && state.code.match(/^[0-9]+$/) === null ? t('Settings.invalidCode') : undefined}
                                         animateHeight

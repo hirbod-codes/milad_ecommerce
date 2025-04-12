@@ -14,6 +14,8 @@ type State = {
     confirmCode: string
     sendingConfirmCode: boolean
     sentConfirmCode: boolean
+    deleting: boolean
+    deleted: boolean
 }
 
 type Action =
@@ -26,6 +28,8 @@ type Action =
     'sendConfirmCode' |
     'sentConfirmCode' |
     'failedToSendConfirmCode' |
+    'deleted' |
+    'failedToDelete' |
     { op: 'setConfirmCode', value: string } |
     { op: 'setMode', value: 'email' | 'phoneNumber' } |
     { op: 'setCode', value: string }
@@ -54,7 +58,10 @@ function useCode(sendTo: 'email' | 'phoneNumber', mode: 'update' | 'delete', fie
                     return { ...state, submittingCode: true }
 
                 case 'submittedCode':
-                    return { ...state, submittingCode: false, submittedCode: true }
+                    let s = { ...state, submittingCode: false, submittedCode: true }
+                    if (mode === 'delete')
+                        s.deleting = true
+                    return s
 
                 case 'failedToSubmitCode':
                     return { ...state, submittingCode: false }
@@ -67,6 +74,12 @@ function useCode(sendTo: 'email' | 'phoneNumber', mode: 'update' | 'delete', fie
 
                 case 'failedToSendConfirmCode':
                     return { ...state, sendingConfirmCode: false }
+
+                case 'deleted':
+                    return { ...state, deleting: false, deleted: true }
+
+                case 'failedToDelete':
+                    return { ...state, deleting: false }
             }
         else
             switch (action.op) {
@@ -90,12 +103,15 @@ function useCode(sendTo: 'email' | 'phoneNumber', mode: 'update' | 'delete', fie
             confirmCode: '',
             sendingConfirmCode: false,
             sentConfirmCode: false,
+            deleting: false,
+            deleted: false,
         }
     )
 
+    // Notify
     useEffect(() => {
         if (state?.sendingCode === true) {
-            authFetchData(`${getAuthApiUrl()}/me/users/${mode === 'delete' ? 'delete-' : ''}notify-code`, {
+            authFetchData(`${getAuthApiUrl()}/me/users/notify-${mode === 'delete' ? 'delete-' : ''}code`, {
                 method: 'POST',
                 body: JSON.stringify({ usePhoneNumber: sendTo === 'phoneNumber', [mode === 'delete' ? 'deleteField' : 'updateField']: field })
             })
@@ -112,6 +128,7 @@ function useCode(sendTo: 'email' | 'phoneNumber', mode: 'update' | 'delete', fie
         }
     }, [state?.sendingCode])
 
+    // Code
     useEffect(() => {
         if (state?.submittingCode === true)
             authFetchData(`${getAuthApiUrl()}/me/users/${mode === 'delete' ? 'delete-' : ''}code`, { method: 'POST', body: JSON.stringify({ code: Number(state?.code) }) })
@@ -127,6 +144,7 @@ function useCode(sendTo: 'email' | 'phoneNumber', mode: 'update' | 'delete', fie
                 .catch(() => dispatch('failedToSubmitCode'))
     }, [state?.submittingCode])
 
+    // Confirm
     useEffect(() => {
         if (state?.sendingConfirmCode === true)
             authFetchData(`${getAuthApiUrl()}/me/users/confirm`, { method: 'PATCH', body: JSON.stringify({ code: Number(state?.confirmCode) }) })
@@ -141,6 +159,23 @@ function useCode(sendTo: 'email' | 'phoneNumber', mode: 'update' | 'delete', fie
                 })
                 .catch(() => dispatch('failedToSendConfirmCode'))
     }, [state?.sendingConfirmCode])
+
+    // Delete
+    useEffect(() => {
+        if (state.deleting) {
+            authFetchData(`${getAuthApiUrl()}/me/users/${field}`, { method: 'DELETE' })
+                .then(r => {
+                    if (!r.response || !r.response.ok) {
+                        feedback.pushError({ node: t('useCode.failedToDelete') })
+                        dispatch('failedToDelete')
+                    } else {
+                        feedback.pushSuccess({ node: t('useCode.successfullyDeleted') })
+                        dispatch('deleted')
+                    }
+                })
+                .catch(() => dispatch('failedToDelete'))
+        }
+    }, [state.deleting])
 
     return { state, dispatch }
 }

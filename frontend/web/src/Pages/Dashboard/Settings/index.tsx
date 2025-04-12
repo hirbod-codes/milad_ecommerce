@@ -11,6 +11,8 @@ import { FeedbackContext } from "@/src/Contexts/Feedback/FeedbackContext";
 import { Separator } from "@radix-ui/react-separator";
 import { t } from "i18next";
 import { UpdateEmail } from "./UpdateEmail";
+import { Trash2Icon } from "lucide-react";
+import { DeleteEmail } from "./DeleteEmail";
 
 export function Settings() {
     const feedback = useContext(FeedbackContext)
@@ -18,7 +20,7 @@ export function Settings() {
     const [user, setUser] = useState<User | undefined>(undefined)
     const [loading, setLoading] = useState(true)
 
-    const [modalOpen, setModalOpen] = useState({ email: false, phoneNumber: false, password: false })
+    const [modalOpen, setModalOpen] = useState({ email: false, phoneNumber: false, password: false, emailDelete: false, phoneNumberDelete: false })
 
     const init = () => {
         setLoading(true)
@@ -48,9 +50,7 @@ export function Settings() {
                         ? <Stack stackProps={{ className: 'w-full justify-center border rounded-lg py-4' }}><CircularLoading /></Stack>
                         : (
                             user
-                                ? <ManageUser
-                                    user={user}
-                                />
+                                ? <ManageUser user={user} />
                                 : <div className='w-full text-center text-5xl border rounded-2xl shadow-2xl p-4 bg-surface-container text-surface-foreground'>{t('Settings.DataNotFound')}</div>
                         )
                 }
@@ -58,13 +58,19 @@ export function Settings() {
                 <Stack>
                     <Stack direction="vertical" stackProps={{ className: 'w-1/2' }}>
                         <Stack direction="vertical" stackProps={{ className: 'border rounded-lg shadow-lg p-2' }}>
-                            <Input disabled value={user?.email} placeholder={t('common.email')} />
-                            <Button onClick={() => setModalOpen({ ...modalOpen, email: true })}>{t('Settings.updateEmail')}</Button>
+                            <Input disabled readOnly value={user?.email ?? ''} placeholder={t('common.email')} />
+                            <Stack>
+                                <Button className="flex-grow" onClick={() => setModalOpen({ ...modalOpen, email: true })}>{t('Settings.updateEmail')}</Button>
+                                <Button bgColor='error' fgColor="error-foreground" onClick={() => setModalOpen({ ...modalOpen, emailDelete: true })}><Trash2Icon /></Button>
+                            </Stack>
                         </Stack>
 
                         <Stack direction="vertical" stackProps={{ className: 'border rounded-lg shadow-lgs p-2' }}>
-                            <Input disabled value={user?.phoneNumber} placeholder={t('common.phoneNumber')} />
-                            <Button onClick={() => setModalOpen({ ...modalOpen, phoneNumber: false })}>{t('Settings.updatePhoneNumber')}</Button>
+                            <Input disabled readOnly value={user?.phoneNumber ?? ''} placeholder={t('common.phoneNumber')} />
+                            <Stack>
+                                <Button className="flex-grow" onClick={() => setModalOpen({ ...modalOpen, phoneNumber: true })}>{t('Settings.updatePhoneNumber')}</Button>
+                                <Button bgColor='error' fgColor="error-foreground" onClick={() => setModalOpen({ ...modalOpen, phoneNumberDelete: true })}><Trash2Icon /></Button>
+                            </Stack>
                         </Stack>
                     </Stack>
 
@@ -81,10 +87,24 @@ export function Settings() {
                 onClose={() => setModalOpen({ ...modalOpen, email: false })}
             >
                 <UpdateEmail
-                    mode={((user?.email !== undefined && user?.phoneNumber !== undefined) || (user?.email === undefined && user?.phoneNumber === undefined)) ? undefined : (user?.email ? 'email' : 'phoneNumber')}
+                    sendTo={((user?.email !== undefined && user?.phoneNumber !== undefined) || (user?.email === undefined && user?.phoneNumber === undefined)) ? undefined : (user?.email ? 'email' : 'phoneNumber')}
                     selectModes={user?.phoneNumber !== undefined && user?.email !== undefined}
                     onFinish={() => {
                         setModalOpen({ ...modalOpen, email: false });
+                        init()
+                    }}
+                />
+            </Modal>
+
+            <Modal
+                open={modalOpen.emailDelete}
+                onClose={() => setModalOpen({ ...modalOpen, emailDelete: false })}
+            >
+                <DeleteEmail
+                    sendTo={((user?.email !== undefined && user?.phoneNumber !== undefined) || (user?.email === undefined && user?.phoneNumber === undefined)) ? undefined : (user?.email ? 'email' : 'phoneNumber')}
+                    selectModes={user?.phoneNumber !== undefined && user?.email !== undefined}
+                    onFinish={() => {
+                        setModalOpen({ ...modalOpen, emailDelete: false });
                         init()
                     }}
                 />
