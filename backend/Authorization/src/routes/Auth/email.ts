@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { DateTime } from "luxon";
-import { allowedOrigins, emailConfig, isProduction, transporter } from "@/src/";
+import { emailConfig, transporter } from "@/src/";
 import { SessionManager } from "@/src/DB/Session/SessionManager";
 import { number, string } from "yup";
 import crypto from "crypto";

@@ -7,10 +7,13 @@ import { ActionDispatch, useContext, useEffect, useReducer } from "react"
 type State = {
     code: string
     sendingCode: boolean
+    codeSent: boolean
+    codeSentAt: number | undefined
     submittingCode: boolean
     submittedCode: boolean
-    codeSentAt: number | undefined
-    codeSent: boolean
+    confirmCode: string
+    sendingConfirmCode: boolean
+    sentConfirmCode: boolean
 }
 
 type Action =
@@ -20,46 +23,62 @@ type Action =
     'submitCode' |
     'submittedCode' |
     'failedToSubmitCode' |
+    'sendConfirmCode' |
+    'sentConfirmCode' |
+    'failedToSendConfirmCode' |
+    { op: 'setConfirmCode', value: string } |
     { op: 'setMode', value: 'email' | 'phoneNumber' } |
     { op: 'setCode', value: string }
 
-function useCode(sendTo: 'email' | 'phoneNumber', mode: 'delete', updateField?: 'email' | 'phoneNumber')
-function useCode(sendTo: 'email' | 'phoneNumber', mode: 'update', updateField: 'email' | 'phoneNumber' | 'password' | 'username')
+function useCode(sendTo: 'email' | 'phoneNumber', mode: 'delete', updateField?: 'email' | 'phoneNumber'): { state: State, dispatch: ActionDispatch<[Action]> }
+function useCode(sendTo: 'email' | 'phoneNumber', mode: 'update', updateField: 'email' | 'phoneNumber' | 'password' | 'username'): { state: State, dispatch: ActionDispatch<[Action]> }
 function useCode(sendTo: 'email' | 'phoneNumber', mode: 'update' | 'delete', field: 'email' | 'phoneNumber' | 'password' | 'username'): { state: State, dispatch: ActionDispatch<[Action]> } {
     const feedback = useContext(FeedbackContext)
 
     const [state, dispatch] = useReducer<State, [Action]>((state, action) => {
-        let act
         if (typeof action === 'string')
-            act = { op: action }
+            switch (action) {
+                case 'sendCode':
+                    return { ...state, sendingCode: true }
+
+                case 'sentCode':
+                    return { ...state, sendingCode: false, codeSent: true, codeSentAt: DateTime.utc().toUnixInteger() }
+
+                case 'failedToSendCode':
+                    return { ...state, sendingCode: false }
+
+                case 'failedToSubmitCode':
+                    return { ...state, sendingCode: false }
+
+                case 'submitCode':
+                    return { ...state, submittingCode: true }
+
+                case 'submittedCode':
+                    return { ...state, submittingCode: false, submittedCode: true }
+
+                case 'failedToSubmitCode':
+                    return { ...state, submittingCode: false }
+
+                case 'sendConfirmCode':
+                    return { ...state, sendingConfirmCode: true }
+
+                case 'sentConfirmCode':
+                    return { ...state, sendingConfirmCode: false, sentConfirmCode: true }
+
+                case 'failedToSendConfirmCode':
+                    return { ...state, sendingConfirmCode: false }
+            }
         else
-            act = action
+            switch (action.op) {
+                case 'setCode':
+                    return { ...state, code: action.value }
 
-        switch (act.op) {
-            case 'sendCode':
-                return { ...state, sendingCode: true }
+                case 'setConfirmCode':
+                    return { ...state, confirmCode: action.value }
 
-            case 'sentCode':
-                return { ...state, sendingCode: false, codeSent: true, codeSentAt: DateTime.utc().toUnixInteger() }
-
-            case 'failedToSubmitCode':
-                return { ...state, sendingCode: false }
-
-            case 'submitCode':
-                return { ...state, submittingCode: true }
-
-            case 'submittedCode':
-                return { ...state, submittingCode: false, submittedCode: true }
-
-            case 'failedToSubmitCode':
-                return { ...state, submittingCode: false }
-
-            case 'setMode':
-                return { ...state, mode: act.value }
-
-            case 'setCode':
-                return { ...state, code: act.value }
-        }
+                case 'setMode':
+                    return { ...state, mode: action.value }
+            }
     },
         {
             code: '',
@@ -68,6 +87,9 @@ function useCode(sendTo: 'email' | 'phoneNumber', mode: 'update' | 'delete', fie
             submittingCode: false,
             submittedCode: false,
             codeSent: false,
+            confirmCode: '',
+            sendingConfirmCode: false,
+            sentConfirmCode: false,
         }
     )
 
@@ -104,6 +126,21 @@ function useCode(sendTo: 'email' | 'phoneNumber', mode: 'update' | 'delete', fie
                 })
                 .catch(() => dispatch('failedToSubmitCode'))
     }, [state?.submittingCode])
+
+    useEffect(() => {
+        if (state?.sendingConfirmCode === true)
+            authFetchData(`${getAuthApiUrl()}/me/users/confirm`, { method: 'PATCH', body: JSON.stringify({ code: Number(state?.confirmCode) }) })
+                .then(r => {
+                    if (!r.response || !r.response.ok) {
+                        feedback.pushError({ node: t('useCode.failedToSendConfirmationCodes') })
+                        dispatch('failedToSendConfirmCode')
+                    } else {
+                        feedback.pushSuccess({ node: t('useCode.successfullySentConfirmationCodes') })
+                        dispatch('sentConfirmCode')
+                    }
+                })
+                .catch(() => dispatch('failedToSendConfirmCode'))
+    }, [state?.sendingConfirmCode])
 
     return { state, dispatch }
 }

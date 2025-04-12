@@ -12,6 +12,7 @@ import busboy from "busboy";
 import { UserRepository } from "../DB/Repositories/UserRepository";
 import { UserProfilePictureRepository } from "../DB/Repositories/UserProfilePictureRepository";
 import { AuthManager } from "../AuthManager";
+import crypto from "crypto";
 
 const user = Router()
 
@@ -373,78 +374,197 @@ user.post('/code', authenticate, async (req, res) => {
 })
 
 user.patch('/sensitive', authenticate, async (req, res) => {
-    const { updateValue } = req.body
+    try {
+        const { updateValue } = req.body
 
-    if (!string().required().isValidSync(updateValue)) {
-        res.status(400).json({ errors: ['invalid updateValue'] })
-        return
-    }
+        if (!string().required().isValidSync(updateValue)) {
+            res.status(400).json({ errors: ['invalid updateValue'] })
+            return
+        }
 
-    const sessionIdToken = req?.cookies?.sessionId
-    if (!string().required().isValidSync(sessionIdToken)) {
-        res.status(400).json({ errors: ['invalid sessionIdToken'] })
-        return
-    }
+        const sessionIdToken = req?.cookies?.sessionId
+        if (!string().required().isValidSync(sessionIdToken)) {
+            res.status(400).json({ errors: ['invalid sessionIdToken'] })
+            return
+        }
 
-    const payload = await AuthManager.getInstance().verifySessionIdToken(sessionIdToken)
-    if (payload === undefined) {
-        res.status(400).json({ errors: ['invalid session id'] })
-        return
-    }
-    console.log('payload', payload)
+        const payload = await AuthManager.getInstance().verifySessionIdToken(sessionIdToken)
+        if (payload === undefined) {
+            res.status(400).json({ errors: ['invalid session id'] })
+            return
+        }
+        console.log('payload', payload)
 
-    const sessionId = payload?.sub
-    if (!string().required().isValidSync(sessionId) || !sessionId.includes('update_field_') || !['email', 'username', 'phoneNumber', 'password'].includes(sessionId.split('update_field_')[1])) {
-        res.status(400).json({ errors: ['invalid session id'] })
-        return
-    }
+        const sessionId = payload?.sub
+        if (!string().required().isValidSync(sessionId) || !sessionId.includes('update_field_') || !['email', 'username', 'phoneNumber', 'password'].includes(sessionId.split('update_field_')[1])) {
+            res.status(400).json({ errors: ['invalid session id'] })
+            return
+        }
 
-    const field = sessionId.split('update_field_')[1]
+        const field = sessionId.split('update_field_')[1]
 
-    if (await authorize(req, `update-user-self-${field}`) !== true) {
-        res.sendStatus(403)
-        return
-    }
+        if (await authorize(req, `update-user-self-${field}`) !== true) {
+            res.sendStatus(403)
+            return
+        }
 
-    if (!userSchema.pick([field as any]).required().isValidSync({ [field]: updateValue })) {
-        res.status(400).json({ errors: ['invalid updateValue'] })
-        return
-    }
+        if (!userSchema.pick([field as any]).required().isValidSync({ [field]: updateValue })) {
+            res.status(400).json({ errors: ['invalid updateValue'] })
+            return
+        }
 
-    let json = undefined
-    try { json = await SessionManager.getSession(sessionId) }
-    catch (e) {
+        let json = undefined
+        try { json = await SessionManager.getSession(sessionId) }
+        catch (e) {
+            console.error(e)
+            throw new Error('session not found')
+        }
+
+        if (!json)
+            throw new Error('session not found')
+
+        let { verified, expiresAt: inSessionExpiresAt } = JSON.parse(json)
+        inSessionExpiresAt = Number(inSessionExpiresAt)
+
+        console.log('from redis', { verified, inSessionExpiresAt })
+
+        if (verified !== true || inSessionExpiresAt <= DateTime.utc().toUnixInteger()) {
+            res.status(400).json({ errors: ['expired or invalid session'] })
+            return
+        }
+
+        if (field === 'username') {
+            let userId = (Jwt.decode(req.headers['authorization']!.replace('Bearer ', '')!) as Jwt.JwtPayload)?.sub ?? ''
+
+            const userRepository = await UserRepository.getInstance()
+            const r = await userRepository.updateImmutable(userId, { [field]: updateValue } as any)
+            if (r === false || !r.acknowledged) {
+                res.sendStatus(500)
+                return
+            }
+
+            res.json(r)
+            return
+        } else if (field === 'password') {
+            let salt: string | undefined = undefined, iterations: number = 1000
+            const hashedPassword: string = await (async () => {
+                return new Promise((resolve, reject) => {
+                    salt = crypto.randomBytes(128).toString('base64')
+                    crypto.pbkdf2(updateValue, salt, iterations, 64, 'sha512', (err, derivedKey) => {
+                        if (err)
+                            reject(err)
+                        else
+                            resolve(derivedKey.toString('hex'))
+                    })
+                })
+            })()
+
+            let userId = (Jwt.decode(req.headers['authorization']!.replace('Bearer ', '')!) as Jwt.JwtPayload)?.sub ?? ''
+
+            const userRepository = await UserRepository.getInstance()
+            const r = await userRepository.updateImmutable(userId, { password: hashedPassword, passwordIterations: iterations, passwordSalt: salt } as any)
+            if (r === false || !r.acknowledged) {
+                res.sendStatus(500)
+                return
+            }
+
+            res.json(r)
+            return
+        }
+
+        const code = Math.round((Math.random() * (999_999 - 100_000)) + 100_000)
+        console.log(code)
+
+        const content = `Your verification code is: ${code}\n\nfrom sender`
+
+        if (field === 'email')
+            await CommunicationManagement.notify('email', { content, to: updateValue, subject: 'Verification Code' })
+        else
+            await CommunicationManagement.notify('sms', { content, to: updateValue })
+
+        const expiresAt = DateTime.utc().plus({ seconds: 60 }).toUnixInteger()
+        let verificationSessionId = `verification`
+        try { verificationSessionId = await SessionManager.setSession(verificationSessionId, JSON.stringify({ code, field, value: updateValue, expiresAt }), expiresAt, verificationSessionId) }
+        catch (e) {
+            console.error(e)
+            throw new Error('system failed to set session')
+        }
+
+        if (!verificationSessionId)
+            throw new Error('system failed to set session')
+
+        res
+            .cookie('sessionId', await AuthManager.getInstance().generateTokenForSessionId(verificationSessionId, '4 minutes'), {
+                httpOnly: true,
+                secure: true,
+                maxAge: 4 * 60 * 1000, // One Week
+                sameSite: 'strict',
+            })
+            .sendStatus(200)
+    } catch (e) {
         console.error(e)
-        throw new Error('session not found')
-    }
-
-    if (!json)
-        throw new Error('session not found')
-
-    let { verified, expiresAt: inSessionExpiresAt } = JSON.parse(json)
-    inSessionExpiresAt = Number(inSessionExpiresAt)
-
-    console.log('from redis', { verified, inSessionExpiresAt })
-
-    if (verified !== true || inSessionExpiresAt <= DateTime.utc().toUnixInteger()) {
-        res.status(400).json({ errors: ['expired or invalid session'] })
-        return
-    }
-
-    const userId = (Jwt.decode(req.headers['authorization']!.replace('Bearer ', '')!) as Jwt.JwtPayload)?.sub ?? ''
-    if (!stringObjectId.required().isValidSync(userId)) {
-        res.sendStatus(401)
-        return
-    }
-
-    const userRepository = await UserRepository.getInstance()
-    const r = await userRepository.updateImmutable(userId, { [field]: updateValue } as any)
-    if (r === false || !r.acknowledged) {
         res.sendStatus(500)
-        return
     }
+})
 
-    res.json(r)
+user.patch('/confirm', authenticate, async (req, res) => {
+    try {
+        const { code } = req.body
+
+        const sessionIdToken = req?.cookies?.sessionId
+
+        if (!string().required().isValidSync(sessionIdToken) || !number().required().strict(true).isValidSync(code)) {
+            res.sendStatus(400)
+            return
+        }
+
+        const payload = await AuthManager.getInstance().verifySessionIdToken(sessionIdToken)
+        if (payload === undefined) {
+            res.status(400).json({ errors: ['invalid session'] })
+            return
+        }
+
+        const sessionId = payload?.sub
+        if (!string().required().isValidSync(sessionId) || !sessionId.includes('verification')) {
+            res.status(400).json({ errors: ['invalid session'] })
+            return
+        }
+
+        let json = undefined
+        try { json = await SessionManager.getSession(sessionId) }
+        catch (e) {
+            console.error(e)
+            throw new Error('session not found')
+        }
+
+        if (!json)
+            throw new Error('session not found')
+
+        let { field, value, code: inSessionCode, expiresAt: inSessionExpiresAt } = JSON.parse(json)
+        inSessionCode = Number(inSessionCode)
+        inSessionExpiresAt = Number(inSessionExpiresAt)
+
+        console.log('from redis', { inSessionCode, inSessionExpiresAt })
+
+        if (inSessionCode !== code || inSessionExpiresAt <= DateTime.utc().toUnixInteger()) {
+            res.status(400).json({ errors: ['invalid session value'] })
+            return
+        }
+
+        let userId = (Jwt.decode(req.headers['authorization']!.replace('Bearer ', '')!) as Jwt.JwtPayload)?.sub ?? ''
+
+        const userRepository = await UserRepository.getInstance()
+        const r = await userRepository.updateImmutable(userId, { [field]: value } as any)
+        if (r === false || !r.acknowledged) {
+            res.sendStatus(500)
+            return
+        }
+
+        res.json(r)
+    } catch (e) {
+        console.error(e)
+        res.sendStatus(500)
+    }
 })
 
 user.post('/notify-delete-code', authenticate, async (req, res) => {

@@ -55,16 +55,22 @@ export function UpdateEmail({ mode: initialMode, onFinish, selectModes }: { mode
         if (email && sendingEmail === true)
             authFetchData(`${getAuthApiUrl()}/me/users/sensitive`, { method: 'PATCH', body: JSON.stringify({ updateValue: email }) })
                 .then(r => {
-                    if (!r.response || !r.response.ok)
+                    if (!r.response || !r.response.ok) {
                         feedback.pushError({ node: t('UpdateEmail.updateFailed') })
-                    else
+                        dispatch('failedToSendCode')
+                    } else {
                         feedback.pushSuccess({ node: t('UpdateEmail.updateSucceeded') })
-
-                    if (onFinish)
-                        onFinish()
+                        setPage(2)
+                    }
                 })
                 .finally(() => setSendingEmail(false))
     }, [sendingEmail])
+
+    useEffect(() => {
+        if (state.sentConfirmCode)
+            if (onFinish)
+                onFinish()
+    }, [state.sentConfirmCode])
 
     return (
         <div className="relative w-full h-80 flex-grow overflow-x-hidden overflow-y-auto">
@@ -131,11 +137,28 @@ export function UpdateEmail({ mode: initialMode, onFinish, selectModes }: { mode
                         exit={{ x: '100%', opacity: 0 }}
                         className="absolute top-0 size-full"
                     >
+                        <Button isIcon variant="text" onClick={() => setPage(0)}>{configuration.local.direction === 'ltr' ? <ArrowLeftIcon /> : <ArrowRightIcon />}</Button>
+
+                        <Stack direction="vertical">
+                            <Input placeholder={t('UpdateEmail.newEmail')} value={email} onChange={e => setEmail(e.target.value.trim())} />
+                            <Button disabled={sendingEmail || !state.submittedCode} onClick={() => setSendingEmail(true)} >{sendingEmail ? <CircularLoading /> : t('Settings.submit')}</Button>
+                        </Stack>
+                    </motion.div>
+                }
+
+                {page === 2 &&
+                    <motion.div
+                        key={page}
+                        initial={{ x: '-100%', opacity: 0 }}
+                        animate={{ x: '0%', opacity: 1 }}
+                        exit={{ x: '100%', opacity: 0 }}
+                        className="absolute top-0 size-full"
+                    >
                         <Button isIcon variant="text" onClick={() => setPage(1)}>{configuration.local.direction === 'ltr' ? <ArrowLeftIcon /> : <ArrowRightIcon />}</Button>
 
                         <Stack direction="vertical">
-                            <Input placeholder={t('newEmail')} value={email} onChange={e => setEmail(e.target.value.trim())} />
-                            <Button disabled={sendingEmail || !state.submittedCode} onClick={() => setSendingEmail(true)} >{t('Settings.submit')}</Button>
+                            <Input placeholder={t('UpdateEmail.confirmationCode')} value={state.confirmCode} onChange={e => dispatch({ op: 'setConfirmCode', value: e.target.value.trim() })} />
+                            <Button disabled={state.sentConfirmCode || state.sendingConfirmCode} onClick={() => dispatch('sendConfirmCode')} >{state.sendingConfirmCode ? <CircularLoading /> : t('Settings.submit')}</Button>
                         </Stack>
                     </motion.div>
                 }
