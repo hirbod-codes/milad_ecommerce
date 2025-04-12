@@ -1,4 +1,4 @@
-import { useContext, useEffect, useReducer, useRef, useState } from "react"
+import { useContext, useEffect, useRef, useState } from "react"
 import { useCode } from "./useCode"
 import { DateTime } from "luxon"
 import { authFetchData, getAuthApiUrl } from "@/src/Backend/helpers"
