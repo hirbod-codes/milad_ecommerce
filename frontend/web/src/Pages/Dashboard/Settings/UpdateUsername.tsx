@@ -1,4 +1,4 @@
-import { authFetchData, getAuthApiUrl } from "@/src/Backend/helpers"
+import { authFetchData, fetchData, getAuthApiUrl } from "@/src/Backend/helpers"
 import { Button } from "@/src/Components/Base/Button"
 import { CircularLoading } from "@/src/Components/Base/CircularLoading"
 import { Input } from "@/src/Components/Base/Input"
@@ -7,10 +7,11 @@ import { ConfigurationContext } from "@/src/Contexts/Configuration/Configuration
 import { FeedbackContext } from "@/src/Contexts/Feedback/FeedbackContext"
 import { t } from "i18next"
 import { ArrowLeftIcon, ArrowRightIcon } from "lucide-react"
-import { useContext, useState, useEffect } from "react"
+import { useContext, useState, useEffect, useRef } from "react"
 import { useCode } from "./useCode"
 import { motion, AnimatePresence } from 'framer-motion'
 import { Code } from "./Code"
+import { CircularLoadingIcon } from "@/src/Components/Base/CircularLoadingIcon"
 
 export function UpdateUsername({ sendTo: initialSendTo, onFinish, selectModes }: { sendTo: 'email' | 'phoneNumber', selectModes: boolean, onFinish?: () => void }) {
     const feedback = useContext(FeedbackContext)
@@ -51,6 +52,37 @@ export function UpdateUsername({ sendTo: initialSendTo, onFinish, selectModes }:
                 .finally(() => setSendingUsername(false))
     }, [sendingUsername])
 
+    const [usernameExists, setUsernameExists] = useState(false)
+    const [searching, setSearching] = useState(false)
+    const [invalidUsername, setInvalidUsername] = useState(false)
+    const searchUsername = async () => {
+        setSearching(true)
+        const r = await fetchData(`${getAuthApiUrl()}/users/username-exists?username=${username}`)
+        setSearching(false)
+
+        if (!r.response || !r.response?.ok || r?.data?.exists === undefined)
+            setUsernameExists(false)
+        else
+            setUsernameExists(Boolean(r?.data?.exists))
+
+
+        if (r?.response?.status === 400)
+            setInvalidUsername(true)
+    }
+
+    const timer = useRef(undefined)
+    useEffect(() => {
+        setUsernameExists(true)
+
+        if (timer.current !== undefined)
+            clearTimeout(timer.current)
+
+        if (username)
+            timer.current = setTimeout(() => {
+                searchUsername()
+            }, 1500)
+    }, [username])
+
     return (
         <div className="relative w-full h-80 flex-grow overflow-x-hidden overflow-y-auto">
             <AnimatePresence>
@@ -84,8 +116,16 @@ export function UpdateUsername({ sendTo: initialSendTo, onFinish, selectModes }:
                         <Button isIcon variant="text" onClick={() => setPage(0)}>{configuration.local.direction === 'ltr' ? <ArrowLeftIcon /> : <ArrowRightIcon />}</Button>
 
                         <Stack direction="vertical">
-                            <Input placeholder={t('UpdateUsername.username')} value={username} onChange={e => setUsername(e.target.value.trim())} />
-                            <Button disabled={sendingUsername || !state.submittedCode} onClick={() => setSendingUsername(true)} >{sendingUsername ? <CircularLoading /> : t('common.submit')}</Button>
+                            <Input
+                                endIcon={searching ? <CircularLoading size='sm' /> : undefined}
+                                placeholder={t('UpdateUsername.username')}
+                                value={username}
+                                onChange={e => setUsername(e.target.value.trim())}
+                                helperText={!searching && !usernameExists ? t('UpdateUsername.usernameAvailable') : undefined}
+                                errorText={!searching && (invalidUsername || usernameExists) ? (invalidUsername ? t('UpdateUsername.invalidUsername') : t('UpdateUsername.usernameAlreadyExists')) : undefined}
+                                animateHeight
+                            />
+                            <Button disabled={sendingUsername || !state.submittedCode || searching || !username || usernameExists} onClick={() => setSendingUsername(true)} >{sendingUsername ? <CircularLoading /> : t('common.submit')}</Button>
                         </Stack>
                     </motion.div>
                 }

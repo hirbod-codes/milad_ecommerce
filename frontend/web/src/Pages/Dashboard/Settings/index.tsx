@@ -15,6 +15,8 @@ import { Trash2Icon } from "lucide-react";
 import { DeleteEmail } from "./DeleteEmail";
 import { UpdatePhoneNumber } from "./UpdatePhoneNumber";
 import { DeletePhoneNumber } from "./DeletePhoneNumber";
+import { UpdateUsername } from "./UpdateUsername";
+import { UpdatePassword } from "./UpdatePassword";
 
 export function Settings() {
     const feedback = useContext(FeedbackContext)
@@ -140,6 +142,34 @@ export function Settings() {
                     selectModes={user?.phoneNumber !== undefined && user?.email !== undefined}
                     onFinish={() => {
                         setModalOpen({ ...modalOpen, phoneNumberDelete: false });
+                        init()
+                    }}
+                />
+            </Modal>
+
+            <Modal
+                open={modalOpen.username}
+                onClose={() => setModalOpen({ ...modalOpen, username: false })}
+            >
+                <UpdateUsername
+                    sendTo={((user?.email !== undefined && user?.phoneNumber !== undefined) || (user?.email === undefined && user?.phoneNumber === undefined)) ? undefined : (user?.email ? 'email' : 'phoneNumber')}
+                    selectModes={user?.phoneNumber !== undefined && user?.email !== undefined}
+                    onFinish={() => {
+                        setModalOpen({ ...modalOpen, username: false });
+                        init()
+                    }}
+                />
+            </Modal>
+
+            <Modal
+                open={modalOpen.password}
+                onClose={() => setModalOpen({ ...modalOpen, password: false })}
+            >
+                <UpdatePassword
+                    sendTo={((user?.email !== undefined && user?.phoneNumber !== undefined) || (user?.email === undefined && user?.phoneNumber === undefined)) ? undefined : (user?.email ? 'email' : 'phoneNumber')}
+                    selectModes={user?.phoneNumber !== undefined && user?.email !== undefined}
+                    onFinish={() => {
+                        setModalOpen({ ...modalOpen, password: false });
                         init()
                     }}
                 />

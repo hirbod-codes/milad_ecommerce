@@ -12,6 +12,60 @@ import { UserProfilePictureRepository } from "../DB/Repositories/UserProfilePict
 
 const users = Router()
 
+users.get('/username-exists', async (req, res) => {
+    try {
+        const { username } = req.query
+
+        const s = userSchema.pick(['username']).required().strict(true)
+        if (!s.isValidSync({ username })) {
+            res.sendStatus(400)
+            return
+        }
+
+        const userRepository = await UserRepository.getInstance()
+        res.json({ exists: await userRepository.usernameExists(s.cast(username).username) })
+    } catch (e) {
+        console.error(e)
+        res.sendStatus(500)
+    }
+})
+
+users.get('/email-exists', async (req, res) => {
+    try {
+        const { email } = req.query
+
+        const s = userSchema.pick(['email']).required().strict(true)
+        if (!email || !s.isValidSync({ email })) {
+            res.sendStatus(400)
+            return
+        }
+
+        const userRepository = await UserRepository.getInstance()
+        res.json({ exists: await userRepository.emailExists(s.cast(email).email!) })
+    } catch (e) {
+        console.error(e)
+        res.sendStatus(500)
+    }
+})
+
+users.get('/phoneNumber-exists', async (req, res) => {
+    try {
+        const { phoneNumber } = req.query
+
+        const s = userSchema.pick(['phoneNumber']).required().strict(true)
+        if (!phoneNumber || !s.isValidSync({ phoneNumber })) {
+            res.sendStatus(400)
+            return
+        }
+
+        const userRepository = await UserRepository.getInstance()
+        res.json({ exists: await userRepository.phoneNumberExists(s.cast(phoneNumber).phoneNumber!) })
+    } catch (e) {
+        console.error(e)
+        res.sendStatus(500)
+    }
+})
+
 users.get('/ids', authenticate, async (req, res) => {
     try {
         const { ids: idsStr } = req.query
