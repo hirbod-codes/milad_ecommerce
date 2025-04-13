@@ -4,7 +4,7 @@ import { t } from "i18next";
 import { DateTime } from "luxon";
 import { ActionDispatch, useContext, useEffect, useReducer } from "react"
 
-type State = {
+export type State = {
     code: string
     sendingCode: boolean
     codeSent: boolean
@@ -18,7 +18,7 @@ type State = {
     deleted: boolean
 }
 
-type Action =
+export type Action =
     'sendCode' |
     'sentCode' |
     'failedToSendCode' |

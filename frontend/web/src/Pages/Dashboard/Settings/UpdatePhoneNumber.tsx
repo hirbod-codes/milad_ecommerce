@@ -1,6 +1,5 @@
-import { useContext, useEffect, useRef, useState } from "react"
+import { useContext, useEffect, useState } from "react"
 import { useCode } from "./useCode"
-import { DateTime } from "luxon"
 import { authFetchData, getAuthApiUrl } from "@/src/Backend/helpers"
 import { FeedbackContext } from "@/src/Contexts/Feedback/FeedbackContext"
 import { t } from "i18next"
@@ -9,11 +8,11 @@ import { Stack } from "@/src/Components/Base/Stack"
 import { Input } from "@/src/Components/Base/Input"
 import { Button } from "@/src/Components/Base/Button"
 import { CircularLoading } from "@/src/Components/Base/CircularLoading"
-import { Select } from "@/src/Components/Base/Select"
 import { ArrowLeftIcon, ArrowRightIcon } from "lucide-react"
 import { ConfigurationContext } from "@/src/Contexts/Configuration/ConfigurationContext"
+import { Code } from "./Code"
 
-export function UpdatePhoneNumber({ sendTo: initialMode, onFinish, selectModes }: { sendTo: 'email' | 'phoneNumber', selectModes: boolean, onFinish?: () => void }) {
+export function UpdatePhoneNumber({ sendTo: initialSendTo, onFinish, selectModes }: { sendTo: 'email' | 'phoneNumber', selectModes: boolean, onFinish?: () => void }) {
     const feedback = useContext(FeedbackContext)
     const configuration = useContext(ConfigurationContext)
 
@@ -22,34 +21,14 @@ export function UpdatePhoneNumber({ sendTo: initialMode, onFinish, selectModes }
 
     const [page, setPage] = useState(0)
 
-    const [mode, setMode] = useState(initialMode)
+    const [sendTo, setSendTo] = useState(initialSendTo)
 
-    const [counter, setCounter] = useState(undefined)
-
-    const { state, dispatch } = useCode(mode, 'update', 'phoneNumber')
+    const { state, dispatch } = useCode(sendTo, 'update', 'phoneNumber')
 
     useEffect(() => {
         if (selectModes !== true)
             dispatch('sendCode')
     }, [])
-
-    const timeout = useRef<NodeJS.Timeout | undefined>(undefined)
-    useEffect(() => {
-        if (timeout.current !== undefined)
-            clearInterval(timeout.current)
-
-        if (state.codeSent && state.codeSentAt !== undefined) {
-            timeout.current = setInterval(() => {
-                let c = 60 - (DateTime.utc().toUnixInteger() - state.codeSentAt)
-                if (c >= 0)
-                    setCounter(c)
-                else
-                    clearInterval(timeout.current)
-            }, 1000)
-        }
-
-        return () => { if (timeout.current !== undefined) clearInterval(timeout.current) }
-    }, [state.codeSent, state.codeSentAt])
 
     useEffect(() => {
         if (state.submittedCode)
@@ -88,51 +67,14 @@ export function UpdatePhoneNumber({ sendTo: initialMode, onFinish, selectModes }
                         exit={{ x: '100%', opacity: 0 }}
                         className="absolute top-0 size-full"
                     >
-                        <Stack direction="vertical">
-                            <div className="text-center text-4xl">
-                                {t('Settings.updateEmailTitle')}
-                            </div>
-
-                            {selectModes &&
-                                <>
-                                    <Select
-                                        inputProps={{
-                                            value: mode
-                                        }}
-                                        onValueSelect={e => setMode(e)}
-                                    >
-                                        <Select.Item value="email">
-                                            {t('common.email')}
-                                        </Select.Item>
-                                        <Select.Item value="phoneNumber">
-                                            {t('common.phoneNumber')}
-                                        </Select.Item>
-                                    </Select>
-
-                                    <Button disabled={mode === undefined || DateTime.utc().minus({ seconds: 60 }).toUnixInteger() < state.codeSentAt} onClick={() => dispatch('sendCode')}>
-                                        {state.sendingCode ? <CircularLoading /> : t('Settings.sendCode')}
-                                    </Button>
-                                </>
-                            }
-
-                            {
-                                state.sendingCode
-                                    ? <Stack stackProps={{ className: 'justify-center' }}><CircularLoading /></Stack>
-                                    : <Input
-                                        errorText={state.code && state.code.match(/^[0-9]+$/) === null ? t('Settings.invalidCode') : undefined}
-                                        animateHeight
-                                        value={state.code ?? ''}
-                                        placeholder={t('common.code')}
-                                        onChange={e => dispatch({ op: 'setCode', value: e.target.value.trim() })}
-                                    />
-                            }
-
-                            {state.codeSentAt !== undefined && <motion.div layout className="text-center text -2xl">{counter}</motion.div>}
-
-                            <Button disabled={state.code.match(/^[0-9]+$/) === null || !state.codeSent || state.submittingCode || counter <= 0} onClick={() => dispatch('submitCode')}>
-                                {state.submittingCode ? <CircularLoading /> : t('common.submit')}
-                            </Button>
-                        </Stack>
+                        <Code
+                            sendTo={sendTo}
+                            setSendTo={setSendTo}
+                            selectModes={selectModes}
+                            state={state}
+                            dispatch={dispatch}
+                            title={t('Settings.updatePhoneNumberTitle')}
+                        />
                     </motion.div>
                 }
 
@@ -173,4 +115,3 @@ export function UpdatePhoneNumber({ sendTo: initialMode, onFinish, selectModes }
         </div>
     )
 }
-

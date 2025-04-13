@@ -22,7 +22,7 @@ export function Settings() {
     const [user, setUser] = useState<User | undefined>(undefined)
     const [loading, setLoading] = useState(true)
 
-    const [modalOpen, setModalOpen] = useState({ email: false, phoneNumber: false, password: false, emailDelete: false, phoneNumberDelete: false })
+    const [modalOpen, setModalOpen] = useState({ email: false, phoneNumber: false, password: false, emailDelete: false, phoneNumberDelete: false, username: false })
 
     const init = () => {
         setLoading(true)
@@ -63,7 +63,7 @@ export function Settings() {
                             <Input disabled readOnly value={user?.email ?? ''} placeholder={t('common.email')} />
                             <Stack>
                                 <Button className="flex-grow" onClick={() => setModalOpen({ ...modalOpen, email: true })}>{t('Settings.updateEmail')}</Button>
-                                <Button bgColor='error' fgColor="error-foreground" onClick={() => setModalOpen({ ...modalOpen, emailDelete: true })}><Trash2Icon /></Button>
+                                {user?.email !== undefined && user?.phoneNumber && < Button bgColor='error' fgColor="error-foreground" onClick={() => setModalOpen({ ...modalOpen, emailDelete: true })}><Trash2Icon /></Button>}
                             </Stack>
                         </Stack>
 
@@ -71,7 +71,7 @@ export function Settings() {
                             <Input disabled readOnly value={user?.phoneNumber ?? ''} placeholder={t('common.phoneNumber')} />
                             <Stack>
                                 <Button className="flex-grow" onClick={() => setModalOpen({ ...modalOpen, phoneNumber: true })}>{t('Settings.updatePhoneNumber')}</Button>
-                                <Button bgColor='error' fgColor="error-foreground" onClick={() => setModalOpen({ ...modalOpen, phoneNumberDelete: true })}><Trash2Icon /></Button>
+                                {user?.email !== undefined && user?.phoneNumber !== undefined && <Button bgColor='error' fgColor="error-foreground" onClick={() => setModalOpen({ ...modalOpen, phoneNumberDelete: true })}><Trash2Icon /></Button>}
                             </Stack>
                         </Stack>
                     </Stack>
@@ -79,10 +79,15 @@ export function Settings() {
                     <Separator orientation="vertical" />
 
                     <Stack direction="vertical" stackProps={{ className: 'w-1/2' }}>
+                        <Stack direction="vertical" stackProps={{ className: 'border rounded-lg shadow-lgs p-2' }}>
+                            <Input disabled readOnly value={user?.username ?? ''} placeholder={t('common.username')} />
+                            <Button className="flex-grow" onClick={() => setModalOpen({ ...modalOpen, username: true })}>{t('Settings.updateUsername')}</Button>
+                        </Stack>
+
                         <Button onClick={() => setModalOpen({ ...modalOpen, password: false })}>{t('Settings.updatePassword')}</Button>
                     </Stack>
                 </Stack>
-            </Stack>
+            </Stack >
 
             <Modal
                 open={modalOpen.email}
