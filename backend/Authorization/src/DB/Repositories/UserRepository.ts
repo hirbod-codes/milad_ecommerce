@@ -204,7 +204,7 @@ export class UserRepository {
     }
 
     async deletePhoneNumber(id: string) {
-        try { return await this.collection.updateOne({ _id: ObjectId.createFromHexString(id) }, { $unset: { email: 1 } }) }
+        try { return await this.collection.updateOne({ _id: ObjectId.createFromHexString(id) }, { $unset: { phoneNumber: 1 } }) }
         catch (e) { console.error(e); return false }
     }
 }
