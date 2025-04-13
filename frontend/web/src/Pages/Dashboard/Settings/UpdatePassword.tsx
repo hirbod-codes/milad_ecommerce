@@ -86,7 +86,13 @@ export function UpdatePassword({ sendTo: initialSendTo, onFinish, selectModes }:
 
                         <Stack direction="vertical">
                             <Input placeholder={t('UpdatePassword.password')} value={password} onChange={e => setPassword(e.target.value.trim())} />
-                            <Input errorText={password && confirmPassword !== password ? t('UpdatePassword.invalidConfirmPassword') : undefined} placeholder={t('UpdatePassword.confirmPassword')} value={confirmPassword} onChange={e => setConfirmPassword(e.target.value.trim())} />
+                            <Input
+                                errorText={password && confirmPassword !== password ? t('UpdatePassword.invalidConfirmPassword') : undefined}
+                                animateHeight
+                                placeholder={t('UpdatePassword.confirmPassword')}
+                                value={confirmPassword}
+                                onChange={e => setConfirmPassword(e.target.value.trim())}
+                            />
                             <Button disabled={sendingPassword || !state.submittedCode} onClick={() => setSendingPassword(true)} >{sendingPassword ? <CircularLoading /> : t('common.submit')}</Button>
                         </Stack>
                     </motion.div>

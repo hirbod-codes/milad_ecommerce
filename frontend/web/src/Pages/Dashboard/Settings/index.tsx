@@ -86,7 +86,7 @@ export function Settings() {
                             <Button className="flex-grow" onClick={() => setModalOpen({ ...modalOpen, username: true })}>{t('Settings.updateUsername')}</Button>
                         </Stack>
 
-                        <Button onClick={() => setModalOpen({ ...modalOpen, password: false })}>{t('Settings.updatePassword')}</Button>
+                        <Button onClick={() => setModalOpen({ ...modalOpen, password: true })}>{t('Settings.updatePassword')}</Button>
                     </Stack>
                 </Stack>
             </Stack >
