@@ -100,7 +100,7 @@ export function UpdateUsername({ sendTo: initialSendTo, onFinish, selectModes }:
                             selectModes={selectModes}
                             state={state}
                             dispatch={dispatch}
-                            title={t('Settings.updateEmailTitle')}
+                            title={t('UpdateUsername.updateEmailTitle')}
                         />
                     </motion.div>
                 }
@@ -125,7 +125,9 @@ export function UpdateUsername({ sendTo: initialSendTo, onFinish, selectModes }:
                                 errorText={!searching && (invalidUsername || usernameExists) ? (invalidUsername ? t('UpdateUsername.invalidUsername') : t('UpdateUsername.usernameAlreadyExists')) : undefined}
                                 animateHeight
                             />
-                            <Button disabled={sendingUsername || !state.submittedCode || searching || !username || usernameExists} onClick={() => setSendingUsername(true)} >{sendingUsername ? <CircularLoading /> : t('common.submit')}</Button>
+                            <Button disabled={sendingUsername || !state.submittedCode || searching || !username || usernameExists} onClick={() => setSendingUsername(true)}>
+                                {sendingUsername ? <CircularLoading /> : t('common.submit')}
+                            </Button>
                         </Stack>
                     </motion.div>
                 }

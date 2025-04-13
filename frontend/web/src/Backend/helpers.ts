@@ -78,7 +78,7 @@ class AuthState {
 export async function authFetch(input: string | URL | globalThis.Request, init?: RequestInit, json: boolean = true): Promise<Response | undefined> {
     console.log('authFetch()')
 
-    const accessToken = Auth.getToken()
+    let accessToken = Auth.getToken()
     if (!accessToken)
         return undefined
 
@@ -96,6 +96,7 @@ export async function authFetch(input: string | URL | globalThis.Request, init?:
     }
 
     let res = await fetch(input, init)
+    console.log('   res', res)
 
     if (res.status !== 401)
         return res
@@ -106,7 +107,7 @@ export async function authFetch(input: string | URL | globalThis.Request, init?:
                 return
             else
                 throw new Error('still waiting')
-        }, 1000)
+        }, 1)
 
         if (AuthState.AuthFailed === true) {
             return undefined
@@ -115,7 +116,9 @@ export async function authFetch(input: string | URL | globalThis.Request, init?:
         if (AuthState.AuthSucceeded === true) {
             const accessToken = await Auth.getToken()
             init.headers['Authorization'] = `Bearer ${accessToken}`
-            return await fetch(input, init)
+            const res = await fetch(input, init)
+            console.log('   res', res)
+            return res
         }
     }
 
@@ -130,7 +133,7 @@ export async function authFetch(input: string | URL | globalThis.Request, init?:
                 'Accept': 'application/json'
             }
         })
-        console.log('\tauthRes', authRes)
+        console.log('   authRes', authRes)
 
         if (authRes.status === 401) {
             AuthState.AuthFailed = true
@@ -144,18 +147,25 @@ export async function authFetch(input: string | URL | globalThis.Request, init?:
         if (authRes.headers.get('content-type')?.includes('application/json')) {
             const data = await authRes.json()
             console.log('\taccessToken', data)
+            accessToken = data.token
             Auth.setToken(data.token)
         } else {
-            const accessToken = await authRes.text()
+            accessToken = await authRes.text()
             console.log('\taccessToken', accessToken)
             Auth.setToken(accessToken)
         }
 
         AuthState.AuthSucceeded = true
-    } finally { AuthState.Authenticating = false }
+    } finally { tryAndWait(() => { AuthState.Authenticating = false }, 1) }
 
-    init.headers['Authorization'] = `Bearer ${accessToken}`
-    return await fetch(input, init)
+    let result: Response
+    await tryAndWait(async () => {
+        init.headers['Authorization'] = `Bearer ${accessToken}`
+        result = await fetch(input, init)
+        console.log('   result', result)
+    }, 1)
+
+    return result
 }
 
 export async function authFetchData(input: string | URL | globalThis.Request, init?: RequestInit, json: boolean = true): Promise<{ response?: Response, data: any }> {
@@ -227,20 +237,6 @@ export async function tryAndWait(callback: CallableFunction, secondsToWaitForEac
 
     return true
 }
-
-const fetchZipFile = async () => {
-    try {
-        const response = await fetch('https://example.com/path-to-your-zipfile.zip');
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        const blob = await response.blob();
-        return blob;
-    } catch (error) {
-        console.error('Error fetching the ZIP file:', error);
-    }
-};
-
 
 export const extractImagesFromZip = async (zipBlob: Blob): Promise<string[]> => {
     const zip = new JSZip();

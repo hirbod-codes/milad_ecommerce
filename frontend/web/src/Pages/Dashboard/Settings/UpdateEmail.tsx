@@ -1,6 +1,6 @@
-import { useContext, useEffect, useState } from "react"
+import { useContext, useEffect, useRef, useState } from "react"
 import { useCode } from "./useCode"
-import { authFetchData, getAuthApiUrl } from "@/src/Backend/helpers"
+import { authFetchData, fetchData, getAuthApiUrl } from "@/src/Backend/helpers"
 import { FeedbackContext } from "@/src/Contexts/Feedback/FeedbackContext"
 import { t } from "i18next"
 import { motion, AnimatePresence } from 'framer-motion'
@@ -56,6 +56,37 @@ export function UpdateEmail({ sendTo: initialSendTo, onFinish, selectModes }: { 
                 onFinish()
     }, [state.sentConfirmCode])
 
+    const [usernameExists, setUsernameExists] = useState(false)
+    const [searching, setSearching] = useState(false)
+    const [invalidUsername, setInvalidUsername] = useState(false)
+    const searchUsername = async () => {
+        setSearching(true)
+        const r = await fetchData(`${getAuthApiUrl()}/users/email-exists?email=${email}`)
+        setSearching(false)
+
+        if (!r.response || !r.response?.ok || r?.data?.exists === undefined)
+            setUsernameExists(false)
+        else
+            setUsernameExists(Boolean(r?.data?.exists))
+
+
+        if (r?.response?.status === 400)
+            setInvalidUsername(true)
+    }
+
+    const timer = useRef(undefined)
+    useEffect(() => {
+        setUsernameExists(true)
+
+        if (timer.current !== undefined)
+            clearTimeout(timer.current)
+
+        if (email)
+            timer.current = setTimeout(() => {
+                searchUsername()
+            }, 1500)
+    }, [email])
+
     return (
         <div className="relative w-full h-80 flex-grow overflow-x-hidden overflow-y-auto">
             <AnimatePresence>
@@ -89,8 +120,18 @@ export function UpdateEmail({ sendTo: initialSendTo, onFinish, selectModes }: { 
                         <Button isIcon variant="text" onClick={() => setPage(0)}>{configuration.local.direction === 'ltr' ? <ArrowLeftIcon /> : <ArrowRightIcon />}</Button>
 
                         <Stack direction="vertical">
-                            <Input placeholder={t('UpdateEmail.newEmail')} value={email} onChange={e => setEmail(e.target.value.trim())} />
-                            <Button disabled={sendingEmail || !state.submittedCode} onClick={() => setSendingEmail(true)} >{sendingEmail ? <CircularLoading /> : t('Settings.submit')}</Button>
+                            <Input
+                                endIcon={searching ? <CircularLoading size='sm' /> : undefined}
+                                placeholder={t('UpdateEmail.email')}
+                                value={email}
+                                onChange={e => setEmail(e.target.value.trim())}
+                                helperText={!searching && !usernameExists ? t('UpdateEmail.usernameAvailable') : undefined}
+                                errorText={!searching && (invalidUsername || usernameExists) ? (invalidUsername ? t('UpdateEmail.invalidUsername') : t('UpdateEmail.usernameAlreadyExists')) : undefined}
+                                animateHeight
+                            />
+                            <Button disabled={sendingEmail || !state.submittedCode || searching || !email || usernameExists} onClick={() => setSendingEmail(true)}>
+                                {sendingEmail ? <CircularLoading /> : t('common.submit')}
+                            </Button>
                         </Stack>
                     </motion.div>
                 }

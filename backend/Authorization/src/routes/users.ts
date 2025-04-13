@@ -23,7 +23,7 @@ users.get('/username-exists', async (req, res) => {
         }
 
         const userRepository = await UserRepository.getInstance()
-        res.json({ exists: await userRepository.usernameExists(s.cast(username).username) })
+        res.json({ exists: await userRepository.usernameExists(s.cast({ username }).username) })
     } catch (e) {
         console.error(e)
         res.sendStatus(500)
@@ -41,7 +41,7 @@ users.get('/email-exists', async (req, res) => {
         }
 
         const userRepository = await UserRepository.getInstance()
-        res.json({ exists: await userRepository.emailExists(s.cast(email).email!) })
+        res.json({ exists: await userRepository.emailExists(s.cast({ email }).email!) })
     } catch (e) {
         console.error(e)
         res.sendStatus(500)
@@ -59,7 +59,7 @@ users.get('/phoneNumber-exists', async (req, res) => {
         }
 
         const userRepository = await UserRepository.getInstance()
-        res.json({ exists: await userRepository.phoneNumberExists(s.cast(phoneNumber).phoneNumber!) })
+        res.json({ exists: await userRepository.phoneNumberExists(s.cast({ phoneNumber }).phoneNumber!) })
     } catch (e) {
         console.error(e)
         res.sendStatus(500)
