@@ -20,6 +20,7 @@ import { privileges } from "./routes/privileges";
 import cookieParser from "cookie-parser";
 import { SessionManager } from "./DB/Session/SessionManager";
 import { RevokedAccessTokenManager } from "./RevokedAccessTokens/RevokedAccessTokenManager";
+import prometheusClient from 'prom-client'
 
 dotenv.config({ debug: process.env.DEBUG !== undefined ? Boolean(process.env.DEBUG) : undefined })
 
@@ -125,6 +126,9 @@ export const queueManagement = new QueueManagement(messageBrokerUrl, messageBrok
     }))
         exit(1)
 
+    const collectDefaultMetrics = prometheusClient.collectDefaultMetrics;
+    collectDefaultMetrics();
+
     const app = express()
 
     app.disable('x-powered-by')
@@ -155,6 +159,11 @@ export const queueManagement = new QueueManagement(messageBrokerUrl, messageBrok
 
     app.use(express.json())
     app.use(cookieParser())
+
+    app.get('/metrics', async (req, res) => {
+        res.set('Content-Type', prometheusClient.register.contentType);
+        res.end(await prometheusClient.register.metrics());
+    });
 
     app.use('/auth/tokens', tokenRouter)
     app.use('/auth/email', emailRouter)

@@ -16,6 +16,7 @@ import { tags } from './routes/tags'
 import { QueueManagement } from "./QueueManagement";
 import { RevokedAccessTokenManager } from "./RevokedAccessTokens/RevokedAccessTokenManager";
 import { SessionManager } from "./Session/SessionManager";
+import prometheusClient from 'prom-client'
 
 dotenv.config({ debug: process.env.DEBUG !== undefined ? Boolean(process.env.DEBUG) : undefined })
 
@@ -83,6 +84,9 @@ export const queueManagement = new QueueManagement(messageBrokerUrl, messageBrok
 
     await tryAndWait(async () => await queueManagement.subscribeConsumers(messageBrokerUrl))
 
+    const collectDefaultMetrics = prometheusClient.collectDefaultMetrics;
+    collectDefaultMetrics();
+
     const app = express()
 
     app.disable('x-powered-by')
@@ -111,6 +115,11 @@ export const queueManagement = new QueueManagement(messageBrokerUrl, messageBrok
     // To Do: Add rate limiter middleware
 
     app.use(express.json())
+
+    app.get('/metrics', async (req, res) => {
+        res.set('Content-Type', prometheusClient.register.contentType);
+        res.end(await prometheusClient.register.metrics());
+    });
 
     app.use('/products', products)
     app.use('/orders', orders)
