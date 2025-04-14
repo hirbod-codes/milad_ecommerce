@@ -6,6 +6,7 @@ import { RoleCreate, collectionName as roleCollectionName } from './Models/Role'
 import { CategoryCreate, collectionName as categoryCollectionName } from './Models/Category'
 import { OrderCreate, collectionName as orderCollectionName } from './Models/Order'
 import { ProductCreate, collectionName as productCollectionName } from './Models/Product'
+import { collectionName as trendingProductCollectionName } from './Models/TrendingProduct'
 import { ProductReviewCreate, collectionName as productReviewCollectionName } from './Models/ProductReview'
 import { TagCreate, collectionName as tagCollectionName } from './Models/Tag'
 import { collectionName as productPictureCollectionName } from './Models/ProductPicture'
@@ -214,6 +215,7 @@ export class MongoDB {
         await this.addCategoryCollection(db)
         await this.addOrderCollection(db)
         await this.addProductCollection(db)
+        await this.addTrendingProductCollection(db)
         await this.addProductReviewsCollection(db)
         await this.addTagCollection(db)
         await this.addRoleCollection(db)
@@ -280,6 +282,22 @@ export class MongoDB {
 
     async getOrderCollection(client?: MongoClient, db?: Db): Promise<Collection<OrderCreate>> {
         return (db ?? (await this.getDb(client))).collection<OrderCreate>(orderCollectionName)
+    }
+
+    private async addTrendingProductCollection(db: Db) {
+        if (!(await db.listCollections().toArray()).map(e => e.name).includes(trendingProductCollectionName))
+            await db.createCollection(trendingProductCollectionName)
+
+        const indexes = await db.collection(trendingProductCollectionName).indexes()
+
+        if (indexes.find(i => i.name === 'unique-product-id') === undefined)
+            await db.createIndex(trendingProductCollectionName, { productId: 1 }, { unique: true, name: 'unique-product-id' })
+
+        if (indexes.find(i => i.name === 'createdAt') === undefined)
+            await db.createIndex(trendingProductCollectionName, { createdAt: 1 }, { name: 'createdAt' })
+
+        if (indexes.find(i => i.name === 'updatedAt') === undefined)
+            await db.createIndex(trendingProductCollectionName, { updatedAt: 1 }, { name: 'updatedAt' })
     }
 
     private async addProductCollection(db: Db) {

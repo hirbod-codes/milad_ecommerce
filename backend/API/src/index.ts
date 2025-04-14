@@ -98,7 +98,7 @@ export const queueManagement = new QueueManagement(messageBrokerUrl, messageBrok
             // To simulate slow connections
             setTimeout(() => {
                 next()
-            }, 2000)
+            }, 4000 * Math.random())
         })
 
     app.use((req, res, next) => {

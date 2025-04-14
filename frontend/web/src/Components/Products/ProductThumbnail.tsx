@@ -1,0 +1,43 @@
+import { useContext, useEffect, useState } from "react";
+import { Product } from "./index.d";
+import { fetchData, formatCurrency, getApiUrl } from "@/src/Backend/helpers";
+import { array } from "yup";
+import { Stack } from "../Base/Stack";
+import { ConfigurationContext } from "@/src/Contexts/Configuration/ConfigurationContext";
+
+export function ProductThumbnail({ product }: { product: Product }) {
+    const configuration = useContext(ConfigurationContext)
+
+    const [image, setImage] = useState(undefined)
+
+    useEffect(() => {
+        fetchData(`${getApiUrl()}/products/pictures?productIds=${product._id}`)
+            .then(r => {
+                if (r.response && r.response.ok && array().required().isValidSync(r.data))
+                    fetchData(`${getApiUrl()}/products/picture?fileId=${r.data[1]._id}`)
+                        .then(rr => {
+                            if (r.response && r.response.ok)
+                                setImage(URL.createObjectURL(rr.data))
+                        })
+            })
+    }, [])
+
+    return (
+        <Stack direction="vertical" stackProps={{ className: 'p-2 justify-between h-full' }}>
+            <div className="flex-grow">
+                <img src={image} className="h-full" loading="lazy" />
+            </div>
+
+            <Stack direction="vertical">
+                <div className="text-md hover:underline">
+                    {product.displayName[configuration.local.language]}
+                </div>
+
+                <div className="text-sm hover:underline">
+                    {product.price.IRR && formatCurrency(configuration, product.price.IRR)}
+                </div>
+            </Stack>
+        </Stack>
+    )
+}
+
