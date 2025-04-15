@@ -14,7 +14,7 @@ export class ProductReviewsRepository extends MongoDB {
         this.collection = collection
     }
 
-    static async seed(count: number = 50) {
+    static async seed() {
         const collection = await MongoDB.getDbInstance().getProductReviewsCollection()
         const productRepository = await ProductRepository.getInstance()
         const userRepository = await UserRepository.getInstance()
@@ -33,29 +33,32 @@ export class ProductReviewsRepository extends MongoDB {
         const startTimeTS = DateTime.utc().minus({ years: 2 }).toUnixInteger()
         const endTimeTS = DateTime.utc().minus({ months: 2 }).toUnixInteger()
 
-        for (let i = 0; i < count; i++) {
-            let safety = 0
-            while (safety < 10) {
-                safety++
-                try {
-                    const ts = faker.number.int({ min: startTimeTS, max: endTimeTS })
+        for (const user of users) {
+            for (const product of products) {
+                if (faker.datatype.boolean(0.3))
+                    continue
 
-                    const name = faker.person.firstName()
+                let safety = 0
+                while (safety < 10) {
+                    safety++
+                    try {
+                        const ts = faker.number.int({ min: startTimeTS, max: endTimeTS })
 
-                    let r = await collection.insertOne({
-                        schemaVersion,
-                        productId: faker.helpers.arrayElement(products)._id.toString(),
-                        userId: faker.helpers.arrayElement(users)._id.toString(),
-                        rating: faker.number.int({ min: 0, max: 5 }),
-                        content: faker.word.words({ count: { min: 20, max: 100 } }),
-                        createdAt: ts,
-                        updatedAt: ts,
-                    })
-                    if (r.acknowledged)
-                        break
-                } catch (e) {
-                    if (!(e instanceof MongoSystemError) || e.code !== 11000)
-                        throw e
+                        let r = await collection.insertOne({
+                            schemaVersion,
+                            productId: product._id.toString(),
+                            userId: user._id.toString(),
+                            rating: faker.number.int({ min: 0, max: 5 }),
+                            content: faker.word.words({ count: { min: 20, max: 100 } }),
+                            createdAt: ts,
+                            updatedAt: ts,
+                        })
+                        if (r.acknowledged)
+                            break
+                    } catch (e) {
+                        if (!(e instanceof MongoSystemError) || e.code !== 11000)
+                            throw e
+                    }
                 }
             }
         }

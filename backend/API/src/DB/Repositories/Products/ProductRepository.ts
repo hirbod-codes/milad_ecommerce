@@ -1,6 +1,6 @@
 import { DateTime } from "luxon";
 import { Product, ProductInput, ProductCreate, schemaVersion, ProductUpdate, ProductImmutable } from "../../Models/Products/Product";
-import { Collection, DeleteResult, Filter, InsertOneResult, MongoSystemError, ObjectId, SortDirection, UpdateResult } from 'mongodb'
+import { Collection, DeleteResult, Filter, InsertOneResult, MongoServerError, MongoSystemError, ObjectId, SortDirection, UpdateResult } from 'mongodb'
 import { MongoDB } from "../../mongodb";
 import { faker, fakerFA } from "@faker-js/faker/";
 import { CategoryRepository } from "../CategoryRepository";
@@ -18,7 +18,7 @@ export class ProductRepository extends MongoDB {
         return new ProductRepository(await MongoDB.getDbInstance().getProductCollection())
     }
 
-    static async seed(count: number = 100) {
+    static async seed(count: number) {
         console.log('ProductRepository.seed()')
 
         const collection = await MongoDB.getDbInstance().getProductCollection()
@@ -41,6 +41,14 @@ export class ProductRepository extends MongoDB {
 
         const localCategoryIds: string[] = []
 
+        const names = faker.definitions.commerce?.product_name
+        const firstDigit = names.product
+        const secondDigit = names.material
+        const thirdDigit = names.adjective
+        const firstDigitNumbers = names.product.length
+        const secondDigitNumbers = names.material.length
+        const thirdDigitNumbers = names.adjective.length
+
         for (let i = 0; i < count; i++) {
             let safety = 0
             while (safety < 10) {
@@ -48,7 +56,15 @@ export class ProductRepository extends MongoDB {
                 try {
                     const ts = faker.number.int({ min: startTimeTS, max: endTimeTS })
 
-                    const name = faker.commerce.productName()
+                    let j = i + 1, name: string = undefined!
+                    if (i < firstDigitNumbers)
+                        name = `${thirdDigit[0]}${secondDigit[0]}${firstDigit[i]}`
+                    else if ((i / firstDigitNumbers) < secondDigitNumbers)
+                        name = `${thirdDigit[0]}${secondDigit[Math.floor(i / firstDigitNumbers)]}${firstDigit[(i % firstDigitNumbers)]}`
+                    else if ((i / (firstDigitNumbers * secondDigitNumbers)) < thirdDigitNumbers)
+                        name = `${thirdDigit[Math.floor(i / (firstDigitNumbers * secondDigitNumbers))]}${secondDigit[Math.floor((i % (firstDigitNumbers * secondDigitNumbers)) / firstDigitNumbers)]}${firstDigit[(((i % (firstDigitNumbers * secondDigitNumbers)) % firstDigitNumbers))]}`
+                    else
+                        throw new Error('out of unique values for product name')
 
                     let r = await collection.insertOne({
                         schemaVersion,
@@ -72,7 +88,7 @@ export class ProductRepository extends MongoDB {
                         break
                     }
                 } catch (e) {
-                    if (!(e instanceof MongoSystemError) || e.code !== 11000)
+                    if (!(e instanceof MongoSystemError) || !(e instanceof MongoServerError) || e.code !== 11000)
                         throw e
                 }
             }

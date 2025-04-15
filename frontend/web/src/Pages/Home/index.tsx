@@ -78,14 +78,16 @@ export const Home = memo(function Home() {
 
                     <div className="w-full overflow-x-auto overflow-y-hidden flex-grow">
                         <Stack stackProps={{ className: 'items-start h-full w-max' }}>
-                            {trendingProducts === undefined
-                                ? <CircularLoading />
-                                : trendingProducts.map((m, i) =>
-                                    <ProductThumbnail
-                                        key={i}
-                                        product={m}
-                                    />
-                                )}
+                            {/* {
+                                trendingProducts === undefined
+                                    ? <CircularLoading />
+                                    : trendingProducts.map((m, i) =>
+                                        <ProductThumbnail
+                                            key={i}
+                                            product={m}
+                                        />
+                                    )
+                            } */}
                         </Stack>
                     </div>
                 </Stack>
@@ -99,9 +101,9 @@ export const Home = memo(function Home() {
 
                     <div className="w-full overflow-x-auto overflow-y-hidden flex-grow">
                         <Stack stackProps={{ className: 'items-start h-full w-max' }}>
-                            {trendingProducts === undefined
+                            {popularProducts === undefined
                                 ? <CircularLoading />
-                                : trendingProducts.map((m, i) =>
+                                : popularProducts.map((m, i) =>
                                     <ProductThumbnail
                                         key={i}
                                         product={m}

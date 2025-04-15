@@ -77,10 +77,10 @@ export const queueManagement = new QueueManagement(messageBrokerUrl, messageBrok
         await MongoDB.getDbInstance().initializeDb();
 
         if (isProduction !== true) {
-            await CategoryRepository.seed()
-            await TagRepository.seed()
-            await ProductRepository.seed()
-            await ProductReviewsRepository.seed(400)
+            await CategoryRepository.seed(50)
+            await TagRepository.seed(150)
+            await ProductRepository.seed(800)
+            await ProductReviewsRepository.seed()
             await OrderRepository.seed(200)
 
             await ProductSaleRepository.seed()
@@ -142,6 +142,6 @@ export const queueManagement = new QueueManagement(messageBrokerUrl, messageBrok
     })
 
     app.listen(hostPort, hostName, () => console.log(`listening on ${hostName}:${hostPort}...`))
-})()
 
-runCronJobs()
+    runCronJobs()
+})()

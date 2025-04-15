@@ -328,11 +328,8 @@ export class MongoDB {
 
         const indexes = await db.collection(popularProductCollectionName).indexes()
 
-        if (indexes.find(i => i.name === 'timestamp') === undefined)
-            await db.createIndex(popularProductCollectionName, { timestamp: 1 }, { name: 'timestamp' })
-
-        if (indexes.find(i => i.name === 'productId') === undefined)
-            await db.createIndex(popularProductCollectionName, { productId: 1 }, { name: 'productId' })
+        if (indexes.find(i => i.name === 'category') === undefined)
+            await db.createIndex(popularProductCollectionName, { category: 1 }, { name: 'category' })
     }
 
     async getPopularProductCollection(client?: MongoClient, db?: Db): Promise<Collection<PopularProductCreate>> {

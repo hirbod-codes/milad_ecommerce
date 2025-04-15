@@ -10,6 +10,8 @@ import busboy from "busboy";
 import { Filter, SortDirection } from "mongodb";
 import { ProductRepository } from "../DB/Repositories/Products/ProductRepository";
 import { ProductPictureRepository } from "../DB/Repositories/Products/ProductPictureRepository";
+import { PopularProductRepository } from "../DB/Repositories/Products/PopularProductRepository";
+import { categorySchema } from "../DB/Models/Category";
 
 const products = Router()
 
@@ -169,9 +171,20 @@ products.get('/trending', async (req, res) => {
 
 products.get('/popular', async (req, res) => {
     try {
-        const productRepository = await ProductRepository.getInstance()
-        const products = await productRepository.getAll()
-        res.status(200).json(products)
+        const { category } = req?.query
+
+        if (category && !categorySchema.pick(['name']).optional().isValidSync({ category })) {
+            res.sendStatus(400)
+            return
+        }
+
+        const productRepository = await PopularProductRepository.getInstance()
+        const products = await productRepository.get()
+
+        if (category)
+            res.status(200).json(products.find(f => f.category === category)?.products)
+        else
+            res.status(200).json(products.map(m => m.products[0]))
     } catch (e) {
         console.error(e)
         res.sendStatus(500)

@@ -14,10 +14,6 @@ export class PopularProductRepository extends MongoDB {
         return new PopularProductRepository(await MongoDB.getDbInstance().getPopularProductCollection())
     }
 
-    static async seed() {
-        console.log('PopularProductRepository.seed()')
-    }
-
     async set(records: PopularProductInput[]) {
         await this.startTransaction()
 
@@ -33,8 +29,10 @@ export class PopularProductRepository extends MongoDB {
         }
     }
 
-    async get(): Promise<PopularProduct[]> {
-        try { return await this.collection.find().toArray() }
+    async get(): Promise<PopularProduct[]>
+    async get(category: string): Promise<PopularProduct[]>
+    async get(category?: string): Promise<PopularProduct[]> {
+        try { return await (category ? this.collection.find({ category }) : this.collection.find()).toArray() }
         catch (e) { console.error(e); return [] }
     }
 

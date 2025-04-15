@@ -50,48 +50,112 @@ export class ProductSaleRepository extends MongoDB {
 
     async getPopularProducts(): Promise<PopularProduct[] | false> {
         try {
-            return await this.collection.aggregate()
-                .match({ timestamp: { $gt: DateTime.utc().minus({ months: 3 }).toUnixInteger() } })
-                .group({
-                    _id: '$productId',
-                    count: {
-                        $sum: '$quantity'
+            return await this.collection.aggregate([
+                {
+                    $match: {
+                        timestamp: { $gt: DateTime.utc().minus({ months: 3 }).toUnixInteger() }
                     }
-                })
-                .sort({ count: -1 })
-                .lookup({
-                    from: "product",
-                    localField: "_id",
-                    foreignField: "_id",
-                    as: "product"
-                })
-                .unwind({
-                    path: '$categories',
-                    preserveNullAndEmptyArrays: false
-                })
-                .addStage({
+                },
+                {
+                    $group: {
+                        _id: "$productId",
+                        count: {
+                            $sum: "$quantity"
+                        }
+                    }
+                },
+                {
+                    $sort: {
+                        count: -1
+                    }
+                },
+                {
+                    $lookup: {
+                        from: "product",
+                        localField: "_id",
+                        foreignField: "_id",
+                        as: "product"
+                    }
+                },
+                {
                     $replaceRoot: {
                         newRoot: {
                             $mergeObjects: [
-                                { count: "$count" },
-                                { $arrayElemAt: ["$product", 0] }
+                                {
+                                    count: "$count"
+                                },
+                                {
+                                    $arrayElemAt: ["$product", 0]
+                                }
                             ]
                         }
                     }
-                })
-                .group({
-                    _id: '$categories',
-                    products: { $push: '$$ROOT' }
-                })
-                .sort({
-                    'products.count': -1
-                })
-                .project({
-                    category: '$_id',
-                    products: {
-                        $slice: ["$products", 100]
+                },
+                {
+                    $unwind: {
+                        path: "$categories",
+                        preserveNullAndEmptyArrays: false
                     }
-                })
+                },
+                {
+                    $group: {
+                        _id: "$categories",
+                        products: {
+                            $push: "$$ROOT"
+                        }
+                    }
+                },
+                { $sort: { "products.count": -1 } },
+                {
+                    $project: {
+                        category: "$_id",
+                        products: {
+                            $slice: ["$products", 100]
+                        }
+                    }
+                }
+            ])
+                // .match({ timestamp: { $gt: DateTime.utc().minus({ months: 3 }).toUnixInteger() } })
+                // .group({
+                //     _id: '$productId',
+                //     count: {
+                //         $sum: '$quantity'
+                //     }
+                // })
+                // .sort({ count: -1 })
+                // .lookup({
+                //     from: "product",
+                //     localField: "_id",
+                //     foreignField: "_id",
+                //     as: "product"
+                // })
+                // .unwind({
+                //     path: '$categories',
+                //     preserveNullAndEmptyArrays: false
+                // })
+                // .addStage({
+                //     $replaceRoot: {
+                //         newRoot: {
+                //             $mergeObjects: [
+                //                 { count: "$count" },
+                //                 { $arrayElemAt: ["$product", 0] }
+                //             ]
+                //         }
+                //     }
+                // })
+                // .group({
+                //     _id: '$categories',
+                //     products: { $push: '$$ROOT' }
+                // })
+                // .sort({
+                //     'products.count': -1
+                // })
+                // .project({
+                //     category: '$_id',
+                //     products: {
+                //         $slice: ["$products", 100]
+                //     }
+                // })
                 .toArray() as any
 
         }

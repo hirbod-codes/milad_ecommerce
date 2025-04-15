@@ -16,7 +16,7 @@ export class TagRepository extends MongoDB {
         return new TagRepository(await MongoDB.getDbInstance().getTagCollection())
     }
 
-    static async seed(count: number = 50) {
+    static async seed(count: number) {
         const collection = await MongoDB.getDbInstance().getTagCollection()
 
         if (!(await collection.deleteMany()).acknowledged)

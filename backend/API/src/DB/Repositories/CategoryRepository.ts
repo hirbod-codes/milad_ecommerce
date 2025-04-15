@@ -16,7 +16,7 @@ export class CategoryRepository extends MongoDB {
         return new CategoryRepository(await MongoDB.getDbInstance().getCategoryCollection())
     }
 
-    static async seed(count: number = 50) {
+    static async seed(count: number) {
         const collection = await MongoDB.getDbInstance().getCategoryCollection()
 
         if (!(await collection.deleteMany()).acknowledged)
