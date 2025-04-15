@@ -3,6 +3,7 @@
         "pino",
         "shadcn",
         "Signup",
-        "tanstack"
+        "tanstack",
+        "timeseries"
     ]
 }

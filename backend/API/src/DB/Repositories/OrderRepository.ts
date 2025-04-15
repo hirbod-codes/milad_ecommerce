@@ -121,10 +121,12 @@ export class OrderRepository extends MongoDB {
 
     async getById(id: string): Promise<Order | null | undefined> {
         try { return await this.collection.findOne({ _id: ObjectId.createFromHexString(id) }) }
-        catch (e) {
-            console.error(e)
-            return undefined
-        }
+        catch (e) { console.error(e); return undefined }
+    }
+
+    async getAll(): Promise<Order[]> {
+        try { return await this.collection.find().toArray() }
+        catch (e) { console.error(e); return [] }
     }
 
     async update(id: string, order: OrderUpdate): Promise<UpdateResult | false> {

@@ -19,6 +19,8 @@ export class ProductRepository extends MongoDB {
     }
 
     static async seed(count: number = 100) {
+        console.log('ProductRepository.seed()')
+
         const collection = await MongoDB.getDbInstance().getProductCollection()
         const categoryRepository = await CategoryRepository.getInstance()
         const tagRepository = await TagRepository.getInstance()

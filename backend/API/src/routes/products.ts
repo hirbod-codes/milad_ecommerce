@@ -156,6 +156,28 @@ products.get('/', async (req, res) => {
     }
 })
 
+products.get('/trending', async (req, res) => {
+    try {
+        const productRepository = await ProductRepository.getInstance()
+        const products = await productRepository.getAll()
+        res.status(200).json(products)
+    } catch (e) {
+        console.error(e)
+        res.sendStatus(500)
+    }
+})
+
+products.get('/popular', async (req, res) => {
+    try {
+        const productRepository = await ProductRepository.getInstance()
+        const products = await productRepository.getAll()
+        res.status(200).json(products)
+    } catch (e) {
+        console.error(e)
+        res.sendStatus(500)
+    }
+})
+
 products.get('/picture/fileId', async (req, res) => {
     try {
         const { fileId } = req.query

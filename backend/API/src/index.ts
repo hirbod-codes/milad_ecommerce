@@ -17,6 +17,9 @@ import { QueueManagement } from "./QueueManagement";
 import { RevokedAccessTokenManager } from "./RevokedAccessTokens/RevokedAccessTokenManager";
 import { SessionManager } from "./Session/SessionManager";
 import prometheusClient from 'prom-client'
+import { ProductViewRepository } from "./DB/Repositories/ProductViewRepository";
+import { ProductSaleRepository } from "./DB/Repositories/ProductSaleRepository";
+import { runCronJobs } from "./cronJobs";
 
 dotenv.config({ debug: process.env.DEBUG !== undefined ? Boolean(process.env.DEBUG) : undefined })
 
@@ -79,6 +82,9 @@ export const queueManagement = new QueueManagement(messageBrokerUrl, messageBrok
             await ProductRepository.seed()
             await ProductReviewsRepository.seed()
             await OrderRepository.seed()
+
+            await ProductSaleRepository.seed()
+            // await ProductViewRepository.seed()
         }
     })
 
@@ -137,3 +143,5 @@ export const queueManagement = new QueueManagement(messageBrokerUrl, messageBrok
 
     app.listen(hostPort, hostName, () => console.log(`listening on ${hostName}:${hostPort}...`))
 })()
+
+runCronJobs()

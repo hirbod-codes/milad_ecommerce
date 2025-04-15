@@ -136,6 +136,10 @@ order.get('/', authenticate, async (req, res) => {
     }
 })
 
+// add order record to productSale collection
+order.patch('/payed', authenticate, async (req, res) => {
+})
+
 order.patch('/', authenticate, async (req, res) => {
     try {
         if (await authorize(req, 'update-order-self') !== true) {

@@ -6,7 +6,9 @@ import { RoleCreate, collectionName as roleCollectionName } from './Models/Role'
 import { CategoryCreate, collectionName as categoryCollectionName } from './Models/Category'
 import { OrderCreate, collectionName as orderCollectionName } from './Models/Order'
 import { ProductCreate, collectionName as productCollectionName } from './Models/Product'
-import { collectionName as trendingProductCollectionName } from './Models/TrendingProduct'
+import { ProductSaleCreate, collectionName as productSalesCollectionName } from './Models/ProductSale'
+import { collectionName as productViewCollectionName, ProductViewCreate } from './Models/ProductView'
+import { PopularProductCreate, collectionName as popularProductCollectionName } from './Models/PopularProduct'
 import { ProductReviewCreate, collectionName as productReviewCollectionName } from './Models/ProductReview'
 import { TagCreate, collectionName as tagCollectionName } from './Models/Tag'
 import { collectionName as productPictureCollectionName } from './Models/ProductPicture'
@@ -215,7 +217,9 @@ export class MongoDB {
         await this.addCategoryCollection(db)
         await this.addOrderCollection(db)
         await this.addProductCollection(db)
-        await this.addTrendingProductCollection(db)
+        await this.addProductSalesCollection(db)
+        await this.addProductViewCollection(db)
+        await this.addPopularProductCollection(db)
         await this.addProductReviewsCollection(db)
         await this.addTagCollection(db)
         await this.addRoleCollection(db)
@@ -284,20 +288,55 @@ export class MongoDB {
         return (db ?? (await this.getDb(client))).collection<OrderCreate>(orderCollectionName)
     }
 
-    private async addTrendingProductCollection(db: Db) {
-        if (!(await db.listCollections().toArray()).map(e => e.name).includes(trendingProductCollectionName))
-            await db.createCollection(trendingProductCollectionName)
+    private async addProductSalesCollection(db: Db) {
+        if (!(await db.listCollections().toArray()).map(e => e.name).includes(productSalesCollectionName))
+            await db.createCollection(productSalesCollectionName)
 
-        const indexes = await db.collection(trendingProductCollectionName).indexes()
+        const indexes = await db.collection(productSalesCollectionName).indexes()
 
-        if (indexes.find(i => i.name === 'unique-product-id') === undefined)
-            await db.createIndex(trendingProductCollectionName, { productId: 1 }, { unique: true, name: 'unique-product-id' })
+        if (indexes.find(i => i.name === 'timestamp') === undefined)
+            await db.createIndex(productSalesCollectionName, { timestamp: 1 }, { name: 'timestamp' })
 
-        if (indexes.find(i => i.name === 'createdAt') === undefined)
-            await db.createIndex(trendingProductCollectionName, { createdAt: 1 }, { name: 'createdAt' })
+        if (indexes.find(i => i.name === 'productId') === undefined)
+            await db.createIndex(productSalesCollectionName, { productId: 1 }, { name: 'productId' })
+    }
 
-        if (indexes.find(i => i.name === 'updatedAt') === undefined)
-            await db.createIndex(trendingProductCollectionName, { updatedAt: 1 }, { name: 'updatedAt' })
+    async getProductSalesCollection(client?: MongoClient, db?: Db): Promise<Collection<ProductSaleCreate>> {
+        return (db ?? (await this.getDb(client))).collection<ProductSaleCreate>(productSalesCollectionName)
+    }
+
+    private async addProductViewCollection(db: Db) {
+        if (!(await db.listCollections().toArray()).map(e => e.name).includes(productViewCollectionName))
+            await db.createCollection(productViewCollectionName)
+
+        const indexes = await db.collection(productViewCollectionName).indexes()
+
+        if (indexes.find(i => i.name === 'timestamp') === undefined)
+            await db.createIndex(productViewCollectionName, { timestamp: 1 }, { name: 'timestamp' })
+
+        if (indexes.find(i => i.name === 'productId') === undefined)
+            await db.createIndex(productViewCollectionName, { productId: 1 }, { name: 'productId' })
+    }
+
+    async getProductViewCollection(client?: MongoClient, db?: Db): Promise<Collection<ProductViewCreate>> {
+        return (db ?? (await this.getDb(client))).collection<ProductViewCreate>(productViewCollectionName)
+    }
+
+    private async addPopularProductCollection(db: Db) {
+        if (!(await db.listCollections().toArray()).map(e => e.name).includes(popularProductCollectionName))
+            await db.createCollection(popularProductCollectionName)
+
+        const indexes = await db.collection(popularProductCollectionName).indexes()
+
+        if (indexes.find(i => i.name === 'timestamp') === undefined)
+            await db.createIndex(popularProductCollectionName, { timestamp: 1 }, { name: 'timestamp' })
+
+        if (indexes.find(i => i.name === 'productId') === undefined)
+            await db.createIndex(popularProductCollectionName, { productId: 1 }, { name: 'productId' })
+    }
+
+    async getPopularProductCollection(client?: MongoClient, db?: Db): Promise<Collection<PopularProductCreate>> {
+        return (db ?? (await this.getDb(client))).collection<PopularProductCreate>(popularProductCollectionName)
     }
 
     private async addProductCollection(db: Db) {
