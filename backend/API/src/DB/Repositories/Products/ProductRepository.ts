@@ -1,10 +1,10 @@
 import { DateTime } from "luxon";
-import { Product, ProductInput, ProductCreate, schemaVersion, ProductUpdate, ProductImmutable } from "../Models/Product";
+import { Product, ProductInput, ProductCreate, schemaVersion, ProductUpdate, ProductImmutable } from "../../Models/Products/Product";
 import { Collection, DeleteResult, Filter, InsertOneResult, MongoSystemError, ObjectId, SortDirection, UpdateResult } from 'mongodb'
-import { MongoDB } from "../mongodb";
+import { MongoDB } from "../../mongodb";
 import { faker, fakerFA } from "@faker-js/faker/";
-import { CategoryRepository } from "./CategoryRepository";
-import { TagRepository } from "./TagRepository";
+import { CategoryRepository } from "../CategoryRepository";
+import { TagRepository } from "../TagRepository";
 
 export class ProductRepository extends MongoDB {
     private collection: Collection<ProductCreate>

@@ -6,7 +6,7 @@ import { FilterManagement } from "@/src/DB/FilterManagement";
 import { array, number, object, string } from "yup";
 import { stringObjectId } from "@/src/DB/Models/common_schemas";
 import { Filter, SortDirection } from "mongodb";
-import { ProductRepository } from "../DB/Repositories/ProductRepository";
+import { ProductRepository } from "../DB/Repositories/Products/ProductRepository";
 import { OrderRepository } from "../DB/Repositories/OrderRepository";
 
 const orders = Router()

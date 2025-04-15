@@ -3,7 +3,7 @@ import { Order, OrderCreate, OrderImmutable, OrderInput, OrderUpdate, schemaVers
 import { DateTime } from 'luxon'
 import { MongoDB } from '../mongodb';
 import { faker } from '@faker-js/faker/.';
-import { ProductRepository } from './ProductRepository';
+import { ProductRepository } from './Products/ProductRepository';
 import { UserRepository } from './UserRepository';
 
 export class OrderRepository extends MongoDB {

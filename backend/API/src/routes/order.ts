@@ -8,7 +8,7 @@ import { stringObjectId } from "@/src/DB/Models/common_schemas";
 import Jwt from "jsonwebtoken";
 import { Filter, SortDirection } from "mongodb";
 import { OrderRepository } from "../DB/Repositories/OrderRepository";
-import { ProductRepository } from "../DB/Repositories/ProductRepository";
+import { ProductRepository } from "../DB/Repositories/Products/ProductRepository";
 
 const order = Router()
 

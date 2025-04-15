@@ -4,8 +4,8 @@ import pino from 'pino-http'
 import { getBooleanEnv, getIntegerEnv, getStringEnv, tryAndWait } from "./helpers";
 import { MongoDB } from "./DB/mongodb";
 import { TagRepository } from "./DB/Repositories/TagRepository";
-import { ProductReviewsRepository } from "./DB/Repositories/ProductReviewsRepository";
-import { ProductRepository } from "./DB/Repositories/ProductRepository";
+import { ProductReviewsRepository } from "./DB/Repositories/Products/ProductReviewsRepository";
+import { ProductRepository } from "./DB/Repositories/Products/ProductRepository";
 import { OrderRepository } from "./DB/Repositories/OrderRepository";
 import { CategoryRepository } from "./DB/Repositories/CategoryRepository";
 import { products } from './routes/products'
@@ -17,8 +17,8 @@ import { QueueManagement } from "./QueueManagement";
 import { RevokedAccessTokenManager } from "./RevokedAccessTokens/RevokedAccessTokenManager";
 import { SessionManager } from "./Session/SessionManager";
 import prometheusClient from 'prom-client'
-import { ProductViewRepository } from "./DB/Repositories/ProductViewRepository";
-import { ProductSaleRepository } from "./DB/Repositories/ProductSaleRepository";
+import { ProductViewRepository } from "./DB/Repositories/Products/ProductViewRepository";
+import { ProductSaleRepository } from "./DB/Repositories/Products/ProductSaleRepository";
 import { runCronJobs } from "./cronJobs";
 
 dotenv.config({ debug: process.env.DEBUG !== undefined ? Boolean(process.env.DEBUG) : undefined })
@@ -80,8 +80,8 @@ export const queueManagement = new QueueManagement(messageBrokerUrl, messageBrok
             await CategoryRepository.seed()
             await TagRepository.seed()
             await ProductRepository.seed()
-            await ProductReviewsRepository.seed()
-            await OrderRepository.seed()
+            await ProductReviewsRepository.seed(400)
+            await OrderRepository.seed(200)
 
             await ProductSaleRepository.seed()
             // await ProductViewRepository.seed()

@@ -1,9 +1,6 @@
-import { DateTime } from "luxon";
-import { Collection, DeleteResult, InsertOneResult, ObjectId } from 'mongodb'
-import { MongoDB } from "../mongodb";
-import { PopularProduct, PopularProductCreate, PopularProductInput } from "../Models/PopularProduct";
-import { OrderRepository } from "./OrderRepository";
-import { Product } from "../Models/Product";
+import { Collection, DeleteResult, ObjectId } from 'mongodb'
+import { MongoDB } from "../../mongodb";
+import { PopularProduct, PopularProductCreate, PopularProductInput } from "../../Models/Products/PopularProduct";
 
 export class PopularProductRepository extends MongoDB {
     private collection: Collection<PopularProductCreate>

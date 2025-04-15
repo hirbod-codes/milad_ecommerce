@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { FilterManagement } from "@/src/DB/FilterManagement";
-import { Product, productImmutableSchema, productInputSchema, productSchema, productUpdateSchema, readableFields } from "@/src/DB/Models/Product";
+import { Product, productImmutableSchema, productInputSchema, productSchema, productUpdateSchema, readableFields } from "@/src/DB/Models/Products/Product";
 import { array, number, object, string, } from "yup";
 import { stringObjectId } from "@/src/DB/Models/common_schemas";
 import { authenticate } from "@/src/middlewares/authenticate";
@@ -8,8 +8,8 @@ import { authorize } from "@/src/middlewares/authorize";
 import archiver from "archiver";
 import busboy from "busboy";
 import { Filter, SortDirection } from "mongodb";
-import { ProductRepository } from "../DB/Repositories/ProductRepository";
-import { ProductPictureRepository } from "../DB/Repositories/ProductPictureRepository";
+import { ProductRepository } from "../DB/Repositories/Products/ProductRepository";
+import { ProductPictureRepository } from "../DB/Repositories/Products/ProductPictureRepository";
 
 const products = Router()
 

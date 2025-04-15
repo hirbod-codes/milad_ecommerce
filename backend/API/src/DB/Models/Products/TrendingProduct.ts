@@ -1,5 +1,5 @@
 import { InferType, number, object } from "yup";
-import { likeObjectId } from "./common_schemas";
+import { likeObjectId } from "../common_schemas";
 
 export const collectionName = 'trendingProduct'
 

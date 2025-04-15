@@ -1,10 +1,10 @@
 import { DateTime } from "luxon";
 import { Collection, DeleteResult, InsertOneResult, ObjectId } from 'mongodb'
-import { MongoDB } from "../mongodb";
-import { ProductSale, ProductSaleCreate, ProductSaleInput } from "../Models/ProductSale";
-import { OrderRepository } from "./OrderRepository";
-import { Product } from "../Models/Product";
-import { PopularProduct } from "../Models/PopularProduct";
+import { MongoDB } from "../../mongodb";
+import { ProductSale, ProductSaleCreate, ProductSaleInput } from "../../Models/Products/ProductSale";
+import { OrderRepository } from "../OrderRepository";
+import { Product } from "../../Models/Products/Product";
+import { PopularProduct } from "../../Models/Products/PopularProduct";
 
 export class ProductSaleRepository extends MongoDB {
     private collection: Collection<ProductSaleCreate>

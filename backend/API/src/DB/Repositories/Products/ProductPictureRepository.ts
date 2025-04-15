@@ -1,5 +1,5 @@
 import { GridFSBucket, GridFSBucketReadStream, GridFSBucketWriteStream, GridFSFile, ObjectId } from "mongodb";
-import { MongoDB } from "../mongodb";
+import { MongoDB } from "../../mongodb";
 
 export class ProductPictureRepository extends MongoDB {
     private collection: GridFSBucket

@@ -1,10 +1,10 @@
 import { Collection, DeleteResult, InsertOneResult, MongoSystemError, ObjectId, UpdateResult } from 'mongodb'
-import { ProductReview, ProductReviewCreate, ProductReviewInput, ProductReviewUpdate, schemaVersion } from '../Models/ProductReview'
+import { ProductReview, ProductReviewCreate, ProductReviewInput, ProductReviewUpdate, schemaVersion } from '../../Models/Products/ProductReview'
 import { DateTime } from 'luxon'
-import { MongoDB } from '../mongodb';
+import { MongoDB } from '../../mongodb';
 import { faker } from '@faker-js/faker/.';
 import { ProductRepository } from './ProductRepository';
-import { UserRepository } from './UserRepository';
+import { UserRepository } from '../UserRepository';
 
 export class ProductReviewsRepository extends MongoDB {
     private collection: Collection<ProductReviewCreate>

@@ -1,5 +1,5 @@
 import { array, boolean, InferType, number, object, string } from "yup";
-import { likeObjectId, localizedText, price, uniqueArrayTest } from "./common_schemas";
+import { likeObjectId, localizedText, price, uniqueArrayTest } from "../common_schemas";
 
 export const collectionName = 'product'
 

@@ -1,5 +1,5 @@
 import { date, InferType, number, object, string } from "yup";
-import { likeObjectId } from "./common_schemas";
+import { likeObjectId } from "../common_schemas";
 
 export const collectionName = 'productView'
 

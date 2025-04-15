@@ -1,7 +1,7 @@
 import { DateTime } from "luxon";
 import { Collection, DeleteResult, InsertOneResult, ObjectId } from 'mongodb'
-import { MongoDB } from "../mongodb";
-import { ProductView, ProductViewCreate, ProductViewInput } from "../Models/ProductView";
+import { MongoDB } from "../../mongodb";
+import { ProductView, ProductViewCreate, ProductViewInput } from "../../Models/Products/ProductView";
 import { ProductRepository } from "./ProductRepository";
 import { faker } from "@faker-js/faker/.";
 
