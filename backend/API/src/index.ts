@@ -77,14 +77,40 @@ export const queueManagement = new QueueManagement(messageBrokerUrl, messageBrok
         await MongoDB.getDbInstance().initializeDb();
 
         if (isProduction !== true) {
-            await CategoryRepository.seed(50)
-            await TagRepository.seed(150)
-            await ProductRepository.seed(800)
-            await ProductReviewsRepository.seed()
-            await OrderRepository.seed(200)
+            console.time('seed')
 
-            await ProductSaleRepository.seed()
-            // await ProductViewRepository.seed()
+            try {
+                console.time('\ncategories')
+                await CategoryRepository.seed(50)
+                console.timeEnd('\ncategories')
+
+                console.time('\ntags')
+                await TagRepository.seed(150)
+                console.timeEnd('\ntags')
+
+                console.time('\nproducts')
+                await ProductRepository.seed(800)
+                console.timeEnd('\nproducts')
+
+                console.time('\nproducts reviews')
+                await ProductReviewsRepository.seed()
+                console.timeEnd('\nproducts reviews')
+
+                console.time('\norders')
+                await OrderRepository.seed(200)
+                console.timeEnd('\norders')
+
+
+                await ProductSaleRepository.seed()
+                console.timeLog('seed', 'products sale\n')
+
+                // await ProductViewRepository.seed()
+
+                console.timeEnd('seed')
+            } catch (e) {
+                console.timeEnd('seed')
+                throw e
+            }
         }
     })
 

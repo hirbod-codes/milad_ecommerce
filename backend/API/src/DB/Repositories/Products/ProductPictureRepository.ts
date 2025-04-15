@@ -1,5 +1,6 @@
 import { GridFSBucket, GridFSBucketReadStream, GridFSBucketWriteStream, GridFSFile, ObjectId } from "mongodb";
 import { MongoDB } from "../../mongodb";
+import { contentType } from "prom-client";
 
 export class ProductPictureRepository extends MongoDB {
     private collection: GridFSBucket
@@ -21,22 +22,16 @@ export class ProductPictureRepository extends MongoDB {
         return this.collection.openUploadStream(fileName, { metadata: { productId: typeof productId === 'string' ? ObjectId.createFromHexString(productId) : productId, contentType } })
     }
 
-    async uploadFile(productId: string, file: { fileName: string; bytes: Buffer | Uint8Array; }): Promise<string | undefined> {
-        console.log('uploading...');
-        console.log(productId);
-
+    async uploadFile(productId: string, file: { fileName: string; bytes: Buffer | Uint8Array; contentType?: string }): Promise<string | undefined> {
         const result = await (() => new Promise<string | undefined>(async (res, rej) => {
-            const upload = this.getWriteStream(file.fileName, productId)
+            const upload = this.getWriteStream(file.fileName, productId, file.contentType)
             upload
-                .on('close', () => { console.log('on close'); res(upload.id.toString()) })
+                .on('close', () => { res(upload.id.toString()) })
                 .write(file.bytes, (e) => {
-                    console.log('write end')
-
                     if (e) {
                         console.error(e)
                         res(undefined)
-                    }
-                    else
+                    } else
                         upload.end()
                 })
         }))()
@@ -44,13 +39,13 @@ export class ProductPictureRepository extends MongoDB {
         return result
     }
 
-    async uploadFiles(productId: string, files: { fileName: string; bytes: Buffer | Uint8Array; }[]): Promise<boolean> {
+    async uploadFiles(productId: string, files: { fileName: string; bytes: Buffer | Uint8Array; contentType?: string }[]): Promise<boolean> {
         console.log('uploading...');
         console.log(productId, files.length);
 
         for (const file of files) {
             const result = await (() => new Promise<boolean>((res, rej) => {
-                const upload = this.getWriteStream(file.fileName, productId)
+                const upload = this.getWriteStream(file.fileName, productId, file.contentType)
                 upload
                     .on('close', () => { console.log('on close'); res(true) })
                     .write(file.bytes, (e) => {
@@ -133,8 +128,11 @@ export class ProductPictureRepository extends MongoDB {
         }
     }
 
-    async deleteFiles(fileIds: string[]): Promise<boolean> {
+    async deleteFiles(fileIds?: string[]): Promise<boolean> {
         try {
+            if (!fileIds)
+                fileIds = (await this.collection.find().toArray()).map(m => m._id.toString())
+
             for (const id of fileIds)
                 await this.collection.delete(ObjectId.createFromHexString(id))
 

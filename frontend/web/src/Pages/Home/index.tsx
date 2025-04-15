@@ -53,7 +53,7 @@ export const Home = memo(function Home() {
                     feedback.pushError({ node: t('CategoriesNavigation.failedToFetchCategories') })
                     setPopularProducts([])
                 } else
-                    setPopularProducts(r.data)
+                    setPopularProducts(r.data.slice(15, 28))
             })
             .catch(e => { feedback.pushError({ node: t('CategoriesNavigation.failedToFetchCategories') }); setTrendingProducts([]) })
     }
@@ -93,14 +93,14 @@ export const Home = memo(function Home() {
                 </Stack>
 
                 {/* Popular */}
-                <Stack direction="vertical" stackProps={{ className: 'border rounded-lg shadow-lg h-[8cm] p-2' }}>
+                <Stack direction="vertical" stackProps={{ className: 'border rounded-lg shadow-lg h-[11cm] p-2' }}>
                     <Stack stackProps={{ className: 'justify-between items-center' }}>
                         <div className="text-3xl">{t('Home.popular')}</div>
                         <Button variant='text' size='sm'>{t('Home.viewAll')}<ArrowRight /></Button>
                     </Stack>
 
-                    <div className="w-full overflow-x-auto overflow-y-hidden flex-grow">
-                        <Stack stackProps={{ className: 'items-start h-full w-max' }}>
+                    <div className="w-full overflow-x-auto overflow-y-hidden flex-grow pb-4">
+                        <Stack stackProps={{ className: 'items-start h-full justify-start w-max' }}>
                             {popularProducts === undefined
                                 ? <CircularLoading />
                                 : popularProducts.map((m, i) =>

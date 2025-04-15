@@ -5,6 +5,8 @@ import { MongoDB } from "../../mongodb";
 import { faker, fakerFA } from "@faker-js/faker/";
 import { CategoryRepository } from "../CategoryRepository";
 import { TagRepository } from "../TagRepository";
+import { ProductPictureRepository } from "./ProductPictureRepository";
+import fs from 'fs'
 
 export class ProductRepository extends MongoDB {
     private collection: Collection<ProductCreate>
@@ -24,8 +26,9 @@ export class ProductRepository extends MongoDB {
         const collection = await MongoDB.getDbInstance().getProductCollection()
         const categoryRepository = await CategoryRepository.getInstance()
         const tagRepository = await TagRepository.getInstance()
+        const productPictureRepository = await ProductPictureRepository.getInstance()
 
-        if (!(await collection.deleteMany()).acknowledged)
+        if (!(await collection.deleteMany()).acknowledged || !await productPictureRepository.deleteFiles())
             throw new Error('seeding users failed!')
 
         const startTimeTS = DateTime.utc().minus({ years: 2 }).toUnixInteger()
@@ -38,8 +41,6 @@ export class ProductRepository extends MongoDB {
         const tags = await tagRepository.get()
         if (tags === false || tags.length === 0)
             throw new Error('seeding users failed!')
-
-        const localCategoryIds: string[] = []
 
         const names = faker.definitions.commerce?.product_name
         const firstDigit = names.product
@@ -56,7 +57,7 @@ export class ProductRepository extends MongoDB {
                 try {
                     const ts = faker.number.int({ min: startTimeTS, max: endTimeTS })
 
-                    let j = i + 1, name: string = undefined!
+                    let name: string = undefined!
                     if (i < firstDigitNumbers)
                         name = `${thirdDigit[0]}${secondDigit[0]}${firstDigit[i]}`
                     else if ((i / firstDigitNumbers) < secondDigitNumbers)
@@ -83,10 +84,16 @@ export class ProductRepository extends MongoDB {
                         createdAt: ts,
                         updatedAt: ts,
                     })
-                    if (r.acknowledged) {
-                        localCategoryIds.push(r.insertedId.toString())
-                        break
-                    }
+                    if (!r.acknowledged)
+                        throw new Error('insertion failed')
+
+                    let picNum = faker.helpers.arrayElements([1, 2, 3], faker.number.int({ min: 0, max: 3 }))
+
+                    for (let i = 0; i < picNum.length; i++)
+                        if (await productPictureRepository.uploadFile(r.insertedId.toString(), { fileName: `sample${picNum[i]}.jpeg`, contentType: 'image/jpeg', bytes: fs.readFileSync(`./src/DB/Repositories/Products/sample${picNum[i]}.jpeg`) }) === undefined)
+                            throw new Error('failed to upload picture for product')
+
+                    break;
                 } catch (e) {
                     if (!(e instanceof MongoSystemError) || !(e instanceof MongoServerError) || e.code !== 11000)
                         throw e

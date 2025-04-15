@@ -13,14 +13,21 @@ export function runCronJobs() {
             const popularProductRepository = await PopularProductRepository.getInstance()
             const productSaleRepository = await ProductSaleRepository.getInstance()
 
+            console.time('aggregation duration')
             const popularProducts = await productSaleRepository.getPopularProducts()
+            console.timeEnd('aggregation duration')
 
             if (popularProducts === false)
                 console.error('system failed to update popular products collection')
             else if (popularProducts.length === 0)
                 console.warn('no popular products')
-            else
-                popularProductRepository.set(popularProducts)
+            else {
+                console.time('insertion duration')
+                await popularProductRepository.set(popularProducts)
+                console.timeEnd('insertion duration')
+            }
+
+            console.log('done')
         },
         { name: 'popular products calculations', runOnInit: true })
 
@@ -32,6 +39,8 @@ export function runCronJobs() {
 
             // const productViewRepository =await ProductViewRepository.getInstance()
             // productViewRepository.add()
+
+            console.log('done')
         },
         { name: 'products views calculations', runOnInit: true })
 }

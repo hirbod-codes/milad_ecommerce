@@ -53,7 +53,7 @@ export class ProductSaleRepository extends MongoDB {
             return await this.collection.aggregate([
                 {
                     $match: {
-                        timestamp: { $gt: DateTime.utc().minus({ months: 3 }).toUnixInteger() }
+                        timestamp: { $gt: DateTime.utc().minus({ year: 1 }).toUnixInteger() }
                     }
                 },
                 {
