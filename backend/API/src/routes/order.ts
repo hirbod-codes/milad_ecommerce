@@ -13,6 +13,7 @@ import { ProductSaleRepository } from "../DB/Repositories/Products/ProductSaleRe
 import { DateTime } from "luxon";
 import { MongoDB } from "../DB/mongodb";
 import { fi } from "@faker-js/faker/.";
+import { ZScore } from "../DB/Repositories/Products/ZScore";
 
 const order = Router()
 
@@ -199,88 +200,10 @@ order.patch('/payed', authenticate, async (req, res) => {
             throw new Error('system failed to get fetch order\'s products')
 
         for (const product of products) {
-            console.time(`ZScore calculation for product: ${product._id}  ${product.name}`)
+            const productRepository = await ProductRepository.getInstance()
+            product.stats = await ZScore.calculate(product, order)
 
-            const nowTS = DateTime.utc().toUnixInteger()
-
-            let quantity = order.products.find(f => f.productId === product._id)!.quantity
-
-            let diff = DateTime.fromSeconds(nowTS).diff(DateTime.fromSeconds(product.stats.monthly[product.stats.monthly.length - 1].from))
-
-            if (diff.months < 1) {
-                product.stats.monthly[product.stats.monthly.length - 1].to = nowTS
-                product.stats.monthly[product.stats.monthly.length - 1].count += quantity
-            } else {
-                product.stats.monthly[product.stats.monthly.length - 1].to = DateTime.fromSeconds(product.stats.monthly[product.stats.monthly.length - 1].from).plus({ months: 1 }).toUnixInteger()
-
-                let tPointer = DateTime.fromSeconds(product.stats.monthly[product.stats.monthly.length - 1].to)
-
-                while (true) {
-                    if (tPointer.plus({ months: 1 }).toUnixInteger() > nowTS)
-                        break
-
-                    product.stats.monthly.push({
-                        from: tPointer.toUnixInteger(),
-                        to: tPointer.plus({ months: 1 }).toUnixInteger(),
-                        count: 0
-                    })
-
-                    tPointer = tPointer.plus({ months: 1 })
-                }
-
-                product.stats.monthly.push({
-                    from: tPointer.toUnixInteger(),
-                    to: nowTS,
-                    count: quantity
-                })
-
-                while (product.stats.monthly.length > 12)
-                    product.stats.monthly.shift()
-            }
-
-            if (diff.weeks <= 1) {
-                product.stats.weekly[product.stats.weekly.length - 1].to = nowTS
-                product.stats.weekly[product.stats.weekly.length - 1].count += quantity
-            } else {
-                product.stats.weekly[product.stats.weekly.length - 1].to = DateTime.fromSeconds(product.stats.weekly[product.stats.weekly.length - 1].from).plus({ weeks: 1 }).toUnixInteger()
-
-                let tPointer = DateTime.fromSeconds(product.stats.weekly[product.stats.weekly.length - 1].to)
-
-                while (true) {
-                    if (tPointer.plus({ weeks: 1 }).toUnixInteger() > nowTS)
-                        break
-
-                    product.stats.weekly.push({
-                        from: tPointer.toUnixInteger(),
-                        to: tPointer.plus({ weeks: 1 }).toUnixInteger(),
-                        count: 0
-                    })
-
-                    tPointer = tPointer.plus({ weeks: 1 })
-                }
-
-                product.stats.weekly.push({
-                    from: tPointer.toUnixInteger(),
-                    to: nowTS,
-                    count: quantity
-                })
-
-                while (product.stats.monthly.length > 48)
-                    product.stats.monthly.shift()
-            }
-
-            product.stats.weeklyMean = product.stats.weekly.reduce((p, c) => p + c.count, 0) / product.stats.weekly.length
-            product.stats.monthlyMean = product.stats.monthly.reduce((p, c) => p + c.count, 0) / product.stats.monthly.length
-
-            product.stats.monthlyStandardDeviation = Math.sqrt(product.stats.monthly.reduce((p, c) => p + Math.pow(c.count - product.stats.monthlyMean, 2), 0) / (product.stats.monthly.length - 1))
-            product.stats.weeklyStandardDeviation = Math.sqrt(product.stats.weekly.reduce((p, c) => p + Math.pow(c.count - product.stats.weeklyMean, 2), 0) / (product.stats.weekly.length - 1))
-
-            product.stats.monthlyZScore = (quantity - product.stats.monthlyMean) / product.stats.monthlyStandardDeviation
-            product.stats.weeklyZScore = (quantity - product.stats.weeklyMean) / product.stats.weeklyStandardDeviation
-
-            console.timeEnd('ZScore calculation')
-
-            const r = await productRepository.updateImmutables(product._id, { stats: product.stats } as any)
+            const r = await productRepository.updateImmutables(product._id, { stats: product.stats })
             if (r === false || !r.acknowledged || r.matchedCount !== 1)
                 throw new Error('system failed to update product')
         }

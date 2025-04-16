@@ -5,6 +5,8 @@ import { ProductSale, ProductSaleCreate, ProductSaleInput } from "../../Models/P
 import { OrderRepository } from "../OrderRepository";
 import { PopularProduct } from "../../Models/Products/PopularProduct";
 import { ProductRepository } from "./ProductRepository";
+import { ZScore } from "./ZScore";
+import { faker } from "@faker-js/faker/.";
 
 export class ProductSaleRepository extends MongoDB {
     private collection: Collection<ProductSaleCreate>
@@ -43,6 +45,35 @@ export class ProductSaleRepository extends MongoDB {
                 })
 
         collection.insertMany(docs)
+
+        for (const order of orders)
+            for (const oProduct of order.products) {
+                const product = products.find(f => f._id === oProduct.productId)
+                if (!product)
+                    continue
+
+                const productRepository = await ProductRepository.getInstance()
+                product.stats = await ZScore.calculate(product, order)
+
+                const r = await productRepository.updateImmutables(product._id, { stats: product.stats })
+                if (r === false || !r.acknowledged || r.matchedCount !== 1)
+                    throw new Error('system failed to update product')
+            }
+
+        for (const p of products)
+            if (faker.datatype.boolean(0.2))
+                await productRepository.updateImmutables(p._id, {
+                    stats: {
+                        monthly: [],
+                        weekly: [],
+                        monthlyMean: 0,
+                        weeklyMean: 0,
+                        monthlyStandardDeviation: 0,
+                        weeklyStandardDeviation: 0,
+                        monthlyZScore: 0,
+                        weeklyZScore: 0,
+                    }
+                })
     }
 
     async create(product: ProductSaleInput): Promise<InsertOneResult | false> {

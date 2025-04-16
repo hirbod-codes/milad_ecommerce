@@ -56,15 +56,10 @@ export let productUpdateSchema = productSchema
     .required()
     .strict(true)
     .unknown(true)
-for (const field in productUpdateSchema.fields)
-    if (Object.prototype.hasOwnProperty.call(productUpdateSchema.fields, field))
-        (productUpdateSchema.fields as any)[field] = (productUpdateSchema.fields as any)[field].optional()
+    .partial()
 export type ProductUpdate = InferType<typeof productUpdateSchema>
 
-export const productImmutableSchema = productSchema.required().noUnknown(true).strict(true).pick(Object.keys(productSchema.fields).filter(f => !['_id', 'schemaVersion', 'createdAt', 'updatedAt'].concat(Object.keys(productUpdateSchema.fields)).includes(f)) as any)
-for (const field in productImmutableSchema.fields)
-    if (Object.prototype.hasOwnProperty.call(productImmutableSchema.fields, field))
-        (productImmutableSchema.fields as any)[field] = (productImmutableSchema.fields as any)[field].optional()
+export const productImmutableSchema = productSchema.required().noUnknown(true).strict(true).pick(Object.keys(productSchema.fields).filter(f => !['_id', 'schemaVersion', 'createdAt', 'updatedAt'].concat(Object.keys(productUpdateSchema.fields)).includes(f)) as any).partial()
 export type ProductImmutable = InferType<typeof productImmutableSchema>
 
 export const fields: (keyof Product)[] = Object.keys(productSchema.fields) as any
