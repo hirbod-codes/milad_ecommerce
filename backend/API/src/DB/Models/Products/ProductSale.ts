@@ -1,5 +1,5 @@
-import { InferType, number, object } from "yup";
-import { likeObjectId } from "../common_schemas";
+import { array, InferType, number, object, string } from "yup";
+import { likeObjectId, uniqueArrayTest } from "../common_schemas";
 
 export const collectionName = 'productSale'
 

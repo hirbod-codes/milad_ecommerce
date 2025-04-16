@@ -1,4 +1,4 @@
-import { Collection, DeleteResult, Filter, InsertOneResult, MongoSystemError, ObjectId, SortDirection, UpdateResult } from 'mongodb'
+import { Collection, Db, DeleteResult, Filter, InsertOneResult, MongoClient, MongoSystemError, ObjectId, SortDirection, UpdateResult } from 'mongodb'
 import { Order, OrderCreate, OrderImmutable, OrderInput, OrderUpdate, schemaVersion } from '../Models/Order'
 import { DateTime } from 'luxon'
 import { MongoDB } from '../mongodb';
@@ -14,8 +14,8 @@ export class OrderRepository extends MongoDB {
         this.collection = collection
     }
 
-    static async getInstance(): Promise<OrderRepository> {
-        return new OrderRepository(await MongoDB.getDbInstance().getOrderCollection())
+    static async getInstance(client?: MongoClient, db?: Db): Promise<OrderRepository> {
+        return new OrderRepository(await MongoDB.getDbInstance().getOrderCollection(client, db))
     }
 
     static async seed(countPerUser: number) {
@@ -139,8 +139,8 @@ export class OrderRepository extends MongoDB {
         catch (e) { console.error(e); return false }
     }
 
-    async delete(id: string): Promise<DeleteResult | false> {
-        try { return await this.collection.deleteOne({ _id: ObjectId.createFromHexString(id) }) }
+    async payed(orderId: string | ObjectId): Promise<UpdateResult | false> {
+        try { return await this.collection.updateOne({ _id: typeof orderId === 'string' ? ObjectId.createFromHexString(orderId) : orderId }, { $set: { isPayed: true, updatedAt: DateTime.utc().toUnixInteger() } }) }
         catch (e) { console.error(e); return false }
     }
 
@@ -163,6 +163,11 @@ export class OrderRepository extends MongoDB {
             orderId = ObjectId.createFromHexString(orderId)
 
         try { return await this.collection.updateOne({ _id: orderId, userId }, { $set: { ...immutableFields, updatedAt: DateTime.utc().toUnixInteger() } }) }
+        catch (e) { console.error(e); return false }
+    }
+
+    async delete(id: string): Promise<DeleteResult | false> {
+        try { return await this.collection.deleteOne({ _id: ObjectId.createFromHexString(id) }) }
         catch (e) { console.error(e); return false }
     }
 

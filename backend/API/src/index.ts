@@ -101,8 +101,9 @@ export const queueManagement = new QueueManagement(messageBrokerUrl, messageBrok
                 console.timeEnd('\norders')
 
 
+                console.time('\products sale')
                 await ProductSaleRepository.seed()
-                console.timeLog('seed', 'products sale\n')
+                console.timeEnd('\products sale')
 
                 // await ProductViewRepository.seed()
 

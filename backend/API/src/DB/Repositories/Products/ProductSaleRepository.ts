@@ -1,10 +1,10 @@
 import { DateTime } from "luxon";
-import { Collection, DeleteResult, InsertOneResult, ObjectId } from 'mongodb'
+import { Collection, Db, DeleteResult, InsertOneResult, MongoClient, ObjectId } from 'mongodb'
 import { MongoDB } from "../../mongodb";
 import { ProductSale, ProductSaleCreate, ProductSaleInput } from "../../Models/Products/ProductSale";
 import { OrderRepository } from "../OrderRepository";
-import { Product } from "../../Models/Products/Product";
 import { PopularProduct } from "../../Models/Products/PopularProduct";
+import { ProductRepository } from "./ProductRepository";
 
 export class ProductSaleRepository extends MongoDB {
     private collection: Collection<ProductSaleCreate>
@@ -14,8 +14,8 @@ export class ProductSaleRepository extends MongoDB {
         this.collection = collection
     }
 
-    static async getInstance(): Promise<ProductSaleRepository> {
-        return new ProductSaleRepository(await MongoDB.getDbInstance().getProductSalesCollection())
+    static async getInstance(client?: MongoClient, db?: Db): Promise<ProductSaleRepository> {
+        return new ProductSaleRepository(await MongoDB.getDbInstance().getProductSalesCollection(client, db))
     }
 
     static async seed() {
@@ -23,18 +23,24 @@ export class ProductSaleRepository extends MongoDB {
 
         const collection = await MongoDB.getDbInstance().getProductSalesCollection()
         const orderRepository = await OrderRepository.getInstance()
+        const productRepository = await ProductRepository.getInstance()
 
         if (!(await collection.deleteMany()).acknowledged)
             throw new Error('seeding users failed!')
 
         const orders = await orderRepository.getAll()
+        const products = await productRepository.getAll()
 
         const docs = []
         for (const order of orders)
             if (!order.isPayed)
                 continue
             else for (const product of order.products)
-                docs.push({ productId: ObjectId.createFromHexString(product.productId.toString()), quantity: product.quantity, timestamp: order.createdAt })
+                docs.push({
+                    productId: ObjectId.createFromHexString(product.productId.toString()),
+                    quantity: product.quantity,
+                    timestamp: order.createdAt,
+                })
 
         collection.insertMany(docs)
     }
@@ -53,7 +59,7 @@ export class ProductSaleRepository extends MongoDB {
             return await this.collection.aggregate([
                 {
                     $match: {
-                        timestamp: { $gt: DateTime.utc().minus({ year: 1 }).toUnixInteger() }
+                        timestamp: { $gt: DateTime.utc().minus({ months: 3 }).toUnixInteger() }
                     }
                 },
                 {
@@ -162,9 +168,28 @@ export class ProductSaleRepository extends MongoDB {
         catch (e) { console.error(e); return false }
     }
 
-    async get(): Promise<ProductSale[]> {
-        try { return await this.collection.find().toArray() }
-        catch (e) { console.error(e); return [] }
+    get(productIds: string | ObjectId | (string | ObjectId)[], since: number, to: number): Promise<ProductSale[]>[] | false {
+        if (typeof productIds === 'string')
+            productIds = [ObjectId.createFromHexString(productIds)]
+        else if (productIds instanceof ObjectId)
+            productIds = [productIds]
+        else if (Array.isArray(productIds))
+            productIds = productIds.map(m => typeof m === 'string' ? ObjectId.createFromHexString(m) : m)
+
+        try { return productIds.map(productId => this.collection.find({ productId, timestamp: { $gte: since, $lte: to } }).toArray()) }
+        catch (e) { console.error(e); return false }
+    }
+
+    count(productIds: string | ObjectId | (string | ObjectId)[], since: number, to: number): Promise<number>[] | false {
+        if (typeof productIds === 'string')
+            productIds = [ObjectId.createFromHexString(productIds)]
+        else if (productIds instanceof ObjectId)
+            productIds = [productIds]
+        else if (Array.isArray(productIds))
+            productIds = productIds.map(m => typeof m === 'string' ? ObjectId.createFromHexString(m) : m)
+
+        try { return productIds.map(productId => this.collection.countDocuments({ productId, timestamp: { $gte: since, $lte: to } })) }
+        catch (e) { console.error(e); return false }
     }
 
     async delete(id: string): Promise<DeleteResult | false> {

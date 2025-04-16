@@ -1,5 +1,5 @@
 import { DateTime } from "luxon";
-import { Collection, DeleteResult, InsertOneResult, ObjectId } from 'mongodb'
+import { Collection, Db, DeleteResult, InsertOneResult, MongoClient, ObjectId } from 'mongodb'
 import { MongoDB } from "../../mongodb";
 import { ProductView, ProductViewCreate, ProductViewInput } from "../../Models/Products/ProductView";
 import { ProductRepository } from "./ProductRepository";
@@ -13,8 +13,8 @@ export class ProductViewRepository extends MongoDB {
         this.collection = collection
     }
 
-    static async getInstance(): Promise<ProductViewRepository> {
-        return new ProductViewRepository(await MongoDB.getDbInstance().getProductViewCollection())
+    static async getInstance(client?: MongoClient, db?: Db): Promise<ProductViewRepository> {
+        return new ProductViewRepository(await MongoDB.getDbInstance().getProductViewCollection(client, db))
     }
 
     static async seed() {

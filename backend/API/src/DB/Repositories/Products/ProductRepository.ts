@@ -1,6 +1,6 @@
 import { DateTime } from "luxon";
 import { Product, ProductInput, ProductCreate, schemaVersion, ProductUpdate, ProductImmutable } from "../../Models/Products/Product";
-import { Collection, DeleteResult, Filter, InsertOneResult, MongoServerError, MongoSystemError, ObjectId, SortDirection, UpdateResult } from 'mongodb'
+import { Collection, Db, DeleteResult, Filter, InsertOneResult, MongoClient, MongoServerError, MongoSystemError, ObjectId, SortDirection, UpdateResult } from 'mongodb'
 import { MongoDB } from "../../mongodb";
 import { faker, fakerFA } from "@faker-js/faker/";
 import { CategoryRepository } from "../CategoryRepository";
@@ -16,8 +16,8 @@ export class ProductRepository extends MongoDB {
         this.collection = collection
     }
 
-    static async getInstance(): Promise<ProductRepository> {
-        return new ProductRepository(await MongoDB.getDbInstance().getProductCollection())
+    static async getInstance(client?: MongoClient, db?: Db): Promise<ProductRepository> {
+        return new ProductRepository(await MongoDB.getDbInstance().getProductCollection(client, db))
     }
 
     static async seed(count: number) {
@@ -187,8 +187,8 @@ export class ProductRepository extends MongoDB {
         catch (e) { console.error(e); return false }
     }
 
-    async updateImmutables(id: string, immutableFields: ProductImmutable): Promise<UpdateResult | false> {
-        try { return await this.collection.updateOne({ _id: ObjectId.createFromHexString(id) }, { $set: { ...immutableFields, updatedAt: DateTime.utc().toUnixInteger() } }) }
+    async updateImmutables(id: string | ObjectId, immutableFields: ProductImmutable): Promise<UpdateResult | false> {
+        try { return await this.collection.updateOne({ _id: typeof id === 'string' ? ObjectId.createFromHexString(id) : id }, { $set: { ...immutableFields, updatedAt: DateTime.utc().toUnixInteger() } }) }
         catch (e) { console.error(e); return false }
     }
 

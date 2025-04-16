@@ -9,6 +9,10 @@ import Jwt from "jsonwebtoken";
 import { Filter, SortDirection } from "mongodb";
 import { OrderRepository } from "../DB/Repositories/OrderRepository";
 import { ProductRepository } from "../DB/Repositories/Products/ProductRepository";
+import { ProductSaleRepository } from "../DB/Repositories/Products/ProductSaleRepository";
+import { DateTime } from "luxon";
+import { MongoDB } from "../DB/mongodb";
+import { fi } from "@faker-js/faker/.";
 
 const order = Router()
 
@@ -138,6 +142,154 @@ order.get('/', authenticate, async (req, res) => {
 
 // add order record to productSale collection
 order.patch('/payed', authenticate, async (req, res) => {
+    const { orderId }: { orderId: string } = req.body
+
+    let order: Order = undefined!
+
+    try {
+        if (!stringObjectId.required().isValidSync(orderId)) {
+            res.sendStatus(400)
+            return
+        }
+
+        const orderRepository = await OrderRepository.getInstance()
+
+        let o = await orderRepository.getById(orderId)
+        if (!o) {
+            res.sendStatus(404)
+            return
+        }
+        order = o
+
+        const r = await orderRepository.payed(o._id)
+        if (r === false || !r.acknowledged) {
+            res.sendStatus(500)
+            return
+        }
+        if (r.matchedCount !== 1) {
+            res.sendStatus(400)
+            return
+        }
+
+        // payment logic
+
+        res.sendStatus(200)
+    } catch (e) {
+        console.error(e)
+        res.sendStatus(500)
+    }
+
+    const productSaleRepository = await ProductSaleRepository.getInstance()
+
+    try {
+        await productSaleRepository.startTransaction()
+
+        // add to ProductSale collection
+        const creations = await Promise.all(order.products.map(async ({ productId, quantity }) => {
+            return productSaleRepository.create({ productId, quantity });
+        }))
+        for (const c of creations)
+            if (c === false || !c.acknowledged)
+                throw new Error('')
+
+        const productRepository = await ProductRepository.getInstance()
+
+        const products = await productRepository.getByIds(order.products.map(m => m.productId))
+        if (products === undefined)
+            throw new Error('system failed to get fetch order\'s products')
+
+        for (const product of products) {
+            console.time(`ZScore calculation for product: ${product._id}  ${product.name}`)
+
+            const nowTS = DateTime.utc().toUnixInteger()
+
+            let quantity = order.products.find(f => f.productId === product._id)!.quantity
+
+            let diff = DateTime.fromSeconds(nowTS).diff(DateTime.fromSeconds(product.stats.monthly[product.stats.monthly.length - 1].from))
+
+            if (diff.months < 1) {
+                product.stats.monthly[product.stats.monthly.length - 1].to = nowTS
+                product.stats.monthly[product.stats.monthly.length - 1].count += quantity
+            } else {
+                product.stats.monthly[product.stats.monthly.length - 1].to = DateTime.fromSeconds(product.stats.monthly[product.stats.monthly.length - 1].from).plus({ months: 1 }).toUnixInteger()
+
+                let tPointer = DateTime.fromSeconds(product.stats.monthly[product.stats.monthly.length - 1].to)
+
+                while (true) {
+                    if (tPointer.plus({ months: 1 }).toUnixInteger() > nowTS)
+                        break
+
+                    product.stats.monthly.push({
+                        from: tPointer.toUnixInteger(),
+                        to: tPointer.plus({ months: 1 }).toUnixInteger(),
+                        count: 0
+                    })
+
+                    tPointer = tPointer.plus({ months: 1 })
+                }
+
+                product.stats.monthly.push({
+                    from: tPointer.toUnixInteger(),
+                    to: nowTS,
+                    count: quantity
+                })
+
+                while (product.stats.monthly.length > 12)
+                    product.stats.monthly.shift()
+            }
+
+            if (diff.weeks <= 1) {
+                product.stats.weekly[product.stats.weekly.length - 1].to = nowTS
+                product.stats.weekly[product.stats.weekly.length - 1].count += quantity
+            } else {
+                product.stats.weekly[product.stats.weekly.length - 1].to = DateTime.fromSeconds(product.stats.weekly[product.stats.weekly.length - 1].from).plus({ weeks: 1 }).toUnixInteger()
+
+                let tPointer = DateTime.fromSeconds(product.stats.weekly[product.stats.weekly.length - 1].to)
+
+                while (true) {
+                    if (tPointer.plus({ weeks: 1 }).toUnixInteger() > nowTS)
+                        break
+
+                    product.stats.weekly.push({
+                        from: tPointer.toUnixInteger(),
+                        to: tPointer.plus({ weeks: 1 }).toUnixInteger(),
+                        count: 0
+                    })
+
+                    tPointer = tPointer.plus({ weeks: 1 })
+                }
+
+                product.stats.weekly.push({
+                    from: tPointer.toUnixInteger(),
+                    to: nowTS,
+                    count: quantity
+                })
+
+                while (product.stats.monthly.length > 48)
+                    product.stats.monthly.shift()
+            }
+
+            product.stats.weeklyMean = product.stats.weekly.reduce((p, c) => p + c.count, 0) / product.stats.weekly.length
+            product.stats.monthlyMean = product.stats.monthly.reduce((p, c) => p + c.count, 0) / product.stats.monthly.length
+
+            product.stats.monthlyStandardDeviation = Math.sqrt(product.stats.monthly.reduce((p, c) => p + Math.pow(c.count - product.stats.monthlyMean, 2), 0) / (product.stats.monthly.length - 1))
+            product.stats.weeklyStandardDeviation = Math.sqrt(product.stats.weekly.reduce((p, c) => p + Math.pow(c.count - product.stats.weeklyMean, 2), 0) / (product.stats.weekly.length - 1))
+
+            product.stats.monthlyZScore = (quantity - product.stats.monthlyMean) / product.stats.monthlyStandardDeviation
+            product.stats.weeklyZScore = (quantity - product.stats.weeklyMean) / product.stats.weeklyStandardDeviation
+
+            console.timeEnd('ZScore calculation')
+
+            const r = await productRepository.updateImmutables(product._id, { stats: product.stats } as any)
+            if (r === false || !r.acknowledged || r.matchedCount !== 1)
+                throw new Error('system failed to update product')
+        }
+
+        await productSaleRepository.commitTransaction()
+    } catch (e) {
+        console.error(e)
+        await productSaleRepository.abortTransaction()
+    }
 })
 
 order.patch('/', authenticate, async (req, res) => {

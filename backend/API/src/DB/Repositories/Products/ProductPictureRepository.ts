@@ -1,4 +1,4 @@
-import { GridFSBucket, GridFSBucketReadStream, GridFSBucketWriteStream, GridFSFile, ObjectId } from "mongodb";
+import { Db, GridFSBucket, GridFSBucketReadStream, GridFSBucketWriteStream, GridFSFile, MongoClient, ObjectId } from "mongodb";
 import { MongoDB } from "../../mongodb";
 import { contentType } from "prom-client";
 
@@ -10,8 +10,8 @@ export class ProductPictureRepository extends MongoDB {
         this.collection = collection
     }
 
-    static async getInstance(): Promise<ProductPictureRepository> {
-        return new ProductPictureRepository(await MongoDB.getDbInstance().getProductPictureBucket())
+    static async getInstance(client?: MongoClient, db?: Db): Promise<ProductPictureRepository> {
+        return new ProductPictureRepository(await MongoDB.getDbInstance().getProductPictureBucket(client, db))
     }
 
     getReadStream(fileId: string | ObjectId): GridFSBucketReadStream {

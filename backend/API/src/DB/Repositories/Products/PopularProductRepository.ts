@@ -1,4 +1,4 @@
-import { Collection, DeleteResult, ObjectId } from 'mongodb'
+import { Collection, Db, DeleteResult, MongoClient, ObjectId } from 'mongodb'
 import { MongoDB } from "../../mongodb";
 import { PopularProduct, PopularProductCreate, PopularProductInput } from "../../Models/Products/PopularProduct";
 
@@ -10,8 +10,8 @@ export class PopularProductRepository extends MongoDB {
         this.collection = collection
     }
 
-    static async getInstance(): Promise<PopularProductRepository> {
-        return new PopularProductRepository(await MongoDB.getDbInstance().getPopularProductCollection())
+    static async getInstance(client?: MongoClient, db?: Db): Promise<PopularProductRepository> {
+        return new PopularProductRepository(await MongoDB.getDbInstance().getPopularProductCollection(client, db))
     }
 
     async set(records: PopularProductInput[]) {
