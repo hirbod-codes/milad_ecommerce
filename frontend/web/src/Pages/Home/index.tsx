@@ -76,7 +76,7 @@ export const Home = memo(function Home() {
                         <Button variant='text' size='sm'>{t('Home.viewAll')}<ArrowRight /></Button>
                     </Stack>
 
-                    <div className="w-full overflow-x-auto overflow-y-hidden flex-grow pb-4">
+                    <div className="w-full overflow-x-auto overflow-y-visible flex-grow pb-4">
                         <Stack stackProps={{ className: 'items-start h-full w-max' }}>
                             {
                                 trendingProducts === undefined
@@ -99,7 +99,7 @@ export const Home = memo(function Home() {
                         <Button variant='text' size='sm'>{t('Home.viewAll')}<ArrowRight /></Button>
                     </Stack>
 
-                    <div className="w-full overflow-x-auto overflow-y-hidden flex-grow pb-4">
+                    <div className="w-full overflow-x-auto overflow-y-visible flex-grow pb-4">
                         <Stack stackProps={{ className: 'items-start h-full justify-start w-max' }}>
                             {popularProducts === undefined
                                 ? <CircularLoading />

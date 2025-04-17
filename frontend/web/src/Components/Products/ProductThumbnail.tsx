@@ -24,7 +24,7 @@ export function ProductThumbnail({ product }: { product: Product }) {
 
     return (
         <Stack direction="vertical" stackProps={{ className: 'p-2 justify-between h-full w-[7cm] border rounded-lg' }}>
-            <div className="flex-grow flex flex-row items-center justify-center overflow-hidden w-fit shadow-lg rounded-lg">
+            <div className="flex-grow flex flex-row items-center justify-center w-fit shadow-lg rounded-lg">
                 <img src={image} className="w-full" loading="lazy" />
             </div>
 
@@ -40,4 +40,3 @@ export function ProductThumbnail({ product }: { product: Product }) {
         </Stack>
     )
 }
-

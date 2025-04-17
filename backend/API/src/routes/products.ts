@@ -5,7 +5,6 @@ import { array, number, object, string, } from "yup";
 import { stringObjectId } from "@/src/DB/Models/common_schemas";
 import { authenticate } from "@/src/middlewares/authenticate";
 import { authorize } from "@/src/middlewares/authorize";
-import archiver from "archiver";
 import busboy from "busboy";
 import { Filter, SortDirection } from "mongodb";
 import { ProductRepository } from "../DB/Repositories/Products/ProductRepository";
