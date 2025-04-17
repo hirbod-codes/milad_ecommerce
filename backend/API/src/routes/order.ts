@@ -199,14 +199,19 @@ order.patch('/payed', authenticate, async (req, res) => {
         if (products === undefined)
             throw new Error('system failed to get fetch order\'s products')
 
+        console.time(`ZScore calculation`)
         for (const product of products) {
-            const productRepository = await ProductRepository.getInstance()
-            product.stats = await ZScore.calculate(product, order)
+            product.stats = await ZScore.calculate(
+                product,
+                order.products.find(f => f.productId.toString() === product._id.toString())!.quantity,
+                DateTime.utc().toUnixInteger()
+            )
 
             const r = await productRepository.updateImmutables(product._id, { stats: product.stats })
             if (r === false || !r.acknowledged || r.matchedCount !== 1)
                 throw new Error('system failed to update product')
         }
+        console.timeEnd('ZScore calculation')
 
         await productSaleRepository.commitTransaction()
     } catch (e) {

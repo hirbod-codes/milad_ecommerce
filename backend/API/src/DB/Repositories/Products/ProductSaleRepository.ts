@@ -22,58 +22,66 @@ export class ProductSaleRepository extends MongoDB {
 
     static async seed() {
         console.log('ProductSaleRepository.seed()')
+        console.time()
 
-        const collection = await MongoDB.getDbInstance().getProductSalesCollection()
-        const orderRepository = await OrderRepository.getInstance()
-        const productRepository = await ProductRepository.getInstance()
+        try {
+            const collection = await MongoDB.getDbInstance().getProductSalesCollection()
+            const orderRepository = await OrderRepository.getInstance()
+            const productRepository = await ProductRepository.getInstance()
 
-        if (!(await collection.deleteMany()).acknowledged)
-            throw new Error('seeding users failed!')
+            if (!(await collection.deleteMany()).acknowledged)
+                throw new Error('seeding users failed!')
 
-        const orders = await orderRepository.getAll()
-        const products = await productRepository.getAll()
+            const orders = await orderRepository.getAll([['createdAt', 1]])
+            const products = await productRepository.getAll()
 
-        const docs = []
-        for (const order of orders)
-            if (!order.isPayed)
-                continue
-            else for (const product of order.products)
-                docs.push({
-                    productId: ObjectId.createFromHexString(product.productId.toString()),
-                    quantity: product.quantity,
-                    timestamp: order.createdAt,
-                })
-
-        collection.insertMany(docs)
-
-        for (const order of orders)
-            for (const oProduct of order.products) {
-                const product = products.find(f => f._id === oProduct.productId)
-                if (!product)
+            const docs = []
+            for (const order of orders)
+                if (!order.isPayed)
                     continue
+                else for (const product of order.products)
+                    docs.push({
+                        productId: ObjectId.createFromHexString(product.productId.toString()),
+                        quantity: product.quantity,
+                        timestamp: order.createdAt,
+                    })
 
-                const productRepository = await ProductRepository.getInstance()
-                product.stats = await ZScore.calculate(product, order)
+            collection.insertMany(docs)
 
-                const r = await productRepository.updateImmutables(product._id, { stats: product.stats })
-                if (r === false || !r.acknowledged || r.matchedCount !== 1)
-                    throw new Error('system failed to update product')
-            }
+            console.time(`ZScore calculation`)
+            for (const order of orders)
+                for (const oProduct of order.products) {
+                    const product = products.find(f => f._id.toString() === oProduct.productId.toString())
+                    if (!product)
+                        continue
 
-        for (const p of products)
-            if (faker.datatype.boolean(0.2))
-                await productRepository.updateImmutables(p._id, {
-                    stats: {
-                        monthly: [],
-                        weekly: [],
-                        monthlyMean: 0,
-                        weeklyMean: 0,
-                        monthlyStandardDeviation: 0,
-                        weeklyStandardDeviation: 0,
-                        monthlyZScore: 0,
-                        weeklyZScore: 0,
-                    }
-                })
+                    product.stats = await ZScore.calculate(
+                        product,
+                        order.products.find(f => f.productId.toString() === product._id.toString())!.quantity,
+                        order.createdAt
+                    )
+
+                    const r = await productRepository.updateImmutables(product._id, { stats: product.stats })
+                    if (r === false || !r.acknowledged || r.matchedCount !== 1)
+                        throw new Error('system failed to update product')
+                }
+            console.timeEnd('ZScore calculation')
+
+            for (const p of products)
+                if (faker.datatype.boolean(0.2))
+                    await productRepository.updateImmutables(p._id, {
+                        stats: {
+                            monthly: [],
+                            weekly: [],
+                            monthlyMean: 0,
+                            weeklyMean: 0,
+                            monthlyStandardDeviation: 0,
+                            weeklyStandardDeviation: 0,
+                            monthlyZScore: 0,
+                            weeklyZScore: 0,
+                        }
+                    })
+        } finally { console.timeEnd() }
     }
 
     async create(product: ProductSaleInput): Promise<InsertOneResult | false> {

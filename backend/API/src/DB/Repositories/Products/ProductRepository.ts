@@ -22,97 +22,100 @@ export class ProductRepository extends MongoDB {
 
     static async seed(count: number) {
         console.log('ProductRepository.seed()')
+        console.time()
 
-        const collection = await MongoDB.getDbInstance().getProductCollection()
-        const categoryRepository = await CategoryRepository.getInstance()
-        const tagRepository = await TagRepository.getInstance()
-        const productPictureRepository = await ProductPictureRepository.getInstance()
+        try {
+            const collection = await MongoDB.getDbInstance().getProductCollection()
+            const categoryRepository = await CategoryRepository.getInstance()
+            const tagRepository = await TagRepository.getInstance()
+            const productPictureRepository = await ProductPictureRepository.getInstance()
 
-        if (!(await collection.deleteMany()).acknowledged || !await productPictureRepository.deleteFiles())
-            throw new Error('seeding users failed!')
+            if (!(await collection.deleteMany()).acknowledged || !await productPictureRepository.deleteFiles())
+                throw new Error('seeding users failed!')
 
-        const startTimeTS = DateTime.utc().minus({ years: 2 }).toUnixInteger()
-        const endTimeTS = DateTime.utc().minus({ months: 2 }).toUnixInteger()
+            const startTimeTS = DateTime.utc().minus({ years: 2 }).toUnixInteger()
+            const endTimeTS = DateTime.utc().minus({ years: 1 }).toUnixInteger()
 
-        const categories = await categoryRepository.get()
-        if (categories === false || categories.length === 0)
-            throw new Error('seeding users failed!')
+            const categories = await categoryRepository.get()
+            if (categories === false || categories.length === 0)
+                throw new Error('seeding users failed!')
 
-        const tags = await tagRepository.get()
-        if (tags === false || tags.length === 0)
-            throw new Error('seeding users failed!')
+            const tags = await tagRepository.get()
+            if (tags === false || tags.length === 0)
+                throw new Error('seeding users failed!')
 
-        const names = faker.definitions.commerce?.product_name
-        const firstDigit = names.product
-        const secondDigit = names.material
-        const thirdDigit = names.adjective
-        const firstDigitNumbers = names.product.length
-        const secondDigitNumbers = names.material.length
-        const thirdDigitNumbers = names.adjective.length
+            const names = faker.definitions.commerce?.product_name
+            const firstDigit = names.product
+            const secondDigit = names.material
+            const thirdDigit = names.adjective
+            const firstDigitNumbers = names.product.length
+            const secondDigitNumbers = names.material.length
+            const thirdDigitNumbers = names.adjective.length
 
-        for (let i = 0; i < count; i++) {
-            let safety = 0
-            while (safety < 10) {
-                safety++
-                try {
-                    const ts = faker.number.int({ min: startTimeTS, max: endTimeTS })
+            for (let i = 0; i < count; i++) {
+                let safety = 0
+                while (safety < 10) {
+                    safety++
+                    try {
+                        const ts = faker.number.int({ min: startTimeTS, max: endTimeTS })
 
-                    let name: string = undefined!
-                    if (i < firstDigitNumbers)
-                        name = `${thirdDigit[0]}${secondDigit[0]}${firstDigit[i]}`
-                    else if ((i / firstDigitNumbers) < secondDigitNumbers)
-                        name = `${thirdDigit[0]}${secondDigit[Math.floor(i / firstDigitNumbers)]}${firstDigit[(i % firstDigitNumbers)]}`
-                    else if ((i / (firstDigitNumbers * secondDigitNumbers)) < thirdDigitNumbers)
-                        name = `${thirdDigit[Math.floor(i / (firstDigitNumbers * secondDigitNumbers))]}${secondDigit[Math.floor((i % (firstDigitNumbers * secondDigitNumbers)) / firstDigitNumbers)]}${firstDigit[(((i % (firstDigitNumbers * secondDigitNumbers)) % firstDigitNumbers))]}`
-                    else
-                        throw new Error('out of unique values for product name')
+                        let name: string = undefined!
+                        if (i < firstDigitNumbers)
+                            name = `${thirdDigit[0]}${secondDigit[0]}${firstDigit[i]}`
+                        else if ((i / firstDigitNumbers) < secondDigitNumbers)
+                            name = `${thirdDigit[0]}${secondDigit[Math.floor(i / firstDigitNumbers)]}${firstDigit[(i % firstDigitNumbers)]}`
+                        else if ((i / (firstDigitNumbers * secondDigitNumbers)) < thirdDigitNumbers)
+                            name = `${thirdDigit[Math.floor(i / (firstDigitNumbers * secondDigitNumbers))]}${secondDigit[Math.floor((i % (firstDigitNumbers * secondDigitNumbers)) / firstDigitNumbers)]}${firstDigit[(((i % (firstDigitNumbers * secondDigitNumbers)) % firstDigitNumbers))]}`
+                        else
+                            throw new Error('out of unique values for product name')
 
-                    let r = await collection.insertOne({
-                        schemaVersion,
-                        categories: faker.helpers.arrayElements(categories, faker.number.int({ min: 1, max: 5 })).map(m => m.name),
-                        tags: faker.helpers.arrayElements(tags, faker.number.int({ min: 1, max: 5 })).map(m => m.name),
-                        name,
-                        displayName: { fa: fakerFA.commerce.productName(), en: name },
-                        description: { fa: fakerFA.commerce.productDescription(), en: faker.commerce.productDescription() },
-                        price: { IRR: faker.number.int({ min: 0, max: 500_000_000 }), USD: faker.number.int({ min: 0, max: 500_000_000 }) },
-                        purchaseCount: faker.number.int({ min: 0, max: 5000 }),
-                        reviewsCount: faker.number.int({ min: 0, max: 1000 }),
-                        isAvailable: faker.datatype.boolean(0.7),
-                        views: faker.number.int({ min: 0, max: 100000 }),
-                        averageRating: faker.number.float({ min: 0, max: 5 }),
-                        ...(Object.fromEntries(new Array(faker.number.int({ min: 0, max: 10 })).fill(null).map(m => [faker.string.alpha({ length: { min: 2, max: 10 } }), faker.string.alpha({ length: { min: 2, max: 10 } })]))),
-                        stats: {
-                            monthly: [],
-                            weekly: [],
-                            monthlyMean: 0,
-                            weeklyMean: 0,
-                            monthlyStandardDeviation: 0,
-                            weeklyStandardDeviation: 0,
-                            monthlyZScore: 0,
-                            weeklyZScore: 0,
-                        },
-                        createdAt: ts,
-                        updatedAt: ts,
-                    })
-                    if (!r.acknowledged)
-                        throw new Error('insertion failed')
+                        let r = await collection.insertOne({
+                            schemaVersion,
+                            categories: faker.helpers.arrayElements(categories, faker.number.int({ min: 1, max: 5 })).map(m => m.name),
+                            tags: faker.helpers.arrayElements(tags, faker.number.int({ min: 1, max: 5 })).map(m => m.name),
+                            name,
+                            displayName: { fa: fakerFA.commerce.productName(), en: name },
+                            description: { fa: fakerFA.commerce.productDescription(), en: faker.commerce.productDescription() },
+                            price: { IRR: faker.number.int({ min: 0, max: 500_000_000 }), USD: faker.number.int({ min: 0, max: 500_000_000 }) },
+                            purchaseCount: faker.number.int({ min: 0, max: 5000 }),
+                            reviewsCount: faker.number.int({ min: 0, max: 1000 }),
+                            isAvailable: faker.datatype.boolean(0.7),
+                            views: faker.number.int({ min: 0, max: 100000 }),
+                            averageRating: faker.number.float({ min: 0, max: 5 }),
+                            ...(Object.fromEntries(new Array(faker.number.int({ min: 0, max: 10 })).fill(null).map(m => [faker.string.alpha({ length: { min: 2, max: 10 } }), faker.string.alpha({ length: { min: 2, max: 10 } })]))),
+                            stats: {
+                                monthly: [],
+                                weekly: [],
+                                monthlyMean: 0,
+                                weeklyMean: 0,
+                                monthlyStandardDeviation: 0,
+                                weeklyStandardDeviation: 0,
+                                monthlyZScore: 0,
+                                weeklyZScore: 0,
+                            },
+                            createdAt: ts,
+                            updatedAt: ts,
+                        })
+                        if (!r.acknowledged)
+                            throw new Error('insertion failed')
 
-                    let picNum = faker.helpers.arrayElements([1, 2, 3], faker.number.int({ min: 0, max: 3 }))
+                        let picNum = faker.helpers.arrayElements([1, 2, 3], faker.number.int({ min: 0, max: 3 }))
 
-                    for (let i = 0; i < picNum.length; i++)
-                        if (await productPictureRepository.uploadFile(r.insertedId.toString(), { fileName: `sample${picNum[i]}.jpeg`, contentType: 'image/jpeg', bytes: fs.readFileSync(`./src/DB/Repositories/Products/sample${picNum[i]}.jpeg`) }) === undefined)
-                            throw new Error('failed to upload picture for product')
+                        for (let i = 0; i < picNum.length; i++)
+                            if (await productPictureRepository.uploadFile(r.insertedId.toString(), { fileName: `sample${picNum[i]}.jpeg`, contentType: 'image/jpeg', bytes: fs.readFileSync(`./src/DB/Repositories/Products/sample${picNum[i]}.jpeg`) }) === undefined)
+                                throw new Error('failed to upload picture for product')
 
-                    break;
-                } catch (e) {
-                    if (!(e instanceof MongoSystemError) || !(e instanceof MongoServerError) || e.code !== 11000)
-                        throw e
+                        break;
+                    } catch (e) {
+                        if (!(e instanceof MongoSystemError) || !(e instanceof MongoServerError) || e.code !== 11000)
+                            throw e
+                    }
                 }
-            }
 
-            if (safety >= 10)
-                throw new Error('safety triggered while seeding products!')
-        }
+                if (safety >= 10)
+                    throw new Error('safety triggered while seeding products!')
+            }
+        } finally { console.timeEnd() }
     }
 
     async create(product: ProductInput): Promise<InsertOneResult | false> {

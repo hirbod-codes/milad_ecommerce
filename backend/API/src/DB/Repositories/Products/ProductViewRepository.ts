@@ -19,26 +19,28 @@ export class ProductViewRepository extends MongoDB {
 
     static async seed() {
         console.log('ProductViewRepository.seed()')
+        console.time()
 
-        const collection = await MongoDB.getDbInstance().getProductViewCollection()
-        const productRepository = await ProductRepository.getInstance()
+        try {
+            const collection = await MongoDB.getDbInstance().getProductViewCollection()
+            const productRepository = await ProductRepository.getInstance()
 
-        if (!(await collection.deleteMany()).acknowledged)
-            throw new Error('seeding users failed!')
+            if (!(await collection.deleteMany()).acknowledged)
+                throw new Error('seeding users failed!')
 
-        const products = await productRepository.getAll()
+            const products = await productRepository.getAll()
 
-        for (const product of products) {
-            const now = DateTime.utc().toUnixInteger()
-            const docs = []
-            if (product.views)
-                for (let i = 0; i < product.views; i++) {
-                    const ts = faker.number.int({ min: product.createdAt, max: now })
-                    docs.push({ productId: ObjectId.createFromHexString(product._id.toString()), timestamp: ts })
-                }
-            collection.insertMany(docs)
-        }
-
+            for (const product of products) {
+                const now = DateTime.utc().toUnixInteger()
+                const docs = []
+                if (product.views)
+                    for (let i = 0; i < product.views; i++) {
+                        const ts = faker.number.int({ min: product.createdAt, max: now })
+                        docs.push({ productId: ObjectId.createFromHexString(product._id.toString()), timestamp: ts })
+                    }
+                collection.insertMany(docs)
+            }
+        } finally { console.timeEnd() }
     }
 
     async create(product: ProductViewInput): Promise<InsertOneResult | false> {

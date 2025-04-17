@@ -1,4 +1,4 @@
-import { Collection, Db, DeleteResult, Filter, InsertOneResult, MongoClient, MongoSystemError, ObjectId, SortDirection, UpdateResult } from 'mongodb'
+import { Collection, Db, DeleteResult, Filter, InsertOneResult, MongoClient, MongoSystemError, ObjectId, Sort, SortDirection, UpdateResult } from 'mongodb'
 import { Order, OrderCreate, OrderImmutable, OrderInput, OrderUpdate, schemaVersion } from '../Models/Order'
 import { DateTime } from 'luxon'
 import { MongoDB } from '../mongodb';
@@ -19,60 +19,65 @@ export class OrderRepository extends MongoDB {
     }
 
     static async seed(countPerUser: number) {
-        const collection = await MongoDB.getDbInstance().getOrderCollection()
-        const productRepository = await ProductRepository.getInstance()
-        const userRepository = await UserRepository.getInstance()
+        console.log('\nOrderRepository.seed()')
+        console.time()
 
-        if (!(await collection.deleteMany()).acknowledged)
-            throw new Error('seeding users failed!')
+        try {
+            const collection = await MongoDB.getDbInstance().getOrderCollection()
+            const productRepository = await ProductRepository.getInstance()
+            const userRepository = await UserRepository.getInstance()
 
-        const users = await userRepository.get()
-        if (users.length === 0)
-            throw new Error('seeding users failed!')
+            if (!(await collection.deleteMany()).acknowledged)
+                throw new Error('seeding users failed!')
 
-        const products = await productRepository.getAll()
-        if (products.length === 0)
-            throw new Error('seeding users failed!')
+            const users = await userRepository.get()
+            if (users.length === 0)
+                throw new Error('seeding users failed!')
 
-        const startTimeTS = DateTime.utc().minus({ years: 2 }).toUnixInteger()
-        const endTimeTS = DateTime.utc().minus({ months: 2 }).toUnixInteger()
+            const products = await productRepository.getAll()
+            if (products.length === 0)
+                throw new Error('seeding users failed!')
 
-        for (const user of users)
-            for (let i = 0; i < countPerUser; i++) {
-                let safety = 0
-                while (safety < 10) {
-                    safety++
-                    try {
-                        const ts = faker.number.int({ min: startTimeTS, max: endTimeTS })
+            const endTimeTS = DateTime.utc().minus({ months: 2 }).toUnixInteger()
 
-                        const selectedProducts = faker.helpers.arrayElements(products, faker.number.int({ min: 3, max: 20 })).map(m => ({ productId: m._id, quantity: faker.number.int({ min: 1, max: 400 }) }))
-                        const cost = { IRR: selectedProducts.reduce((p, c) => p + products.find(f => f._id === c.productId)!.price.IRR * c.quantity, 0), USD: selectedProducts.reduce((p, c) => p + products.find(f => f._id === c.productId)!.price.USD * c.quantity, 0) }
+            for (const user of users)
+                for (let i = 0; i < countPerUser; i++) {
+                    let safety = 0
+                    while (safety < 10) {
+                        safety++
+                        try {
+                            const selectedProducts = faker.helpers.arrayElements(products, faker.number.int({ min: 3, max: 20 }))
+                            const orderProducts = selectedProducts.map(m => ({ productId: m._id, quantity: faker.number.int({ min: 1, max: 400 }) }))
+                            const cost = { IRR: orderProducts.reduce((p, c) => p + products.find(f => f._id === c.productId)!.price.IRR * c.quantity, 0), USD: orderProducts.reduce((p, c) => p + products.find(f => f._id === c.productId)!.price.USD * c.quantity, 0) }
 
-                        let r = await collection.insertOne({
-                            schemaVersion,
-                            userId: user._id,
-                            isPayed: faker.datatype.boolean(0.8),
-                            isSent: faker.datatype.boolean(0.5),
-                            products: selectedProducts,
-                            cost,
-                            address: {
-                                text: faker.lorem.lines({ min: 1, max: 5 }),
-                                googleMap: faker.datatype.boolean() ? undefined : faker.internet.url()
-                            },
-                            createdAt: ts,
-                            updatedAt: ts,
-                        })
-                        if (r.acknowledged)
-                            break
-                    } catch (e) {
-                        if (!(e instanceof MongoSystemError) || e.code !== 11000)
-                            throw e
+                            const ts = faker.number.int({ min: selectedProducts.reduce((p, c) => c.createdAt > p ? c.createdAt : p, 0), max: endTimeTS })
+
+                            let r = await collection.insertOne({
+                                schemaVersion,
+                                userId: user._id,
+                                isPayed: faker.datatype.boolean(0.8),
+                                isSent: faker.datatype.boolean(0.5),
+                                products: orderProducts,
+                                cost,
+                                address: {
+                                    text: faker.lorem.lines({ min: 1, max: 5 }),
+                                    googleMap: faker.datatype.boolean() ? undefined : faker.internet.url()
+                                },
+                                createdAt: ts,
+                                updatedAt: ts,
+                            })
+                            if (r.acknowledged)
+                                break
+                        } catch (e) {
+                            if (!(e instanceof MongoSystemError) || e.code !== 11000)
+                                throw e
+                        }
                     }
-                }
 
-                if (safety >= 10)
-                    throw new Error('safety triggered while seeding orders!')
-            }
+                    if (safety >= 10)
+                        throw new Error('safety triggered while seeding orders!')
+                }
+        } finally { console.timeEnd() }
     }
 
     async create(userId: string | ObjectId, order: OrderInput, cost: { [k: string]: number }): Promise<InsertOneResult | false> {
@@ -124,8 +129,8 @@ export class OrderRepository extends MongoDB {
         catch (e) { console.error(e); return undefined }
     }
 
-    async getAll(): Promise<Order[]> {
-        try { return await this.collection.find().toArray() }
+    async getAll(sorts?: Sort): Promise<Order[]> {
+        try { return await this.collection.find({}, { sort: sorts }).toArray() }
         catch (e) { console.error(e); return [] }
     }
 

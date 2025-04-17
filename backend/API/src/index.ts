@@ -80,31 +80,13 @@ export const queueManagement = new QueueManagement(messageBrokerUrl, messageBrok
             console.time('seed')
 
             try {
-                console.time('\ncategories')
                 await CategoryRepository.seed(50)
-                console.timeEnd('\ncategories')
-
-                console.time('\ntags')
                 await TagRepository.seed(150)
-                console.timeEnd('\ntags')
-
-                console.time('\nproducts')
                 await ProductRepository.seed(800)
-                console.timeEnd('\nproducts')
-
-                console.time('\nproducts reviews')
                 await ProductReviewsRepository.seed()
-                console.timeEnd('\nproducts reviews')
-
-                console.time('\norders')
                 await OrderRepository.seed(200)
-                console.timeEnd('\norders')
 
-
-                console.time('\products sale')
                 await ProductSaleRepository.seed()
-                console.timeEnd('\products sale')
-
                 // await ProductViewRepository.seed()
 
                 console.timeEnd('seed')

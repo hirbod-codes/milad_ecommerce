@@ -15,53 +15,57 @@ export class ProductReviewsRepository extends MongoDB {
     }
 
     static async seed() {
-        const collection = await MongoDB.getDbInstance().getProductReviewsCollection()
-        const productRepository = await ProductRepository.getInstance()
-        const userRepository = await UserRepository.getInstance()
+        console.log('ProductReviewsRepository.seed()')
+        console.time()
 
-        if (!(await collection.deleteMany()).acknowledged)
-            throw new Error('seeding users failed!')
+        try {
+            const collection = await MongoDB.getDbInstance().getProductReviewsCollection()
+            const productRepository = await ProductRepository.getInstance()
+            const userRepository = await UserRepository.getInstance()
 
-        const users = await userRepository.get()
-        if (users.length === 0)
-            throw new Error('seeding users failed!')
+            if (!(await collection.deleteMany()).acknowledged)
+                throw new Error('seeding users failed!')
 
-        const products = await productRepository.getAll()
-        if (products.length === 0)
-            throw new Error('seeding users failed!')
+            const users = await userRepository.get()
+            if (users.length === 0)
+                throw new Error('seeding users failed!')
 
-        const startTimeTS = DateTime.utc().minus({ years: 2 }).toUnixInteger()
-        const endTimeTS = DateTime.utc().minus({ months: 2 }).toUnixInteger()
+            const products = await productRepository.getAll()
+            if (products.length === 0)
+                throw new Error('seeding users failed!')
 
-        for (const user of users) {
-            for (const product of products) {
-                if (faker.datatype.boolean(0.3))
-                    continue
+            const startTimeTS = DateTime.utc().minus({ years: 2 }).toUnixInteger()
+            const endTimeTS = DateTime.utc().minus({ months: 2 }).toUnixInteger()
 
-                let safety = 0
-                while (safety < 10) {
-                    safety++
-                    try {
-                        const ts = faker.number.int({ min: startTimeTS, max: endTimeTS })
+            for (const user of users)
+                for (const product of products) {
+                    if (faker.datatype.boolean(0.3))
+                        continue
 
-                        let r = await collection.insertOne({
-                            schemaVersion,
-                            productId: product._id.toString(),
-                            userId: user._id.toString(),
-                            rating: faker.number.int({ min: 0, max: 5 }),
-                            content: faker.word.words({ count: { min: 20, max: 100 } }),
-                            createdAt: ts,
-                            updatedAt: ts,
-                        })
-                        if (r.acknowledged)
-                            break
-                    } catch (e) {
-                        if (!(e instanceof MongoSystemError) || e.code !== 11000)
-                            throw e
+                    let safety = 0
+                    while (safety < 10) {
+                        safety++
+                        try {
+                            const ts = faker.number.int({ min: startTimeTS, max: endTimeTS })
+
+                            let r = await collection.insertOne({
+                                schemaVersion,
+                                productId: product._id.toString(),
+                                userId: user._id.toString(),
+                                rating: faker.number.int({ min: 0, max: 5 }),
+                                content: faker.word.words({ count: { min: 20, max: 100 } }),
+                                createdAt: ts,
+                                updatedAt: ts,
+                            })
+                            if (r.acknowledged)
+                                break
+                        } catch (e) {
+                            if (!(e instanceof MongoSystemError) || e.code !== 11000)
+                                throw e
+                        }
                     }
                 }
-            }
-        }
+        } finally { console.timeEnd() }
     }
 
     static async getInstance(client?: MongoClient, db?: Db): Promise<ProductReviewsRepository> {
