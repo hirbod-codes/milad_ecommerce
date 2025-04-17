@@ -12,6 +12,7 @@ import { ProductRepository } from "../DB/Repositories/Products/ProductRepository
 import { ProductPictureRepository } from "../DB/Repositories/Products/ProductPictureRepository";
 import { PopularProductRepository } from "../DB/Repositories/Products/PopularProductRepository";
 import { categorySchema } from "../DB/Models/Category";
+import { CategoryRepository } from "../DB/Repositories/CategoryRepository";
 
 const products = Router()
 
@@ -160,8 +161,21 @@ products.get('/', async (req, res) => {
 
 products.get('/trending', async (req, res) => {
     try {
+        const categoryRepository = await CategoryRepository.getInstance()
         const productRepository = await ProductRepository.getInstance()
-        const products = await productRepository.getAll()
+
+        const categories = await categoryRepository.get()
+        if (categories === false) {
+            res.sendStatus(404)
+            return
+        }
+
+        const products = []
+        for (const category of categories) {
+            const product = await productRepository.getMostTrendingInCategory(category.name)
+            if (product)
+                products.push(product)
+        }
         res.status(200).json(products)
     } catch (e) {
         console.error(e)
