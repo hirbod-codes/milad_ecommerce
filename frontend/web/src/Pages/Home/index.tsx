@@ -70,13 +70,13 @@ export const Home = memo(function Home() {
             <Navigation />
             <Stack direction="vertical">
                 {/* Trending */}
-                <Stack direction="vertical" stackProps={{ className: 'border rounded-lg shadow-lg h-[8cm] p-2' }}>
+                <Stack direction="vertical" stackProps={{ className: 'border rounded-lg shadow-lg h-[11cm] p-2' }}>
                     <Stack stackProps={{ className: 'justify-between items-center' }}>
                         <div className="text-3xl">{t('Home.trending')}</div>
                         <Button variant='text' size='sm'>{t('Home.viewAll')}<ArrowRight /></Button>
                     </Stack>
 
-                    <div className="w-full overflow-x-auto overflow-y-hidden flex-grow">
+                    <div className="w-full overflow-x-auto overflow-y-hidden flex-grow pb-4">
                         <Stack stackProps={{ className: 'items-start h-full w-max' }}>
                             {
                                 trendingProducts === undefined
