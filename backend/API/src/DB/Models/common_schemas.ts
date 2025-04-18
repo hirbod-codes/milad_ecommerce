@@ -9,7 +9,7 @@ export const stringObjectId = mixed((v): v is string => {
     return typeof v === 'string' && ObjectId.isValid(v);
 })
 
-export const localizedText = mixed<any>().optional().test((v: any) => {
+export const localizedText = mixed<{ [key: string]: string }>().optional().test((v: any) => {
     if (v === undefined || v === null)
         return true
 
@@ -26,7 +26,7 @@ export const localizedText = mixed<any>().optional().test((v: any) => {
     return ov
 })
 
-export const price = mixed<any>().optional().test((v: any) => {
+export const price = mixed<{ [key: string]: number }>().optional().test((v: any) => {
     if (v === undefined || v === null)
         return true
 

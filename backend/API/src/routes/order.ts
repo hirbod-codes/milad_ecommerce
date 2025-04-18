@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { Order, orderImmutableSchema, orderInputSchema, orderSchema, orderUpdateSchema, readableFields } from "@/src/DB/Models/Order";
+import { forbiddenFieldsToRead, Order, orderImmutableSchema, orderInputSchema, orderSchema, orderUpdateSchema, readableFields } from "@/src/DB/Models/Order";
 import { authenticate } from "@/src/middlewares/authenticate";
 import { authorize } from "@/src/middlewares/authorize";
 import { FilterManagement } from "@/src/DB/FilterManagement";
@@ -119,7 +119,7 @@ order.get('/', authenticate, async (req, res) => {
                 return
             }
 
-            if (filter === undefined || FilterManagement.validateFilters<Order>(filter, orderSchema, readableFields) !== true) {
+            if (filter === undefined || FilterManagement.validateFilters<Order>(filter, orderSchema, undefined, forbiddenFieldsToRead) !== true) {
                 if (req.headers.accept?.includes('plain/text') ?? false)
                     res.status(400).send('invalid filter')
                 else

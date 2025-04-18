@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { FilterManagement } from "@/src/DB/FilterManagement";
-import { Product, productImmutableSchema, productInputSchema, productSchema, productUpdateSchema, readableFields } from "@/src/DB/Models/Products/Product";
+import { Product, productImmutableSchema, productInputSchema, productSchema, productUpdateSchema, readableFields, forbiddenFieldsToRead } from "@/src/DB/Models/Products/Product";
 import { array, number, object, string, } from "yup";
 import { stringObjectId } from "@/src/DB/Models/common_schemas";
 import { authenticate } from "@/src/middlewares/authenticate";
@@ -12,6 +12,7 @@ import { ProductPictureRepository } from "../DB/Repositories/Products/ProductPic
 import { PopularProductRepository } from "../DB/Repositories/Products/PopularProductRepository";
 import { categorySchema } from "../DB/Models/Category";
 import { CategoryRepository } from "../DB/Repositories/CategoryRepository";
+import { flattenSchema } from "../DB/Models/helpers";
 
 const products = Router()
 
@@ -91,6 +92,10 @@ products.get('/search', async (req, res) => {
     }
 })
 
+products.get('/common_fields', (req, res) => {
+    res.json(flattenSchema(productSchema.fields))
+})
+
 products.get('/', async (req, res) => {
     try {
         const { filter: filterJson, sort: sortJson, limit: limitStr, skip: skipStr } = req.query
@@ -136,7 +141,7 @@ products.get('/', async (req, res) => {
                 return
             }
 
-            if (filter === undefined || FilterManagement.validateFilters<Product>(filter, productSchema, readableFields) !== true) {
+            if (filter === undefined || FilterManagement.validateFilters<Product>(filter, productSchema, undefined, forbiddenFieldsToRead) !== true) {
                 if (req.headers.accept?.includes('plain/text') ?? false)
                     res.status(400).send('invalid filter')
                 else

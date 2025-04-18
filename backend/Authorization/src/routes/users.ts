@@ -2,7 +2,7 @@ import { Router } from "express";
 import { array, number, object, string } from "yup";
 import { stringObjectId } from "../DB/Models/common_schemas";
 import { UserRepository } from "../DB/Repositories/UserRepository";
-import { readableFields, User, userSchema, userUpdateSchema } from "../DB/Models/User";
+import { readableFields, User, userSchema, userUpdateSchema, forbiddenFieldsToRead } from "../DB/Models/User";
 import { Filter, SortDirection } from "mongodb";
 import { FilterManagement } from "../DB/FilterManagement";
 import { authenticate } from "../middlewares/authenticate";
@@ -143,7 +143,7 @@ users.get('/', authenticate, async (req, res) => {
                 return
             }
 
-            if (filter === undefined || FilterManagement.validateFilters<User>(filter, userSchema, readableFields) !== true) {
+            if (filter === undefined || FilterManagement.validateFilters<User>(filter, userSchema, undefined, forbiddenFieldsToRead) !== true) {
                 if (req.headers.accept?.includes('plain/text') ?? false)
                     res.status(400).send('invalid filter')
                 else

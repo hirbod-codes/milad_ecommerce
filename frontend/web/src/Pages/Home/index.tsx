@@ -11,7 +11,8 @@ import { t } from "i18next";
 import { ArrowRight } from "lucide-react";
 import { memo, useContext, useEffect, useState } from "react";
 import { useSearchParams } from "react-router";
-import { array } from "yup";
+import { array, mixed, number, object, ObjectShape, string } from "yup";
+import * as math from 'mathjs'
 
 export const Home = memo(function Home() {
     const feedback = useContext(FeedbackContext)
@@ -58,7 +59,85 @@ export const Home = memo(function Home() {
             .catch(e => { feedback.pushError({ node: t('CategoriesNavigation.failedToFetchCategories') }); setTrendingProducts([]) })
     }
 
+    // const maxDepth = 3
+    // const errors = []
+    // let isValid = true
+    // function walk(n: math.MathNode, depth: number = 0) {
+    //     if (depth > maxDepth) {
+    //         isValid = false;
+    //         errors.push('Expression too complex');
+    //         return;
+    //     }
+
+    //     if (n.isSymbolNode) {
+    //         const name = n.name;
+    //         if (!allowedVars.includes(name)) {
+    //             isValid = false;
+    //             errors.push(`Disallowed variable: ${name}`);
+    //         }
+    //     }
+
+    //     if (n?.isFunctionNode) {
+    //         const name = n.fn.name;
+    //         if (!allowedFuncs.includes(name)) {
+    //             isValid = false;
+    //             errors.push(`Disallowed function: ${name}`);
+    //         }
+    //     }
+
+    //     // Recurse into children
+    //     if (n.args) {
+    //         n.args.forEach(arg => walk(arg, depth + 1));
+    //     } else if (n.content) {
+    //         walk(n.content, depth + 1);
+    //     }
+    // }
+    const localizedText = mixed<{ [key: string]: string }>().optional().test((v: any) => {
+        if (v === undefined || v === null)
+            return true
+
+        if (typeof v !== 'object' || Array.isArray(v))
+            return false
+
+        for (const k in v)
+            if (Object.prototype.hasOwnProperty.call(v, k))
+                if (!string().required().strict(true).isValidSync(v[k]))
+                    return false
+
+        return true
+    }).transform((v, ov) => {
+        return ov
+    })
     useEffect(() => {
+        try {
+            console.log(
+                object({ a: string(), b: number(), c: object({ d: localizedText, e: number() }) }).fields,
+                flattenSchema(object({ a: string(), b: number(), c: object({ d: localizedText, e: number() }) }).fields)
+            )
+            console.log('``````````````````````````````')
+            console.log(math.evaluate('2+2*2'))
+            console.log(math.parse('a+b+c'))
+            // console.log(math.compile('a+b+c').evaluate({ a: 5, b: 7 }))
+            const a = math.parser();
+            const node = math.parse('3 * x + 2')
+            console.log('node', node)
+            node.forEach(function (node) {
+                switch (node.type) {
+                    case 'OperatorNode':
+                        console.log(node.type, node.op)
+                        break
+                    case 'ConstantNode':
+                        console.log(node.type, node.value)
+                        break
+                    case 'SymbolNode':
+                        console.log(node.type, node.name)
+                        break
+                    default:
+                        console.log(node.type)
+                }
+            })
+            console.log('``````````````````````````````')
+        } catch (e) { console.error(e) }
         googleAuth()
         init()
     }, [])
