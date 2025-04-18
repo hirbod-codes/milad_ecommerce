@@ -19,6 +19,8 @@ import { Filters } from "../SearchFilter/index.d";
 import { CheckBox } from "../Base/CheckBox";
 import { Input } from "../Base/Input";
 import { CircularLoading } from "../Base/CircularLoading";
+import { SearchFilter } from "../SearchFilter";
+import { DropdownMenu } from "../Base/DropdownMenu";
 
 export type DataGridProps = {
     products?: Product[]
@@ -97,31 +99,30 @@ export function ProductsDataGrid({
     const sortButtonRef = useRef<HTMLButtonElement>(null)
     const [openSort, setOpenSort] = useState(false)
 
+    const [commonFields, setCommonFields] = useState<string[]>(undefined)
+
     const [initialLoading, setInitialLoading] = useState(true)
     const [loading, setLoading] = useState(true)
 
     const init = async (offset: number = 0, limit: number = 0) => {
         setLoading(true)
         try {
-            const res = await fetchData(`${getApiUrl()}/products?limit=${limit}&skip=${limit * offset}${filters === undefined ? '' : '&filter=' + JSON.stringify(formatFilters(filters))}`)
-            if (!res.response || !res.response.ok || !array().required().isValidSync(res.data)) {
-                feedback.push({ node: t('Products.failedToFetchProducts'), color: { bgColor: 'error', fgColor: 'error-foreground' } })
-                return false
-            }
-
-            if (res.data.length >= 0) {
-                setProducts(res.data)
-                return true
-            }
-
-            return false
+            fetchData(`${getApiUrl()}/products/common_fields`)
+                .then(r => {
+                    if (!r || !r.response || !r.data)
+                        feedback.pushError({ node: t('ProductDataGrid.failedToFetchFields') })
+                    else
+                        setCommonFields(r.data)
+                })
+            return await fetch(offset, limit)
         } finally { setLoading(false) }
     }
 
     const fetch = async (offset: number = 0, limit: number = 0) => {
         const res = await fetchData(`${getApiUrl()}/products?limit=${limit}&skip=${limit * offset}${filters === undefined ? '' : '&filter=' + JSON.stringify(formatFilters(filters))}`)
+        console.log('res', res)
         if (!res.response || !res.response.ok || !array().required().isValidSync(res.data)) {
-            feedback.push({ node: t('Products.failedToFetchProducts'), color: { bgColor: 'error', fgColor: 'error-foreground' } })
+            feedback.pushError({ node: t('Products.failedToFetchProducts') })
             return false
         }
 
@@ -488,7 +489,7 @@ export function ProductsDataGrid({
         functionality.search === true && <Input startIcon={state?.searching ? <CircularLoading size="xs" /> : <SearchIcon />} placeholder={t('ProductsDataGrid.SearchByName')} value={state.searchByName ?? ''} onChange={(e) => dispatch({ operation: 'searchByName', data: e.target.value.trim() })} />,
     ]
 
-    console.log('ProductsDataGrid', { loading, products, state, afterDataFetchHook, allFunctionalitiesToggle, functionality, options, columns, headerNodes, onChange, dataGridProps })
+    console.log('ProductsDataGrid', { openFilter, filters, loading, products, state, afterDataFetchHook, allFunctionalitiesToggle, functionality, options, columns, headerNodes, onChange, dataGridProps })
 
     return (
         <>
@@ -509,6 +510,22 @@ export function ProductsDataGrid({
                 appendHeaderNodes={options?.appendDefaults === true || options?.appendDefaultHeaderNodes === true ? (headerNodes ?? []).concat(defaultHeaderNodes) : headerNodes}
                 onRowSelectionChange={onRowSelectionChange}
             />
+
+            <DropdownMenu
+                anchorRef={filterButtonRef}
+                open={openFilter}
+                onOpenChange={(b) => { if (!b) setOpenFilter(false) }}
+                containerProps={{ className: 'max-w-[80%] max-h-[60%] bg-surface-container-high mt-1 shadow-xl rounded-lg overflow-auto border' }}
+            >
+                <div className="w-[20cm] h-[10cm]">
+                    <SearchFilter
+                        fields={Object.fromEntries([].concat(Object.entries(commonFields) ?? []).concat(configuration?.categories?.map(m => [m.name, 'string']) ?? []))}
+                        displayFields={Object.fromEntries([].concat(Object.entries(commonFields) ?? [])?.map(m => [m[0], t(`Columns.${m[0]}`)]).concat(configuration?.categories?.map(m => [m.name, m.displayName[configuration.local.language]]) ?? []))}
+                        filters={filters}
+                        setFilters={setFilters}
+                    />
+                </div>
+            </DropdownMenu>
 
             <Ask {...state.ask} />
 

@@ -1,7 +1,6 @@
 import { ObjectShape } from "yup";
 
-export function flattenSchema(fields: ObjectShape, parentKey?: string): string[] {
-    let keys: string[] = []
+export function flattenSchema(fields: ObjectShape, parentKey?: string, flattenFields: { [k: string]: string } = {}): { [k: string]: string } {
     for (const key in fields) {
         if (!Object.prototype.hasOwnProperty.call(fields, key))
             continue
@@ -11,10 +10,10 @@ export function flattenSchema(fields: ObjectShape, parentKey?: string): string[]
         const field = fields[key]
 
         if (field.describe().type === 'object')
-            keys = keys.concat(flattenSchema((field as any).fields, fullKey))
+            flattenFields = Object.fromEntries(Object.entries(flattenFields).concat(Object.entries(flattenSchema((field as any).fields, fullKey))))
         else
-            keys.push(fullKey)
+            flattenFields[fullKey] = field.describe().type
     }
 
-    return keys
+    return flattenFields
 }

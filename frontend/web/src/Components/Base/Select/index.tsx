@@ -19,10 +19,11 @@ export type SelectProps = {
     readOnly?: boolean
     canDropdownMenuWidthGrow?: boolean
     listContainerProps?: ComponentProps<typeof Stack>
+    dropdownMenuProps?: Partial<ComponentProps<typeof DropdownMenu>>
     stopPropagation?: boolean
 }
 
-export function Select({ children, onValueSelect, id, label, loading = false, inputProps, canDropdownMenuWidthGrow = true, listContainerProps, stopPropagation, readOnly = false }: SelectProps) {
+export function Select({ children, onValueSelect, id, label, loading = false, inputProps, canDropdownMenuWidthGrow = true, listContainerProps, dropdownMenuProps, stopPropagation, readOnly = false }: SelectProps) {
     const [open, setOpen] = useState(false)
 
     const [width, setWidth] = useState('auto')
@@ -54,10 +55,11 @@ export function Select({ children, onValueSelect, id, label, loading = false, in
             }
 
             <DropdownMenu
+                {...dropdownMenuProps}
+                containerProps={{ ...dropdownMenuProps?.containerProps, className: cn('rounded-md bg-surface-container-high my-0 shadow-md', dropdownMenuProps?.containerProps?.className) }}
                 anchorRef={inputRef}
                 open={open}
                 onOpenChange={(b) => { if (!b) setOpen(false) }}
-                containerProps={{ className: 'rounded-md bg-surface-container-high my-0 shadow-md' }}
             >
                 <div style={canDropdownMenuWidthGrow ? { minWidth: width } : { width }}>
                     <SelectContext.Provider value={{

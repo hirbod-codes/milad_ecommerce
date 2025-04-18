@@ -24,7 +24,7 @@ export function Layout() {
     const app = useMemo(() =>
         <Stack key={x} direction='vertical' stackProps={{ className: 'h-screen w-screen overflow-hidden mx-0 p-2' }}>
             <AppBar />
-            <div className="flex-grow h-0">
+            <div className="flex-grow h-0 overflow-y-auto overflow-x-hidden">
                 <Outlet key={x} />
             </div>
         </Stack>

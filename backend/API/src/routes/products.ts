@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { FilterManagement } from "@/src/DB/FilterManagement";
-import { Product, productImmutableSchema, productInputSchema, productSchema, productUpdateSchema, readableFields, forbiddenFieldsToRead } from "@/src/DB/Models/Products/Product";
+import { Product, productImmutableSchema, productInputSchema, productSchema, productUpdateSchema, readableFields, forbiddenFieldsToFilter } from "@/src/DB/Models/Products/Product";
 import { array, number, object, string, } from "yup";
 import { stringObjectId } from "@/src/DB/Models/common_schemas";
 import { authenticate } from "@/src/middlewares/authenticate";
@@ -93,7 +93,7 @@ products.get('/search', async (req, res) => {
 })
 
 products.get('/common_fields', (req, res) => {
-    res.json(flattenSchema(productSchema.fields))
+    res.json(Object.fromEntries(Object.entries(flattenSchema(productSchema.fields)).filter(f => !forbiddenFieldsToFilter.includes(f[0].split('.')[0]))))
 })
 
 products.get('/', async (req, res) => {
@@ -141,7 +141,7 @@ products.get('/', async (req, res) => {
                 return
             }
 
-            if (filter === undefined || FilterManagement.validateFilters<Product>(filter, productSchema, undefined, forbiddenFieldsToRead) !== true) {
+            if (filter === undefined || FilterManagement.validateFilters<Product>(filter, productSchema, undefined, forbiddenFieldsToFilter) !== true) {
                 if (req.headers.accept?.includes('plain/text') ?? false)
                     res.status(400).send('invalid filter')
                 else

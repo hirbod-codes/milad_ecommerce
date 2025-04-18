@@ -185,7 +185,7 @@ export async function authFetchData(input: string | URL | globalThis.Request, in
     throw new Error('Unsupported Content type encountered in fetchData!')
 }
 
-export async function fetchData(input: string | URL | globalThis.Request, init?: RequestInit, json: boolean = true): Promise<{ response?: Response, data: any }> {
+export async function fetchData(input: string | URL | globalThis.Request, init?: RequestInit, json: boolean = true): Promise<{ response?: Response, data?: any }> {
     console.log('fetchData()')
 
     if (!init)
@@ -210,7 +210,7 @@ export async function fetchData(input: string | URL | globalThis.Request, init?:
     if (response?.headers?.get('content-type')?.includes('image'))
         return { response, data: response && response?.ok ? await response.blob() : undefined }
 
-    throw new Error('Unsupported Content type encountered in fetchData!')
+    return { response }
 }
 
 export async function tryAndWait(callback: CallableFunction, secondsToWaitForEachTry: number = 5): Promise<boolean> {

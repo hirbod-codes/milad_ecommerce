@@ -11,7 +11,7 @@ import { t } from "i18next";
 import { ArrowRight } from "lucide-react";
 import { memo, useContext, useEffect, useState } from "react";
 import { useSearchParams } from "react-router";
-import { array, mixed, number, object, ObjectShape, string } from "yup";
+import { array } from "yup";
 import * as math from 'mathjs'
 
 export const Home = memo(function Home() {
@@ -92,28 +92,9 @@ export const Home = memo(function Home() {
     //         walk(n.content, depth + 1);
     //     }
     // }
-    const localizedText = mixed<{ [key: string]: string }>().optional().test((v: any) => {
-        if (v === undefined || v === null)
-            return true
 
-        if (typeof v !== 'object' || Array.isArray(v))
-            return false
-
-        for (const k in v)
-            if (Object.prototype.hasOwnProperty.call(v, k))
-                if (!string().required().strict(true).isValidSync(v[k]))
-                    return false
-
-        return true
-    }).transform((v, ov) => {
-        return ov
-    })
     useEffect(() => {
         try {
-            console.log(
-                object({ a: string(), b: number(), c: object({ d: localizedText, e: number() }) }).fields,
-                flattenSchema(object({ a: string(), b: number(), c: object({ d: localizedText, e: number() }) }).fields)
-            )
             console.log('``````````````````````````````')
             console.log(math.evaluate('2+2*2'))
             console.log(math.parse('a+b+c'))
@@ -145,53 +126,51 @@ export const Home = memo(function Home() {
     console.log('Home', { code })
 
     return (
-        <>
+        <Stack direction="vertical">
             <Navigation />
-            <Stack direction="vertical">
-                {/* Trending */}
-                <Stack direction="vertical" stackProps={{ className: 'border rounded-lg shadow-lg h-[11cm] p-2' }}>
-                    <Stack stackProps={{ className: 'justify-between items-center' }}>
-                        <div className="text-3xl">{t('Home.trending')}</div>
-                        <Button variant='text' size='sm'>{t('Home.viewAll')}<ArrowRight /></Button>
-                    </Stack>
-
-                    <div className="w-full overflow-x-auto overflow-y-visible flex-grow pb-4">
-                        <Stack stackProps={{ className: 'items-start h-full w-max' }}>
-                            {
-                                trendingProducts === undefined
-                                    ? <CircularLoading />
-                                    : trendingProducts.map((m, i) =>
-                                        <ProductThumbnail
-                                            key={i}
-                                            product={m}
-                                        />
-                                    )
-                            }
-                        </Stack>
-                    </div>
+            {/* Trending */}
+            <Stack direction="vertical" stackProps={{ className: 'border rounded-lg shadow-lg h-[11cm] p-2' }}>
+                <Stack stackProps={{ className: 'justify-between items-center' }}>
+                    <div className="text-3xl">{t('Home.trending')}</div>
+                    <Button variant='text' size='sm'>{t('Home.viewAll')}<ArrowRight /></Button>
                 </Stack>
 
-                {/* Popular */}
-                <Stack direction="vertical" stackProps={{ className: 'border rounded-lg shadow-lg h-[11cm] p-2' }}>
-                    <Stack stackProps={{ className: 'justify-between items-center' }}>
-                        <div className="text-3xl">{t('Home.popular')}</div>
-                        <Button variant='text' size='sm'>{t('Home.viewAll')}<ArrowRight /></Button>
-                    </Stack>
-
-                    <div className="w-full overflow-x-auto overflow-y-visible flex-grow pb-4">
-                        <Stack stackProps={{ className: 'items-start h-full justify-start w-max' }}>
-                            {popularProducts === undefined
+                <div className="w-full overflow-x-auto overflow-y-visible flex-grow pb-4">
+                    <Stack stackProps={{ className: 'items-start h-full w-max' }}>
+                        {
+                            trendingProducts === undefined
                                 ? <CircularLoading />
-                                : popularProducts.map((m, i) =>
+                                : trendingProducts.map((m, i) =>
                                     <ProductThumbnail
                                         key={i}
                                         product={m}
                                     />
-                                )}
-                        </Stack>
-                    </div>
-                </Stack>
+                                )
+                        }
+                    </Stack>
+                </div>
             </Stack>
-        </>
+
+            {/* Popular */}
+            <Stack direction="vertical" stackProps={{ className: 'border rounded-lg shadow-lg h-[11cm] p-2' }}>
+                <Stack stackProps={{ className: 'justify-between items-center' }}>
+                    <div className="text-3xl">{t('Home.popular')}</div>
+                    <Button variant='text' size='sm'>{t('Home.viewAll')}<ArrowRight /></Button>
+                </Stack>
+
+                <div className="w-full overflow-x-auto overflow-y-visible flex-grow pb-4">
+                    <Stack stackProps={{ className: 'items-start h-full justify-start w-max' }}>
+                        {popularProducts === undefined
+                            ? <CircularLoading />
+                            : popularProducts.map((m, i) =>
+                                <ProductThumbnail
+                                    key={i}
+                                    product={m}
+                                />
+                            )}
+                    </Stack>
+                </div>
+            </Stack>
+        </Stack>
     )
 })

@@ -4,4 +4,4 @@ export enum operators { $in = '$in', $eq = '$eq', $ne = '$ne', $gt = '$gt', $gte
 
 export type Filter = { id: number, field: string, operator: keyof typeof operators, value: any }
 
-export type Filters = { [k in keyof typeof logicOperators | 'id']?: (Filter | Filters)[] }
+export type Filters = { [k in keyof typeof logicOperators | 'id']?: (Filter | Filters)[] | number }

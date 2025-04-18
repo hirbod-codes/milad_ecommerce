@@ -71,7 +71,10 @@ export const DropdownMenu = memo(function DropdownMenu({ children, anchorRef, an
     }, [])
 
     useEffect(() => {
-        function handleClickOutside(e) {
+        function handleClickOutside(e: PointerEvent) {
+            e.preventDefault()
+            e.stopPropagation()
+
             if (!containerRef || !containerRef?.current || !onOpenChange || !anchorRef || !anchorRef?.current)
                 return
 
@@ -87,9 +90,7 @@ export const DropdownMenu = memo(function DropdownMenu({ children, anchorRef, an
 
         document.body.addEventListener("pointerdown", handleClickOutside);
 
-        return () => {
-            document.body.removeEventListener("pointerdown", handleClickOutside);
-        };
+        return () => { document.body.removeEventListener("pointerdown", handleClickOutside) }
     }, [containerRef, containerRef?.current]);
 
     // console.log('DropdownMenu', { anchorDomRect, containerRef: containerRef, anchorRef, onOpenChange, containerProps, verticalPosition, horizontalPosition })

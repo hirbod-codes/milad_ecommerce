@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useContext } from 'react';
 import { useTranslation } from "react-i18next";
 import { ThemeMode, ThemeOptions } from '../../Theme';
 import { Calendar, LanguageCodes } from '../../Localization';
@@ -6,9 +6,14 @@ import { Config, TimeZone } from '.';
 import { ColorStatic } from '../../Lib/Colors/ColorStatic';
 import { defaultTheme } from '../../Theme/DefaultTheme';
 import { StorageApi } from '@/src/Backend/Storage/StorageApi';
+import { fetchData, getApiUrl } from '@/src/Backend/helpers';
+import { FeedbackContext } from '../Feedback/FeedbackContext';
+import { t } from 'i18next';
 
 export function useConfigurationHook() {
     const defaultConfiguration: Config = {
+        categories: undefined,
+        languages: undefined,
         local: {
             calendar: 'Persian',
             zone: 'Asia/Tehran',
@@ -21,9 +26,11 @@ export function useConfigurationHook() {
         },
     }
 
-    const { i18n } = useTranslation();
+    const feedback = useContext(FeedbackContext)
+    const { i18n } = useTranslation()
 
-    const [configuration, setConfiguration] = useState<Config>(defaultConfiguration);
+    const [configuration, setConfiguration] = useState<Config>(defaultConfiguration)
+    const [isConfigurationContextReady, setIsConfigurationContextReady] = useState<boolean>(false)
 
     const updateTheme = async (mode?: ThemeMode, themeOptions?: ThemeOptions) => {
         mode = mode ?? configuration.themeOptions.mode;
@@ -36,7 +43,7 @@ export function useConfigurationHook() {
 
         setConfiguration({ ...configuration, themeOptions: { ...configuration.themeOptions } })
         updateCssVars(mode, configuration.themeOptions)
-    };
+    }
     const updateLocal = async (languageCode?: LanguageCodes, calendar?: Calendar, direction?: 'rtl' | 'ltr', zone?: TimeZone) => {
         direction = direction ?? configuration.local.direction
         zone = zone ?? configuration.local.zone
@@ -61,8 +68,7 @@ export function useConfigurationHook() {
         document.dir = direction;
 
         setConfiguration(c);
-    };
-
+    }
     const updateCssVars = (mode: ThemeMode, options: ThemeOptions) => {
         const stringifyColorForTailwind = (color: string) => {
             let hsl = ColorStatic.parse(color).toHsl()
@@ -109,10 +115,15 @@ export function useConfigurationHook() {
         setCssVar('scrollbar', options.colors.scrollbar, true);
     }
 
-    const [isConfigurationContextReady, setIsConfigurationContextReady] = useState<boolean>(false);
-
     useEffect(() => {
         if (!isConfigurationContextReady) {
+            let fetches = undefined
+            if (!configuration?.languages || !configuration?.categories)
+                fetches = Promise.all([
+                    fetchData(`${getApiUrl()}/languages`),
+                    fetchData(`${getApiUrl()}/categories`),
+                ])
+
             StorageApi.getInstance()
                 .then(async (i) => {
                     if (i === undefined)
@@ -128,9 +139,24 @@ export function useConfigurationHook() {
 
                     document.dir = c.local.direction
                     updateCssVars(c.themeOptions.mode, c.themeOptions)
-                    setConfiguration(c);
-                    i18n.changeLanguage(c.local.language);
+                    setConfiguration(c)
+                    i18n.changeLanguage(c.local.language)
                     setIsConfigurationContextReady(true)
+
+                    if (c.languages && c.categories)
+                        return
+
+                    const fs = await fetches
+
+                    if (fs[0] && fs[0].response && fs[0].data)
+                        setConfiguration({ ...configuration, languages: fs[0].data })
+                    else
+                        feedback.pushError({ node: t('configuration.LanguagesAreNotFetched') })
+
+                    if (fs[1] && fs[1].response && fs[1].data)
+                        setConfiguration({ ...configuration, categories: fs[1].data })
+                    else
+                        feedback.pushError({ node: t('configuration.CategoriesAreNotFetched') })
                 })
         }
     }, [])

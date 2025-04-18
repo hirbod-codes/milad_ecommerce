@@ -64,5 +64,5 @@ export type ProductImmutable = InferType<typeof productImmutableSchema>
 
 export const fields: (keyof Product)[] = Object.keys(productSchema.fields) as any
 export const readableFields: (keyof Omit<Product, 'schemaVersion'>)[] = fields.filter(f => !['schemaVersion'].includes(f)) as any
-export const forbiddenFieldsToRead: string[] = []
+export const forbiddenFieldsToFilter: string[] = ['schemaVersion', '_id', 'stats']
 export const updatableFields: (keyof ProductUpdate)[] = Object.keys(productUpdateSchema.fields) as any

@@ -9,7 +9,7 @@ import { PlusIcon, Trash2Icon } from "lucide-react"
 import { Filter } from "./Filter"
 import { memo, useRef, useState } from "react"
 
-export const Filters = memo(function Filters({ fields, filters, setFilters, unsetFilters }: { fields: { [k: string]: string }, filters?: FiltersType, setFilters: (v: FiltersType) => void, unsetFilters?: (id) => void }) {
+export const Filters = memo(function Filters({ fields, displayFields, filters, setFilters, unsetFilters }: { fields: { [k: string]: string }, displayFields?: { [k: string]: string }, filters?: FiltersType, setFilters: (v: FiltersType) => void, unsetFilters?: (id) => void }) {
     const lastId = useRef(0)
     const getId = () => {
         lastId.current++
@@ -17,22 +17,23 @@ export const Filters = memo(function Filters({ fields, filters, setFilters, unse
     }
 
     if (filters === undefined)
-        filters = { $and: [] }
+        filters = { $and: [{ id: getId() }] }
 
     const key = Object.keys(filters).filter(f => f !== 'id')[0] ?? '$and'
 
     console.log('Filters', { fields, filters, lastId: lastId.current })
 
     return (
-        <Accordion type="single" collapsible className='w-full border rounded-lg p-4'>
+        <Accordion type="single" collapsible className='w-full p-4'>
             <AccordionItem value="item-1">
                 <AccordionTrigger>
-                    <Stack stackProps={{ className: 'w-full justify-between' }}>
+                    <Stack stackProps={{ className: 'w-full justify-between mr-2' }}>
                         <Select
                             onValueSelect={(e: '$and' | '$or') => setFilters({ id: filters?.id, [e]: filters[key] })}
                             inputProps={{
                                 labelContainerProps: { stackProps: { className: 'w-full justify-between' } },
                                 value: key,
+                                readOnly: true
                             }}
                             stopPropagation={true}
                         >
@@ -57,22 +58,23 @@ export const Filters = memo(function Filters({ fields, filters, setFilters, unse
                                         key={filter.id}
                                         fields={fields}
                                         filters={filter as FiltersType}
-                                        setFilters={(v) => { let foundIndex = filters[key].findIndex(f => f.id === filter.id); filters[key][foundIndex] = v; setFilters({ ...filters }) }}
+                                        setFilters={(v) => setFilters({ id: filters.id, [key]: filters[key].map(m => { if (m.id === filter.id) return v; else return m }) })}
                                         unsetFilters={(id) => setFilters({ id: filters.id, [key]: filters[key].filter(f => f.id !== id) })}
                                     />
                                 </div>
                                 : <Filter
                                     key={filter.id}
                                     fields={fields}
+                                    displayFields={displayFields}
                                     filter={filter as FilterType}
-                                    setFilter={(v) => { let foundIndex = filters[key].findIndex(f => f.id === filter.id); filters[key][foundIndex] = v; setFilters({ ...filters }) }}
+                                    setFilter={(v) => setFilters({ id: filters.id, [key]: filters[key].map(m => { if (m.id === filter.id) return v; else return m }) })}
                                     unsetFilter={(id) => setFilters({ id: filters.id, [key]: filters[key].filter(f => f.id !== id) })}
                                 />
                         )}
 
                         <Stack key={filters[key].length} stackProps={{ className: 'w-full' }}>
                             <Button variant="outline" className="flex-grow" onClick={() => { filters[key].push({ id: getId(), $and: [] }); setFilters({ ...filters }) }}>{t('Filters.addLogic')}<PlusIcon /></Button>
-                            <Button variant="outline" className="flex-grow" onClick={() => { filters[key].push({ id: getId(), }); setFilters({ ...filters }) }}>{t('Filters.addFilter')}<PlusIcon /></Button>
+                            <Button variant="outline" className="flex-grow" onClick={() => { filters[key].push({ id: getId() }); setFilters({ ...filters }) }}>{t('Filters.addFilter')}<PlusIcon /></Button>
                         </Stack>
                     </Stack>
                 </AccordionContent>

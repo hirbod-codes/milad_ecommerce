@@ -1,9 +1,10 @@
 import { useContext, useEffect, useState } from "react";
 import { Product } from "./index.d";
-import { fetchData, formatCurrency, getApiUrl } from "@/src/Backend/helpers";
+import { fetchData, formatCurrency, formatNumber, getApiUrl } from "@/src/Backend/helpers";
 import { array } from "yup";
 import { Stack } from "../Base/Stack";
 import { ConfigurationContext } from "@/src/Contexts/Configuration/ConfigurationContext";
+import { StarIcon } from "lucide-react";
 
 export function ProductThumbnail({ product }: { product: Product }) {
     const configuration = useContext(ConfigurationContext)
@@ -29,9 +30,18 @@ export function ProductThumbnail({ product }: { product: Product }) {
             </div>
 
             <Stack direction="vertical">
-                <div className="hover:underline text-md text-ellipsis text-nowrap overflow-hidden">
-                    {product.displayName[configuration.local.language]}
-                </div>
+                <Stack stackProps={{ className: 'justify-between' }}>
+                    <div className="hover:underline text-md text-ellipsis text-nowrap overflow-hidden">
+                        {product.displayName[configuration.local.language]}
+                    </div>
+
+                    <Stack size={1} stackProps={{ className: 'items-center' }}>
+                        <div className="text-sm">
+                            {formatNumber(configuration, Number(product.averageRating.toFixed(1)), { maximumFractionDigits: 1 })}
+                        </div>
+                        <StarIcon size={15} className="fill-yellow-500 text-yellow-500" />
+                    </Stack>
+                </Stack>
 
                 <div className="hover:underline text-sm text-ellipsis text-nowrap overflow-hidden">
                     {product.price.IRR && formatCurrency(configuration, product.price.IRR)}

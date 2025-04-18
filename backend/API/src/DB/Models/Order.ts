@@ -54,5 +54,5 @@ export type OrderImmutable = InferType<typeof orderImmutableSchema>
 
 export const fields: (keyof Order)[] = Object.keys(orderSchema.fields) as any
 export const readableFields: (keyof Omit<Order, 'schemaVersion'>)[] = fields.filter(f => !['schemaVersion'].includes(f)) as any
-export const forbiddenFieldsToRead: string[] = []
+export const forbiddenFieldsToFilter: string[] = ['schemaVersion', '_id', 'userId']
 export const updatableFields: (keyof OrderUpdate)[] = Object.keys(orderUpdateSchema.fields) as any
