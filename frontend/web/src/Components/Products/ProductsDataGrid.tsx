@@ -515,8 +515,8 @@ export function ProductsDataGrid({
             <SearchFilter
                 open={openFilter}
                 onClose={() => setOpenFilter(false)}
-                fields={Object.fromEntries([].concat(Object.entries(commonFields ?? [])).concat(configuration?.categories?.map(m => [m.name, 'string']) ?? []))}
-                displayFields={Object.fromEntries([].concat(Object.entries(commonFields ?? []))?.map(m => [m[0], t(`Columns.${m[0]}`)]).concat(configuration?.categories?.map(m => [m.name, m.displayName[configuration.local.language]]) ?? []))}
+                fields={Object.fromEntries([].concat(Object.entries(commonFields ?? [])).concat(configuration?.categories?.reduce((p, c) => p.concat(c?.recommendedProductProperties?.map(m => m.name)?.map(m => [m, 'string']) ?? []), []) ?? []))}
+                displayFields={Object.fromEntries([].concat(Object.entries(commonFields ?? []))?.map(m => [m[0], t(`Columns.${m[0]}`)]).concat(configuration?.categories?.reduce((p, c) => p.concat(c?.recommendedProductProperties?.map(m => [m.name, m.display[configuration.local.language]]) ?? []), []) ?? []))}
                 filters={filters}
                 setFilters={setFilters}
             />
@@ -524,8 +524,8 @@ export function ProductsDataGrid({
             <Sort
                 open={openSort}
                 onClose={() => setOpenSort(false)}
-                fields={Object.fromEntries([].concat(Object.entries(commonFields ?? [])).concat(configuration?.categories?.map(m => [m.name, 'string']) ?? []))}
-                displayFields={Object.fromEntries([].concat(Object.entries(commonFields ?? []))?.map(m => [m[0], t(`Columns.${m[0]}`)]).concat(configuration?.categories?.map(m => [m.name, m.displayName[configuration.local.language]]) ?? []))}
+                fields={Object.fromEntries([].concat(Object.entries(commonFields ?? [])).concat(configuration?.categories?.reduce((p, c) => p.concat(c?.recommendedProductProperties?.map(m => m.name)?.map(m => [m, 'string']) ?? []), []) ?? []))}
+                displayFields={Object.fromEntries([].concat(Object.entries(commonFields ?? []))?.map(m => [m[0], t(`Columns.${m[0]}`)]).concat(configuration?.categories?.reduce((p, c) => p.concat(c?.recommendedProductProperties?.map(m => [m.name, m.display[configuration.local.language]]) ?? []), []) ?? []))}
                 sorts={sorts}
                 setSorts={setSorts}
             />

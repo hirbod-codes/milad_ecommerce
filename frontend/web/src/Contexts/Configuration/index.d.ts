@@ -1,4 +1,4 @@
-import { Category } from "@/src/Components/SearchCategory"
+import { Category } from "@/src/Components/SearchCategory/index.d"
 import { Calendar, LanguageCodes } from "../../Localization"
 import { ThemeOptions } from "../../Theme"
 

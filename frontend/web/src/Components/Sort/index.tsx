@@ -10,6 +10,8 @@ import { createPortal } from 'react-dom'
 import { t } from 'i18next'
 
 export function Sort({ open, onClose, fields, displayFields, sorts, setSorts, apply }: { apply?: () => void, open: boolean, onClose?: () => void, fields: { [k: string]: string }, displayFields: { [k: string]: string }, sorts: SortType, setSorts: (sorts: SortType) => void }) {
+    console.log('Sort', { open, fields, sorts, displayFields })
+
     return createPortal(
         <AnimatePresence>
             {open &&
