@@ -20,7 +20,7 @@ import { CheckBox } from "../Base/CheckBox";
 import { Input } from "../Base/Input";
 import { CircularLoading } from "../Base/CircularLoading";
 import { SearchFilter } from "../SearchFilter";
-import { DropdownMenu } from "../Base/DropdownMenu";
+import { Sort } from "../Sort";
 
 export type DataGridProps = {
     products?: Product[]
@@ -98,6 +98,7 @@ export function ProductsDataGrid({
 
     const sortButtonRef = useRef<HTMLButtonElement>(null)
     const [openSort, setOpenSort] = useState(false)
+    const [sorts, setSorts] = useState([])
 
     const [commonFields, setCommonFields] = useState<string[]>(undefined)
 
@@ -119,7 +120,7 @@ export function ProductsDataGrid({
     }
 
     const fetch = async (offset: number = 0, limit: number = 0) => {
-        const res = await fetchData(`${getApiUrl()}/products?limit=${limit}&skip=${limit * offset}${filters === undefined ? '' : '&filter=' + JSON.stringify(formatFilters(filters))}`)
+        const res = await fetchData(`${getApiUrl()}/products?limit=${limit}&skip=${limit * offset}${filters === undefined ? '' : `&filter=${JSON.stringify(formatFilters(filters))}`}${sorts !== undefined && sorts.length > 0 ? `&sort=${JSON.stringify(sorts)}` : ''}`)
         console.log('res', res)
         if (!res.response || !res.response.ok || !array().required().isValidSync(res.data)) {
             feedback.pushError({ node: t('Products.failedToFetchProducts') })
@@ -511,21 +512,23 @@ export function ProductsDataGrid({
                 onRowSelectionChange={onRowSelectionChange}
             />
 
-            <DropdownMenu
-                anchorRef={filterButtonRef}
+            <SearchFilter
                 open={openFilter}
-                onOpenChange={(b) => { if (!b) setOpenFilter(false) }}
-                containerProps={{ className: 'max-w-[80%] max-h-[60%] bg-surface-container-high mt-1 shadow-xl rounded-lg overflow-auto border' }}
-            >
-                <div className="w-[20cm] h-[10cm]">
-                    <SearchFilter
-                        fields={Object.fromEntries([].concat(Object.entries(commonFields ?? [])).concat(configuration?.categories?.map(m => [m.name, 'string']) ?? []))}
-                        displayFields={Object.fromEntries([].concat(Object.entries(commonFields ?? []))?.map(m => [m[0], t(`Columns.${m[0]}`)]).concat(configuration?.categories?.map(m => [m.name, m.displayName[configuration.local.language]]) ?? []))}
-                        filters={filters}
-                        setFilters={setFilters}
-                    />
-                </div>
-            </DropdownMenu>
+                onClose={() => setOpenFilter(false)}
+                fields={Object.fromEntries([].concat(Object.entries(commonFields ?? [])).concat(configuration?.categories?.map(m => [m.name, 'string']) ?? []))}
+                displayFields={Object.fromEntries([].concat(Object.entries(commonFields ?? []))?.map(m => [m[0], t(`Columns.${m[0]}`)]).concat(configuration?.categories?.map(m => [m.name, m.displayName[configuration.local.language]]) ?? []))}
+                filters={filters}
+                setFilters={setFilters}
+            />
+
+            <Sort
+                open={openSort}
+                onClose={() => setOpenSort(false)}
+                fields={Object.fromEntries([].concat(Object.entries(commonFields ?? [])).concat(configuration?.categories?.map(m => [m.name, 'string']) ?? []))}
+                displayFields={Object.fromEntries([].concat(Object.entries(commonFields ?? []))?.map(m => [m[0], t(`Columns.${m[0]}`)]).concat(configuration?.categories?.map(m => [m.name, m.displayName[configuration.local.language]]) ?? []))}
+                sorts={sorts}
+                setSorts={setSorts}
+            />
 
             <Ask {...state.ask} />
 
