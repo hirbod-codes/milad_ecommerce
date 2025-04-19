@@ -21,6 +21,7 @@ import { Input } from "../Base/Input";
 import { CircularLoading } from "../Base/CircularLoading";
 import { SearchFilter } from "../SearchFilter";
 import { Sort } from "../Sort";
+import { Sort as SortType } from "../Sort/index.d";
 
 export type DataGridProps = {
     products?: Product[]
@@ -95,15 +96,47 @@ export function ProductsDataGrid({
     const filterButtonRef = useRef<HTMLButtonElement>(null)
     const [openFilter, setOpenFilter] = useState(false)
     const [filters, setFilters] = useState<Filters | undefined>(undefined)
+    const [formattedFilters, setFormattedFilters] = useState<Filters | undefined>(undefined)
 
     const sortButtonRef = useRef<HTMLButtonElement>(null)
     const [openSort, setOpenSort] = useState(false)
-    const [sorts, setSorts] = useState([])
+    const [sorts, setSorts] = useState<SortType>([])
+    const [formattedSorts, setFormattedSorts] = useState<SortType | undefined>(undefined)
 
-    const [commonFields, setCommonFields] = useState<string[]>(undefined)
+    const [commonFields, setCommonFields] = useState<{ [k: string]: string }>(undefined)
 
     const [initialLoading, setInitialLoading] = useState(true)
     const [loading, setLoading] = useState(true)
+    const [applying, setApplying] = useState(false)
+
+    const formatFiltersAndSorts = () => {
+        setFormattedSorts(sorts.filter(f => f.field && (f.direction === 'asc' || 'desc')))
+        const formatFilters = (filters: Filters) => {
+            const formattedFilters = {}
+            for (const key in filters) {
+                if (!Object.prototype.hasOwnProperty.call(filters, key))
+                    continue
+                if (key === 'id')
+                    continue
+                else if (['$and', '$or'].includes(key)) {
+                    formattedFilters[key] = formatFilters(filters[key])
+                } else if ((filters[key]).field.includes('price'))
+                    formattedFilters[key] = filters[key + '.IRR']
+                else if ((filters[key]).field.includes('displayName'))
+                    formattedFilters[key] = filters[key + '.' + configuration.local.language]
+            }
+
+            return formattedFilters
+        }
+        setFormattedFilters({ ...filters })
+        setApplying(true)
+    }
+
+    useEffect(() => {
+        if (applying && formattedFilters !== undefined && formattedSorts !== undefined)
+            init()
+                .finally(() => { setApplying(false); setFormattedFilters(undefined); setFormattedSorts(undefined) })
+    }, [applying, formattedFilters, formattedSorts])
 
     const init = async (offset: number = 0, limit: number = 0) => {
         setLoading(true)
@@ -113,7 +146,7 @@ export function ProductsDataGrid({
                     if (!r || !r.response || !r.data)
                         feedback.pushError({ node: t('ProductDataGrid.failedToFetchFields') })
                     else
-                        setCommonFields(r.data)
+                        setCommonFields(Object.fromEntries(Object.entries<string>(r.data).filter(f => f[0] !== 'name')))
                 })
             return await fetch(offset, limit)
         } finally { setLoading(false) }
@@ -519,6 +552,10 @@ export function ProductsDataGrid({
                 displayFields={Object.fromEntries([].concat(Object.entries(commonFields ?? []))?.map(m => [m[0], t(`Columns.${m[0]}`)]).concat(configuration?.categories?.reduce((p, c) => p.concat(c?.recommendedProductProperties?.map(m => [m.name, m.display[configuration.local.language]]) ?? []), []) ?? []))}
                 filters={filters}
                 setFilters={setFilters}
+                apply={() => {
+                    dispatch({ operation: 'setPage', data: { limit: 0, offset: 0 } })
+                    formatFiltersAndSorts()
+                }}
             />
 
             <Sort
@@ -528,6 +565,10 @@ export function ProductsDataGrid({
                 displayFields={Object.fromEntries([].concat(Object.entries(commonFields ?? []))?.map(m => [m[0], t(`Columns.${m[0]}`)]).concat(configuration?.categories?.reduce((p, c) => p.concat(c?.recommendedProductProperties?.map(m => [m.name, m.display[configuration.local.language]]) ?? []), []) ?? []))}
                 sorts={sorts}
                 setSorts={setSorts}
+                apply={() => {
+                    dispatch({ operation: 'setPage', data: { limit: 0, offset: 0 } })
+                    formatFiltersAndSorts()
+                }}
             />
 
             <Ask {...state.ask} />

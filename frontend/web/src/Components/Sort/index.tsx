@@ -22,55 +22,57 @@ export function Sort({ open, onClose, fields, displayFields, sorts, setSorts, ap
                     className="absolute top-0 z-[49] h-screen w-full"
                     onClick={(e) => { e.preventDefault(); e.stopPropagation(); if (onClose) onClose() }}
                 >
-                    <Stack direction='vertical' stackProps={{ className: 'z-50 w-1/2 absolute top-0 right-0 bg-surface-container-high border rounded-lg h-full p-2', onClick: (e) => { e.preventDefault(); e.stopPropagation(); } }}>
-                        {
-                            sorts.map(m =>
-                                <Stack key={m.field}>
-                                    <Select
-                                        onValueSelect={(e: '$and' | '$or') => setSorts(sorts.map(s => { if (s.field !== m.field) return s; s.field = e; return s }))}
-                                        inputProps={{
-                                            containerProps: { className: 'flex-grow' },
-                                            labelContainerProps: { stackProps: { className: 'w-full justify-between' } },
-                                            value: m.field,
-                                            readOnly: true
-                                        }}
-                                        dropdownMenuProps={{ containerProps: { className: 'my-2 border shadow-lg' } }}
-                                        listContainerProps={{ stackProps: { className: 'p-2 max-h-[15cm] overflow-y-auto overflow-x-hidden' } }}
-                                        stopPropagation={true}
-                                    >
-                                        {
-                                            Object.keys(fields).filter(f => sorts.find(s => s.field === f) === undefined).map((k, i) =>
-                                                <Fragment key={i}>
-                                                    <Select.Item key={i} value={k} displayValue={displayFields[k] ?? k}>
-                                                        {displayFields[k] ?? k}
-                                                    </Select.Item>
-                                                    {i !== Object.keys(fields).length - 1 &&
-                                                        <Separator />
-                                                    }
-                                                </Fragment>
-                                            )
-                                        }
-                                    </Select>
+                    <div className='z-50 w-1/2 absolute top-0 right-0 bg-surface-container-high border rounded-lg overflow-y-auto h-full' onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}>
+                        <Stack direction='vertical' stackProps={{ className: "w-full h-max p-2 px-6" }}>
+                            {
+                                sorts.map(m =>
+                                    <Stack key={m.field}>
+                                        <Select
+                                            onValueSelect={(e: '$and' | '$or') => setSorts(sorts.map(s => { if (s.field !== m.field) return s; s.field = e; return s }))}
+                                            inputProps={{
+                                                containerProps: { className: 'flex-grow' },
+                                                labelContainerProps: { stackProps: { className: 'w-full justify-between' } },
+                                                value: m.field,
+                                                readOnly: true
+                                            }}
+                                            dropdownMenuProps={{ containerProps: { className: 'my-2 border shadow-lg' } }}
+                                            listContainerProps={{ stackProps: { className: 'p-2 max-h-[15cm] overflow-y-auto overflow-x-hidden' } }}
+                                            stopPropagation={true}
+                                        >
+                                            {
+                                                Object.keys(fields).filter(f => sorts.find(s => s.field === f) === undefined).map((k, i) =>
+                                                    <Fragment key={i}>
+                                                        <Select.Item key={i} value={k} displayValue={displayFields[k] ?? k}>
+                                                            {displayFields[k] ?? k}
+                                                        </Select.Item>
+                                                        {i !== Object.keys(fields).length - 1 &&
+                                                            <Separator />
+                                                        }
+                                                    </Fragment>
+                                                )
+                                            }
+                                        </Select>
 
-                                    <Stack>
-                                        <Button isIcon variant='text' onClick={() => setSorts(sorts.map(s => { if (s.field !== m.field) return s; s.direction = s.direction === 'asc' ? 'desc' : 'asc'; return s }))}>
-                                            {m.direction === 'asc' ? <SortAscIcon /> : <SortDescIcon />}
-                                        </Button>
+                                        <Stack>
+                                            <Button isIcon variant='text' onClick={() => setSorts(sorts.map(s => { if (s.field !== m.field) return s; s.direction = s.direction === 'asc' ? 'desc' : 'asc'; return s }))}>
+                                                {m.direction === 'asc' ? <SortAscIcon /> : <SortDescIcon />}
+                                            </Button>
 
-                                        <Button isIcon variant='text' fgColor={'error'} onClick={() => setSorts(sorts.filter(f => f.field !== m.field))}>
-                                            <Trash2Icon />
-                                        </Button>
+                                            <Button isIcon variant='text' fgColor={'error'} onClick={() => setSorts(sorts.filter(f => f.field !== m.field))}>
+                                                <Trash2Icon />
+                                            </Button>
+                                        </Stack>
                                     </Stack>
-                                </Stack>
-                            )
-                        }
+                                )
+                            }
 
-                        <Button isIcon variant='text' fgColor={'success'} onClick={() => { if (sorts.find(f => f.field === '') === undefined) setSorts([...sorts, { field: '', direction: 'asc' }]) }}>
-                            <PlusIcon />
-                        </Button>
+                            <Button isIcon variant='text' fgColor={'success'} onClick={() => { if (sorts.find(f => f.field === '') === undefined) setSorts([...sorts, { field: '', direction: 'asc' }]) }}>
+                                <PlusIcon />
+                            </Button>
 
-                        <Button onClick={() => { if (apply) apply() }}>{t('common.apply')}</Button>
-                    </Stack>
+                            <Button onClick={() => { if (apply) apply() }}>{t('common.apply')}</Button>
+                        </Stack>
+                    </div>
                 </motion.div>
             }
         </AnimatePresence >,
