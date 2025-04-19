@@ -17,7 +17,7 @@ export function ColumnVisibilityButton() {
     return (
         <>
             <Button buttonRef={ref} variant='outline' onClick={() => setOpen(true)}>
-                <Columns3Icon />{t('Columns.columns')}
+                <Columns3Icon />
             </Button>
 
             <DropdownMenu

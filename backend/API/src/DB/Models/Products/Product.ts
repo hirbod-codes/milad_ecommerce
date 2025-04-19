@@ -26,6 +26,10 @@ export const productSchema = object().required().strict(true).unknown(true).shap
         monthlyZScore: number().required(),
         weeklyZScore: number().required(),
     }),
+    trendingScore: object().required().shape({
+        monthly: number().required(),
+        weekly: number().required(),
+    }),
     purchaseCount: number().strict(true).integer().min(0).optional(),
     reviewsCount: number().strict(true).integer().min(0).optional(),
     views: number().strict(true).integer().min(0).optional(),

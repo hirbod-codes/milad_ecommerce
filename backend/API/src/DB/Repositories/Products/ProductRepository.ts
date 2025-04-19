@@ -7,6 +7,8 @@ import { CategoryRepository } from "../CategoryRepository";
 import { TagRepository } from "../TagRepository";
 import { ProductPictureRepository } from "./ProductPictureRepository";
 import fs from 'fs'
+import { Order } from "../../Models/Order";
+import { ZScore } from "./ZScore";
 
 export class ProductRepository extends MongoDB {
     private collection: Collection<ProductCreate>
@@ -93,6 +95,10 @@ export class ProductRepository extends MongoDB {
                                 monthlyZScore: 0,
                                 weeklyZScore: 0,
                             },
+                            trendingScore: {
+                                monthly: 0,
+                                weekly: 0,
+                            },
                             createdAt: ts,
                             updatedAt: ts,
                         })
@@ -118,6 +124,30 @@ export class ProductRepository extends MongoDB {
         } finally { console.timeEnd() }
     }
 
+    async updateTrendingScore(order: Order, nowTS: number) {
+        const products = await this.getByIds(order.products.map(m => m.productId))
+        if (products === undefined)
+            throw new Error('system failed to update product trending score')
+
+        console.time(`ZScore calculation`)
+        for (const oProduct of order.products) {
+            const product = products.find(f => f._id.toString() === oProduct.productId.toString())
+            if (!product)
+                continue
+
+            product.stats = await ZScore.calculate(
+                product,
+                oProduct.quantity,
+                nowTS
+            )
+
+            const r = await this.updateImmutables(product._id, { stats: product.stats, trendingScore: { monthly: product.stats.monthlyZScore, weekly: product.stats.weeklyZScore } })
+            if (r === false || !r.acknowledged || r.matchedCount !== 1)
+                throw new Error('system failed to update product trending score')
+        }
+        console.timeEnd('ZScore calculation')
+    }
+
     async create(product: ProductInput): Promise<InsertOneResult | false> {
         const ts = DateTime.utc().toUnixInteger()
 
@@ -132,6 +162,10 @@ export class ProductRepository extends MongoDB {
                 weeklyStandardDeviation: 0,
                 monthlyZScore: 0,
                 weeklyZScore: 0,
+            },
+            trendingScore: {
+                monthly: 0,
+                weekly: 0,
             },
             schemaVersion,
             createdAt: ts,

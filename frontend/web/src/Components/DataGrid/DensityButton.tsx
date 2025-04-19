@@ -3,7 +3,7 @@ import { useContext, useRef, useState } from "react";
 import { DataGridContext } from "./Context";
 import { DropdownMenu } from "../Base/DropdownMenu";
 import { Button } from "../../Components/Base/Button";
-import { MenuIcon } from "lucide-react";
+import { AlignVerticalSpaceAround, MenuIcon, Rows2Icon, Rows3Icon, Rows4Icon } from "lucide-react";
 import { Stack } from "../Base/Stack";
 
 export function DensityButton() {
@@ -15,7 +15,7 @@ export function DensityButton() {
     return (
         <>
             <Button variant="outline" buttonRef={ref} onClick={() => setOpen(true)}>
-                <MenuIcon />{t('DataGrid.density')}
+                <AlignVerticalSpaceAround />
             </Button>
 
             <DropdownMenu
@@ -25,14 +25,14 @@ export function DensityButton() {
                 containerProps={{ className: 'bg-surface-container-high border mt-2 p-2 rounded-md' }}
             >
                 <Stack direction="vertical">
-                    <Button variant='text' onClick={() => ctx.density.set('compact')}>
-                        {t('DataGrid.compact')}
+                    <Button variant={ctx.density.value === 'comfortable' ? 'outline' : 'text'} onClick={() => ctx.density.set('comfortable')}>
+                        <Rows2Icon />{t('DataGrid.comfortable')}
                     </Button>
-                    <Button variant='text' onClick={() => ctx.density.set('standard')}>
-                        {t('DataGrid.standard')}
+                    <Button variant={ctx.density.value === 'standard' ? 'outline' : 'text'} onClick={() => ctx.density.set('standard')}>
+                        <Rows3Icon />{t('DataGrid.standard')}
                     </Button>
-                    <Button variant='text' onClick={() => ctx.density.set('comfortable')}>
-                        {t('DataGrid.comfortable')}
+                    <Button variant={ctx.density.value === 'compact' ? 'outline' : 'text'} onClick={() => ctx.density.set('compact')}>
+                        <Rows4Icon />{t('DataGrid.compact')}
                     </Button>
                 </Stack>
             </DropdownMenu>

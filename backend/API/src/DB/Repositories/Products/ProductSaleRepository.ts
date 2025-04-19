@@ -48,24 +48,8 @@ export class ProductSaleRepository extends MongoDB {
 
             collection.insertMany(docs)
 
-            console.time(`ZScore calculation`)
             for (const order of orders)
-                for (const oProduct of order.products) {
-                    const product = products.find(f => f._id.toString() === oProduct.productId.toString())
-                    if (!product)
-                        continue
-
-                    product.stats = await ZScore.calculate(
-                        product,
-                        order.products.find(f => f.productId.toString() === product._id.toString())!.quantity,
-                        order.createdAt
-                    )
-
-                    const r = await productRepository.updateImmutables(product._id, { stats: product.stats })
-                    if (r === false || !r.acknowledged || r.matchedCount !== 1)
-                        throw new Error('system failed to update product')
-                }
-            console.timeEnd('ZScore calculation')
+                await productRepository.updateTrendingScore(order, order.createdAt)
 
             for (const p of products)
                 if (faker.datatype.boolean(0.2))

@@ -1,4 +1,4 @@
-import { ActionDispatch, ComponentProps, Fragment, ReactNode, useContext, useEffect, useReducer, useRef, useState } from "react";
+import { ActionDispatch, ComponentProps, ReactNode, useContext, useEffect, useReducer, useRef, useState } from "react";
 import { Product } from ".";
 import { authFetchData, fetchData, formatCurrency, formatFilters, formatNumber, getApiUrl, getAuthApiUrl } from "@/src/Backend/helpers";
 import { array } from "yup";
@@ -482,14 +482,14 @@ export function ProductsDataGrid({
         })
 
     const defaultHeaderNodes = [
-        <Button variant='outline' disabled={state.fetching} onClick={() => dispatch({ operation: 'fetch' })}>{state.fetching === true ? <CircularLoadingIcon /> : <RefreshCwIcon />}{t('Products.Refresh')}</Button>,
-        functionality.filter === true && <Button buttonRef={filterButtonRef} variant='outline' onClick={() => setOpenFilter(true)}><FilterIcon />{t('Products.Filters')}</Button>,
-        functionality.sort === true && <Button buttonRef={sortButtonRef} variant='outline' onClick={() => setOpenSort(true)}><ListFilterIcon />{t('Products.Sorts')}</Button>,
-        functionality.create === true && <Button fgColor='success' variant='outline' onClick={() => dispatch({ operation: 'createStarted' })}><PlusIcon />{t('Products.Create')}</Button>,
+        <Button variant='outline' disabled={state.fetching} onClick={() => dispatch({ operation: 'fetch' })}>{state.fetching === true ? <CircularLoadingIcon /> : <RefreshCwIcon />}</Button>,
+        functionality.filter === true && <Button buttonRef={filterButtonRef} variant='outline' onClick={() => setOpenFilter(true)}><FilterIcon /></Button>,
+        functionality.sort === true && <Button buttonRef={sortButtonRef} variant='outline' onClick={() => setOpenSort(true)}><ListFilterIcon /></Button>,
+        functionality.create === true && <Button fgColor='success' variant='outline' onClick={() => dispatch({ operation: 'createStarted' })}><PlusIcon /></Button>,
         functionality.search === true && <Input startIcon={state?.searching ? <CircularLoading size="xs" /> : <SearchIcon />} placeholder={t('ProductsDataGrid.SearchByName')} value={state.searchByName ?? ''} onChange={(e) => dispatch({ operation: 'searchByName', data: e.target.value.trim() })} />,
     ]
 
-    console.log('ProductsDataGrid', { openFilter, filters, loading, products, state, afterDataFetchHook, allFunctionalitiesToggle, functionality, options, columns, headerNodes, onChange, dataGridProps })
+    console.log('ProductsDataGrid', { commonFields, openFilter, filters, loading, products, state, afterDataFetchHook, allFunctionalitiesToggle, functionality, options, columns, headerNodes, onChange, dataGridProps })
 
     return (
         <>
@@ -519,8 +519,8 @@ export function ProductsDataGrid({
             >
                 <div className="w-[20cm] h-[10cm]">
                     <SearchFilter
-                        fields={Object.fromEntries([].concat(Object.entries(commonFields) ?? []).concat(configuration?.categories?.map(m => [m.name, 'string']) ?? []))}
-                        displayFields={Object.fromEntries([].concat(Object.entries(commonFields) ?? [])?.map(m => [m[0], t(`Columns.${m[0]}`)]).concat(configuration?.categories?.map(m => [m.name, m.displayName[configuration.local.language]]) ?? []))}
+                        fields={Object.fromEntries([].concat(Object.entries(commonFields ?? [])).concat(configuration?.categories?.map(m => [m.name, 'string']) ?? []))}
+                        displayFields={Object.fromEntries([].concat(Object.entries(commonFields ?? []))?.map(m => [m[0], t(`Columns.${m[0]}`)]).concat(configuration?.categories?.map(m => [m.name, m.displayName[configuration.local.language]]) ?? []))}
                         filters={filters}
                         setFilters={setFilters}
                     />

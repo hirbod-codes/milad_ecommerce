@@ -14,16 +14,23 @@ export function ExportButton() {
                 variant='outline'
                 onClick={async () => {
                     const json = JSON.stringify(([] as Row<any>[]).concat(table.getTopRows(), table.getCenterRows(), table.getBottomRows()), undefined, 4)
-                    // const path = await (window as typeof window & { appAPI: appAPI }).appAPI.saveFileDialog();
-                    // if (path.canceled)
-                    //     return
 
-                    // (window as typeof window & { appAPI: appAPI }).appAPI.saveFile({ content: json, path: path.filePath })
+                    const blob = new Blob([json], { type: 'application/json' })
+                    const url = URL.createObjectURL(blob)
+
+                    const link = document.createElement('a')
+                    link.href = url
+                    link.setAttribute('download', 'data.json')
+                    
+                    document.body.appendChild(link)
+                    link.click()
+                    document.body.removeChild(link)
+                    
+                    URL.revokeObjectURL(url)
                 }}
             >
-                <FileDownIcon />{t('DataGrid.export')}
+                <FileDownIcon />
             </Button >
         </>
     )
 }
-
