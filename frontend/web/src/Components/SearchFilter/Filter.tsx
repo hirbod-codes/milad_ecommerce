@@ -59,7 +59,7 @@ export const Filter = memo(function Filter({ fields, filter, displayFields = {},
                     }
                 </Select>
 
-                <Input placeholder={t('Filter.value')} type={fields[filter.field] === 'number' ? 'number' : 'text'} value={filter.value ?? ''} onChange={(e) => setFilter({ ...filter, value: e.target.value.trim() })} />
+                <Input placeholder={t('Filter.value')} value={filter.value ?? ''} onChange={(e) => setFilter({ ...filter, value: !Number.isNaN(e.target.value.trim()) ? Number(e.target.value.trim()) : e.target.value.trim() })} />
 
                 <Button isIcon variant="text" fgColor="error" onClick={() => unsetFilter(filter.id)}><Trash2Icon /></Button>
             </Stack >

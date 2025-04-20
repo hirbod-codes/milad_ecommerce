@@ -177,7 +177,7 @@ export function ProductsDataGrid({
                 filter.value = undefined
             }
 
-            return filter
+            return { [filter.field]: { [filter.operator]: filter.value } }
         }
 
         return formattedFilters

@@ -20,50 +20,49 @@ export class FilterManagement {
             if (level > 3)
                 return false
 
-            if (array().required().strict(true).isValidSync(filter)) {
-                for (const f of filter)
-                    if (this.validate(f, schema, validFields, invalidFields, level++) !== true)
-                        return false
-            } else if (object().required().strict(true).isValidSync(filter)) {
-                let entries = Object.entries(filter)
+            if (!object().required().strict(true).isValidSync(filter))
+                return false
+
+            let entries = Object.entries(filter)
+
+            if (Object.keys(filter).includes('$and') || Object.keys(filter).includes('$or')) {
                 if (entries.length !== 1)
                     return false
 
-                for (const kv of entries)
-                    if (['$and', '$or'].includes(kv[0])) {
-                        if (!array().strict(true).required().min(1).isValidSync(kv[1]))
-                            return false
+                const key = Object.keys(filter).includes('$and') ? '$and' : '$or'
 
-                        if (this.validate(kv[1], schema, validFields, invalidFields, level++) !== true)
-                            return false
-                    } else {
-                        let filterEntries = kv
-                        if (this.fields.length >= 6)
-                            return false
+                if (!array().strict(true).required().min(1).isValidSync(filter[key]))
+                    return false
 
-                        if (!this.fields.includes(filterEntries[0]))
-                            this.fields.push(filterEntries[0])
-
-                        this.filterCount++
-
-                        if (this.filterCount >= 10)
-                            return false
-
-                        if (invalidFields && invalidFields.includes(filterEntries[0]))
-                            return false
-
-                        if (validFields && !validFields.includes(filterEntries[0]))
-                            return false
-
-                        if (object().required().strict(true).isValidSync(filterEntries[1])) {
-                            let kvEntries = Object.entries(filterEntries[1])
-                            if (kvEntries.length !== 1 || !FilterManagement.MONGODB_OPERATORS.includes(kvEntries[0][0]))
-                                return false
-                        } else if (schema && Object.keys(schema.fields).includes(filterEntries[0]) && !schema.pick([filterEntries[0]]).isValidSync({ [filterEntries[0]]: filterEntries[1] }))
-                            return false
-                    }
+                for (const f of filter[key])
+                    if (this.validate(f, schema, validFields, invalidFields, level + 1) !== true)
+                        return false
             } else
-                return false
+                for (const filterEntries of entries) {
+                    if (this.fields.length >= 6)
+                        return false
+
+                    if (!this.fields.includes(filterEntries[0]))
+                        this.fields.push(filterEntries[0])
+
+                    this.filterCount++
+
+                    if (this.filterCount >= 10)
+                        return false
+
+                    if (invalidFields && invalidFields.includes(filterEntries[0]))
+                        return false
+
+                    if (validFields && !validFields.includes(filterEntries[0]))
+                        return false
+
+                    if (object().required().strict(true).isValidSync(filterEntries[1])) {
+                        let kvEntries = Object.entries(filterEntries[1])
+                        if (kvEntries.length !== 1 || !FilterManagement.MONGODB_OPERATORS.includes(kvEntries[0][0]) || !['string', 'number', 'boolean'].includes(typeof kvEntries[0][1]))
+                            return false
+                    } else if (schema && Object.keys(schema.fields).includes(filterEntries[0]) && !schema.pick([filterEntries[0]]).isValidSync({ [filterEntries[0]]: filterEntries[1] }))
+                        return false
+                }
 
             return true
         }
