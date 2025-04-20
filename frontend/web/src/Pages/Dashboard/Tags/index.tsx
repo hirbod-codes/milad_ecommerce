@@ -81,7 +81,7 @@ export function Tags() {
 
                 {tags.map((tag, i) =>
                     <Fragment key={tag.name}>
-                        <Stack stackProps={{ className: 'justify-between' }}>
+                        <Stack stackProps={{ className: 'justify-between items-center' }}>
                             {tag.name}
 
                             {deletesTag &&

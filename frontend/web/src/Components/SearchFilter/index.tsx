@@ -21,10 +21,10 @@ export function SearchFilter({ open, onClose, fields, displayFields, filters, se
                     initial={{ x: '100%' }}
                     exit={{ x: '100%' }}
                     animate={{ x: 0 }}
-                    className="absolute top-0 z-[49] h-screen w-full px-2"
-                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); if (onClose) onClose() }}
+                    className="absolute top-0 z-[49] h-screen w-screen px-2"
+                    onClick={(e) => { e.stopPropagation(); if (onClose) onClose() }}
                 >
-                    <div className='z-50 w-1/2 absolute top-0 right-0 bg-surface-container-high overflow-y-auto border rounded-lg h-full' onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}>
+                    <div className='z-50 w-1/2 absolute top-0 right-0 bg-surface-container-high overflow-y-auto border rounded-lg h-full' onClick={(e) => { e.stopPropagation(); }}>
                         <Stack direction='vertical' stackProps={{ className: "w-full h-max p-2 px-6" }}>
                             <Filters
                                 fields={fields}

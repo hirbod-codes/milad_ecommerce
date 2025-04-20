@@ -334,6 +334,7 @@ export function RolesDataGrid({
                         dispatch({ operation: 'setPage', data: { limit: p.pageSize, offset: p.pageIndex } })
                     return result
                 }}
+                hasPagination={functionality.pagination === true}
                 appendHeaderNodes={state.headerNodes}
             />
 

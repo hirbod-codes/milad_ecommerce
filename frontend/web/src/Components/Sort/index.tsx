@@ -1,4 +1,4 @@
-import { Fragment } from 'react'
+import { Fragment, useState } from 'react'
 import { Stack } from '../Base/Stack'
 import { Sort as SortType } from './index.d'
 import { Button } from '../Base/Button'
@@ -10,6 +10,8 @@ import { createPortal } from 'react-dom'
 import { t } from 'i18next'
 
 export function Sort({ open, onClose, fields, displayFields, sorts, setSorts, apply }: { apply?: () => void, open: boolean, onClose?: () => void, fields: { [k: string]: string }, displayFields: { [k: string]: string }, sorts: SortType, setSorts: (sorts: SortType) => void }) {
+    const [value, setValue] = useState(undefined)
+
     console.log('Sort', { open, fields, sorts, displayFields })
 
     return createPortal(
@@ -19,21 +21,21 @@ export function Sort({ open, onClose, fields, displayFields, sorts, setSorts, ap
                     initial={{ x: '100%' }}
                     exit={{ x: '100%' }}
                     animate={{ x: 0 }}
-                    className="absolute top-0 z-[49] h-screen w-full"
-                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); if (onClose) onClose() }}
+                    className="absolute top-0 z-[49] h-screen w-screen"
+                    onClick={(e) => { e.stopPropagation(); if (onClose) onClose() }}
                 >
-                    <div className='z-50 w-1/2 absolute top-0 right-0 bg-surface-container-high border rounded-lg overflow-y-auto h-full' onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}>
+                    <div className='z-50 w-1/2 absolute top-0 right-0 bg-surface-container-high border rounded-lg overflow-y-auto h-full' onClick={(e) => { e.stopPropagation(); }}>
                         <Stack direction='vertical' stackProps={{ className: "w-full h-max p-2 px-6" }}>
                             {
                                 sorts.map(m =>
                                     <Stack key={m.field}>
                                         <Select
-                                            onValueSelect={(e: '$and' | '$or') => setSorts(sorts.map(s => { if (s.field !== m.field) return s; s.field = e; return s }))}
+                                            onValueSelect={(e: '$and' | '$or') => { setValue(e); setSorts(sorts.map(s => { if (s.field !== m.field) return s; s.field = e; return s })) }}
                                             inputProps={{
                                                 containerProps: { className: 'flex-grow' },
                                                 labelContainerProps: { stackProps: { className: 'w-full justify-between' } },
-                                                value: m.field,
-                                                readOnly: true
+                                                value: value ?? '',
+                                                onChange: (e) => { setValue(e.target.value.trim()); if (fields[e.target.value.trim()] !== undefined) setSorts(sorts.map(s => { if (s.field !== m.field) return s; s.field = e.target.value; return s })) },
                                             }}
                                             dropdownMenuProps={{ containerProps: { className: 'my-2 border shadow-lg' } }}
                                             listContainerProps={{ stackProps: { className: 'p-2 max-h-[15cm] overflow-y-auto overflow-x-hidden' } }}
@@ -79,4 +81,3 @@ export function Sort({ open, onClose, fields, displayFields, sorts, setSorts, ap
         document.body
     )
 }
-

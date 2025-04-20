@@ -73,7 +73,7 @@ export const DropdownMenu = memo(function DropdownMenu({ children, anchorRef, an
 
     useEffect(() => {
         function handleClickOutside(e: PointerEvent) {
-            e.preventDefault()
+            // e.preventDefault()
             e.stopPropagation()
 
             if (!containerRef || !containerRef?.current || !onOpenChange || !anchorRef || !anchorRef?.current)

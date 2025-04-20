@@ -416,8 +416,8 @@ export function DataGrid({
                         sensors={sensors}
                     >
                         {headerNodes.length > 0 &&
-                            <div className="overflow-x-auto overflow-y-hidden py-1 w-full">
-                                <Stack  {...headerNodesContainerProps} stackProps={{ ...headerNodesContainerProps?.stackProps, id: headerNodesContainerProps?.stackProps?.id ?? 'headerNodesContainer', className: cn('bg-surface-container p-2 items-center rounded-md min-w-full w-max', headerNodesContainerProps?.stackProps?.className) }}>
+                            <div className="overflow-x-auto overflow-y-hidden py-1 w-full h-[1.5cm] flex items-center">
+                                <Stack  {...headerNodesContainerProps} stackProps={{ ...headerNodesContainerProps?.stackProps, id: headerNodesContainerProps?.stackProps?.id ?? 'headerNodesContainer', className: cn('bg-surface-container p-2 rounded-md items-center min-w-full w-max', headerNodesContainerProps?.stackProps?.className) }}>
                                     {...headerNodes.map((n, i) =>
                                         <Fragment key={i}>
                                             {n}
@@ -468,13 +468,15 @@ export function DataGrid({
                             }
                         </div>
                         {footerNodes.length > 0 &&
-                            <Stack {...footerNodesContainerProps} stackProps={{ ...footerNodesContainerProps?.stackProps, id: footerNodesContainerProps?.stackProps?.id ?? 'footerNodesContainer', className: cn('bg-surface-container p-2 rounded-md items-center justify-end', footerNodesContainerProps?.stackProps?.className) }}>
-                                {...footerNodes.map((n, i) =>
-                                    <Fragment key={i}>
-                                        {n}
-                                    </Fragment>
-                                )}
-                            </Stack>
+                            <div className='overflow-x-auto overflow-y-hidden py-1 w-full h-[1.5cm] flex items-center'>
+                                <Stack {...footerNodesContainerProps} stackProps={{ ...footerNodesContainerProps?.stackProps, id: footerNodesContainerProps?.stackProps?.id ?? 'footerNodesContainer', className: cn('bg-surface-container p-2 rounded-md items-center justify-end min-w-full w-max', footerNodesContainerProps?.stackProps?.className) }}>
+                                    {...footerNodes.map((n, i) =>
+                                        <Fragment key={i}>
+                                            {n}
+                                        </Fragment>
+                                    )}
+                                </Stack>
+                            </div>
                         }
                     </DndContext>
                 </Stack >

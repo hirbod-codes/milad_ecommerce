@@ -490,6 +490,7 @@ export function OrdersDataGrid({
                 additionalColumns={options?.appendDefaults === true || options?.appendDefaultAdditionalColumns === true ? (columns?.additionalColumns ?? []).concat(defaultAdditionalColumns) : columns?.additionalColumns}
                 overWriteColumns={options?.appendDefaults === true || options?.appendDefaultOverWriteColumns === true ? (columns?.overWriteColumns ?? []).concat(defaultOverWriteColumns) : columns?.overWriteColumns}
                 pagination={functionality.pagination !== true ? undefined : { pageSize: state.page.limit, pageIndex: state.page.offset }}
+                hasPagination={functionality.pagination === true}
                 onPagination={functionality.pagination !== true ? undefined : async (p) => {
                     const result = await fetch(p.pageIndex, p.pageSize)
                     if (result)
