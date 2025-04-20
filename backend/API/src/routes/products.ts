@@ -100,7 +100,7 @@ products.get('/', async (req, res) => {
     try {
         const { filter: filterJson, sort: sortJson, limit: limitStr, skip: skipStr } = req.query
 
-        if (!number().optional().min(0).integer().isValidSync(limitStr)) {
+        if (!number().optional().min(1).integer().isValidSync(limitStr)) {
             res.status(400).json({ errors: ['invalid limit'] })
             return
         }
@@ -110,7 +110,7 @@ products.get('/', async (req, res) => {
             return
         }
 
-        let limit = number().required().min(0).integer().cast(limitStr ?? 25)
+        let limit = number().required().min(10).integer().cast(limitStr ?? 25)
         let skip = number().required().min(0).integer().cast(skipStr ?? 0)
 
         let sort: { field: keyof Product, direction: SortDirection }[] = []

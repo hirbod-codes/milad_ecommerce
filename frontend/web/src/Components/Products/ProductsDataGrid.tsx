@@ -96,18 +96,15 @@ export function ProductsDataGrid({
     const filterButtonRef = useRef<HTMLButtonElement>(null)
     const [openFilter, setOpenFilter] = useState(false)
     const [filters, setFilters] = useState<Filters | undefined>(undefined)
-    const [formattedFilters, setFormattedFilters] = useState<Filters | undefined>(undefined)
 
     const sortButtonRef = useRef<HTMLButtonElement>(null)
     const [openSort, setOpenSort] = useState(false)
     const [sorts, setSorts] = useState<SortType>([])
-    const [formattedSorts, setFormattedSorts] = useState<SortType | undefined>(undefined)
 
     const [commonFields, setCommonFields] = useState<{ [k: string]: string }>(undefined)
 
     const [initialLoading, setInitialLoading] = useState(true)
     const [loading, setLoading] = useState(true)
-    const [applying, setApplying] = useState(false)
 
     const init = async (offset: number = 0, limit: number = 0) => {
         setLoading(true)
@@ -123,8 +120,9 @@ export function ProductsDataGrid({
         } finally { setLoading(false) }
     }
 
-    const fetch = async (offset: number = 0, limit: number = 0) => {
-        const res = await fetchData(`${getApiUrl()}/products?limit=${limit}&skip=${limit * offset}${filters === undefined ? '' : `&filter=${JSON.stringify(formatFilters(filters))}`}${sorts === undefined || sorts.length === 0 ? '' : `&sort=${JSON.stringify(sorts)}`}`)
+    const fetch = async (offset: number = 0, limit: number = 10) => {
+        console.log('fetch', { offset, limit, formattedFilters: state.formattedFilters, formattedSorts: state.formattedSorts })
+        const res = await fetchData(`${getApiUrl()}/products?limit=${limit}&skip=${limit * offset}${state.formattedFilters === undefined ? '' : `&filter=${JSON.stringify(state.formattedFilters)}`}${state.formattedSorts === undefined || state.formattedSorts.length === 0 ? '' : `&sort=${JSON.stringify(state.formattedSorts)}`}`)
         console.log('res', res)
         if (!res.response || !res.response.ok || !array().required().isValidSync(res.data)) {
             feedback.pushError({ node: t('Products.failedToFetchProducts') })
@@ -137,6 +135,52 @@ export function ProductsDataGrid({
         }
 
         return false
+    }
+
+    const formatSorts = (sorts: SortType) => {
+        let s = sorts
+            .filter(f => f.field && ['asc', 'desc'].includes(f.direction))
+            .map(m => {
+                if (m.field === 'price')
+                    m.field += '.IRR'
+                if (m.field === 'displayName')
+                    m.field += `.${configuration.local.language}`
+                return m
+            })
+        return s.length !== 0 ? s : undefined
+    }
+
+    const formatFilters = (filters: Filters | Filter) => {
+        if (!filters)
+            return undefined
+
+        const formattedFilters = {}
+        if (Object.keys(filters).includes('$and') || Object.keys(filters).includes('$or')) {
+            let k = Object.keys(filters).includes('$and') ? '$and' : '$or'
+            let f = []
+            for (const filter of filters[k]) {
+                let t = formatFilters(filter)
+                if (t)
+                    f.push(t)
+            }
+            if (f.length !== 0)
+                formattedFilters[k] = f
+            else
+                return undefined
+        } else {
+            let filter: Filter = Object.fromEntries(Object.entries(filters).filter(f => ['field', 'operator', 'value'].includes(f[0]))) as Filter
+            if (!filter?.field || !filter?.operator || (filter?.operator !== '$undefined' && (filter?.value === undefined || filter?.value === null || (typeof filter?.value === 'string' && filter?.value?.trim() === ''))))
+                return undefined
+
+            if (filter.operator === '$undefined') {
+                filter.operator = '$eq'
+                filter.value = undefined
+            }
+
+            return filter
+        }
+
+        return formattedFilters
     }
 
     type State = {
@@ -157,22 +201,27 @@ export function ProductsDataGrid({
         showCategories: Row<any> | undefined
         showCustomFields: Row<any> | undefined
         searchByName: string
+        formattedFilters: Filters | undefined
+        formattedSorts: SortType | undefined
     }
 
     type Actions =
         { operation: 'searchedByName', data: Product[] } |
         { operation: 'searchByName', data: string } |
-        { operation: 'fetch' | 'fetched' | 'createStarted' | 'createEnded' | 'updateEnded' | 'deleteEnded' | 'updatedIsAvailable' } |
+        { operation: 'apply' | 'fetch' | 'fetched' | 'createStarted' | 'createEnded' | 'updateEnded' | 'deleteEnded' | 'updatedIsAvailable' } |
         { operation: 'updateStarted' | 'updateIsAvailable' | 'deleteStarted' | 'showCategories' | 'showTags' | 'showCustomFields', data: Row<any> } |
         { operation: 'setPage', data: { offset: number, limit: number } }
 
     const reducer = (state: State, arg: Actions): State => {
         switch (arg.operation) {
+            case 'apply':
+                return { ...state, fetching: true, headerNodes: [...state.headerNodes], page: { limit: 10, offset: 0 }, formattedFilters: formatFilters(filters), formattedSorts: formatSorts(sorts) }
+
             case 'fetch':
                 return { ...state, fetching: true, headerNodes: [...state.headerNodes] }
 
             case 'fetched':
-                return { ...state, fetching: false }
+                return { ...state, fetching: false, formattedFilters: undefined, formattedSorts: undefined }
 
             case 'createStarted':
                 return {
@@ -272,71 +321,29 @@ export function ProductsDataGrid({
         }
     }
 
-    const [state, dispatch]: [State, ActionDispatch<[Actions]>] = useReducer<State, [Actions]>(reducer, {
-        columns: [],
-        additionalColumns: [],
-        overWriteColumns: [],
-        headerNodes: [],
-        searchedProducts: [],
-        searching: false,
-        searchByName: '',
-        creating: false,
-        updatingRow: undefined,
-        updatingIsAvailable: undefined,
-        deletingRow: undefined,
-        ask: { open: false },
-        fetching: false,
-        page: { limit: 10, offset: 0 },
-        showTags: undefined,
-        showCategories: undefined,
-        showCustomFields: undefined,
-    })
-
-    const formatFiltersAndSorts = () => {
-        let s = sorts.filter(f => f.field && ['asc', 'desc'].includes(f.direction))
-        setFormattedSorts(s.length !== 0 ? s : undefined)
-        const formatFilters = (filters: Filters | Filter) => {
-            if (!filters)
-                return undefined
-
-            const formattedFilters = {}
-            if (Object.keys(filters).includes('$and') || Object.keys(filters).includes('$or')) {
-                let k = Object.keys(filters).includes('$and') ? '$and' : '$or'
-                let f = []
-                for (const filter of filters[k]) {
-                    let t = formatFilters(filter)
-                    if (t)
-                        f.push(t)
-                }
-                if (f.length !== 0)
-                    formattedFilters[k] = f
-                else
-                    return undefined
-            } else {
-                let filter: Filter = Object.fromEntries(Object.entries(filters).filter(f => ['field', 'operator', 'value'].includes(f[0]))) as Filter
-                if (!filter?.field || !filter?.operator || (filter?.operator !== '$undefined' && (filter?.value === undefined || filter?.value === null || (typeof filter?.value === 'string' && filter?.value?.trim() === ''))))
-                    return undefined
-
-                if (filter.operator === '$undefined') {
-                    filter.operator = '$eq'
-                    filter.value = undefined
-                }
-
-                return filter
-            }
-
-            return formattedFilters
-        }
-        setFormattedFilters(formatFilters(filters))
-        setApplying(true)
-    }
-
-    useEffect(() => {
-        console.log('applying, formattedFilters, formattedSorts')
-        if (applying && (formattedFilters !== undefined || formattedSorts !== undefined))
-            init()
-                .finally(() => setApplying(false))
-    }, [applying, formattedFilters, formattedSorts])
+    const [state, dispatch]: [State, ActionDispatch<[Actions]>] = useReducer<State, [Actions]>(
+        reducer,
+        {
+            columns: [],
+            additionalColumns: [],
+            overWriteColumns: [],
+            headerNodes: [],
+            searchedProducts: [],
+            searching: false,
+            searchByName: '',
+            creating: false,
+            updatingRow: undefined,
+            updatingIsAvailable: undefined,
+            deletingRow: undefined,
+            ask: { open: false },
+            fetching: false,
+            page: { limit: 10, offset: 0 },
+            showTags: undefined,
+            showCategories: undefined,
+            showCustomFields: undefined,
+            formattedFilters: undefined,
+            formattedSorts: undefined,
+        })
 
     const timer = useRef(undefined)
 
@@ -545,7 +552,7 @@ export function ProductsDataGrid({
         functionality.search === true && <Input startIcon={state?.searching ? <CircularLoading size="xs" /> : <SearchIcon />} placeholder={t('ProductsDataGrid.SearchByName')} value={state.searchByName ?? ''} onChange={(e) => dispatch({ operation: 'searchByName', data: e.target.value.trim() })} />,
     ]
 
-    console.log('ProductsDataGrid', { applying, formattedFilters, formattedSorts, commonFields, openFilter, filters, loading, products, state, afterDataFetchHook, allFunctionalitiesToggle, functionality, options, columns, headerNodes, onChange, dataGridProps })
+    console.log('ProductsDataGrid', { commonFields, openFilter, filters, loading, products, state, afterDataFetchHook, allFunctionalitiesToggle, functionality, options, columns, headerNodes, onChange, dataGridProps })
 
     return (
         <>
@@ -576,8 +583,8 @@ export function ProductsDataGrid({
                 filters={filters}
                 setFilters={setFilters}
                 apply={() => {
-                    dispatch({ operation: 'setPage', data: { limit: 0, offset: 0 } })
-                    formatFiltersAndSorts()
+                    dispatch({ operation: 'apply' })
+                    setOpenFilter(false)
                 }}
             />
 
@@ -589,8 +596,8 @@ export function ProductsDataGrid({
                 sorts={sorts}
                 setSorts={setSorts}
                 apply={() => {
-                    dispatch({ operation: 'setPage', data: { limit: 0, offset: 0 } })
-                    formatFiltersAndSorts()
+                    dispatch({ operation: 'apply' })
+                    setOpenSort(false)
                 }}
             />
 
