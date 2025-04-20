@@ -8,7 +8,7 @@ import { Product } from "@/src/Components/Products/index.d";
 import { ProductThumbnail } from "@/src/Components/Products/ProductThumbnail";
 import { FeedbackContext } from "@/src/Contexts/Feedback/FeedbackContext";
 import { t } from "i18next";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, MenuIcon } from "lucide-react";
 import { memo, useContext, useEffect, useState } from "react";
 import { useSearchParams } from "react-router";
 import { array } from "yup";
@@ -22,6 +22,8 @@ export const Home = memo(function Home() {
 
     const [trendingProducts, setTrendingProducts] = useState<Product[]>(undefined)
     const [popularProducts, setPopularProducts] = useState<Product[]>(undefined)
+
+    const [open, setOpen] = useState(false)
 
     const googleAuth = async () => {
         console.log('Home', 'googleAuth')
@@ -94,31 +96,31 @@ export const Home = memo(function Home() {
     // }
 
     useEffect(() => {
-        try {
-            console.log('``````````````````````````````')
-            console.log(math.evaluate('2+2*2'))
-            console.log(math.parse('a+b+c'))
-            // console.log(math.compile('a+b+c').evaluate({ a: 5, b: 7 }))
-            const a = math.parser();
-            const node = math.parse('3 * x + 2')
-            console.log('node', node)
-            node.forEach(function (node) {
-                switch (node.type) {
-                    case 'OperatorNode':
-                        console.log(node.type, node.op)
-                        break
-                    case 'ConstantNode':
-                        console.log(node.type, node.value)
-                        break
-                    case 'SymbolNode':
-                        console.log(node.type, node.name)
-                        break
-                    default:
-                        console.log(node.type)
-                }
-            })
-            console.log('``````````````````````````````')
-        } catch (e) { console.error(e) }
+        // try {
+        //     console.log('``````````````````````````````')
+        //     console.log(math.evaluate('2+2*2'))
+        //     console.log(math.parse('a+b+c'))
+        //     // console.log(math.compile('a+b+c').evaluate({ a: 5, b: 7 }))
+        //     const a = math.parser();
+        //     const node = math.parse('3 * x + 2')
+        //     console.log('node', node)
+        //     node.forEach(function (node) {
+        //         switch (node.type) {
+        //             case 'OperatorNode':
+        //                 console.log(node.type, node.op)
+        //                 break
+        //             case 'ConstantNode':
+        //                 console.log(node.type, node.value)
+        //                 break
+        //             case 'SymbolNode':
+        //                 console.log(node.type, node.name)
+        //                 break
+        //             default:
+        //                 console.log(node.type)
+        //         }
+        //     })
+        //     console.log('``````````````````````````````')
+        // } catch (e) { console.error(e) }
         googleAuth()
         init()
     }, [])
@@ -127,7 +129,8 @@ export const Home = memo(function Home() {
 
     return (
         <Stack direction="vertical">
-            <Navigation />
+            <Button isIcon variant="text" onClick={() => setOpen(true)}><MenuIcon /></Button>
+            <Navigation open={open} setOpen={setOpen} />
             {/* Trending */}
             <Stack direction="vertical" stackProps={{ className: 'border rounded-lg shadow-lg h-[11cm] p-2' }}>
                 <Stack stackProps={{ className: 'justify-between items-center' }}>

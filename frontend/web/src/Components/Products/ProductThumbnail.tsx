@@ -14,7 +14,7 @@ export function ProductThumbnail({ product }: { product: Product }) {
     useEffect(() => {
         fetchData(`${getApiUrl()}/products/pictures/productIds?productIds=${product._id}`)
             .then(r => {
-                if (r.response && r.response.ok && array().required().isValidSync(r.data))
+                if (r.response && r.response.ok && array().required().min(1).isValidSync(r.data))
                     fetchData(`${getApiUrl()}/products/picture/fileId?fileId=${r.data[0]._id}`)
                         .then(rr => {
                             if (r.response && r.response.ok)
