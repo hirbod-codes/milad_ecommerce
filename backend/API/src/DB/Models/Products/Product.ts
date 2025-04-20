@@ -30,7 +30,7 @@ export const productSchema = object().required().strict(true).unknown(true).shap
         monthly: number().required(),
         weekly: number().required(),
     }),
-    purchaseCount: number().strict(true).integer().min(0).optional(),
+    unitsSold: object().required().shape({ monthly: number().required().min(0).integer(), yearly: number().required().min(0).integer() }),
     reviewsCount: number().strict(true).integer().min(0).optional(),
     views: number().strict(true).integer().min(0).optional(),
     averageRating: number().strict(true).min(0).max(5).optional(),

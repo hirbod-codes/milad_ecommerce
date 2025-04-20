@@ -49,7 +49,7 @@ export class ProductSaleRepository extends MongoDB {
             collection.insertMany(docs)
 
             for (const order of orders)
-                await productRepository.updateTrendingScore(order, order.createdAt)
+                await productRepository.updateScores(order, order.createdAt)
 
             for (const p of products)
                 if (faker.datatype.boolean(0.2))

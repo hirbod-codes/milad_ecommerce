@@ -64,6 +64,13 @@ products.get('/ids', async (req, res) => {
             res.sendStatus(404)
         else
             res.json(r)
+
+        try {
+            if (ids.length !== 1)
+                return
+
+            await productRepository.incrementView(ids[0])
+        } catch (e) { console.error(e) }
     } catch (e) {
         console.error(e)
         res.sendStatus(500)
@@ -94,6 +101,36 @@ products.get('/search', async (req, res) => {
 
 products.get('/common_fields', (req, res) => {
     res.json(Object.fromEntries(Object.entries(flattenSchema(productSchema.fields)).filter(f => !forbiddenFieldsToFilter.includes(f[0].split('.')[0]))))
+})
+
+products.get('/:id', async (req, res) => {
+    try {
+        const { id } = req.params
+
+        if (!string().required().strict(true).isValidSync(id)) {
+            res.sendStatus(400)
+            return
+        }
+
+        if (!stringObjectId.required().isValidSync(id)) {
+            res.sendStatus(400)
+            return
+        }
+
+        const productRepository = await ProductRepository.getInstance()
+        const r = await productRepository.getById(id)
+        if (!r)
+            res.sendStatus(404)
+        else
+            res.json(r)
+
+        try { await productRepository.incrementView(id) }
+        catch (e) { console.error(e) }
+    } catch (e) {
+        console.error(e)
+        res.sendStatus(500)
+    }
+
 })
 
 products.get('/', async (req, res) => {

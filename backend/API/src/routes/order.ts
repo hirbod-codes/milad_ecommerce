@@ -199,7 +199,7 @@ order.patch('/payed', authenticate, async (req, res) => {
         if (products === undefined)
             throw new Error('system failed to get fetch order\'s products')
 
-        await productRepository.updateTrendingScore(order, DateTime.utc().toUnixInteger())
+        await productRepository.updateScores(order, DateTime.utc().toUnixInteger())
 
         await productSaleRepository.commitTransaction()
     } catch (e) {

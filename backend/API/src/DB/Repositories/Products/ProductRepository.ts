@@ -79,7 +79,6 @@ export class ProductRepository extends MongoDB {
                             displayName: { fa: fakerFA.commerce.productName(), en: name },
                             description: { fa: fakerFA.commerce.productDescription(), en: faker.commerce.productDescription() },
                             price: { IRR: faker.number.int({ min: 0, max: 500_000_000 }), USD: faker.number.int({ min: 0, max: 500_000_000 }) },
-                            purchaseCount: faker.number.int({ min: 0, max: 5000 }),
                             reviewsCount: faker.number.int({ min: 0, max: 1000 }),
                             isAvailable: faker.datatype.boolean(0.7),
                             views: faker.number.int({ min: 0, max: 100000 }),
@@ -98,6 +97,10 @@ export class ProductRepository extends MongoDB {
                             trendingScore: {
                                 monthly: 0,
                                 weekly: 0,
+                            },
+                            unitsSold: {
+                                monthly: 0,
+                                yearly: 0,
                             },
                             createdAt: ts,
                             updatedAt: ts,
@@ -124,7 +127,7 @@ export class ProductRepository extends MongoDB {
         } finally { console.timeEnd() }
     }
 
-    async updateTrendingScore(order: Order, nowTS: number) {
+    async updateScores(order: Order, nowTS: number): Promise<void> {
         const products = await this.getByIds(order.products.map(m => m.productId))
         if (products === undefined)
             throw new Error('system failed to update product trending score')
@@ -141,11 +144,28 @@ export class ProductRepository extends MongoDB {
                 nowTS
             )
 
-            const r = await this.updateImmutables(product._id, { stats: product.stats, trendingScore: { monthly: product.stats.monthlyZScore, weekly: product.stats.weeklyZScore } })
+            const r = await this.updateImmutables(
+                product._id,
+                {
+                    stats: product.stats,
+                    trendingScore: {
+                        monthly: product.stats.monthlyZScore,
+                        weekly: product.stats.weeklyZScore
+                    },
+                    unitsSold: {
+                        monthly: product.stats.monthly.length === 0 ? 0 : product.stats.monthly[product.stats.monthly.length - 1].count,
+                        yearly: product.stats.monthly.reduce((p, c) => p + c.count, 0)
+                    }
+                })
             if (r === false || !r.acknowledged || r.matchedCount !== 1)
                 throw new Error('system failed to update product trending score')
         }
         console.timeEnd('ZScore calculation')
+    }
+
+    async incrementView(id: string | ObjectId): Promise<UpdateResult | false> {
+        try { return await this.collection.updateOne({ _id: typeof id === 'string' ? ObjectId.createFromHexString(id) : id }, { $inc: { 'views': 1 } }) }
+        catch (e) { console.error(e); return false }
     }
 
     async create(product: ProductInput): Promise<InsertOneResult | false> {
@@ -166,6 +186,10 @@ export class ProductRepository extends MongoDB {
             trendingScore: {
                 monthly: 0,
                 weekly: 0,
+            },
+            unitsSold: {
+                monthly: 0,
+                yearly: 0,
             },
             schemaVersion,
             createdAt: ts,
