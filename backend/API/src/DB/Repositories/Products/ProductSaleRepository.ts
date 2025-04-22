@@ -2,8 +2,7 @@ import { DateTime } from "luxon";
 import { Collection, Db, DeleteResult, InsertOneResult, MongoClient, ObjectId } from 'mongodb'
 import { MongoDB } from "../../mongodb";
 import { ProductSale, ProductSaleCreate, ProductSaleInput, schemaVersion } from "../../Models/Products/ProductSale";
-import { PopularProduct } from "../../Models/Products/PopularProduct";
-import { ProductSaleCount, ProductSaleCountCreate } from "../../Models/Products/ProductSaleCount";
+import { ProductSaleCountCreate } from "../../Models/Products/ProductSaleCount";
 import { Product } from "../../Models/Products/Product";
 
 export class ProductSaleRepository extends MongoDB {

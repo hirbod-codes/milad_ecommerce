@@ -145,9 +145,24 @@ export class ProductRepository extends MongoDB {
         catch (e) { console.error(e); return [] }
     }
 
-    async getMostTrendingInCategory(category: string): Promise<Product | undefined> {
-        try { return (await this.collection.find({ categories: { $in: [category] } }).sort([['stats.monthlyZScore', -1]]).limit(1).toArray())[0] }
-        catch (e) { console.error(e); return undefined }
+    async getMostViewedProducts(categories?: string[], tags?: string[], offset: number = 0, limit: number = 10): Promise<Product[] | false> {
+        try {
+            let cursor, filter: any = {}
+
+            if (categories)
+                filter.categories = { $in: categories }
+
+            if (tags)
+                filter.tags = { $in: tags }
+
+            if (!tags && !categories)
+                cursor = this.collection.find()
+            else
+                cursor = this.collection.find(filter).skip(offset).limit(limit)
+
+            return await cursor.toArray()
+        }
+        catch (e) { console.error(e); return false }
     }
 
     async get(filter: Filter<Product>, sorts: { field: keyof Product, direction: SortDirection }[], limit: number, skip: number): Promise<Product[] | false> {

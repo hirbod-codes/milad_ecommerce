@@ -8,7 +8,6 @@ import { OrderCreate, collectionName as orderCollectionName } from './Models/Ord
 import { ProductCreate, collectionName as productCollectionName } from './Models/Products/Product'
 import { ProductSaleCountCreate, collectionName as productSaleCountCollectionName } from './Models/Products/ProductSaleCount'
 import { ProductSaleCreate, collectionName as productSalesCollectionName } from './Models/Products/ProductSale'
-import { PopularProductCreate, collectionName as popularProductCollectionName } from './Models/Products/PopularProduct'
 import { ProductReviewCreate, collectionName as productReviewCollectionName } from './Models/Products/ProductReview'
 import { TagCreate, collectionName as tagCollectionName } from './Models/Tag'
 import { collectionName as productPictureCollectionName } from './Models/Products/ProductPicture'
@@ -219,7 +218,6 @@ export class MongoDB {
         await this.addProductCollection(db)
         await this.addProductSalesCollection(db)
         await this.addProductSalesCountCollection(db)
-        await this.addPopularProductCollection(db)
         await this.addProductReviewsCollection(db)
         await this.addTagCollection(db)
         await this.addRoleCollection(db)
@@ -241,10 +239,10 @@ export class MongoDB {
             await db.createIndex(userCollectionName, { phoneNumber: 1 }, { sparse: true, unique: true, name: 'phoneNumber' })
 
         if (indexes.find(i => i.name === 'createdAt') === undefined)
-            await db.createIndex(userCollectionName, { createdAt: 1 }, { name: 'createdAt' })
+            await db.createIndex(userCollectionName, { createdAt: -1 }, { name: 'createdAt' })
 
         if (indexes.find(i => i.name === 'updatedAt') === undefined)
-            await db.createIndex(userCollectionName, { updatedAt: 1 }, { name: 'updatedAt' })
+            await db.createIndex(userCollectionName, { updatedAt: -1 }, { name: 'updatedAt' })
     }
 
     async getUserCollection(client?: MongoClient, db?: Db): Promise<Collection<User>> {
@@ -261,10 +259,10 @@ export class MongoDB {
             await db.createIndex(categoryCollectionName, { name: 1 }, { unique: true, name: 'unique-name' })
 
         if (indexes.find(i => i.name === 'createdAt') === undefined)
-            await db.createIndex(categoryCollectionName, { createdAt: 1 }, { name: 'createdAt' })
+            await db.createIndex(categoryCollectionName, { createdAt: -1 }, { name: 'createdAt' })
 
         if (indexes.find(i => i.name === 'updatedAt') === undefined)
-            await db.createIndex(categoryCollectionName, { updatedAt: 1 }, { name: 'updatedAt' })
+            await db.createIndex(categoryCollectionName, { updatedAt: -1 }, { name: 'updatedAt' })
     }
 
     async getCategoryCollection(client?: MongoClient, db?: Db): Promise<Collection<CategoryCreate>> {
@@ -278,10 +276,10 @@ export class MongoDB {
         const indexes = await db.collection(orderCollectionName).indexes()
 
         if (indexes.find(i => i.name === 'createdAt') === undefined)
-            await db.createIndex(orderCollectionName, { createdAt: 1 }, { name: 'createdAt' })
+            await db.createIndex(orderCollectionName, { createdAt: -1 }, { name: 'createdAt' })
 
         if (indexes.find(i => i.name === 'updatedAt') === undefined)
-            await db.createIndex(orderCollectionName, { updatedAt: 1 }, { name: 'updatedAt' })
+            await db.createIndex(orderCollectionName, { updatedAt: -1 }, { name: 'updatedAt' })
     }
 
     async getOrderCollection(client?: MongoClient, db?: Db): Promise<Collection<OrderCreate>> {
@@ -314,11 +312,29 @@ export class MongoDB {
                 }
             )
 
+        if (indexes.find(i => i.name === 'views') === undefined)
+            await db.createIndex(productCollectionName, { views: -1 }, { name: 'views' })
+
+        if (indexes.find(i => i.name === 'categories') === undefined)
+            await db.createIndex(productCollectionName, { categories: -1 }, { name: 'categories' })
+
+        if (indexes.find(i => i.name === 'tags') === undefined)
+            await db.createIndex(productCollectionName, { tags: -1 }, { name: 'tags' })
+
+        if (indexes.find(i => i.name === 'isAvailable') === undefined)
+            await db.createIndex(productCollectionName, { isAvailable: -1 }, { name: 'isAvailable' })
+
+        if (indexes.find(i => i.name === 'reviewsCount') === undefined)
+            await db.createIndex(productCollectionName, { reviewsCount: -1 }, { name: 'reviewsCount' })
+
+        if (indexes.find(i => i.name === 'averageRating') === undefined)
+            await db.createIndex(productCollectionName, { averageRating: -1 }, { name: 'averageRating' })
+
         if (indexes.find(i => i.name === 'createdAt') === undefined)
-            await db.createIndex(productCollectionName, { createdAt: 1 }, { name: 'createdAt' })
+            await db.createIndex(productCollectionName, { createdAt: -1 }, { name: 'createdAt' })
 
         if (indexes.find(i => i.name === 'updatedAt') === undefined)
-            await db.createIndex(productCollectionName, { updatedAt: 1 }, { name: 'updatedAt' })
+            await db.createIndex(productCollectionName, { updatedAt: -1 }, { name: 'updatedAt' })
     }
 
     async getProductCollection(client?: MongoClient, db?: Db): Promise<Collection<ProductCreate>> {
@@ -335,10 +351,10 @@ export class MongoDB {
             await db.createIndex(productReviewCollectionName, { userId: 1, productId: 1 }, { unique: true, name: 'uniqueness' })
 
         if (indexes.find(i => i.name === 'createdAt') === undefined)
-            await db.createIndex(productReviewCollectionName, { createdAt: 1 }, { name: 'createdAt' })
+            await db.createIndex(productReviewCollectionName, { createdAt: -1 }, { name: 'createdAt' })
 
         if (indexes.find(i => i.name === 'updatedAt') === undefined)
-            await db.createIndex(productReviewCollectionName, { updatedAt: 1 }, { name: 'updatedAt' })
+            await db.createIndex(productReviewCollectionName, { updatedAt: -1 }, { name: 'updatedAt' })
     }
 
     async getProductReviewsCollection(client?: MongoClient, db?: Db): Promise<Collection<ProductReviewCreate>> {
@@ -394,20 +410,6 @@ export class MongoDB {
         return (db ?? (await this.getDb(client))).collection<ProductSaleCountCreate>(productSaleCountCollectionName)
     }
 
-    private async addPopularProductCollection(db: Db) {
-        if (!(await db.listCollections().toArray()).map(e => e.name).includes(popularProductCollectionName))
-            await db.createCollection(popularProductCollectionName)
-
-        const indexes = await db.collection(popularProductCollectionName).indexes()
-
-        if (indexes.find(i => i.name === 'category') === undefined)
-            await db.createIndex(popularProductCollectionName, { category: 1 }, { name: 'category' })
-    }
-
-    async getPopularProductCollection(client?: MongoClient, db?: Db): Promise<Collection<PopularProductCreate>> {
-        return (db ?? (await this.getDb(client))).collection<PopularProductCreate>(popularProductCollectionName)
-    }
-
     async getProductPictureBucket(client?: MongoClient, db?: Db): Promise<GridFSBucket> {
         return new GridFSBucket(db ?? (await this.getDb(client)), { bucketName: productPictureCollectionName });
     }
@@ -424,10 +426,10 @@ export class MongoDB {
             await db.createIndex(tagCollectionName, { name: 1 }, { unique: true, name: 'unique-name' })
 
         if (indexes.find(i => i.name === 'createdAt') === undefined)
-            await db.createIndex(tagCollectionName, { createdAt: 1 }, { name: 'createdAt' })
+            await db.createIndex(tagCollectionName, { createdAt: -1 }, { name: 'createdAt' })
 
         if (indexes.find(i => i.name === 'updatedAt') === undefined)
-            await db.createIndex(tagCollectionName, { updatedAt: 1 }, { name: 'updatedAt' })
+            await db.createIndex(tagCollectionName, { updatedAt: -1 }, { name: 'updatedAt' })
     }
 
     async getTagCollection(client?: MongoClient, db?: Db): Promise<Collection<TagCreate>> {
@@ -444,10 +446,10 @@ export class MongoDB {
             await db.createIndex(roleCollectionName, { name: 1 }, { unique: true, name: 'unique-name' })
 
         if (indexes.find(i => i.name === 'createdAt') === undefined)
-            await db.createIndex(roleCollectionName, { createdAt: 1 }, { name: 'createdAt' })
+            await db.createIndex(roleCollectionName, { createdAt: -1 }, { name: 'createdAt' })
 
         if (indexes.find(i => i.name === 'updatedAt') === undefined)
-            await db.createIndex(roleCollectionName, { updatedAt: 1 }, { name: 'updatedAt' })
+            await db.createIndex(roleCollectionName, { updatedAt: -1 }, { name: 'updatedAt' })
     }
 
     async getRoleCollection(client?: MongoClient, db?: Db): Promise<Collection<RoleCreate>> {

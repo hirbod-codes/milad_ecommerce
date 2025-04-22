@@ -293,6 +293,48 @@ products.get('/topSeller', async (req, res) => {
     }
 })
 
+products.get('/mostViewed', async (req, res) => {
+    try {
+        const { categories: categoriesStr, tags: tagsStr, skip: skipStr, limit: limitStr } = req?.query
+        if (!number().optional().min(1).integer().isValidSync(limitStr)) {
+            res.status(400).json({ errors: ['invalid limit'] })
+            return
+        }
+
+        if (!number().optional().min(0).integer().isValidSync(skipStr)) {
+            res.status(400).json({ errors: ['invalid skip'] })
+            return
+        }
+
+        let limit = number().required().min(10).integer().cast(limitStr ?? 25)
+        let skip = number().required().min(0).integer().cast(skipStr ?? 0)
+
+        const categories = JSON.parse(typeof categoriesStr === 'string' ? categoriesStr : '')
+        const tags = JSON.parse(typeof tagsStr === 'string' ? tagsStr : '')
+
+        if (categoriesStr && (typeof categoriesStr !== 'string' || !productSchema.pick(['categories']).optional().isValidSync({ categories }))) {
+            res.sendStatus(400)
+            return
+        }
+
+        if (tagsStr && (typeof tagsStr !== 'string' || !productSchema.pick(['tags']).optional().isValidSync({ tags }))) {
+            res.sendStatus(400)
+            return
+        }
+
+        const productRepository = await ProductRepository.getInstance()
+        const products = await productRepository.getMostViewedProducts(categories, tags, skip, limit)
+
+        if (products === false)
+            res.sendStatus(500)
+        else
+            res.status(200).json(products)
+    } catch (e) {
+        console.error(e)
+        res.sendStatus(500)
+    }
+})
+
 products.get('/picture/fileId', async (req, res) => {
     try {
         const { fileId } = req.query
