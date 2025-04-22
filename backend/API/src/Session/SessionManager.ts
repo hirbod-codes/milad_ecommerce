@@ -2,6 +2,8 @@ import { createClient, createCluster, RedisClientType, RedisClusterType, RedisDe
 import { SessionInsertionFailure } from "./Exceptions/SessionInsertionFailure";
 import { SessionRetrievalFailure } from "./Exceptions/SessionRetrievalFailure";
 import { ConnectionFailure } from "./Exceptions/ConnectionFailure";
+import { ProductRepository } from "../DB/Repositories/Products/ProductRepository";
+import { number } from "yup";
 
 export class SessionManager {
     static sessionRedisClient: RedisClusterType<RedisDefaultModules> | RedisClientType<RedisDefaultModules> = undefined!
@@ -56,5 +58,35 @@ export class SessionManager {
             console.error(e)
             throw new SessionRetrievalFailure()
         }
+    }
+
+    static async incrementProductViews(productId: string): Promise<number> {
+        try {
+            await SessionManager.sessionRedisClient.sAdd(`product:views:set`, productId)
+            return await SessionManager.sessionRedisClient.incr(`product:${productId}:views`)
+        } catch (e) {
+            console.error(e)
+            throw new SessionInsertionFailure()
+        }
+    }
+
+    static async deleteProductViews(productId: string): Promise<number> {
+        try {
+            return await SessionManager.sessionRedisClient.sRem(`product:views:set`, productId)
+        } catch (e) {
+            console.error(e)
+            throw new SessionInsertionFailure()
+        }
+    }
+
+    static async getProductViews(productId: string): Promise<string | null> {
+        return await SessionManager.sessionRedisClient.get(`product:${productId}:views`);
+    }
+
+    static async getProductViewsCursor(offset: number, limit: number): Promise<{ cursor: number, members: string[] }> {
+        return await SessionManager.sessionRedisClient.sScan(`product:views:set`, offset, {
+            MATCH: '*',
+            COUNT: limit,
+        })
     }
 }

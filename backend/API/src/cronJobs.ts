@@ -1,46 +1,52 @@
-// import { schedule } from "node-cron";
-// import { ProductSaleRepository } from "./DB/Repositories/Products/ProductSaleRepository";
-// import { PopularProductRepository } from "./DB/Repositories/Products/PopularProductRepository";
-// import { DateTime } from "luxon";
+import { schedule } from "node-cron";
+import { DateTime } from "luxon";
+import { SessionManager } from "./Session/SessionManager";
+import { ProductRepository } from "./DB/Repositories/Products/ProductRepository";
+import { array, number } from "yup";
 
 export function runCronJobs() {
-    // schedule(
-    //     '* * 4 * * *',
-    //     async () => {
-    //         console.log('running cron job: "popular products calculations"...')
-    //         console.log(`----${DateTime.utc().toISO()}`)
+    schedule(
+        '* * 2 * * *',
+        async () => {
+            console.log('running cron job: "products views calculations"...')
+            console.log(`----${DateTime.utc().toISO()}`)
 
-    //         const popularProductRepository = await PopularProductRepository.getInstance()
-    //         const productSaleRepository = await ProductSaleRepository.getInstance()
+            const productRepository = await ProductRepository.getInstance()
 
-    //         console.time('aggregation duration')
-    //         const popularProducts = await productSaleRepository.getPopularProducts()
-    //         console.timeEnd('aggregation duration')
+            let cursor = 0;
+            do {
+                let nextCursor: number = undefined!, productIds: string[] = undefined!
+                try {
+                    const { cursor: nc, members } = await SessionManager.getProductViewsCursor(cursor, 100)
+                    console.log('cursor', nc)
+                    console.log('productIds.length', members.length)
+                    nextCursor = nc
+                    productIds = members
+                } catch (e) {
+                    console.error('system failed to get the cursor for redis set of products views count', e)
+                }
 
-    //         if (popularProducts === false)
-    //             console.error('system failed to update popular products collection')
-    //         else if (popularProducts.length === 0)
-    //             console.warn('no popular products')
-    //         else {
-    //             console.time('insertion duration')
-    //             await popularProductRepository.set(popularProducts)
-    //             console.timeEnd('insertion duration')
-    //         }
+                if (productIds && array().required().isValidSync(productIds))
+                    for (const productId of productIds) {
+                        try {
+                            const value = await SessionManager.getProductViews(productId)
 
-    //         console.log('done')
-    //     },
-    //     { name: 'popular products calculations', runOnInit: true })
+                            if (number().required().isValidSync(value))
+                                productRepository.incrementViews(productId, number().required().cast(value))
+                        }
+                        catch (e) { console.error('system failed to read cached product\'s views count key in redis and update the view count', e) }
 
-    // schedule(
-    //     '* * 1 * * *',
-    //     async () => {
-    //         console.log('running cron job: "products views calculations"...')
-    //         console.log(`----${DateTime.utc().toISO()}`)
+                        try { await SessionManager.deleteProductViews(productId) }
+                        catch (e) { console.error('system failed to delete cached product\'s views count key in redis', e) }
+                    }
 
-    //         // const productViewRepository =await ProductViewRepository.getInstance()
-    //         // productViewRepository.add()
+                cursor = nextCursor
 
-    //         console.log('done')
-    //     },
-    //     { name: 'products views calculations', runOnInit: true })
+                if (productIds.length === 0)
+                    break
+            } while (cursor !== 0);
+
+            console.log('done')
+        },
+        { name: 'products views calculations', runOnInit: true })
 }

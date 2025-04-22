@@ -127,44 +127,8 @@ export class ProductRepository extends MongoDB {
         } finally { console.timeEnd() }
     }
 
-    async updateScores(order: Order, nowTS: number): Promise<void> {
-        const products = await this.getByIds(order.products.map(m => m.productId))
-        if (products === undefined)
-            throw new Error('system failed to update product trending score')
-
-        console.time(`ZScore calculation`)
-        for (const oProduct of order.products) {
-            const product = products.find(f => f._id.toString() === oProduct.productId.toString())
-            if (!product)
-                continue
-
-            product.stats = await ZScore.calculate(
-                product,
-                oProduct.quantity,
-                nowTS
-            )
-
-            const r = await this.updateImmutables(
-                product._id,
-                {
-                    stats: product.stats,
-                    trendingScore: {
-                        monthly: product.stats.monthlyZScore,
-                        weekly: product.stats.weeklyZScore
-                    },
-                    unitsSold: {
-                        monthly: product.stats.monthly.length === 0 ? 0 : product.stats.monthly[product.stats.monthly.length - 1].count,
-                        yearly: product.stats.monthly.reduce((p, c) => p + c.count, 0)
-                    }
-                })
-            if (r === false || !r.acknowledged || r.matchedCount !== 1)
-                throw new Error('system failed to update product trending score')
-        }
-        console.timeEnd('ZScore calculation')
-    }
-
-    async incrementView(id: string | ObjectId): Promise<UpdateResult | false> {
-        try { return await this.collection.updateOne({ _id: typeof id === 'string' ? ObjectId.createFromHexString(id) : id }, { $inc: { 'views': 1 } }) }
+    async incrementViews(id: string | ObjectId, amount: number): Promise<UpdateResult | false> {
+        try { return await this.collection.updateOne({ _id: typeof id === 'string' ? ObjectId.createFromHexString(id) : id }, { $inc: { 'views': amount } }) }
         catch (e) { console.error(e); return false }
     }
 

@@ -13,6 +13,7 @@ import { PopularProductRepository } from "../DB/Repositories/Products/PopularPro
 import { categorySchema } from "../DB/Models/Category";
 import { CategoryRepository } from "../DB/Repositories/CategoryRepository";
 import { flattenSchema } from "../DB/Models/helpers";
+import { SessionManager } from "../Session/SessionManager";
 
 const products = Router()
 
@@ -64,13 +65,6 @@ products.get('/ids', async (req, res) => {
             res.sendStatus(404)
         else
             res.json(r)
-
-        try {
-            if (ids.length !== 1)
-                return
-
-            await productRepository.incrementView(ids[0])
-        } catch (e) { console.error(e) }
     } catch (e) {
         console.error(e)
         res.sendStatus(500)
@@ -118,14 +112,18 @@ products.get('/:id', async (req, res) => {
         }
 
         const productRepository = await ProductRepository.getInstance()
-        const r = await productRepository.getById(id)
-        if (!r)
+        const product = await productRepository.getById(id)
+        if (!product)
             res.sendStatus(404)
         else
-            res.json(r)
+            res.json(product)
 
-        try { await productRepository.incrementView(id) }
-        catch (e) { console.error(e) }
+        if (product)
+            try { await SessionManager.incrementProductViews(id) }
+            catch (e) {
+                console.error(e)
+                throw new Error('system failed to set session')
+            }
     } catch (e) {
         console.error(e)
         res.sendStatus(500)
