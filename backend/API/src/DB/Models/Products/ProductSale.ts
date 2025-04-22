@@ -1,11 +1,12 @@
-import { array, InferType, number, object, string } from "yup";
-import { likeObjectId, uniqueArrayTest } from "../common_schemas";
+import { InferType, number, object, string } from "yup";
+import { likeObjectId } from "../common_schemas";
 
 export const collectionName = 'productSale'
 
 export const schemaVersion = 'v1.0.0'
 
 export const productSaleSchema = object().required().strict(true).noUnknown(true).shape({
+    schemaVersion: string().required().min(6).max(20),
     _id: likeObjectId.required(),
     timestamp: number().required(),
     productId: likeObjectId.required(),

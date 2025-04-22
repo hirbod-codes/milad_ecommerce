@@ -1,80 +1,43 @@
 import { DateTime } from "luxon";
 import { Collection, Db, DeleteResult, InsertOneResult, MongoClient, ObjectId } from 'mongodb'
 import { MongoDB } from "../../mongodb";
-import { ProductSale, ProductSaleCreate, ProductSaleInput } from "../../Models/Products/ProductSale";
-import { OrderRepository } from "../OrderRepository";
+import { ProductSale, ProductSaleCreate, ProductSaleInput, schemaVersion } from "../../Models/Products/ProductSale";
 import { PopularProduct } from "../../Models/Products/PopularProduct";
-import { ProductRepository } from "./ProductRepository";
-import { ZScore } from "./ZScore";
-import { faker } from "@faker-js/faker/.";
+import { ProductSaleCount, ProductSaleCountCreate } from "../../Models/Products/ProductSaleCount";
 
 export class ProductSaleRepository extends MongoDB {
     private collection: Collection<ProductSaleCreate>
+    private saleCountCollection: Collection<ProductSaleCountCreate>
 
-    constructor(collection: Collection<ProductSaleCreate>) {
+    constructor(collection: Collection<ProductSaleCreate>, saleCountCollection: Collection<ProductSaleCountCreate>) {
         super();
         this.collection = collection
+        this.saleCountCollection = saleCountCollection
     }
 
     static async getInstance(client?: MongoClient, db?: Db): Promise<ProductSaleRepository> {
-        return new ProductSaleRepository(await MongoDB.getDbInstance().getProductSalesCollection(client, db))
-    }
-
-    static async seed() {
-        console.log('ProductSaleRepository.seed()')
-        console.time()
-
-        try {
-            const collection = await MongoDB.getDbInstance().getProductSalesCollection()
-            const orderRepository = await OrderRepository.getInstance()
-            const productRepository = await ProductRepository.getInstance()
-
-            if (!(await collection.deleteMany()).acknowledged)
-                throw new Error('seeding users failed!')
-
-            const orders = await orderRepository.getAll([['createdAt', 1]])
-            const products = await productRepository.getAll()
-
-            const docs = []
-            for (const order of orders)
-                if (!order.isPayed)
-                    continue
-                else for (const product of order.products)
-                    docs.push({
-                        productId: ObjectId.createFromHexString(product.productId.toString()),
-                        quantity: product.quantity,
-                        timestamp: order.createdAt,
-                    })
-
-            collection.insertMany(docs)
-
-            for (const order of orders)
-                await productRepository.updateScores(order, order.createdAt)
-
-            for (const p of products)
-                if (faker.datatype.boolean(0.2))
-                    await productRepository.updateImmutables(p._id, {
-                        stats: {
-                            monthly: [],
-                            weekly: [],
-                            monthlyMean: 0,
-                            weeklyMean: 0,
-                            monthlyStandardDeviation: 0,
-                            weeklyStandardDeviation: 0,
-                            monthlyZScore: 0,
-                            weeklyZScore: 0,
-                        }
-                    })
-        } finally { console.timeEnd() }
+        return new ProductSaleRepository(await MongoDB.getDbInstance().getProductSalesCollection(client, db), await MongoDB.getDbInstance().getProductSalesCountCollection(client, db))
     }
 
     async create(product: ProductSaleInput): Promise<InsertOneResult | false> {
-        let p: ProductSaleCreate = {
-            ...product,
-            timestamp: DateTime.utc().toUnixInteger(),
-        }
+        try {
+            let p: ProductSaleCreate = {
+                ...product,
+                schemaVersion: schemaVersion,
+                timestamp: DateTime.utc().toUnixInteger(),
+            }
 
-        return await this.collection.insertOne(p)
+            const r = await this.collection.insertOne(p)
+
+            this.saleCountCollection.aggregate()
+                .match({
+                    productId: r.insertedId,
+                    duration: 'monthly',
+                    timestamp: { $gt: DateTime.utc().set({ day: 1, hour: 0, minute: 0, second: 0, millisecond: 0 }).minus({ months: 12, days: 1 }) }
+                })
+
+            return r
+        } catch (e) { console.error(e); return false }
     }
 
     async getPopularProducts(): Promise<PopularProduct[] | false> {
@@ -144,47 +107,6 @@ export class ProductSaleRepository extends MongoDB {
                     }
                 }
             ])
-                // .match({ timestamp: { $gt: DateTime.utc().minus({ months: 3 }).toUnixInteger() } })
-                // .group({
-                //     _id: '$productId',
-                //     count: {
-                //         $sum: '$quantity'
-                //     }
-                // })
-                // .sort({ count: -1 })
-                // .lookup({
-                //     from: "product",
-                //     localField: "_id",
-                //     foreignField: "_id",
-                //     as: "product"
-                // })
-                // .unwind({
-                //     path: '$categories',
-                //     preserveNullAndEmptyArrays: false
-                // })
-                // .addStage({
-                //     $replaceRoot: {
-                //         newRoot: {
-                //             $mergeObjects: [
-                //                 { count: "$count" },
-                //                 { $arrayElemAt: ["$product", 0] }
-                //             ]
-                //         }
-                //     }
-                // })
-                // .group({
-                //     _id: '$categories',
-                //     products: { $push: '$$ROOT' }
-                // })
-                // .sort({
-                //     'products.count': -1
-                // })
-                // .project({
-                //     category: '$_id',
-                //     products: {
-                //         $slice: ["$products", 100]
-                //     }
-                // })
                 .toArray() as any
 
         }

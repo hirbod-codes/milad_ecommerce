@@ -5,6 +5,7 @@ import { MongoDB } from '../mongodb';
 import { faker } from '@faker-js/faker/.';
 import { ProductRepository } from './Products/ProductRepository';
 import { UserRepository } from './UserRepository';
+import { ProductSaleRepository } from './Products/ProductSaleRepository';
 
 export class OrderRepository extends MongoDB {
     private collection: Collection<OrderCreate>
@@ -26,6 +27,8 @@ export class OrderRepository extends MongoDB {
             const collection = await MongoDB.getDbInstance().getOrderCollection()
             const productRepository = await ProductRepository.getInstance()
             const userRepository = await UserRepository.getInstance()
+            const productSaleCollection = await MongoDB.getDbInstance().getProductSalesCollection()
+            const productSaleRepository = await ProductSaleRepository.getInstance()
 
             if (!(await collection.deleteMany()).acknowledged)
                 throw new Error('seeding users failed!')
@@ -52,7 +55,7 @@ export class OrderRepository extends MongoDB {
 
                             const ts = faker.number.int({ min: selectedProducts.reduce((p, c) => c.createdAt > p ? c.createdAt : p, 0), max: endTimeTS })
 
-                            let r = await collection.insertOne({
+                            const orderCreate: OrderCreate = {
                                 schemaVersion,
                                 userId: user._id,
                                 isPayed: faker.datatype.boolean(0.8),
@@ -65,9 +68,24 @@ export class OrderRepository extends MongoDB {
                                 },
                                 createdAt: ts,
                                 updatedAt: ts,
-                            })
-                            if (r.acknowledged)
-                                break
+                            }
+
+                            let r = await collection.insertOne(orderCreate)
+                            if (!r.acknowledged)
+                                throw new Error('system failed to insert order')
+
+                            const order = { ...orderCreate, _id: r.insertedId }
+
+                            if (order.isPayed)
+                                for (const product of order.products)
+                                    await productSaleCollection.insertOne({
+                                        schemaVersion: schemaVersion,
+                                        productId: ObjectId.createFromHexString(product.productId.toString()),
+                                        quantity: product.quantity,
+                                        timestamp: order.updatedAt,
+                                    })
+
+                            await productSaleRepository.updateScores(order, order.updatedAt)
                         } catch (e) {
                             if (!(e instanceof MongoSystemError) || e.code !== 11000)
                                 throw e

@@ -47,16 +47,6 @@ export type ProductCreate = InferType<typeof productCreateSchema>
 
 export let productUpdateSchema = productSchema
     .pick(['name', 'displayName', 'description', 'tags', 'categories', 'price', 'isAvailable', 'thumbnail'])
-    .shape({
-        _id: string().strip(true),
-        schemaVersion: string().strip(true),
-        createdAt: number().strip(true),
-        updatedAt: number().strip(true),
-        purchaseCount: number().strip(true),
-        reviewsCount: number().strip(true),
-        views: number().strip(true),
-        averageRating: number().strip(true),
-    })
     .required()
     .strict(true)
     .unknown(true)
