@@ -2,8 +2,6 @@ import { createClient, createCluster, RedisClientType, RedisClusterType, RedisDe
 import { SessionInsertionFailure } from "./Exceptions/SessionInsertionFailure";
 import { SessionRetrievalFailure } from "./Exceptions/SessionRetrievalFailure";
 import { ConnectionFailure } from "./Exceptions/ConnectionFailure";
-import { ProductRepository } from "../DB/Repositories/Products/ProductRepository";
-import { number } from "yup";
 
 export class SessionManager {
     static sessionRedisClient: RedisClusterType<RedisDefaultModules> | RedisClientType<RedisDefaultModules> = undefined!

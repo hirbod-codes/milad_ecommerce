@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { FilterManagement } from "@/src/DB/FilterManagement";
 import { Product, productImmutableSchema, productInputSchema, productSchema, productUpdateSchema, readableFields, forbiddenFieldsToFilter } from "@/src/DB/Models/Products/Product";
-import { array, number, object, string, } from "yup";
+import { array, mixed, number, object, string, } from "yup";
 import { stringObjectId } from "@/src/DB/Models/common_schemas";
 import { authenticate } from "@/src/middlewares/authenticate";
 import { authorize } from "@/src/middlewares/authorize";
@@ -14,6 +14,7 @@ import { categorySchema } from "../DB/Models/Category";
 import { CategoryRepository } from "../DB/Repositories/CategoryRepository";
 import { flattenSchema } from "../DB/Models/helpers";
 import { SessionManager } from "../Session/SessionManager";
+import { ProductSaleRepository } from "../DB/Repositories/Products/ProductSaleRepository";
 
 const products = Router()
 
@@ -200,44 +201,92 @@ products.get('/', async (req, res) => {
 
 products.get('/trending', async (req, res) => {
     try {
-        const categoryRepository = await CategoryRepository.getInstance()
-        const productRepository = await ProductRepository.getInstance()
-
-        const categories = await categoryRepository.get()
-        if (categories === false) {
-            res.sendStatus(404)
+        const { duration, categories: categoriesStr, tags: tagsStr, skip: skipStr, limit: limitStr } = req?.query
+        if (!number().optional().min(1).integer().isValidSync(limitStr)) {
+            res.status(400).json({ errors: ['invalid limit'] })
             return
         }
 
-        const products = []
-        for (const category of categories) {
-            const product = await productRepository.getMostTrendingInCategory(category.name)
-            if (product)
-                products.push(product)
+        if (!number().optional().min(0).integer().isValidSync(skipStr)) {
+            res.status(400).json({ errors: ['invalid skip'] })
+            return
         }
-        res.status(200).json(products)
+
+        let limit = number().required().min(10).integer().cast(limitStr ?? 25)
+        let skip = number().required().min(0).integer().cast(skipStr ?? 0)
+
+        const categories = JSON.parse(typeof categoriesStr === 'string' ? categoriesStr : '')
+        const tags = JSON.parse(typeof tagsStr === 'string' ? tagsStr : '')
+
+        if (categoriesStr && (typeof categoriesStr !== 'string' || !productSchema.pick(['categories']).optional().isValidSync({ categories }))) {
+            res.sendStatus(400)
+            return
+        }
+
+        if (tagsStr && (typeof tagsStr !== 'string' || !productSchema.pick(['tags']).optional().isValidSync({ tags }))) {
+            res.sendStatus(400)
+            return
+        }
+
+        if (!mixed<'monthly' | 'weekly' | 'yearly'>().required().oneOf(['monthly', 'weekly', 'yearly']).isValidSync(duration)) {
+            res.sendStatus(400)
+            return
+        }
+
+        const productRepository = await ProductSaleRepository.getInstance()
+        const products = await productRepository.getTopSellerProducts(duration, categories, tags, skip, limit)
+
+        if (products === false)
+            res.sendStatus(500)
+        else
+            res.status(200).json(products)
     } catch (e) {
         console.error(e)
         res.sendStatus(500)
     }
 })
 
-products.get('/popular', async (req, res) => {
+products.get('/topSeller', async (req, res) => {
     try {
-        const { category } = req?.query
+        const { duration, categories: categoriesStr, tags: tagsStr, skip: skipStr, limit: limitStr } = req?.query
+        if (!number().optional().min(1).integer().isValidSync(limitStr)) {
+            res.status(400).json({ errors: ['invalid limit'] })
+            return
+        }
 
-        if (category && !categorySchema.pick(['name']).optional().isValidSync({ category })) {
+        if (!number().optional().min(0).integer().isValidSync(skipStr)) {
+            res.status(400).json({ errors: ['invalid skip'] })
+            return
+        }
+
+        let limit = number().required().min(10).integer().cast(limitStr ?? 25)
+        let skip = number().required().min(0).integer().cast(skipStr ?? 0)
+
+        const categories = JSON.parse(typeof categoriesStr === 'string' ? categoriesStr : '')
+        const tags = JSON.parse(typeof tagsStr === 'string' ? tagsStr : '')
+
+        if (categoriesStr && (typeof categoriesStr !== 'string' || !productSchema.pick(['categories']).optional().isValidSync({ categories }))) {
             res.sendStatus(400)
             return
         }
 
-        const productRepository = await PopularProductRepository.getInstance()
-        const products = await productRepository.get()
+        if (tagsStr && (typeof tagsStr !== 'string' || !productSchema.pick(['tags']).optional().isValidSync({ tags }))) {
+            res.sendStatus(400)
+            return
+        }
 
-        if (category)
-            res.status(200).json(products.find(f => f.category === category)?.products)
+        if (!mixed<'monthly' | 'weekly' | 'yearly'>().required().oneOf(['monthly', 'weekly', 'yearly']).isValidSync(duration)) {
+            res.sendStatus(400)
+            return
+        }
+
+        const productRepository = await ProductSaleRepository.getInstance()
+        const products = await productRepository.getTopSellerProducts(duration, categories, tags, skip, limit)
+
+        if (products === false)
+            res.sendStatus(500)
         else
-            res.status(200).json(products.map(m => m.products[0]))
+            res.status(200).json(products)
     } catch (e) {
         console.error(e)
         res.sendStatus(500)

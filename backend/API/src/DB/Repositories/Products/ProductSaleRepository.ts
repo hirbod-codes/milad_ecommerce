@@ -4,6 +4,7 @@ import { MongoDB } from "../../mongodb";
 import { ProductSale, ProductSaleCreate, ProductSaleInput, schemaVersion } from "../../Models/Products/ProductSale";
 import { PopularProduct } from "../../Models/Products/PopularProduct";
 import { ProductSaleCount, ProductSaleCountCreate } from "../../Models/Products/ProductSaleCount";
+import { Product } from "../../Models/Products/Product";
 
 export class ProductSaleRepository extends MongoDB {
     private collection: Collection<ProductSaleCreate>
@@ -176,75 +177,104 @@ export class ProductSaleRepository extends MongoDB {
         }
     }
 
-    async getPopularProducts(): Promise<PopularProduct[] | false> {
+    async getTrendingProducts(duration: 'monthly' | 'weekly' | 'yearly', categories?: string[], tags?: string[], offset: number = 0, limit: number = 10): Promise<Product[] | false> {
         try {
-            return await this.collection.aggregate([
-                {
-                    $match: {
-                        timestamp: { $gt: DateTime.utc().minus({ months: 3 }).toUnixInteger() }
-                    }
-                },
-                {
-                    $group: {
-                        _id: "$productId",
-                        count: {
-                            $sum: "$quantity"
-                        }
-                    }
-                },
-                {
-                    $sort: {
-                        count: -1
-                    }
-                },
-                {
-                    $lookup: {
-                        from: "product",
-                        localField: "_id",
-                        foreignField: "_id",
-                        as: "product"
-                    }
-                },
-                {
-                    $replaceRoot: {
-                        newRoot: {
-                            $mergeObjects: [
-                                {
-                                    count: "$count"
-                                },
-                                {
-                                    $arrayElemAt: ["$product", 0]
-                                }
-                            ]
-                        }
-                    }
-                },
-                {
-                    $unwind: {
-                        path: "$categories",
-                        preserveNullAndEmptyArrays: false
-                    }
-                },
-                {
-                    $group: {
-                        _id: "$categories",
-                        products: {
-                            $push: "$$ROOT"
-                        }
-                    }
-                },
-                { $sort: { "products.count": -1 } },
-                {
-                    $project: {
-                        category: "$_id",
-                        products: {
-                            $slice: ["$products", 100]
-                        }
-                    }
-                }
-            ])
-                .toArray() as any
+            let durationSeconds, startTS
+            switch (duration) {
+                case 'weekly':
+                    durationSeconds = 604_800
+                    startTS = DateTime.utc().set({ hour: 0, minute: 0, second: 0 })
+                    if (startTS.weekday !== 1)
+                        startTS = startTS.minus({ days: startTS.weekday - 1 })
+                    break;
+                case 'monthly':
+                    durationSeconds = 2_592_000
+                    startTS = DateTime.utc().set({ day: 1, hour: 0, minute: 0, second: 0 })
+                    break;
+                case 'yearly':
+                    durationSeconds = 31_104_000
+                    startTS = DateTime.utc().set({ month: 1, day: 1, hour: 0, minute: 0, second: 0 })
+                    break;
+                default:
+                    throw new Error('invalid duration value provided')
+            }
 
+            const aggregation = this.saleCountCollection.aggregate<Product>()
+                .match({ duration: durationSeconds, timestamp: { $gte: startTS.toUnixInteger() } })
+
+            if (categories)
+                aggregation
+                    .match({ categories: { $in: categories } })
+
+            if (tags)
+                aggregation
+                    .match({ tags: { $in: tags } })
+
+            return await aggregation
+                .sort([['zScore', -1]])
+                .skip(offset)
+                .limit(limit)
+                .lookup({
+                    from: 'product',
+                    localField: 'productId',
+                    foreignField: '_id',
+                    as: 'product'
+                })
+                .addStage({
+                    $replaceRoot: { $arrayElemAt: ['$product', 0] }
+                })
+                .toArray()
+        }
+        catch (e) { console.error(e); return false }
+    }
+
+    async getTopSellerProducts(duration: 'monthly' | 'weekly' | 'yearly', categories?: string[], tags?: string[], offset: number = 0, limit: number = 10): Promise<Product[] | false> {
+        try {
+            let durationSeconds, startTS
+            switch (duration) {
+                case 'weekly':
+                    durationSeconds = 604_800
+                    startTS = DateTime.utc().set({ hour: 0, minute: 0, second: 0 })
+                    if (startTS.weekday !== 1)
+                        startTS = startTS.minus({ days: startTS.weekday - 1 })
+                    break;
+                case 'monthly':
+                    durationSeconds = 2_592_000
+                    startTS = DateTime.utc().set({ day: 1, hour: 0, minute: 0, second: 0 })
+                    break;
+                case 'yearly':
+                    durationSeconds = 31_104_000
+                    startTS = DateTime.utc().set({ month: 1, day: 1, hour: 0, minute: 0, second: 0 })
+                    break;
+                default:
+                    throw new Error('invalid duration value provided')
+            }
+
+            const aggregation = this.saleCountCollection.aggregate<Product>()
+                .match({ duration: durationSeconds, timestamp: { $gte: startTS.toUnixInteger() } })
+
+            if (categories)
+                aggregation
+                    .match({ categories: { $in: categories } })
+
+            if (tags)
+                aggregation
+                    .match({ tags: { $in: tags } })
+
+            return await aggregation
+                .sort([['count', -1]])
+                .skip(offset)
+                .limit(limit)
+                .lookup({
+                    from: 'product',
+                    localField: 'productId',
+                    foreignField: '_id',
+                    as: 'product'
+                })
+                .addStage({
+                    $replaceRoot: { $arrayElemAt: ['$product', 0] }
+                })
+                .toArray()
         }
         catch (e) { console.error(e); return false }
     }

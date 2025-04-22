@@ -11,9 +11,6 @@ import { OrderRepository } from "../DB/Repositories/OrderRepository";
 import { ProductRepository } from "../DB/Repositories/Products/ProductRepository";
 import { ProductSaleRepository } from "../DB/Repositories/Products/ProductSaleRepository";
 import { DateTime } from "luxon";
-import { MongoDB } from "../DB/mongodb";
-import { fi } from "@faker-js/faker/.";
-import { ZScore } from "../DB/Repositories/Products/ZScore";
 
 const order = Router()
 

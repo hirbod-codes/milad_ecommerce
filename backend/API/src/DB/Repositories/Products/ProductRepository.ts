@@ -7,8 +7,6 @@ import { CategoryRepository } from "../CategoryRepository";
 import { TagRepository } from "../TagRepository";
 import { ProductPictureRepository } from "./ProductPictureRepository";
 import fs from 'fs'
-import { Order } from "../../Models/Order";
-import { ZScore } from "./ZScore";
 
 export class ProductRepository extends MongoDB {
     private collection: Collection<ProductCreate>
@@ -84,24 +82,6 @@ export class ProductRepository extends MongoDB {
                             views: faker.number.int({ min: 0, max: 100000 }),
                             averageRating: faker.number.float({ min: 0, max: 5 }),
                             ...(Object.fromEntries(new Array(faker.number.int({ min: 0, max: 10 })).fill(null).map(m => [faker.string.alpha({ length: { min: 2, max: 10 } }), faker.string.alpha({ length: { min: 2, max: 10 } })]))),
-                            stats: {
-                                monthly: [],
-                                weekly: [],
-                                monthlyMean: 0,
-                                weeklyMean: 0,
-                                monthlyStandardDeviation: 0,
-                                weeklyStandardDeviation: 0,
-                                monthlyZScore: 0,
-                                weeklyZScore: 0,
-                            },
-                            trendingScore: {
-                                monthly: 0,
-                                weekly: 0,
-                            },
-                            unitsSold: {
-                                monthly: 0,
-                                yearly: 0,
-                            },
                             createdAt: ts,
                             updatedAt: ts,
                         })
@@ -137,24 +117,6 @@ export class ProductRepository extends MongoDB {
 
         let p: ProductCreate = {
             ...product,
-            stats: {
-                monthly: [],
-                weekly: [],
-                monthlyMean: 0,
-                weeklyMean: 0,
-                monthlyStandardDeviation: 0,
-                weeklyStandardDeviation: 0,
-                monthlyZScore: 0,
-                weeklyZScore: 0,
-            },
-            trendingScore: {
-                monthly: 0,
-                weekly: 0,
-            },
-            unitsSold: {
-                monthly: 0,
-                yearly: 0,
-            },
             schemaVersion,
             createdAt: ts,
             updatedAt: ts,
