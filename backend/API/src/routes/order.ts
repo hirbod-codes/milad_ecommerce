@@ -187,19 +187,11 @@ order.patch('/payed', authenticate, async (req, res) => {
 
         // add to ProductSale collection
         const creations = await Promise.all(order.products.map(async ({ productId, quantity }) => {
-            return productSaleRepository.create({ productId, quantity });
+            return productSaleRepository.create({ productId, quantity }, DateTime.utc().toUnixInteger());
         }))
         for (const c of creations)
             if (c === false || !c.acknowledged)
                 throw new Error('')
-
-        const productRepository = await ProductRepository.getInstance()
-
-        const products = await productRepository.getByIds(order.products.map(m => m.productId))
-        if (products === undefined)
-            throw new Error('system failed to get fetch order\'s products')
-
-        await productRepository.updateScores(order, DateTime.utc().toUnixInteger())
 
         await productSaleRepository.commitTransaction()
     } catch (e) {

@@ -19,25 +19,161 @@ export class ProductSaleRepository extends MongoDB {
         return new ProductSaleRepository(await MongoDB.getDbInstance().getProductSalesCollection(client, db), await MongoDB.getDbInstance().getProductSalesCountCollection(client, db))
     }
 
-    async create(product: ProductSaleInput): Promise<InsertOneResult | false> {
+    async create(product: ProductSaleInput, now: number): Promise<InsertOneResult | false> {
         try {
             let p: ProductSaleCreate = {
                 ...product,
                 schemaVersion: schemaVersion,
-                timestamp: DateTime.utc().toUnixInteger(),
+                timestamp: DateTime.fromSeconds(now).toUnixInteger(),
             }
 
-            const r = await this.collection.insertOne(p)
+            const insertionResult = await this.collection.insertOne(p)
 
-            this.saleCountCollection.aggregate()
-                .match({
-                    productId: r.insertedId,
-                    duration: 'monthly',
-                    timestamp: { $gt: DateTime.utc().set({ day: 1, hour: 0, minute: 0, second: 0, millisecond: 0 }).minus({ months: 12, days: 1 }) }
+            const thisMonth = DateTime.fromSeconds(now).set({ day: 1, hour: 0, minute: 0, second: 0, millisecond: 0 })
+
+            const aggregationResult = await this.saleCountCollection.aggregate()
+                .addStage({
+                    $facet: {
+                        months: [
+                            {
+                                $match: {
+                                    productId: insertionResult.insertedId,
+                                    duration: 'monthly',
+                                    timestamp: { $gte: thisMonth.minus({ months: 12 }).toUnixInteger(), $lte: thisMonth.minus({ months: 1 }).toUnixInteger() }
+                                }
+                            },
+                            {
+                                $group: {
+                                    _id: null,
+                                    months: {
+                                        $push: "$$ROOT"
+                                    },
+                                    mu: { $avg: "$count" },
+                                    sigma: {
+                                        $stdDevSamp: "$count"
+                                    }
+                                }
+                            }
+                        ],
+                        lastMonth: [
+                            {
+                                $match: {
+                                    productId: insertionResult.insertedId,
+                                    duration: 'monthly',
+                                    timestamp: thisMonth.toUnixInteger()
+                                }
+                            }
+                        ]
+                    }
                 })
+                .addStage({
+                    $addField: {
+                        zScore: {
+                            $cond: [
+                                {
+                                    $eq: [
+                                        {
+                                            $arrayElemAt: ["$months.sigma", 0]
+                                        },
+                                        0
+                                    ]
+                                },
+                                0,
+                                {
+                                    $divide: [
+                                        {
+                                            $subtract: [
+                                                {
+                                                    $cond: [
+                                                        {
+                                                            $cond: {
+                                                                if: {
+                                                                    $ifNull: [
+                                                                        "$lastMonth",
+                                                                        false
+                                                                    ]
+                                                                },
+                                                                then: true,
+                                                                else: false
+                                                            }
+                                                        },
+                                                        {
+                                                            $sum: [
+                                                                {
+                                                                    $arrayElemAt: [
+                                                                        "$lastMonth.quantity",
+                                                                        0
+                                                                    ]
+                                                                },
+                                                                product.quantity
+                                                            ]
+                                                        },
+                                                        product.quantity
+                                                    ]
+                                                },
+                                                {
+                                                    $arrayElemAt: ["$months.mu", 0]
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            $arrayElemAt: ["$months.sigma", 0]
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    }
+                })
+                .toArray()
+            console.log('aggregationResult', aggregationResult)
 
-            return r
-        } catch (e) { console.error(e); return false }
+            if (aggregationResult[0]?.zScore === undefined)
+                throw new Error('failed to calculate z-score')
+
+            let updateResult = await this.saleCountCollection.updateOne(
+                {
+                    productId: insertionResult.insertedId,
+                    duration: 2_592_000, // a month in seconds
+                    timestamp: thisMonth.toUnixInteger(),
+                },
+                {
+                    $inc: { count: product.quantity },
+                    $set: {
+                        zScore: aggregationResult[0].zScore
+                    },
+                },
+                {
+                    upsert: true,
+                }
+            )
+            if (!updateResult.acknowledged)
+                throw new Error('failed to update ProductSaleCount document with calculated z-score')
+
+            updateResult = await this.saleCountCollection.updateOne(
+                {
+                    productId: insertionResult.insertedId,
+                    duration: 31_104_000, // a year in seconds
+                    timestamp: thisMonth.toUnixInteger(),
+                },
+                {
+                    $inc: { count: product.quantity },
+                    $set: {
+                        zScore: null
+                    },
+                },
+                {
+                    upsert: true,
+                }
+            )
+            if (!updateResult.acknowledged)
+                throw new Error('failed to update ProductSaleCount document with calculated z-score')
+
+            return insertionResult
+        } catch (e) {
+            console.error(e)
+            return false
+        }
     }
 
     async getPopularProducts(): Promise<PopularProduct[] | false> {

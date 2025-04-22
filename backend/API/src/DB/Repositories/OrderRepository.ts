@@ -78,14 +78,10 @@ export class OrderRepository extends MongoDB {
 
                             if (order.isPayed)
                                 for (const product of order.products)
-                                    await productSaleCollection.insertOne({
-                                        schemaVersion: schemaVersion,
+                                    await productSaleRepository.create({
                                         productId: ObjectId.createFromHexString(product.productId.toString()),
                                         quantity: product.quantity,
-                                        timestamp: order.updatedAt,
-                                    })
-
-                            await productSaleRepository.updateScores(order, order.updatedAt)
+                                    }, order.updatedAt)
                         } catch (e) {
                             if (!(e instanceof MongoSystemError) || e.code !== 11000)
                                 throw e

@@ -14,7 +14,7 @@ export const productSaleCountSchema = object().required().strict(true).noUnknown
     duration: number().required().min(1).integer(),
     timestamp: number().required(),
     count: number().required(),
-    zScore: number().required(),
+    zScore: number().required().nullable(),
 })
 export type ProductSaleCount = InferType<typeof productSaleCountSchema>
 
