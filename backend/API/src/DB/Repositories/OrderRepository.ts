@@ -27,7 +27,6 @@ export class OrderRepository extends MongoDB {
             const collection = await MongoDB.getDbInstance().getOrderCollection()
             const productRepository = await ProductRepository.getInstance()
             const userRepository = await UserRepository.getInstance()
-            const productSaleCollection = await MongoDB.getDbInstance().getProductSalesCollection()
             const productSaleRepository = await ProductSaleRepository.getInstance()
 
             if (!(await collection.deleteMany()).acknowledged)
@@ -77,12 +76,23 @@ export class OrderRepository extends MongoDB {
                             const order = { ...orderCreate, _id: r.insertedId }
 
                             if (order.isPayed)
-                                for (const product of order.products)
-                                    await productSaleRepository.create({
-                                        productId: ObjectId.createFromHexString(product.productId.toString()),
-                                        quantity: product.quantity,
-                                    }, order.updatedAt)
+                                for (const product of order.products) {
+                                    const p = await productRepository.getById(product.productId)
+                                    if (await productSaleRepository.create(
+                                        {
+                                            productId: ObjectId.createFromHexString(product.productId.toString()),
+                                            quantity: product.quantity,
+                                        },
+                                        order.updatedAt,
+                                        p ? p?.categories : undefined,
+                                        p ? p?.tags : undefined,
+                                    ) === false)
+                                        throw new Error('system failed to insert product sale document')
+                                }
+
+                            break
                         } catch (e) {
+                            console.error(e)
                             if (!(e instanceof MongoSystemError) || e.code !== 11000)
                                 throw e
                         }

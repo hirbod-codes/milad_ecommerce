@@ -146,70 +146,77 @@ export const Home = memo(function Home() {
         <Stack direction="vertical">
             <Button isIcon variant="text" onClick={() => setOpen(true)}><MenuIcon /></Button>
             <Navigation open={open} setOpen={setOpen} />
-            {/* Trending */}
-            <Stack direction="vertical" stackProps={{ className: 'border rounded-lg shadow-lg h-[11cm] p-2' }}>
-                <Stack stackProps={{ className: 'justify-between items-center' }}>
-                    <div className="text-3xl">{t('Home.trending')}</div>
-                    <Button variant='text' size='sm'>{t('Home.viewAll')}<ArrowRight /></Button>
-                </Stack>
 
-                <div className="w-full overflow-x-auto overflow-y-visible flex-grow pb-4">
-                    <Stack stackProps={{ className: 'items-start h-full w-max' }}>
-                        {
-                            trendingProducts === undefined
+            {/* Trending */}
+            {(trendingProducts === undefined || trendingProducts.length !== 0) &&
+                <Stack direction="vertical" stackProps={{ className: 'border rounded-lg shadow-lg h-[11cm] p-2' }}>
+                    <Stack stackProps={{ className: 'justify-between items-center' }}>
+                        <div className="text-3xl">{t('Home.trending')}</div>
+                        <Button variant='text' size='sm'>{t('Home.viewAll')}<ArrowRight /></Button>
+                    </Stack>
+
+                    <div className="w-full overflow-x-auto overflow-y-visible flex-grow pb-4">
+                        <Stack stackProps={{ className: 'items-start h-full w-max' }}>
+                            {
+                                trendingProducts === undefined
+                                    ? <CircularLoading />
+                                    : trendingProducts.map((m, i) =>
+                                        <ProductThumbnail
+                                            key={i}
+                                            product={m}
+                                        />
+                                    )
+                            }
+                        </Stack>
+                    </div>
+                </Stack>
+            }
+
+            {/* TopSelling */}
+            {(topSellingProducts === undefined || topSellingProducts.length !== 0) &&
+                <Stack direction="vertical" stackProps={{ className: 'border rounded-lg shadow-lg h-[11cm] p-2' }}>
+                    <Stack stackProps={{ className: 'justify-between items-center' }}>
+                        <div className="text-3xl">{t('Home.topSelling')}</div>
+                        <Button variant='text' size='sm'>{t('Home.viewAll')}<ArrowRight /></Button>
+                    </Stack>
+
+                    <div className="w-full overflow-x-auto overflow-y-visible flex-grow pb-4">
+                        <Stack stackProps={{ className: 'items-start h-full justify-start w-max' }}>
+                            {topSellingProducts === undefined
                                 ? <CircularLoading />
-                                : trendingProducts.map((m, i) =>
+                                : topSellingProducts.map((m, i) =>
                                     <ProductThumbnail
                                         key={i}
                                         product={m}
                                     />
-                                )
-                        }
-                    </Stack>
-                </div>
-            </Stack>
-
-            {/* TopSelling */}
-            <Stack direction="vertical" stackProps={{ className: 'border rounded-lg shadow-lg h-[11cm] p-2' }}>
-                <Stack stackProps={{ className: 'justify-between items-center' }}>
-                    <div className="text-3xl">{t('Home.topSelling')}</div>
-                    <Button variant='text' size='sm'>{t('Home.viewAll')}<ArrowRight /></Button>
+                                )}
+                        </Stack>
+                    </div>
                 </Stack>
-
-                <div className="w-full overflow-x-auto overflow-y-visible flex-grow pb-4">
-                    <Stack stackProps={{ className: 'items-start h-full justify-start w-max' }}>
-                        {topSellingProducts === undefined
-                            ? <CircularLoading />
-                            : topSellingProducts.map((m, i) =>
-                                <ProductThumbnail
-                                    key={i}
-                                    product={m}
-                                />
-                            )}
-                    </Stack>
-                </div>
-            </Stack>
+            }
 
             {/* MostViewed */}
-            <Stack direction="vertical" stackProps={{ className: 'border rounded-lg shadow-lg h-[11cm] p-2' }}>
-                <Stack stackProps={{ className: 'justify-between items-center' }}>
-                    <div className="text-3xl">{t('Home.mostViewed')}</div>
-                    <Button variant='text' size='sm'>{t('Home.viewAll')}<ArrowRight /></Button>
-                </Stack>
-
-                <div className="w-full overflow-x-auto overflow-y-visible flex-grow pb-4">
-                    <Stack stackProps={{ className: 'items-start h-full justify-start w-max' }}>
-                        {mostViewedProducts === undefined
-                            ? <CircularLoading />
-                            : mostViewedProducts.map((m, i) =>
-                                <ProductThumbnail
-                                    key={i}
-                                    product={m}
-                                />
-                            )}
+            {(mostViewedProducts === undefined || mostViewedProducts.length !== 0) &&
+                <Stack direction="vertical" stackProps={{ className: 'border rounded-lg shadow-lg h-[11cm] p-2' }}>
+                    <Stack stackProps={{ className: 'justify-between items-center' }}>
+                        <div className="text-3xl">{t('Home.mostViewed')}</div>
+                        <Button variant='text' size='sm'>{t('Home.viewAll')}<ArrowRight /></Button>
                     </Stack>
-                </div>
-            </Stack>
+
+                    <div className="w-full overflow-x-auto overflow-y-visible flex-grow pb-4">
+                        <Stack stackProps={{ className: 'items-start h-full justify-start w-max' }}>
+                            {mostViewedProducts === undefined
+                                ? <CircularLoading />
+                                : mostViewedProducts.map((m, i) =>
+                                    <ProductThumbnail
+                                        key={i}
+                                        product={m}
+                                    />
+                                )}
+                        </Stack>
+                    </div>
+                </Stack>
+            }
         </Stack>
     )
 })

@@ -19,10 +19,10 @@ export class ProductSaleRepository extends MongoDB {
         return new ProductSaleRepository(await MongoDB.getDbInstance().getProductSalesCollection(client, db), await MongoDB.getDbInstance().getProductSalesCountCollection(client, db))
     }
 
-    async create(product: ProductSaleInput, now: number): Promise<InsertOneResult | false> {
+    async create(productSale: ProductSaleInput, now: number, categories?: string[], tags?: string[]): Promise<InsertOneResult | false> {
         try {
             let p: ProductSaleCreate = {
-                ...product,
+                ...productSale,
                 schemaVersion: schemaVersion,
                 timestamp: DateTime.fromSeconds(now).toUnixInteger(),
             }
@@ -67,7 +67,7 @@ export class ProductSaleRepository extends MongoDB {
                     }
                 })
                 .addStage({
-                    $addField: {
+                    $addFields: {
                         zScore: {
                             $cond: [
                                 {
@@ -105,10 +105,10 @@ export class ProductSaleRepository extends MongoDB {
                                                                         0
                                                                     ]
                                                                 },
-                                                                product.quantity
+                                                                productSale.quantity
                                                             ]
                                                         },
-                                                        product.quantity
+                                                        productSale.quantity
                                                     ]
                                                 },
                                                 {
@@ -128,9 +128,6 @@ export class ProductSaleRepository extends MongoDB {
                 .toArray()
             console.log('aggregationResult', aggregationResult)
 
-            if (aggregationResult[0]?.zScore === undefined)
-                throw new Error('failed to calculate z-score')
-
             let updateResult = await this.saleCountCollection.updateOne(
                 {
                     productId: insertionResult.insertedId,
@@ -138,8 +135,10 @@ export class ProductSaleRepository extends MongoDB {
                     timestamp: thisMonth.toUnixInteger(),
                 },
                 {
-                    $inc: { count: product.quantity },
+                    $inc: { count: productSale.quantity },
                     $set: {
+                        categories,
+                        tags,
                         zScore: aggregationResult[0].zScore
                     },
                 },
@@ -157,8 +156,10 @@ export class ProductSaleRepository extends MongoDB {
                     timestamp: thisMonth.toUnixInteger(),
                 },
                 {
-                    $inc: { count: product.quantity },
+                    $inc: { count: productSale.quantity },
                     $set: {
+                        categories,
+                        tags,
                         zScore: null
                     },
                 },
