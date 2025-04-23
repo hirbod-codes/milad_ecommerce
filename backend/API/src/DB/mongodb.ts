@@ -6,8 +6,8 @@ import { RoleCreate, collectionName as roleCollectionName } from './Models/Role'
 import { CategoryCreate, collectionName as categoryCollectionName } from './Models/Category'
 import { OrderCreate, collectionName as orderCollectionName } from './Models/Order'
 import { ProductCreate, collectionName as productCollectionName } from './Models/Products/Product'
+import { ProductSaleCreate, collectionName as productSaleCollectionName } from './Models/Products/ProductSale'
 import { ProductSaleCountCreate, collectionName as productSaleCountCollectionName } from './Models/Products/ProductSaleCount'
-import { ProductSaleCreate, collectionName as productSalesCollectionName } from './Models/Products/ProductSale'
 import { ProductReviewCreate, collectionName as productReviewCollectionName } from './Models/Products/ProductReview'
 import { TagCreate, collectionName as tagCollectionName } from './Models/Tag'
 import { collectionName as productPictureCollectionName } from './Models/Products/ProductPicture'
@@ -178,10 +178,12 @@ export class MongoDB {
     async dropAllCollections() {
         const db = await this.getDb()
         await this.dropCategoryCollection(db)
+        await this.dropTagCollection(db)
         await this.dropOrderCollection(db)
         await this.dropProductCollection(db)
         await this.dropProductReviewsCollection(db)
-        await this.dropTagCollection(db)
+        await this.dropProductSaleCollection(db)
+        await this.dropProductSaleCountCollection(db)
     }
 
     async dropCategoryCollection(db: Db) {
@@ -209,6 +211,16 @@ export class MongoDB {
             await db.dropCollection(tagCollectionName)
     }
 
+    async dropProductSaleCollection(db: Db) {
+        if ((await db.listCollections().toArray()).map(e => e.name).includes(productSaleCollectionName))
+            await db.dropCollection(productSaleCollectionName)
+    }
+
+    async dropProductSaleCountCollection(db: Db) {
+        if ((await db.listCollections().toArray()).map(e => e.name).includes(productSaleCountCollectionName))
+            await db.dropCollection(productSaleCountCollectionName)
+    }
+
     async addCollections() {
         const db = await this.getDb()
 
@@ -216,8 +228,8 @@ export class MongoDB {
         await this.addCategoryCollection(db)
         await this.addOrderCollection(db)
         await this.addProductCollection(db)
-        await this.addProductSalesCollection(db)
-        await this.addProductSalesCountCollection(db)
+        await this.addProductSaleCollection(db)
+        await this.addProductSaleCountCollection(db)
         await this.addProductReviewsCollection(db)
         await this.addTagCollection(db)
         await this.addRoleCollection(db)
@@ -361,24 +373,24 @@ export class MongoDB {
         return (db ?? (await this.getDb(client))).collection<ProductReviewCreate>(productReviewCollectionName)
     }
 
-    private async addProductSalesCollection(db: Db) {
-        if (!(await db.listCollections().toArray()).map(e => e.name).includes(productSalesCollectionName))
-            await db.createCollection(productSalesCollectionName)
+    private async addProductSaleCollection(db: Db) {
+        if (!(await db.listCollections().toArray()).map(e => e.name).includes(productSaleCollectionName))
+            await db.createCollection(productSaleCollectionName)
 
-        const indexes = await db.collection(productSalesCollectionName).indexes()
+        const indexes = await db.collection(productSaleCollectionName).indexes()
 
         if (indexes.find(i => i.name === 'timestamp') === undefined)
-            await db.createIndex(productSalesCollectionName, { timestamp: 1 }, { name: 'timestamp' })
+            await db.createIndex(productSaleCollectionName, { timestamp: 1 }, { name: 'timestamp' })
 
         if (indexes.find(i => i.name === 'productId') === undefined)
-            await db.createIndex(productSalesCollectionName, { productId: 1 }, { name: 'productId' })
+            await db.createIndex(productSaleCollectionName, { productId: 1 }, { name: 'productId' })
     }
 
-    async getProductSalesCollection(client?: MongoClient, db?: Db): Promise<Collection<ProductSaleCreate>> {
-        return (db ?? (await this.getDb(client))).collection<ProductSaleCreate>(productSalesCollectionName)
+    async getProductSaleCollection(client?: MongoClient, db?: Db): Promise<Collection<ProductSaleCreate>> {
+        return (db ?? (await this.getDb(client))).collection<ProductSaleCreate>(productSaleCollectionName)
     }
 
-    private async addProductSalesCountCollection(db: Db) {
+    private async addProductSaleCountCollection(db: Db) {
         if (!(await db.listCollections().toArray()).map(e => e.name).includes(productSaleCountCollectionName))
             await db.createCollection(productSaleCountCollectionName)
 
@@ -406,7 +418,7 @@ export class MongoDB {
             await db.createIndex(productSaleCountCollectionName, { zScore: -1 }, { name: 'zScore' })
     }
 
-    async getProductSalesCountCollection(client?: MongoClient, db?: Db): Promise<Collection<ProductSaleCountCreate>> {
+    async getProductSaleCountCollection(client?: MongoClient, db?: Db): Promise<Collection<ProductSaleCountCreate>> {
         return (db ?? (await this.getDb(client))).collection<ProductSaleCountCreate>(productSaleCountCollectionName)
     }
 

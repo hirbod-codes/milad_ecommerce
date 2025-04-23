@@ -16,7 +16,7 @@ export class ProductSaleRepository extends MongoDB {
     }
 
     static async getInstance(client?: MongoClient, db?: Db): Promise<ProductSaleRepository> {
-        return new ProductSaleRepository(await MongoDB.getDbInstance().getProductSalesCollection(client, db), await MongoDB.getDbInstance().getProductSalesCountCollection(client, db))
+        return new ProductSaleRepository(await MongoDB.getDbInstance().getProductSaleCollection(client, db), await MongoDB.getDbInstance().getProductSaleCountCollection(client, db))
     }
 
     async create(productSale: ProductSaleInput, now: number, categories?: string[], tags?: string[]): Promise<InsertOneResult | false> {
@@ -38,7 +38,7 @@ export class ProductSaleRepository extends MongoDB {
                             {
                                 $match: {
                                     productId: insertionResult.insertedId,
-                                    duration: 'monthly',
+                                    duration: 2_592_000,
                                     timestamp: { $gte: thisMonth.minus({ months: 12 }).toUnixInteger(), $lte: thisMonth.minus({ months: 1 }).toUnixInteger() }
                                 }
                             },
@@ -59,7 +59,7 @@ export class ProductSaleRepository extends MongoDB {
                             {
                                 $match: {
                                     productId: insertionResult.insertedId,
-                                    duration: 'monthly',
+                                    duration: 2_592_000,
                                     timestamp: thisMonth.toUnixInteger()
                                 }
                             }
