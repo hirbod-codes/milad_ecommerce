@@ -21,7 +21,8 @@ export const Home = memo(function Home() {
     const code = queryVars.get('code')
 
     const [trendingProducts, setTrendingProducts] = useState<Product[]>(undefined)
-    const [popularProducts, setPopularProducts] = useState<Product[]>(undefined)
+    const [topSellingProducts, setTopSellingProducts] = useState<Product[]>(undefined)
+    const [mostViewedProducts, setMostViewedProducts] = useState<Product[]>(undefined)
 
     const [open, setOpen] = useState(false)
 
@@ -38,27 +39,41 @@ export const Home = memo(function Home() {
             console.error(e)
         }
     }
-
+    /**
+     * trending
+    topSeller
+    mostViewed
+     */
     const init = async () => {
-        fetchData(`${getApiUrl()}/products/trending`)
+        fetchData(`${getApiUrl()}/products/trending?duration=monthly`)
             .then(r => {
                 if (!r.response || !r.response.ok || !array().required().isValidSync(r.data)) {
-                    feedback.pushError({ node: t('CategoriesNavigation.failedToFetchCategories') })
+                    feedback.pushError({ node: t('CategoriesNavigation.failedToFetchTrendingProducts') })
                     setTrendingProducts([])
                 } else
                     setTrendingProducts(r.data)
             })
-            .catch(e => feedback.pushError({ node: t('CategoriesNavigation.failedToFetchCategories') }))
+            .catch(e => feedback.pushError({ node: t('CategoriesNavigation.failedToFetchTrendingProducts') }))
 
-        fetchData(`${getApiUrl()}/products/popular`)
+        fetchData(`${getApiUrl()}/products/topSelling?duration=monthly`)
             .then(r => {
                 if (!r.response || !r.response.ok || !array().required().isValidSync(r.data)) {
-                    feedback.pushError({ node: t('CategoriesNavigation.failedToFetchCategories') })
-                    setPopularProducts([])
+                    feedback.pushError({ node: t('CategoriesNavigation.failedToFetchTopSellingProducts') })
+                    setTopSellingProducts([])
                 } else
-                    setPopularProducts(r.data.slice(15, 28))
+                    setTopSellingProducts(r.data.slice(15, 28))
             })
-            .catch(e => { feedback.pushError({ node: t('CategoriesNavigation.failedToFetchCategories') }); setTrendingProducts([]) })
+            .catch(e => { feedback.pushError({ node: t('CategoriesNavigation.failedToFetchTopSellingProducts') }); setTrendingProducts([]) })
+
+        fetchData(`${getApiUrl()}/products/mostViewed?duration=monthly`)
+            .then(r => {
+                if (!r.response || !r.response.ok || !array().required().isValidSync(r.data)) {
+                    feedback.pushError({ node: t('CategoriesNavigation.failedToFetchMostViewedProducts') })
+                    setMostViewedProducts([])
+                } else
+                    setMostViewedProducts(r.data.slice(15, 28))
+            })
+            .catch(e => { feedback.pushError({ node: t('CategoriesNavigation.failedToFetchMostViewedProducts') }); setTrendingProducts([]) })
     }
 
     // const maxDepth = 3
@@ -154,18 +169,39 @@ export const Home = memo(function Home() {
                 </div>
             </Stack>
 
-            {/* Popular */}
+            {/* TopSelling */}
             <Stack direction="vertical" stackProps={{ className: 'border rounded-lg shadow-lg h-[11cm] p-2' }}>
                 <Stack stackProps={{ className: 'justify-between items-center' }}>
-                    <div className="text-3xl">{t('Home.popular')}</div>
+                    <div className="text-3xl">{t('Home.topSelling')}</div>
                     <Button variant='text' size='sm'>{t('Home.viewAll')}<ArrowRight /></Button>
                 </Stack>
 
                 <div className="w-full overflow-x-auto overflow-y-visible flex-grow pb-4">
                     <Stack stackProps={{ className: 'items-start h-full justify-start w-max' }}>
-                        {popularProducts === undefined
+                        {topSellingProducts === undefined
                             ? <CircularLoading />
-                            : popularProducts.map((m, i) =>
+                            : topSellingProducts.map((m, i) =>
+                                <ProductThumbnail
+                                    key={i}
+                                    product={m}
+                                />
+                            )}
+                    </Stack>
+                </div>
+            </Stack>
+
+            {/* MostViewed */}
+            <Stack direction="vertical" stackProps={{ className: 'border rounded-lg shadow-lg h-[11cm] p-2' }}>
+                <Stack stackProps={{ className: 'justify-between items-center' }}>
+                    <div className="text-3xl">{t('Home.mostViewed')}</div>
+                    <Button variant='text' size='sm'>{t('Home.viewAll')}<ArrowRight /></Button>
+                </Stack>
+
+                <div className="w-full overflow-x-auto overflow-y-visible flex-grow pb-4">
+                    <Stack stackProps={{ className: 'items-start h-full justify-start w-max' }}>
+                        {mostViewedProducts === undefined
+                            ? <CircularLoading />
+                            : mostViewedProducts.map((m, i) =>
                                 <ProductThumbnail
                                     key={i}
                                     product={m}

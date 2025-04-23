@@ -158,9 +158,9 @@ export class ProductRepository extends MongoDB {
             if (!tags && !categories)
                 cursor = this.collection.find()
             else
-                cursor = this.collection.find(filter).skip(offset).limit(limit)
+                cursor = this.collection.find(filter)
 
-            return await cursor.toArray()
+            return await cursor.sort({ views: -1 }).skip(offset).limit(limit).toArray()
         }
         catch (e) { console.error(e); return false }
     }

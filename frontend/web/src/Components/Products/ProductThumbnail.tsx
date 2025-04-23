@@ -18,7 +18,8 @@ export function ProductThumbnail({ product }: { product: Product }) {
                     fetchData(`${getApiUrl()}/products/picture/fileId?fileId=${r.data[0]._id}`)
                         .then(rr => {
                             if (r.response && r.response.ok)
-                                setImage(URL.createObjectURL(rr.data))
+                                // setImage(URL.createObjectURL(rr.data))
+                                setImage(`${getApiUrl()}/products/picture/fileId?fileId=${r.data[0]._id}`)
                         })
             })
     }, [])

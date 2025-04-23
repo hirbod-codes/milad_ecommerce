@@ -210,7 +210,7 @@ export class ProductSaleRepository extends MongoDB {
                     .match({ tags: { $in: tags } })
 
             return await aggregation
-                .sort([['zScore', -1]])
+                .sort({ 'zScore': -1 })
                 .skip(offset)
                 .limit(limit)
                 .lookup({
@@ -220,14 +220,14 @@ export class ProductSaleRepository extends MongoDB {
                     as: 'product'
                 })
                 .addStage({
-                    $replaceRoot: { $arrayElemAt: ['$product', 0] }
+                    $replaceRoot: { newRoot: { $arrayElemAt: ['$product', 0] } }
                 })
                 .toArray()
         }
         catch (e) { console.error(e); return false }
     }
 
-    async getTopSellerProducts(duration: 'monthly' | 'weekly' | 'yearly', categories?: string[], tags?: string[], offset: number = 0, limit: number = 10): Promise<Product[] | false> {
+    async getTopSellingProducts(duration: 'monthly' | 'weekly' | 'yearly', categories?: string[], tags?: string[], offset: number = 0, limit: number = 10): Promise<Product[] | false> {
         try {
             let durationSeconds, startTS
             switch (duration) {
@@ -261,7 +261,7 @@ export class ProductSaleRepository extends MongoDB {
                     .match({ tags: { $in: tags } })
 
             return await aggregation
-                .sort([['count', -1]])
+                .sort({ 'count': -1 })
                 .skip(offset)
                 .limit(limit)
                 .lookup({
@@ -271,7 +271,7 @@ export class ProductSaleRepository extends MongoDB {
                     as: 'product'
                 })
                 .addStage({
-                    $replaceRoot: { $arrayElemAt: ['$product', 0] }
+                    $replaceRoot: { newRoot: { $arrayElemAt: ['$product', 0] } }
                 })
                 .toArray()
         }

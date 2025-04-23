@@ -95,6 +95,239 @@ products.get('/common_fields', (req, res) => {
     res.json(Object.fromEntries(Object.entries(flattenSchema(productSchema.fields)).filter(f => !forbiddenFieldsToFilter.includes(f[0].split('.')[0]))))
 })
 
+products.get('/trending', async (req, res) => {
+    try {
+        const { duration, categories: categoriesStr, tags: tagsStr, skip: skipStr, limit: limitStr } = req?.query
+        if (!number().optional().min(1).integer().isValidSync(limitStr)) {
+            res.status(400).json({ errors: ['invalid limit'] })
+            return
+        }
+
+        if (!number().optional().min(0).integer().isValidSync(skipStr)) {
+            res.status(400).json({ errors: ['invalid skip'] })
+            return
+        }
+
+        let limit = number().required().min(10).integer().cast(limitStr ?? 25)
+        let skip = number().required().min(0).integer().cast(skipStr ?? 0)
+
+        let categories
+        try {
+            if (categoriesStr)
+                categories = JSON.parse(categoriesStr.toString())
+        } catch (e) {
+            res.sendStatus(400)
+            return
+        }
+        if (categoriesStr && (typeof categoriesStr !== 'string' || !productSchema.pick(['categories']).optional().isValidSync({ categories }))) {
+            res.sendStatus(400)
+            return
+        }
+
+        let tags
+        try {
+            if (tagsStr)
+                tags = JSON.parse(tagsStr.toString())
+        } catch (e) {
+            res.sendStatus(400)
+            return
+        }
+        if (tagsStr && (typeof tagsStr !== 'string' || !productSchema.pick(['tags']).optional().isValidSync({ tags }))) {
+            res.sendStatus(400)
+            return
+        }
+
+        if (!mixed<'monthly' | 'weekly' | 'yearly'>().required().oneOf(['monthly', 'weekly', 'yearly']).isValidSync(duration)) {
+            res.sendStatus(400)
+            return
+        }
+
+        const productRepository = await ProductSaleRepository.getInstance()
+        const products = await productRepository.getTopSellingProducts(duration, categories, tags, skip, limit)
+
+        if (products === false)
+            res.sendStatus(500)
+        else
+            res.status(200).json(products)
+    } catch (e) {
+        console.error(e)
+        res.sendStatus(500)
+    }
+})
+
+products.get('/topSelling', async (req, res) => {
+    try {
+        const { duration, categories: categoriesStr, tags: tagsStr, skip: skipStr, limit: limitStr } = req?.query
+        if (!number().optional().min(1).integer().isValidSync(limitStr)) {
+            res.status(400).json({ errors: ['invalid limit'] })
+            return
+        }
+
+        if (!number().optional().min(0).integer().isValidSync(skipStr)) {
+            res.status(400).json({ errors: ['invalid skip'] })
+            return
+        }
+
+        let limit = number().required().min(10).integer().cast(limitStr ?? 25)
+        let skip = number().required().min(0).integer().cast(skipStr ?? 0)
+
+        let categories
+        try {
+            if (categoriesStr)
+                categories = JSON.parse(categoriesStr.toString())
+        } catch (e) {
+            res.sendStatus(400)
+            return
+        }
+        if (categoriesStr && (typeof categoriesStr !== 'string' || !productSchema.pick(['categories']).optional().isValidSync({ categories }))) {
+            res.sendStatus(400)
+            return
+        }
+
+        let tags
+        try {
+            if (tagsStr)
+                tags = JSON.parse(tagsStr.toString())
+        } catch (e) {
+            res.sendStatus(400)
+            return
+        }
+        if (tagsStr && (typeof tagsStr !== 'string' || !productSchema.pick(['tags']).optional().isValidSync({ tags }))) {
+            res.sendStatus(400)
+            return
+        }
+
+        if (!mixed<'monthly' | 'weekly' | 'yearly'>().required().oneOf(['monthly', 'weekly', 'yearly']).isValidSync(duration)) {
+            res.status(400).json({ errors: ['invalid duration'] })
+            return
+        }
+
+        const productRepository = await ProductSaleRepository.getInstance()
+        const products = await productRepository.getTopSellingProducts(duration, categories, tags, skip, limit)
+
+        if (products === false)
+            res.sendStatus(500)
+        else
+            res.status(200).json(products)
+    } catch (e) {
+        console.error(e)
+        res.sendStatus(500)
+    }
+})
+
+products.get('/mostViewed', async (req, res) => {
+    try {
+        const { categories: categoriesStr, tags: tagsStr, skip: skipStr, limit: limitStr } = req?.query
+        if (!number().optional().min(1).integer().isValidSync(limitStr)) {
+            res.status(400).json({ errors: ['invalid limit'] })
+            return
+        }
+
+        if (!number().optional().min(0).integer().isValidSync(skipStr)) {
+            res.status(400).json({ errors: ['invalid skip'] })
+            return
+        }
+
+        let limit = number().required().min(10).integer().cast(limitStr ?? 25)
+        let skip = number().required().min(0).integer().cast(skipStr ?? 0)
+
+        let categories
+        try {
+            if (categoriesStr)
+                categories = JSON.parse(categoriesStr.toString())
+        } catch (e) {
+            res.sendStatus(400)
+            return
+        }
+        if (categoriesStr && (typeof categoriesStr !== 'string' || !productSchema.pick(['categories']).optional().isValidSync({ categories }))) {
+            res.sendStatus(400)
+            return
+        }
+
+        let tags
+        try {
+            if (tagsStr)
+                tags = JSON.parse(tagsStr.toString())
+        } catch (e) {
+            res.sendStatus(400)
+            return
+        }
+        if (tagsStr && (typeof tagsStr !== 'string' || !productSchema.pick(['tags']).optional().isValidSync({ tags }))) {
+            res.sendStatus(400)
+            return
+        }
+
+        const productRepository = await ProductRepository.getInstance()
+        const products = await productRepository.getMostViewedProducts(categories, tags, skip, limit)
+
+        if (products === false)
+            res.sendStatus(500)
+        else
+            res.status(200).json(products)
+    } catch (e) {
+        console.error(e)
+        res.sendStatus(500)
+    }
+})
+
+products.get('/picture/fileId', async (req, res) => {
+    try {
+        const { fileId } = req.query
+
+        if (!stringObjectId.required().isValidSync(fileId)) {
+            res.sendStatus(400)
+            return
+        }
+        const productPictureRepository = await ProductPictureRepository.getInstance()
+        const file = await productPictureRepository.getFile(fileId)
+        if (file === undefined) {
+            res.sendStatus(404)
+            return
+        }
+
+        res.setHeader('Content-Type', file?.metadata?.contentType)
+
+        const readstream = productPictureRepository.getReadStream(file._id);
+        console.log('readstream', readstream)
+
+        readstream.pipe(res)
+
+        readstream.on('error', e => {
+            console.error(e)
+            res.sendStatus(500)
+        })
+    } catch (e) {
+        console.error(e)
+        res.sendStatus(500)
+    }
+})
+
+products.get('/pictures/productIds', async (req, res) => {
+    try {
+        const { productIds: idsStr } = req.query
+
+        if (!string().required().isValidSync(idsStr)) {
+            res.sendStatus(400)
+            return
+        }
+
+        const ids = idsStr.split(",");
+
+        if (!array().required().min(1).strict(true).of(stringObjectId.required()).isValidSync(ids)) {
+            res.sendStatus(400)
+            return
+        }
+
+        const productPictureRepository = await ProductPictureRepository.getInstance()
+        const files = await productPictureRepository.getFilesByProductId(ids)
+
+        res.json(files)
+    } catch (e) {
+        console.error(e)
+        res.sendStatus(500)
+    }
+})
+
 products.get('/:id', async (req, res) => {
     try {
         const { id } = req.params
@@ -190,200 +423,6 @@ products.get('/', async (req, res) => {
             res.sendStatus(500)
         else
             res.status(200).json(products)
-    } catch (e) {
-        console.error(e)
-        res.sendStatus(500)
-    }
-})
-
-products.get('/trending', async (req, res) => {
-    try {
-        const { duration, categories: categoriesStr, tags: tagsStr, skip: skipStr, limit: limitStr } = req?.query
-        if (!number().optional().min(1).integer().isValidSync(limitStr)) {
-            res.status(400).json({ errors: ['invalid limit'] })
-            return
-        }
-
-        if (!number().optional().min(0).integer().isValidSync(skipStr)) {
-            res.status(400).json({ errors: ['invalid skip'] })
-            return
-        }
-
-        let limit = number().required().min(10).integer().cast(limitStr ?? 25)
-        let skip = number().required().min(0).integer().cast(skipStr ?? 0)
-
-        const categories = JSON.parse(typeof categoriesStr === 'string' ? categoriesStr : '')
-        const tags = JSON.parse(typeof tagsStr === 'string' ? tagsStr : '')
-
-        if (categoriesStr && (typeof categoriesStr !== 'string' || !productSchema.pick(['categories']).optional().isValidSync({ categories }))) {
-            res.sendStatus(400)
-            return
-        }
-
-        if (tagsStr && (typeof tagsStr !== 'string' || !productSchema.pick(['tags']).optional().isValidSync({ tags }))) {
-            res.sendStatus(400)
-            return
-        }
-
-        if (!mixed<'monthly' | 'weekly' | 'yearly'>().required().oneOf(['monthly', 'weekly', 'yearly']).isValidSync(duration)) {
-            res.sendStatus(400)
-            return
-        }
-
-        const productRepository = await ProductSaleRepository.getInstance()
-        const products = await productRepository.getTopSellerProducts(duration, categories, tags, skip, limit)
-
-        if (products === false)
-            res.sendStatus(500)
-        else
-            res.status(200).json(products)
-    } catch (e) {
-        console.error(e)
-        res.sendStatus(500)
-    }
-})
-
-products.get('/topSeller', async (req, res) => {
-    try {
-        const { duration, categories: categoriesStr, tags: tagsStr, skip: skipStr, limit: limitStr } = req?.query
-        if (!number().optional().min(1).integer().isValidSync(limitStr)) {
-            res.status(400).json({ errors: ['invalid limit'] })
-            return
-        }
-
-        if (!number().optional().min(0).integer().isValidSync(skipStr)) {
-            res.status(400).json({ errors: ['invalid skip'] })
-            return
-        }
-
-        let limit = number().required().min(10).integer().cast(limitStr ?? 25)
-        let skip = number().required().min(0).integer().cast(skipStr ?? 0)
-
-        const categories = JSON.parse(typeof categoriesStr === 'string' ? categoriesStr : '')
-        const tags = JSON.parse(typeof tagsStr === 'string' ? tagsStr : '')
-
-        if (categoriesStr && (typeof categoriesStr !== 'string' || !productSchema.pick(['categories']).optional().isValidSync({ categories }))) {
-            res.sendStatus(400)
-            return
-        }
-
-        if (tagsStr && (typeof tagsStr !== 'string' || !productSchema.pick(['tags']).optional().isValidSync({ tags }))) {
-            res.sendStatus(400)
-            return
-        }
-
-        if (!mixed<'monthly' | 'weekly' | 'yearly'>().required().oneOf(['monthly', 'weekly', 'yearly']).isValidSync(duration)) {
-            res.sendStatus(400)
-            return
-        }
-
-        const productRepository = await ProductSaleRepository.getInstance()
-        const products = await productRepository.getTopSellerProducts(duration, categories, tags, skip, limit)
-
-        if (products === false)
-            res.sendStatus(500)
-        else
-            res.status(200).json(products)
-    } catch (e) {
-        console.error(e)
-        res.sendStatus(500)
-    }
-})
-
-products.get('/mostViewed', async (req, res) => {
-    try {
-        const { categories: categoriesStr, tags: tagsStr, skip: skipStr, limit: limitStr } = req?.query
-        if (!number().optional().min(1).integer().isValidSync(limitStr)) {
-            res.status(400).json({ errors: ['invalid limit'] })
-            return
-        }
-
-        if (!number().optional().min(0).integer().isValidSync(skipStr)) {
-            res.status(400).json({ errors: ['invalid skip'] })
-            return
-        }
-
-        let limit = number().required().min(10).integer().cast(limitStr ?? 25)
-        let skip = number().required().min(0).integer().cast(skipStr ?? 0)
-
-        const categories = JSON.parse(typeof categoriesStr === 'string' ? categoriesStr : '')
-        const tags = JSON.parse(typeof tagsStr === 'string' ? tagsStr : '')
-
-        if (categoriesStr && (typeof categoriesStr !== 'string' || !productSchema.pick(['categories']).optional().isValidSync({ categories }))) {
-            res.sendStatus(400)
-            return
-        }
-
-        if (tagsStr && (typeof tagsStr !== 'string' || !productSchema.pick(['tags']).optional().isValidSync({ tags }))) {
-            res.sendStatus(400)
-            return
-        }
-
-        const productRepository = await ProductRepository.getInstance()
-        const products = await productRepository.getMostViewedProducts(categories, tags, skip, limit)
-
-        if (products === false)
-            res.sendStatus(500)
-        else
-            res.status(200).json(products)
-    } catch (e) {
-        console.error(e)
-        res.sendStatus(500)
-    }
-})
-
-products.get('/picture/fileId', async (req, res) => {
-    try {
-        const { fileId } = req.query
-
-        if (!stringObjectId.required().isValidSync(fileId)) {
-            res.sendStatus(400)
-            return
-        }
-        const productPictureRepository = await ProductPictureRepository.getInstance()
-        const file = await productPictureRepository.getFile(fileId)
-        if (file === undefined) {
-            res.sendStatus(404)
-            return
-        }
-
-        res.setHeader('Content-Type', file?.metadata?.contentType)
-
-        const readstream = productPictureRepository.getReadStream(file._id);
-        console.log('readstream', readstream)
-
-        readstream.pipe(res)
-
-        readstream.on('error', e => {
-            console.error(e)
-            res.sendStatus(500)
-        })
-    } catch (e) {
-        console.error(e)
-        res.sendStatus(500)
-    }
-})
-
-products.get('/pictures/productIds', async (req, res) => {
-    try {
-        const { productIds: idsStr } = req.query
-
-        if (!string().required().isValidSync(idsStr)) {
-            res.sendStatus(400)
-            return
-        }
-
-        const ids = idsStr.split(",");
-
-        if (!array().required().min(1).strict(true).of(stringObjectId.required()).isValidSync(ids)) {
-            res.sendStatus(400)
-            return
-        }
-
-        const productPictureRepository = await ProductPictureRepository.getInstance()
-        const files = await productPictureRepository.getFilesByProductId(ids)
-
-        res.json(files)
     } catch (e) {
         console.error(e)
         res.sendStatus(500)
