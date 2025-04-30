@@ -48,7 +48,7 @@ export function Main() {
                     element: aboutUs
                 },
                 {
-                    path: "Dashboard",
+                    path: "/Dashboard",
                     element: dashboardLayout,
                     children: [
                         {
@@ -79,6 +79,15 @@ export function Main() {
                             path: "Settings",
                             element: dashboardSettings,
                         },
+                    ]
+                },
+                {
+                    path: "/Products",
+                    children: [
+                        {
+                            path: "Category",
+                            element: aboutUs
+                        }
                     ]
                 },
                 {

@@ -45,7 +45,7 @@ export function Navigation({ open, setOpen, containerProps }: NavigationProps) {
     )
 }
 
-export function Category({ category, allCategories }: { category: CategoryType, allCategories: CategoryType[] }) {
+function Category({ category, allCategories }: { category: CategoryType, allCategories: CategoryType[] }) {
     const childrenCategories = allCategories.filter(f => f.parentCategory === category._id)
 
     const navigate = useNavigate()
@@ -57,7 +57,7 @@ export function Category({ category, allCategories }: { category: CategoryType, 
                 : <Accordion type="single" collapsible className=''>
                     <AccordionItem value="item-1" className="border-0">
                         <AccordionTrigger className="py-2">
-                            <div className="text-md" onClick={() => navigate(`/products?category=${category._id}`)}>
+                            <div className="text-md" onClick={() => navigate(`/Products/Category?categoryId=${category._id}`)}>
                                 {category.name}
                             </div>
                         </AccordionTrigger>

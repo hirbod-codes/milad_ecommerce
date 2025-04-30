@@ -7,10 +7,10 @@ export function Category() {
     const feedback = useContext(FeedbackContext)
 
     const [queryVars, setQueryVars] = useSearchParams()
-    const category = queryVars.get('category')
+    const categoryId = queryVars.get('categoryId')
 
     useEffect(() => {
-        if (category) {
+        if (categoryId) {
             // 
         }
     }, [])
