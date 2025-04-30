@@ -17,9 +17,8 @@ import { QueueManagement } from "./QueueManagement";
 import { RevokedAccessTokenManager } from "./RevokedAccessTokens/RevokedAccessTokenManager";
 import { SessionManager } from "./Session/SessionManager";
 import prometheusClient from 'prom-client'
-import { ProductViewRepository } from "./DB/Repositories/Products/ProductViewRepository";
-import { ProductSaleRepository } from "./DB/Repositories/Products/ProductSaleRepository";
 import { runCronJobs } from "./cronJobs";
+import { ProductSaleRepository } from "./DB/Repositories/Products/ProductSaleRepository";
 
 dotenv.config({ debug: process.env.DEBUG !== undefined ? Boolean(process.env.DEBUG) : undefined })
 
@@ -71,8 +70,8 @@ export const queueManagement = new QueueManagement(messageBrokerUrl, messageBrok
 
 (async () => {
     await tryAndWait(async () => {
-        if (!isProduction)
-            await MongoDB.getDbInstance().dropAllCollections()
+        // if (!isProduction)
+        //     await MongoDB.getDbInstance().dropAllCollections()
 
         await MongoDB.getDbInstance().initializeDb();
 
@@ -80,14 +79,13 @@ export const queueManagement = new QueueManagement(messageBrokerUrl, messageBrok
             console.time('seed')
 
             try {
-                await CategoryRepository.seed(50)
-                await TagRepository.seed(150)
-                await ProductRepository.seed(800)
-                await ProductReviewsRepository.seed()
-                await OrderRepository.seed(200)
+                // await CategoryRepository.seed(50)
+                // await TagRepository.seed(150)
+                // await ProductRepository.seed(800)
+                // await ProductReviewsRepository.seed()
+                // await OrderRepository.seed(50)
 
-                await ProductSaleRepository.seed()
-                // await ProductViewRepository.seed()
+                // await ProductSaleRepository.seed()
 
                 console.timeEnd('seed')
             } catch (e) {

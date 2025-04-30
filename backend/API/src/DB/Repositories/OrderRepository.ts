@@ -27,7 +27,6 @@ export class OrderRepository extends MongoDB {
             const collection = await MongoDB.getDbInstance().getOrderCollection()
             const productRepository = await ProductRepository.getInstance()
             const userRepository = await UserRepository.getInstance()
-            const productSaleRepository = await ProductSaleRepository.getInstance()
 
             if (!(await collection.deleteMany()).acknowledged)
                 throw new Error('seeding users failed!')
@@ -42,13 +41,15 @@ export class OrderRepository extends MongoDB {
 
             const endTimeTS = DateTime.utc().minus({ months: 2 }).toUnixInteger()
 
-            for (const user of users)
+            for (let j = 0; j < users.length; j++) {
+                const user = users[j]
                 for (let i = 0; i < countPerUser; i++) {
+                    console.log('user number: ', j, ' order number: ', i)
                     let safety = 0
                     while (safety < 10) {
                         safety++
                         try {
-                            const selectedProducts = faker.helpers.arrayElements(products, faker.number.int({ min: 3, max: 20 }))
+                            const selectedProducts = faker.helpers.arrayElements(products, faker.number.int({ min: 3, max: 5 }))
                             const orderProducts = selectedProducts.map(m => ({ productId: m._id, quantity: faker.number.int({ min: 1, max: 400 }) }))
                             const cost = { IRR: orderProducts.reduce((p, c) => p + products.find(f => f._id === c.productId)!.price.IRR * c.quantity, 0), USD: orderProducts.reduce((p, c) => p + products.find(f => f._id === c.productId)!.price.USD * c.quantity, 0) }
 
@@ -73,23 +74,6 @@ export class OrderRepository extends MongoDB {
                             if (!r.acknowledged)
                                 throw new Error('system failed to insert order')
 
-                            const order = { ...orderCreate, _id: r.insertedId }
-
-                            if (order.isPayed)
-                                for (const product of order.products) {
-                                    const p = await productRepository.getById(product.productId)
-                                    if (await productSaleRepository.create(
-                                        {
-                                            productId: ObjectId.createFromHexString(product.productId.toString()),
-                                            quantity: product.quantity,
-                                        },
-                                        order.updatedAt,
-                                        p ? p?.categories : undefined,
-                                        p ? p?.tags : undefined,
-                                    ) === false)
-                                        throw new Error('system failed to insert product sale document')
-                                }
-
                             break
                         } catch (e) {
                             console.error(e)
@@ -101,6 +85,7 @@ export class OrderRepository extends MongoDB {
                     if (safety >= 10)
                         throw new Error('safety triggered while seeding orders!')
                 }
+            }
         } finally { console.timeEnd() }
     }
 

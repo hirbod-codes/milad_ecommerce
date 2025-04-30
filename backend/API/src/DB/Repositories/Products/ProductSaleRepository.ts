@@ -4,6 +4,10 @@ import { MongoDB } from "../../mongodb";
 import { ProductSale, ProductSaleCreate, ProductSaleInput, schemaVersion } from "../../Models/Products/ProductSale";
 import { ProductSaleCountCreate } from "../../Models/Products/ProductSaleCount";
 import { Product } from "../../Models/Products/Product";
+import { ProductRepository } from "./ProductRepository";
+import { UserRepository } from "../UserRepository";
+import { OrderRepository } from "../OrderRepository";
+import { number } from "yup";
 
 export class ProductSaleRepository extends MongoDB {
     private collection: Collection<ProductSaleCreate>
@@ -19,17 +23,62 @@ export class ProductSaleRepository extends MongoDB {
         return new ProductSaleRepository(await MongoDB.getDbInstance().getProductSaleCollection(client, db), await MongoDB.getDbInstance().getProductSaleCountCollection(client, db))
     }
 
+    static async seed() {
+        console.log('\nProductSaleRepository.seed()')
+        console.time()
+
+        const collection = await MongoDB.getDbInstance().getProductSaleCollection()
+        const productRepository = await ProductRepository.getInstance()
+        const productSaleRepository = await ProductSaleRepository.getInstance()
+        const orderRepository = await OrderRepository.getInstance()
+
+        if (!(await collection.deleteMany()).acknowledged)
+            throw new Error('seeding product sales failed!')
+
+        const products = await productRepository.getAll()
+        if (products.length === 0)
+            throw new Error('fetching products failed!')
+
+        const orders = await orderRepository.getAll()
+        if (orders.length === 0)
+            throw new Error('fetching orders failed!')
+
+        let counter = 0
+        for (const order of orders)
+            if (order.isPayed)
+                for (const product of order.products) {
+                    const p = products.find(f => f._id.toString() === product.productId.toString())
+                    if (await productSaleRepository.create(
+                        {
+                            productId: ObjectId.createFromHexString(product.productId.toString()),
+                            quantity: product.quantity,
+                        },
+                        order.updatedAt,
+                        p ? p?.categories : undefined,
+                        p ? p?.tags : undefined,
+                    ) === false)
+                        throw new Error('system failed to insert product sale document')
+
+                    counter++
+                    console.log('counter', counter)
+                }
+
+        console.timeEnd()
+    }
+
     async create(productSale: ProductSaleInput, now: number, categories?: string[], tags?: string[]): Promise<InsertOneResult | false> {
         try {
+            const thisMonth = DateTime.fromSeconds(now).set({ day: 1, hour: 0, minute: 0, second: 0, millisecond: 0 })
+
             let p: ProductSaleCreate = {
                 ...productSale,
                 schemaVersion: schemaVersion,
-                timestamp: DateTime.fromSeconds(now).toUnixInteger(),
+                timestamp: now,
             }
 
             const insertionResult = await this.collection.insertOne(p)
-
-            const thisMonth = DateTime.fromSeconds(now).set({ day: 1, hour: 0, minute: 0, second: 0, millisecond: 0 })
+            if (!insertionResult.acknowledged)
+                throw new Error('system failed to insert ProductSale document')
 
             const aggregationResult = await this.saleCountCollection.aggregate()
                 .addStage({
@@ -37,7 +86,7 @@ export class ProductSaleRepository extends MongoDB {
                         months: [
                             {
                                 $match: {
-                                    productId: insertionResult.insertedId,
+                                    productId: ObjectId.createFromHexString(productSale.productId.toString()),
                                     duration: 2_592_000,
                                     timestamp: { $gte: thisMonth.minus({ months: 12 }).toUnixInteger(), $lte: thisMonth.minus({ months: 1 }).toUnixInteger() }
                                 }
@@ -58,7 +107,7 @@ export class ProductSaleRepository extends MongoDB {
                         lastMonth: [
                             {
                                 $match: {
-                                    productId: insertionResult.insertedId,
+                                    productId: ObjectId.createFromHexString(productSale.productId.toString()),
                                     duration: 2_592_000,
                                     timestamp: thisMonth.toUnixInteger()
                                 }
@@ -126,11 +175,17 @@ export class ProductSaleRepository extends MongoDB {
                     }
                 })
                 .toArray()
-            console.log('aggregationResult', aggregationResult)
+
+            let zScore
+            if (aggregationResult && Array.isArray(aggregationResult) && aggregationResult[0]?.zScore && number().required().isValidSync(aggregationResult[0]?.zScore)) {
+                zScore = number().required().cast(aggregationResult[0]?.zScore)
+                if (zScore >= 20)
+                    console.log('aggregationResult', JSON.stringify(aggregationResult, undefined, 4))
+            }
 
             let updateResult = await this.saleCountCollection.updateOne(
                 {
-                    productId: insertionResult.insertedId,
+                    productId: ObjectId.createFromHexString(productSale.productId.toString()),
                     duration: 2_592_000, // a month in seconds
                     timestamp: thisMonth.toUnixInteger(),
                 },
@@ -139,7 +194,7 @@ export class ProductSaleRepository extends MongoDB {
                     $set: {
                         categories,
                         tags,
-                        zScore: aggregationResult[0].zScore
+                        zScore
                     },
                 },
                 {
@@ -149,11 +204,13 @@ export class ProductSaleRepository extends MongoDB {
             if (!updateResult.acknowledged)
                 throw new Error('failed to update ProductSaleCount document with calculated z-score')
 
+            const thisYear = DateTime.fromSeconds(now).set({ month: 1, day: 1, hour: 0, minute: 0, second: 0, millisecond: 0 })
+
             updateResult = await this.saleCountCollection.updateOne(
                 {
-                    productId: insertionResult.insertedId,
+                    productId: ObjectId.createFromHexString(productSale.productId.toString()),
                     duration: 31_104_000, // a year in seconds
-                    timestamp: thisMonth.toUnixInteger(),
+                    timestamp: thisYear.toUnixInteger(),
                 },
                 {
                     $inc: { count: productSale.quantity },
@@ -200,7 +257,7 @@ export class ProductSaleRepository extends MongoDB {
             }
 
             const aggregation = this.saleCountCollection.aggregate<Product>()
-                .match({ duration: durationSeconds, timestamp: { $gte: startTS.toUnixInteger() } })
+                .match({ duration: durationSeconds })
 
             if (categories)
                 aggregation
@@ -251,7 +308,7 @@ export class ProductSaleRepository extends MongoDB {
             }
 
             const aggregation = this.saleCountCollection.aggregate<Product>()
-                .match({ duration: durationSeconds, timestamp: { $gte: startTS.toUnixInteger() } })
+                .match({ duration: durationSeconds })
 
             if (categories)
                 aggregation

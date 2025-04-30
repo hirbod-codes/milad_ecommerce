@@ -143,7 +143,7 @@ products.get('/trending', async (req, res) => {
         }
 
         const productRepository = await ProductSaleRepository.getInstance()
-        const products = await productRepository.getTopSellingProducts(duration, categories, tags, skip, limit)
+        const products = await productRepository.getTrendingProducts(duration, categories, tags, skip, limit)
 
         if (products === false)
             res.sendStatus(500)

@@ -2,6 +2,9 @@
 
 ```bash
 cd path/to/project
+
+# docker images -q | grep -v "$(docker images -q mongo:4.0 redis:7.0 rabbitmq:3-management prom/prometheus:latest grafana/grafana:latest opensearchproject/opensearch:2.11.1 opensearchproject/opensearch-dashboards:2.11.1 mongo-express:latest ghcr.io/joeferner/redis-commander:latest nginx:alpine)" | xargs -r docker image rm -f
+
 docker system prune -f ---volumes; docker rm -f $(docker ps -aq); docker image rm -f $(docker image ls -f "dangling=true" -q); docker rm -f $(docker ps -aq); docker volume rm -f $(docker volume ls -q); docker compose -f compose.yml up --build --remove-orphans
 ```
 
