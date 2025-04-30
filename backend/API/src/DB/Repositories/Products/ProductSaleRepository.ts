@@ -242,29 +242,29 @@ export class ProductSaleRepository extends MongoDB {
                     durationSeconds = 604_800
                     startTS = DateTime.utc().set({ hour: 0, minute: 0, second: 0 })
                     if (startTS.weekday !== 1)
-                        startTS = startTS.minus({ days: startTS.weekday - 1 })
+                        startTS = startTS.minus({ days: startTS.weekday - 1 }).minus({ months: 1 })
                     break;
                 case 'monthly':
                     durationSeconds = 2_592_000
-                    startTS = DateTime.utc().set({ day: 1, hour: 0, minute: 0, second: 0 })
+                    startTS = DateTime.utc().set({ day: 1, hour: 0, minute: 0, second: 0 }).minus({ months: 12 })
                     break;
                 case 'yearly':
                     durationSeconds = 31_104_000
-                    startTS = DateTime.utc().set({ month: 1, day: 1, hour: 0, minute: 0, second: 0 })
+                    startTS = DateTime.utc().set({ month: 1, day: 1, hour: 0, minute: 0, second: 0 }).minus({ years: 10 })
                     break;
                 default:
                     throw new Error('invalid duration value provided')
             }
 
-            const aggregation = this.saleCountCollection.aggregate<Product>()
-                .match({ duration: durationSeconds })
+            let aggregation = this.saleCountCollection.aggregate<Product>()
+                .match({ duration: durationSeconds, timestamp: { $gte: startTS.toUnixInteger() } })
 
             if (categories)
-                aggregation
+                aggregation = aggregation
                     .match({ categories: { $in: categories } })
 
             if (tags)
-                aggregation
+                aggregation = aggregation
                     .match({ tags: { $in: tags } })
 
             return await aggregation
@@ -293,29 +293,29 @@ export class ProductSaleRepository extends MongoDB {
                     durationSeconds = 604_800
                     startTS = DateTime.utc().set({ hour: 0, minute: 0, second: 0 })
                     if (startTS.weekday !== 1)
-                        startTS = startTS.minus({ days: startTS.weekday - 1 })
+                        startTS = startTS.minus({ days: startTS.weekday - 1 }).minus({ months: 1 })
                     break;
                 case 'monthly':
                     durationSeconds = 2_592_000
-                    startTS = DateTime.utc().set({ day: 1, hour: 0, minute: 0, second: 0 })
+                    startTS = DateTime.utc().set({ day: 1, hour: 0, minute: 0, second: 0 }).minus({ months: 12 })
                     break;
                 case 'yearly':
                     durationSeconds = 31_104_000
-                    startTS = DateTime.utc().set({ month: 1, day: 1, hour: 0, minute: 0, second: 0 })
+                    startTS = DateTime.utc().set({ month: 1, day: 1, hour: 0, minute: 0, second: 0 }).minus({ years: 10 })
                     break;
                 default:
                     throw new Error('invalid duration value provided')
             }
 
-            const aggregation = this.saleCountCollection.aggregate<Product>()
-                .match({ duration: durationSeconds })
+            let aggregation = this.saleCountCollection.aggregate<Product>()
+                .match({ duration: durationSeconds, timestamp: { $gte: startTS.toUnixInteger() } })
 
             if (categories)
-                aggregation
+                aggregation = aggregation
                     .match({ categories: { $in: categories } })
 
             if (tags)
-                aggregation
+                aggregation = aggregation
                     .match({ tags: { $in: tags } })
 
             return await aggregation
