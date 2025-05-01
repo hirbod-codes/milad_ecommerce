@@ -14,6 +14,7 @@ import { Products } from "./Pages/Dashboard/Products"
 import { Orders } from "./Pages/Dashboard/Orders"
 import { Settings } from "./Pages/Dashboard/Settings"
 import { AboutUs } from "./Pages/AboutUs"
+import { Category } from "./Pages/Category"
 
 export function Main() {
     console.log('Main')
@@ -28,6 +29,7 @@ export function Main() {
     const dashboardOrder = useMemo(() => <Orders />, [])
     const dashboardSettings = useMemo(() => <Settings />, [])
     const home = useMemo(() => <Home />, [])
+    const category = useMemo(() => <Category />, [])
     const aboutUs = useMemo(() => <AboutUs />, [])
     const error = useMemo(() => <Error />, [])
     const notFound = useMemo(() => <NotFound />, [])
@@ -86,7 +88,7 @@ export function Main() {
                     children: [
                         {
                             path: "Category",
-                            element: aboutUs
+                            element: category
                         }
                     ]
                 },

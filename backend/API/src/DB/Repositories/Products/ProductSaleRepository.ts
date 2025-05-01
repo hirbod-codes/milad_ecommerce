@@ -66,7 +66,7 @@ export class ProductSaleRepository extends MongoDB {
         console.timeEnd()
     }
 
-    async create(productSale: ProductSaleInput, now: number, categories?: string[], tags?: string[]): Promise<InsertOneResult | false> {
+    async create(productSale: ProductSaleInput, now: number, categoryNames?: string[], tagNames?: string[]): Promise<InsertOneResult | false> {
         try {
             const thisMonth = DateTime.fromSeconds(now).set({ day: 1, hour: 0, minute: 0, second: 0, millisecond: 0 })
 
@@ -192,8 +192,8 @@ export class ProductSaleRepository extends MongoDB {
                 {
                     $inc: { count: productSale.quantity },
                     $set: {
-                        categories,
-                        tags,
+                        categories: categoryNames,
+                        tags: tagNames,
                         zScore
                     },
                 },
@@ -215,8 +215,8 @@ export class ProductSaleRepository extends MongoDB {
                 {
                     $inc: { count: productSale.quantity },
                     $set: {
-                        categories,
-                        tags,
+                        categories: categoryNames,
+                        tags: tagNames,
                         zScore: null
                     },
                 },
@@ -234,7 +234,7 @@ export class ProductSaleRepository extends MongoDB {
         }
     }
 
-    async getTrendingProducts(duration: 'monthly' | 'weekly' | 'yearly', categories?: string[], tags?: string[], offset: number = 0, limit: number = 10): Promise<Product[] | false> {
+    async getTrendingProducts(duration: 'monthly' | 'weekly' | 'yearly', categoryNames?: string[], tagNames?: string[], offset: number = 0, limit: number = 10): Promise<Product[] | false> {
         try {
             let durationSeconds, startTS
             switch (duration) {
@@ -256,18 +256,16 @@ export class ProductSaleRepository extends MongoDB {
                     throw new Error('invalid duration value provided')
             }
 
-            let aggregation = this.saleCountCollection.aggregate<Product>()
-                .match({ duration: durationSeconds, timestamp: { $gte: startTS.toUnixInteger() } })
+            const match: any = { duration: durationSeconds, timestamp: { $gte: startTS.toUnixInteger() } }
 
-            if (categories)
-                aggregation = aggregation
-                    .match({ categories: { $in: categories } })
+            if (categoryNames)
+                match.categories = { $in: categoryNames }
 
-            if (tags)
-                aggregation = aggregation
-                    .match({ tags: { $in: tags } })
+            if (tagNames)
+                match.tags = { $in: tagNames }
 
-            return await aggregation
+            return await this.saleCountCollection.aggregate<Product>()
+                .match(match)
                 .sort({ 'zScore': -1 })
                 .skip(offset)
                 .limit(limit)
@@ -285,7 +283,7 @@ export class ProductSaleRepository extends MongoDB {
         catch (e) { console.error(e); return false }
     }
 
-    async getTopSellingProducts(duration: 'monthly' | 'weekly' | 'yearly', categories?: string[], tags?: string[], offset: number = 0, limit: number = 10): Promise<Product[] | false> {
+    async getTopSellingProducts(duration: 'monthly' | 'weekly' | 'yearly', categoryNames?: string[], tagNames?: string[], offset: number = 0, limit: number = 10): Promise<Product[] | false> {
         try {
             let durationSeconds, startTS
             switch (duration) {
@@ -307,18 +305,16 @@ export class ProductSaleRepository extends MongoDB {
                     throw new Error('invalid duration value provided')
             }
 
-            let aggregation = this.saleCountCollection.aggregate<Product>()
-                .match({ duration: durationSeconds, timestamp: { $gte: startTS.toUnixInteger() } })
+            const match: any = { duration: durationSeconds, timestamp: { $gte: startTS.toUnixInteger() } }
 
-            if (categories)
-                aggregation = aggregation
-                    .match({ categories: { $in: categories } })
+            if (categoryNames)
+                match.categories = { $in: categoryNames }
 
-            if (tags)
-                aggregation = aggregation
-                    .match({ tags: { $in: tags } })
+            if (tagNames)
+                match.tags = { $in: tagNames }
 
-            return await aggregation
+            return await this.saleCountCollection.aggregate<Product>()
+                .match(match)
                 .sort({ 'count': -1 })
                 .skip(offset)
                 .limit(limit)

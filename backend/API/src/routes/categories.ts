@@ -35,6 +35,27 @@ categories.post('/', authenticate, async (req, res) => {
     }
 })
 
+categories.get('/:id', async (req, res) => {
+    try {
+        const { id } = req.params
+
+        if (!stringObjectId.required().isValidSync(id)) {
+            res.sendStatus(400)
+            return
+        }
+
+        const categoryRepository = await CategoryRepository.getInstance()
+        const category = await categoryRepository.getById(id)
+        if (!category)
+            res.sendStatus(404)
+        else
+            res.json(category)
+    } catch (e) {
+        console.error(e)
+        res.sendStatus(500)
+    }
+})
+
 categories.get('/', async (req, res) => {
     try {
         const categoryRepository = await CategoryRepository.getInstance()

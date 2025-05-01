@@ -114,7 +114,7 @@ products.get('/trending', async (req, res) => {
         let categories
         try {
             if (categoriesStr)
-                categories = JSON.parse(categoriesStr.toString())
+                categories = categoriesStr.toString().split(',')
         } catch (e) {
             res.sendStatus(400)
             return
@@ -127,7 +127,7 @@ products.get('/trending', async (req, res) => {
         let tags
         try {
             if (tagsStr)
-                tags = JSON.parse(tagsStr.toString())
+                tags = tagsStr.toString().split(',')
         } catch (e) {
             res.sendStatus(400)
             return
@@ -174,7 +174,7 @@ products.get('/topSelling', async (req, res) => {
         let categories
         try {
             if (categoriesStr)
-                categories = JSON.parse(categoriesStr.toString())
+                categories = categoriesStr.toString().split(',')
         } catch (e) {
             res.sendStatus(400)
             return
@@ -187,7 +187,7 @@ products.get('/topSelling', async (req, res) => {
         let tags
         try {
             if (tagsStr)
-                tags = JSON.parse(tagsStr.toString())
+                tags = tagsStr.toString().split(',')
         } catch (e) {
             res.sendStatus(400)
             return
@@ -234,7 +234,7 @@ products.get('/mostViewed', async (req, res) => {
         let categories
         try {
             if (categoriesStr)
-                categories = JSON.parse(categoriesStr.toString())
+                categories = categoriesStr.toString().split(',')
         } catch (e) {
             res.sendStatus(400)
             return
@@ -247,7 +247,7 @@ products.get('/mostViewed', async (req, res) => {
         let tags
         try {
             if (tagsStr)
-                tags = JSON.parse(tagsStr.toString())
+                tags = tagsStr.toString().split(',')
         } catch (e) {
             res.sendStatus(400)
             return
