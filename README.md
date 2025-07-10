@@ -8,6 +8,8 @@ cd path/to/project
 docker system prune -f ---volumes; docker rm -f $(docker ps -aq); docker image rm -f $(docker image ls -f "dangling=true" -q); docker rm -f $(docker ps -aq); docker volume rm -f $(docker volume ls -q); docker compose -f compose.yml up --build --remove-orphans
 ```
 
+visit `https://localhost:443`
+
 ## HTTPS for localhost
 
 generate certificates properly and add them to your browser:

@@ -9,7 +9,7 @@ import Jwt from "jsonwebtoken";
 import { Filter, SortDirection } from "mongodb";
 import { OrderRepository } from "../DB/Repositories/OrderRepository";
 import { ProductRepository } from "../DB/Repositories/Products/ProductRepository";
-import { ProductSaleRepository } from "../DB/Repositories/Products/ProductSaleRepository";
+import { ProductStatisticsRepository } from "../DB/Repositories/Products/ProductStatisticsRepository";
 import { DateTime } from "luxon";
 
 const order = Router()
@@ -177,7 +177,7 @@ order.patch('/payed', authenticate, async (req, res) => {
         res.sendStatus(500)
     }
 
-    const productSaleRepository = await ProductSaleRepository.getInstance()
+    const productSaleRepository = await ProductStatisticsRepository.getInstance()
 
     try {
         await productSaleRepository.startTransaction()

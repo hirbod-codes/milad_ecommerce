@@ -18,7 +18,7 @@ import { RevokedAccessTokenManager } from "./RevokedAccessTokens/RevokedAccessTo
 import { SessionManager } from "./Session/SessionManager";
 import prometheusClient from 'prom-client'
 import { runCronJobs } from "./cronJobs";
-import { ProductSaleRepository } from "./DB/Repositories/Products/ProductSaleRepository";
+import { ProductStatisticsRepository } from "./DB/Repositories/Products/ProductStatisticsRepository";
 
 dotenv.config({ debug: process.env.DEBUG !== undefined ? Boolean(process.env.DEBUG) : undefined })
 

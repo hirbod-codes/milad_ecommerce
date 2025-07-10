@@ -7,17 +7,21 @@ import { CategoryRepository } from "../CategoryRepository";
 import { TagRepository } from "../TagRepository";
 import { ProductPictureRepository } from "./ProductPictureRepository";
 import fs from 'fs'
+import { ProductStatisticsCreate } from "../../Models/Products/ProductStatistics";
+import { ProductStatisticsRepository } from "./ProductStatisticsRepository";
 
 export class ProductRepository extends MongoDB {
     private collection: Collection<ProductCreate>
+    private productStatisticsRepository: ProductStatisticsRepository
 
-    constructor(collection: Collection<ProductCreate>) {
+    constructor(collection: Collection<ProductCreate>, productStatisticsRepository: ProductStatisticsRepository) {
         super();
         this.collection = collection
+        this.productStatisticsRepository = productStatisticsRepository
     }
 
     static async getInstance(client?: MongoClient, db?: Db): Promise<ProductRepository> {
-        return new ProductRepository(await MongoDB.getDbInstance().getProductCollection(client, db))
+        return new ProductRepository(await MongoDB.getDbInstance().getProductCollection(client, db), await ProductStatisticsRepository.getInstance(client, db))
     }
 
     static async seed(count: number) {
@@ -112,17 +116,28 @@ export class ProductRepository extends MongoDB {
         catch (e) { console.error(e); return false }
     }
 
-    async create(product: ProductInput): Promise<InsertOneResult | false> {
-        const ts = DateTime.utc().toUnixInteger()
+    async create(product: ProductInput, now: number): Promise<InsertOneResult | false> {
+        try {
+            let p: ProductCreate = {
+                ...product,
+                schemaVersion,
+                createdAt: now,
+                updatedAt: now,
+            }
 
-        let p: ProductCreate = {
-            ...product,
-            schemaVersion,
-            createdAt: ts,
-            updatedAt: ts,
+            const productInsertResult = await this.collection.insertOne(p)
+            if (!productInsertResult.acknowledged)
+                throw new Error('Failed to insert the product document')
+
+            const productStatisticsInsertResult = await this.productStatisticsRepository.create({ productId: productInsertResult.insertedId }, now)
+            if (productStatisticsInsertResult === false || !productStatisticsInsertResult.acknowledged)
+                throw new Error('Failed to insert the product\'s statistics documents')
+
+            return productInsertResult
+        } catch (e) {
+            console.error(e)
+            return false
         }
-
-        return await this.collection.insertOne(p)
     }
 
     async isNameExist(name: string): Promise<boolean> {

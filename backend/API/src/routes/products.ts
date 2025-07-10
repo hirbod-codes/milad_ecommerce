@@ -11,7 +11,7 @@ import { ProductRepository } from "../DB/Repositories/Products/ProductRepository
 import { ProductPictureRepository } from "../DB/Repositories/Products/ProductPictureRepository";
 import { flattenSchema } from "../DB/Models/helpers";
 import { SessionManager } from "../Session/SessionManager";
-import { ProductSaleRepository } from "../DB/Repositories/Products/ProductSaleRepository";
+import { ProductStatisticsRepository } from "../DB/Repositories/Products/ProductStatisticsRepository";
 
 const products = Router()
 
@@ -142,7 +142,7 @@ products.get('/trending', async (req, res) => {
             return
         }
 
-        const productRepository = await ProductSaleRepository.getInstance()
+        const productRepository = await ProductStatisticsRepository.getInstance()
         const products = await productRepository.getTrendingProducts(duration, categories, tags, skip, limit)
 
         if (products === false)
@@ -202,7 +202,7 @@ products.get('/topSelling', async (req, res) => {
             return
         }
 
-        const productRepository = await ProductSaleRepository.getInstance()
+        const productRepository = await ProductStatisticsRepository.getInstance()
         const products = await productRepository.getTopSellingProducts(duration, categories, tags, skip, limit)
 
         if (products === false)

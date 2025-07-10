@@ -5,7 +5,7 @@ import { MongoDB } from '../mongodb';
 import { faker } from '@faker-js/faker/.';
 import { ProductRepository } from './Products/ProductRepository';
 import { UserRepository } from './UserRepository';
-import { ProductSaleRepository } from './Products/ProductSaleRepository';
+import { ProductStatisticsRepository } from './Products/ProductStatisticsRepository';
 
 export class OrderRepository extends MongoDB {
     private collection: Collection<OrderCreate>
