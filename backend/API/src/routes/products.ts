@@ -12,6 +12,7 @@ import { ProductPictureRepository } from "../DB/Repositories/Products/ProductPic
 import { flattenSchema } from "../DB/Models/helpers";
 import { SessionManager } from "../Session/SessionManager";
 import { ProductStatisticsRepository } from "../DB/Repositories/Products/ProductStatisticsRepository";
+import { DateTime } from "luxon";
 
 const products = Router()
 
@@ -30,7 +31,7 @@ products.post('/', authenticate, async (req, res) => {
         }
 
         const productRepository = await ProductRepository.getInstance()
-        const r = await productRepository.create(productInputSchema.cast(product))
+        const r = await productRepository.create(productInputSchema.cast(product), DateTime.utc().toUnixInteger())
 
         if (r === false || r.acknowledged !== true)
             res.sendStatus(500)

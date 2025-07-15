@@ -37,34 +37,52 @@ export class ProductReviewsRepository extends MongoDB {
             const startTimeTS = DateTime.utc().minus({ years: 2 }).toUnixInteger()
             const endTimeTS = DateTime.utc().minus({ months: 2 }).toUnixInteger()
 
-            for (const user of users)
-                for (const product of products) {
+            const promises = []
+
+            for (let i = 0; i < users.length; i++) {
+                const user = users[i];
+
+                for (let j = 0; j < products.length; j++) {
+                    const product = products[j];
+
                     if (faker.datatype.boolean(0.3))
                         continue
 
-                    let safety = 0
-                    while (safety < 10) {
-                        safety++
-                        try {
-                            const ts = faker.number.int({ min: startTimeTS, max: endTimeTS })
+                    promises.push(
+                        (async () => {
 
-                            let r = await collection.insertOne({
-                                schemaVersion,
-                                productId: product._id.toString(),
-                                userId: user._id.toString(),
-                                rating: faker.number.int({ min: 0, max: 5 }),
-                                content: faker.word.words({ count: { min: 20, max: 100 } }),
-                                createdAt: ts,
-                                updatedAt: ts,
+                            let safety = 0
+                            while (safety < 10) {
+                                safety++
+                                try {
+                                    const ts = faker.number.int({ min: startTimeTS, max: endTimeTS })
+
+                                    let r = await collection.insertOne({
+                                        schemaVersion,
+                                        productId: product._id.toString(),
+                                        userId: user._id.toString(),
+                                        rating: faker.number.int({ min: 0, max: 5 }),
+                                        content: faker.word.words({ count: { min: 20, max: 100 } }),
+                                        createdAt: ts,
+                                        updatedAt: ts,
+                                    })
+                                    if (r.acknowledged)
+                                        break
+                                } catch (e) {
+                                    if (!(e instanceof MongoSystemError) || e.code !== 11000)
+                                        throw e
+                                }
+                            }
+                        })()
+                            .catch((e) => { throw new e })
+                            .finally(() => {
+                                console.log(`user ${i}, product review for product ${j}`)
                             })
-                            if (r.acknowledged)
-                                break
-                        } catch (e) {
-                            if (!(e instanceof MongoSystemError) || e.code !== 11000)
-                                throw e
-                        }
-                    }
+                    )
                 }
+            }
+
+            await Promise.allSettled(promises)
         } finally { console.timeEnd() }
     }
 

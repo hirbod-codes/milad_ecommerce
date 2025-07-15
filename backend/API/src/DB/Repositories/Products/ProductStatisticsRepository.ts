@@ -22,44 +22,6 @@ export class ProductStatisticsRepository extends MongoDB {
         return new ProductStatisticsRepository(await MongoDB.getDbInstance().getProductStatisticsCollection(client, db), await MongoDB.getDbInstance().getProductCollection(client, db))
     }
 
-    static async seed() {
-        console.log(`\n${this.constructor.name}.seed()`)
-        console.time()
-
-        const collection = await MongoDB.getDbInstance().getProductSaleCollection()
-        const productRepository = await ProductRepository.getInstance()
-        const productStatisticsRepository = await this.getInstance()
-        const orderRepository = await OrderRepository.getInstance()
-
-        if (!(await collection.deleteMany()).acknowledged)
-            throw new Error('seeding product sales failed!')
-
-        const products = await productRepository.getAll()
-        if (products.length === 0)
-            throw new Error('fetching products failed!')
-
-        const orders = await orderRepository.getAll()
-        if (orders.length === 0)
-            throw new Error('fetching orders failed!')
-
-        let counter = 0
-        for (const order of orders)
-            if (order.isPayed)
-                for (const product of order.products) {
-                    if (await productStatisticsRepository.updateCount(
-                        product.productId.toString(),
-                        order.createdAt,
-                        product.quantity
-                    ) === false)
-                        throw new Error('system failed to insert product sale document')
-
-                    counter++
-                    console.log('counter', counter)
-                }
-
-        console.timeEnd()
-    }
-
     async create(productStatistics: ProductStatisticsInput, now: number): Promise<InsertManyResult | false> {
         try {
             const product = await this.productCollection.findOne({ _id: productStatistics.productId.toString() })

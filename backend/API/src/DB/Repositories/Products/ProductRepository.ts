@@ -7,21 +7,24 @@ import { CategoryRepository } from "../CategoryRepository";
 import { TagRepository } from "../TagRepository";
 import { ProductPictureRepository } from "./ProductPictureRepository";
 import fs from 'fs'
-import { ProductStatisticsCreate } from "../../Models/Products/ProductStatistics";
 import { ProductStatisticsRepository } from "./ProductStatisticsRepository";
+import { ProductViewRepository } from "./ProductViewRepository";
+import { clearLine, cursorTo } from "readline";
 
 export class ProductRepository extends MongoDB {
     private collection: Collection<ProductCreate>
     private productStatisticsRepository: ProductStatisticsRepository
+    private productViewRepository: ProductViewRepository
 
-    constructor(collection: Collection<ProductCreate>, productStatisticsRepository: ProductStatisticsRepository) {
+    constructor(collection: Collection<ProductCreate>, productStatisticsRepository: ProductStatisticsRepository, productViewRepository: ProductViewRepository) {
         super();
         this.collection = collection
         this.productStatisticsRepository = productStatisticsRepository
+        this.productViewRepository = productViewRepository
     }
 
     static async getInstance(client?: MongoClient, db?: Db): Promise<ProductRepository> {
-        return new ProductRepository(await MongoDB.getDbInstance().getProductCollection(client, db), await ProductStatisticsRepository.getInstance(client, db))
+        return new ProductRepository(await MongoDB.getDbInstance().getProductCollection(client, db), await ProductStatisticsRepository.getInstance(client, db), await ProductViewRepository.getInstance(client, db))
     }
 
     static async seed(count: number) {
@@ -35,18 +38,18 @@ export class ProductRepository extends MongoDB {
             const productPictureRepository = await ProductPictureRepository.getInstance()
 
             if (!(await collection.deleteMany()).acknowledged || !await productPictureRepository.deleteFiles())
-                throw new Error('seeding users failed!')
+                throw new Error('seeding products failed!')
 
             const startTimeTS = DateTime.utc().minus({ years: 2 }).toUnixInteger()
             const endTimeTS = DateTime.utc().minus({ years: 1 }).toUnixInteger()
 
             const categories = await categoryRepository.get()
             if (categories === false || categories.length === 0)
-                throw new Error('seeding users failed!')
+                throw new Error('no category!')
 
             const tags = await tagRepository.get()
             if (tags === false || tags.length === 0)
-                throw new Error('seeding users failed!')
+                throw new Error('no tag!')
 
             const names = faker.definitions.commerce?.product_name
             const firstDigit = names.product
@@ -56,64 +59,77 @@ export class ProductRepository extends MongoDB {
             const secondDigitNumbers = names.material.length
             const thirdDigitNumbers = names.adjective.length
 
+            const promises = []
+            let counter = 0
+
             for (let i = 0; i < count; i++) {
-                let safety = 0
-                while (safety < 10) {
-                    safety++
-                    try {
-                        const ts = faker.number.int({ min: startTimeTS, max: endTimeTS })
+                promises.push(
+                    (async () => {
+                        let safety = 0
+                        while (safety < 10) {
+                            safety++
+                            try {
+                                const ts = faker.number.int({ min: startTimeTS, max: endTimeTS })
 
-                        let name: string = undefined!
-                        if (i < firstDigitNumbers)
-                            name = `${thirdDigit[0]}${secondDigit[0]}${firstDigit[i]}`
-                        else if ((i / firstDigitNumbers) < secondDigitNumbers)
-                            name = `${thirdDigit[0]}${secondDigit[Math.floor(i / firstDigitNumbers)]}${firstDigit[(i % firstDigitNumbers)]}`
-                        else if ((i / (firstDigitNumbers * secondDigitNumbers)) < thirdDigitNumbers)
-                            name = `${thirdDigit[Math.floor(i / (firstDigitNumbers * secondDigitNumbers))]}${secondDigit[Math.floor((i % (firstDigitNumbers * secondDigitNumbers)) / firstDigitNumbers)]}${firstDigit[(((i % (firstDigitNumbers * secondDigitNumbers)) % firstDigitNumbers))]}`
-                        else
-                            throw new Error('out of unique values for product name')
+                                let name: string = undefined!
+                                if (i < firstDigitNumbers)
+                                    name = `${thirdDigit[0]}${secondDigit[0]}${firstDigit[i]}`
+                                else if ((i / firstDigitNumbers) < secondDigitNumbers)
+                                    name = `${thirdDigit[0]}${secondDigit[Math.floor(i / firstDigitNumbers)]}${firstDigit[(i % firstDigitNumbers)]}`
+                                else if ((i / (firstDigitNumbers * secondDigitNumbers)) < thirdDigitNumbers)
+                                    name = `${thirdDigit[Math.floor(i / (firstDigitNumbers * secondDigitNumbers))]}${secondDigit[Math.floor((i % (firstDigitNumbers * secondDigitNumbers)) / firstDigitNumbers)]}${firstDigit[(((i % (firstDigitNumbers * secondDigitNumbers)) % firstDigitNumbers))]}`
+                                else
+                                    throw new Error('out of unique values for product name')
 
-                        let r = await collection.insertOne({
-                            schemaVersion,
-                            categories: faker.helpers.arrayElements(categories, faker.number.int({ min: 1, max: 5 })).map(m => m.name),
-                            tags: faker.helpers.arrayElements(tags, faker.number.int({ min: 1, max: 5 })).map(m => m.name),
-                            name,
-                            displayName: { fa: fakerFA.commerce.productName(), en: name },
-                            description: { fa: fakerFA.commerce.productDescription(), en: faker.commerce.productDescription() },
-                            price: { IRR: faker.number.int({ min: 0, max: 500_000_000 }), USD: faker.number.int({ min: 0, max: 500_000_000 }) },
-                            reviewsCount: faker.number.int({ min: 0, max: 1000 }),
-                            isAvailable: faker.datatype.boolean(0.7),
-                            views: faker.number.int({ min: 0, max: 100000 }),
-                            averageRating: faker.number.float({ min: 0, max: 5 }),
-                            ...(Object.fromEntries(new Array(faker.number.int({ min: 0, max: 10 })).fill(null).map(m => [faker.string.alpha({ length: { min: 2, max: 10 } }), faker.string.alpha({ length: { min: 2, max: 10 } })]))),
-                            createdAt: ts,
-                            updatedAt: ts,
+                                let r = await collection.insertOne({
+                                    schemaVersion,
+                                    categories: faker.helpers.arrayElements(categories, faker.number.int({ min: 1, max: 5 })).map(m => m.name),
+                                    tags: faker.helpers.arrayElements(tags, faker.number.int({ min: 1, max: 5 })).map(m => m.name),
+                                    name,
+                                    displayName: { fa: fakerFA.commerce.productName(), en: name },
+                                    description: { fa: fakerFA.commerce.productDescription(), en: faker.commerce.productDescription() },
+                                    price: { IRR: faker.number.int({ min: 0, max: 500_000_000 }), USD: faker.number.int({ min: 0, max: 500_000_000 }) },
+                                    reviewsCount: faker.number.int({ min: 0, max: 1000 }),
+                                    isAvailable: faker.datatype.boolean(0.7),
+                                    dailyOrderZScore: null,
+                                    weeklyOrderZScore: null,
+                                    yearlyOrderZScore: null,
+                                    averageRating: faker.number.float({ min: 0, max: 5 }),
+                                    ...(Object.fromEntries(new Array(faker.number.int({ min: 0, max: 10 })).fill(null).map(m => [faker.string.alpha({ length: { min: 2, max: 10 } }), faker.string.alpha({ length: { min: 2, max: 10 } })]))),
+                                    createdAt: ts,
+                                    updatedAt: ts,
+                                })
+                                if (!r.acknowledged)
+                                    throw new Error('insertion failed')
+
+                                let picNum = faker.helpers.arrayElements([1, 2, 3], faker.number.int({ min: 0, max: 3 }))
+
+                                for (let i = 0; i < picNum.length; i++)
+                                    if (await productPictureRepository.uploadFile(r.insertedId.toString(), { fileName: `sample${picNum[i]}.jpeg`, contentType: 'image/jpeg', bytes: fs.readFileSync(`./src/DB/Repositories/Products/sample${picNum[i]}.jpeg`) }) === undefined)
+                                        throw new Error('failed to upload picture for product')
+
+                                break;
+                            } catch (e) {
+                                if (!(e instanceof MongoSystemError) || !(e instanceof MongoServerError) || e.code !== 11000)
+                                    throw e
+                            }
+                        }
+
+                        if (safety >= 10)
+                            throw new Error('safety triggered while seeding products!')
+                    })()
+                        .catch((e) => { throw new e })
+                        .then(() => {
+                            counter++
+                            // process.stdout.moveCursor(0, -1)
+                            // process.stdout.clearLine(1)
+                            console.log(`product ${counter} has inserted.`)
                         })
-                        if (!r.acknowledged)
-                            throw new Error('insertion failed')
-
-                        let picNum = faker.helpers.arrayElements([1, 2, 3], faker.number.int({ min: 0, max: 3 }))
-
-                        for (let i = 0; i < picNum.length; i++)
-                            if (await productPictureRepository.uploadFile(r.insertedId.toString(), { fileName: `sample${picNum[i]}.jpeg`, contentType: 'image/jpeg', bytes: fs.readFileSync(`./src/DB/Repositories/Products/sample${picNum[i]}.jpeg`) }) === undefined)
-                                throw new Error('failed to upload picture for product')
-
-                        break;
-                    } catch (e) {
-                        if (!(e instanceof MongoSystemError) || !(e instanceof MongoServerError) || e.code !== 11000)
-                            throw e
-                    }
-                }
-
-                if (safety >= 10)
-                    throw new Error('safety triggered while seeding products!')
+                )
             }
-        } finally { console.timeEnd() }
-    }
 
-    async incrementViews(id: string | ObjectId, amount: number): Promise<UpdateResult | false> {
-        try { return await this.collection.updateOne({ _id: typeof id === 'string' ? ObjectId.createFromHexString(id) : id }, { $inc: { 'views': amount } }) }
-        catch (e) { console.error(e); return false }
+            await Promise.allSettled(promises)
+        } finally { console.timeEnd() }
     }
 
     async create(product: ProductInput, now: number): Promise<InsertOneResult | false> {
@@ -121,17 +137,16 @@ export class ProductRepository extends MongoDB {
             let p: ProductCreate = {
                 ...product,
                 schemaVersion,
+                dailyOrderZScore: null,
+                weeklyOrderZScore: null,
+                yearlyOrderZScore: null,
                 createdAt: now,
                 updatedAt: now,
             }
 
-            const productInsertResult = await this.collection.insertOne(p)
+            const productInsertResult = await this.collection.insertOne(p, { session: this.session })
             if (!productInsertResult.acknowledged)
                 throw new Error('Failed to insert the product document')
-
-            const productStatisticsInsertResult = await this.productStatisticsRepository.create({ productId: productInsertResult.insertedId }, now)
-            if (productStatisticsInsertResult === false || !productStatisticsInsertResult.acknowledged)
-                throw new Error('Failed to insert the product\'s statistics documents')
 
             return productInsertResult
         } catch (e) {
@@ -225,7 +240,7 @@ export class ProductRepository extends MongoDB {
     }
 
     async update(id: string, product: ProductUpdate): Promise<UpdateResult | false> {
-        try { return await this.collection.updateOne({ _id: ObjectId.createFromHexString(id) }, { $set: { ...product, updatedAt: DateTime.utc().toUnixInteger() } }) }
+        try { return await this.collection.updateOne({ _id: ObjectId.createFromHexString(id) }, { $set: { ...product, updatedAt: DateTime.utc().toUnixInteger() } }, { session: this.session }) }
         catch (e) { console.error(e); return false }
     }
 

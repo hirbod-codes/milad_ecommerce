@@ -8,6 +8,9 @@ export const schemaVersion = 'v1.0.0'
 export const productSchema = object().required().strict(true).unknown(true).shape({
     schemaVersion: string().required().min(6).max(20),
     _id: likeObjectId.required(),
+    dailyOrderZScore: number().required().strict(true).integer().nullable(),
+    weeklyOrderZScore: number().required().strict(true).integer().nullable(),
+    yearlyOrderZScore: number().required().strict(true).integer().nullable(),
     tags: array().optional().of(string().required()).test('unique-array', uniqueArrayTest),
     categories: array().optional().of(string().required()).test('unique-array', uniqueArrayTest),
     name: string().required().strict(true).min(2).max(350),
@@ -17,7 +20,6 @@ export const productSchema = object().required().strict(true).unknown(true).shap
     isAvailable: boolean().required(),
     thumbnail: likeObjectId.optional(),
     reviewsCount: number().strict(true).integer().min(0).optional(),
-    views: number().strict(true).integer().min(0).optional(),
     averageRating: number().strict(true).min(0).max(5).optional(),
     createdAt: number().strict(true).required(),
     updatedAt: number().strict(true).required(),

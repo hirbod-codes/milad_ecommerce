@@ -11,6 +11,8 @@ import { OrderRepository } from "../DB/Repositories/OrderRepository";
 import { ProductRepository } from "../DB/Repositories/Products/ProductRepository";
 import { ProductStatisticsRepository } from "../DB/Repositories/Products/ProductStatisticsRepository";
 import { DateTime } from "luxon";
+import { ProductSaleRepository } from "../DB/Repositories/Products/ProductSaleRepository";
+import { MongoDB } from "../DB/mongodb";
 
 const order = Router()
 
@@ -140,9 +142,19 @@ order.get('/', authenticate, async (req, res) => {
 
 // add order record to productSale collection
 order.patch('/payed', authenticate, async (req, res) => {
+    let userId = (Jwt.decode(req.headers['authorization']!.replace('Bearer ', '')!) as Jwt.JwtPayload)?.sub ?? ''
+    if (!stringObjectId.required().isValidSync(userId)) {
+        res.sendStatus(403)
+        return
+    }
+
     const { orderId }: { orderId: string } = req.body
 
     let order: Order = undefined!
+
+    // payment logic
+
+    const mongodb = MongoDB.getDbInstance()
 
     try {
         if (!stringObjectId.required().isValidSync(orderId)) {
@@ -159,41 +171,38 @@ order.patch('/payed', authenticate, async (req, res) => {
         }
         order = o
 
+        await mongodb.startTransaction()
+
         const r = await orderRepository.payed(o._id)
         if (r === false || !r.acknowledged) {
             res.sendStatus(500)
+            await mongodb.abortTransaction()
             return
         }
-        if (r.matchedCount !== 1) {
-            res.sendStatus(400)
-            return
-        }
-
-        // payment logic
 
         res.sendStatus(200)
     } catch (e) {
         console.error(e)
         res.sendStatus(500)
+        await mongodb.abortTransaction()
+        return
     }
 
-    const productSaleRepository = await ProductStatisticsRepository.getInstance()
-
     try {
-        await productSaleRepository.startTransaction()
+        const productSaleRepository = await ProductSaleRepository.getInstance()
 
         // add to ProductSale collection
         const creations = await Promise.all(order.products.map(async ({ productId, quantity }) => {
-            return productSaleRepository.create({ productId, quantity }, DateTime.utc().toUnixInteger());
+            return productSaleRepository.create({ metadata: { productId, quantity, userId } }, DateTime.utc().toUnixInteger());
         }))
         for (const c of creations)
             if (c === false || !c.acknowledged)
                 throw new Error('')
 
-        await productSaleRepository.commitTransaction()
+        await mongodb.commitTransaction()
     } catch (e) {
         console.error(e)
-        await productSaleRepository.abortTransaction()
+        await mongodb.abortTransaction()
     }
 })
 

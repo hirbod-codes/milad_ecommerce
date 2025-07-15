@@ -17,44 +17,61 @@ export class TagRepository extends MongoDB {
     }
 
     static async seed(count: number) {
-        const collection = await MongoDB.getDbInstance().getTagCollection()
+        console.log('TagRepository.seed()')
+        console.time()
 
-        if (!(await collection.deleteMany()).acknowledged)
-            throw new Error('seeding users failed!')
+        try {
+            const collection = await MongoDB.getDbInstance().getTagCollection()
 
-        const startTimeTS = DateTime.utc().minus({ years: 2 }).toUnixInteger()
-        const endTimeTS = DateTime.utc().minus({ months: 2 }).toUnixInteger()
+            if (!(await collection.deleteMany()).acknowledged)
+                throw new Error('seeding tags failed!')
 
-        const names = faker.helpers.uniqueArray(faker.definitions.person.first_name.generic!, count)
-        const faNames = fakerFA.helpers.uniqueArray(fakerFA.definitions.person.first_name.generic!, count)
+            const startTimeTS = DateTime.utc().minus({ years: 2 }).toUnixInteger()
+            const endTimeTS = DateTime.utc().minus({ months: 2 }).toUnixInteger()
 
-        for (let i = 0; i < count; i++) {
-            let safety = 0
-            while (safety < 10) {
-                safety++
-                try {
-                    const ts = faker.number.int({ min: startTimeTS, max: endTimeTS })
+            const names = faker.helpers.uniqueArray(faker.definitions.person.first_name.generic!, count)
+            const faNames = fakerFA.helpers.uniqueArray(fakerFA.definitions.person.first_name.generic!, count)
+
+            const promises = []
+
+            for (let i = 0; i < count; i++) {
+                promises.push(
+                    (async () => {
+                        let safety = 0
+                        while (safety < 10) {
+                            safety++
+                            try {
+                                const ts = faker.number.int({ min: startTimeTS, max: endTimeTS })
 
 
-                    let r = await collection.insertOne({
-                        schemaVersion,
-                        name: names[i],
-                        displayName: { fa: faNames[i], en: names[i] },
-                        views: faker.number.int({ min: 0, max: 100000 }),
-                        createdAt: ts,
-                        updatedAt: ts,
-                    })
-                    if (r.acknowledged)
-                        break
-                } catch (e) {
-                    if (!(e instanceof MongoSystemError) || e.code !== 11000)
-                        throw e
-                }
+                                let r = await collection.insertOne({
+                                    schemaVersion,
+                                    name: names[i],
+                                    displayName: { fa: faNames[i], en: names[i] },
+                                    views: faker.number.int({ min: 0, max: 100000 }),
+                                    createdAt: ts,
+                                    updatedAt: ts,
+                                })
+                                if (r.acknowledged)
+                                    break
+                            } catch (e) {
+                                if (!(e instanceof MongoSystemError) || e.code !== 11000)
+                                    throw e
+                            }
+                        }
+
+                        if (safety >= 10)
+                            throw new Error('safety triggered while seeding tags!')
+                    })()
+                        .catch((e) => { throw new e })
+                        .finally(() => {
+                            console.log(`tag ${i}`)
+                        })
+                )
             }
 
-            if (safety >= 10)
-                throw new Error('safety triggered while seeding tags!')
-        }
+            await Promise.allSettled(promises)
+        } finally { console.timeEnd() }
     }
 
     async create(tag: TagInput): Promise<InsertOneResult | false> {

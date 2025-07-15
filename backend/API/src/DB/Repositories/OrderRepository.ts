@@ -20,7 +20,7 @@ export class OrderRepository extends MongoDB {
     }
 
     static async seed(countPerUser: number) {
-        console.log('\nOrderRepository.seed()')
+        console.log('OrderRepository.seed()')
         console.time()
 
         try {
@@ -29,63 +29,75 @@ export class OrderRepository extends MongoDB {
             const userRepository = await UserRepository.getInstance()
 
             if (!(await collection.deleteMany()).acknowledged)
-                throw new Error('seeding users failed!')
+                throw new Error('seeding orders failed!')
 
             const users = await userRepository.get()
             if (users.length === 0)
-                throw new Error('seeding users failed!')
+                throw new Error('no user!')
 
             const products = await productRepository.getAll()
             if (products.length === 0)
-                throw new Error('seeding users failed!')
+                throw new Error('no product!')
 
             const endTimeTS = DateTime.utc().minus({ months: 2 }).toUnixInteger()
 
+            const promises = []
+
             for (let j = 0; j < users.length; j++) {
                 const user = users[j]
+
                 for (let i = 0; i < countPerUser; i++) {
-                    console.log('user number: ', j, ' order number: ', i)
-                    let safety = 0
-                    while (safety < 10) {
-                        safety++
-                        try {
-                            const selectedProducts = faker.helpers.arrayElements(products, faker.number.int({ min: 3, max: 5 }))
-                            const orderProducts = selectedProducts.map(m => ({ productId: m._id, quantity: faker.number.int({ min: 1, max: 400 }) }))
-                            const cost = { IRR: orderProducts.reduce((p, c) => p + products.find(f => f._id === c.productId)!.price.IRR * c.quantity, 0), USD: orderProducts.reduce((p, c) => p + products.find(f => f._id === c.productId)!.price.USD * c.quantity, 0) }
+                    promises.push(
+                        (async () => {
+                            let safety = 0
+                            while (safety < 10) {
+                                safety++
+                                try {
+                                    const selectedProducts = faker.helpers.arrayElements(products, faker.number.int({ min: 3, max: 5 }))
+                                    const orderProducts = selectedProducts.map(m => ({ productId: m._id, quantity: faker.number.int({ min: 1, max: 400 }) }))
+                                    const cost = { IRR: orderProducts.reduce((p, c) => p + products.find(f => f._id === c.productId)!.price.IRR * c.quantity, 0), USD: orderProducts.reduce((p, c) => p + products.find(f => f._id === c.productId)!.price.USD * c.quantity, 0) }
 
-                            const ts = faker.number.int({ min: selectedProducts.reduce((p, c) => c.createdAt > p ? c.createdAt : p, 0), max: endTimeTS })
+                                    const ts = faker.number.int({ min: selectedProducts.reduce((p, c) => c.createdAt > p ? c.createdAt : p, 0), max: endTimeTS })
 
-                            const orderCreate: OrderCreate = {
-                                schemaVersion,
-                                userId: user._id,
-                                isPayed: faker.datatype.boolean(0.8),
-                                isSent: faker.datatype.boolean(0.5),
-                                products: orderProducts,
-                                cost,
-                                address: {
-                                    text: faker.lorem.lines({ min: 1, max: 5 }),
-                                    googleMap: faker.datatype.boolean() ? undefined : faker.internet.url()
-                                },
-                                createdAt: ts,
-                                updatedAt: ts,
+                                    const orderCreate: OrderCreate = {
+                                        schemaVersion,
+                                        userId: user._id,
+                                        isPayed: faker.datatype.boolean(0.8),
+                                        isSent: faker.datatype.boolean(0.5),
+                                        products: orderProducts,
+                                        cost,
+                                        address: {
+                                            text: faker.lorem.lines({ min: 1, max: 5 }),
+                                            googleMap: faker.datatype.boolean() ? undefined : faker.internet.url()
+                                        },
+                                        createdAt: ts,
+                                        updatedAt: ts,
+                                    }
+
+                                    let r = await collection.insertOne(orderCreate)
+                                    if (!r.acknowledged)
+                                        throw new Error('system failed to insert order')
+
+                                    break
+                                } catch (e) {
+                                    console.error(e)
+                                    if (!(e instanceof MongoSystemError) || e.code !== 11000)
+                                        throw e
+                                }
                             }
 
-                            let r = await collection.insertOne(orderCreate)
-                            if (!r.acknowledged)
-                                throw new Error('system failed to insert order')
-
-                            break
-                        } catch (e) {
-                            console.error(e)
-                            if (!(e instanceof MongoSystemError) || e.code !== 11000)
-                                throw e
-                        }
-                    }
-
-                    if (safety >= 10)
-                        throw new Error('safety triggered while seeding orders!')
+                            if (safety >= 10)
+                                throw new Error('safety triggered while seeding orders!')
+                        })()
+                            .catch((e) => { throw new e })
+                            .finally(() => {
+                                console.log(`user ${j}, order ${i}`)
+                            })
+                    )
                 }
             }
+
+            await Promise.allSettled(promises)
         } finally { console.timeEnd() }
     }
 

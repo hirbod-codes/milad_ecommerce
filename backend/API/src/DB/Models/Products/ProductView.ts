@@ -14,7 +14,7 @@ export const productViewSchema = object().required().strict(true).noUnknown(true
 })
 export type ProductView = InferType<typeof productViewSchema>
 
-export const productViewInputSchema = productViewSchema.pick(['productId', 'count']).required().strict(true).noUnknown(true)
+export const productViewInputSchema = productViewSchema.pick(['productId']).required().strict(true).noUnknown(true)
 export type ProductViewInput = InferType<typeof productViewInputSchema>
 
 export const productViewCreateSchema = productViewSchema.omit(['_id']).shape({ _id: likeObjectId.optional() }).required().strict(true).noUnknown(true)
