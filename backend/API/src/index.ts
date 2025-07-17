@@ -2,7 +2,6 @@ import express from "express";
 import dotenv from "dotenv";
 import pino from 'pino-http'
 import { getBooleanEnv, getIntegerEnv, getStringEnv, tryAndWait } from "./helpers";
-import { MongoDB } from "./DB/mongodb";
 import { TagRepository } from "./DB/Repositories/TagRepository";
 import { ProductReviewsRepository } from "./DB/Repositories/Products/ProductReviewsRepository";
 import { ProductRepository } from "./DB/Repositories/Products/ProductRepository";
@@ -18,7 +17,10 @@ import { RevokedAccessTokenManager } from "./RevokedAccessTokens/RevokedAccessTo
 import { SessionManager } from "./Session/SessionManager";
 import prometheusClient from 'prom-client'
 import { runCronJobs } from "./cronJobs";
-import { ProductStatisticsRepository } from "./DB/Repositories/Products/ProductStatisticsRepository";
+import { ProductSaleRepository } from "./DB/Repositories/Products/ProductSaleRepository";
+import { MongoDB } from "./DB/mongodb";
+
+console.log('running...');
 
 dotenv.config({ debug: process.env.DEBUG !== undefined ? Boolean(process.env.DEBUG) : undefined })
 
@@ -27,8 +29,10 @@ export const isProduction = getStringEnv('NODE_ENV', 'The Node env environment v
 export const hostName = getStringEnv('HOST', 'The HOST environment variable is not provided')
 export const hostPort = getIntegerEnv('PORT', 'The PORT environment variable is not provided', (s) => s.min(1025))
 
+
 // Communications
 export const jwtSecret = getStringEnv('JWT_SECRET', 'The Jwt secret environment variable is not provided')
+export const allowedOrigins = getStringEnv('ALLOWED_ORIGINS', 'The Allowed origins environment variable is not provided')!
 
 // Message Broker
 export const messageBrokerUsername = getStringEnv('MESSAGE_BROKER_USERNAME', 'The Message broker username environment variable is not provided')!
@@ -115,7 +119,8 @@ export const queueManagement = new QueueManagement(messageBrokerUrl, messageBrok
         })
 
     app.use((req, res, next) => {
-        res.header('Access-Control-Allow-Origin', '*')
+        res.header('Access-Control-Allow-Origin', allowedOrigins)
+        res.header('Access-Control-Allow-Credentials', 'true')
         res.header('Access-Control-Allow-Method', '*')
         res.header('Access-Control-Allow-Headers', '*,authorization,Authorization')
 

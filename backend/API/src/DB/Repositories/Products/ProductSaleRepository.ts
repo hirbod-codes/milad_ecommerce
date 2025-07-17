@@ -40,10 +40,11 @@ export class ProductSaleRepository extends MongoDB {
                         while (safety < 10) {
                             safety++
                             try {
+                                const inserts = []
                                 for (let j = 0; j < order.products.length; j++) {
                                     const { productId, quantity } = order.products[j];
 
-                                    let r = await collection.insertOne({
+                                    inserts.push({
                                         schemaVersion: schemaVersion,
                                         timestamp: DateTime.fromSeconds(order.updatedAt).toJSDate(),
                                         metadata: {
@@ -52,10 +53,13 @@ export class ProductSaleRepository extends MongoDB {
                                             userId: ObjectId.createFromHexString(order.userId.toString())
                                         }
                                     })
-                                    if (!r.acknowledged)
-                                        throw new Error('insertion failed')
-                                    break;
                                 }
+
+                                const r = await collection.insertMany(inserts)
+                                if (!r.acknowledged)
+                                    throw new Error('insertion failed')
+
+                                break;
                             } catch (e) {
                                 if (!(e instanceof MongoSystemError) || !(e instanceof MongoServerError) || e.code !== 11000)
                                     throw e
