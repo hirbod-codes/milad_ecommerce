@@ -2,8 +2,6 @@ import { Collection, Db, MongoClient, MongoServerError, MongoSystemError, Object
 import { MongoDB } from "../../mongodb";
 import { ProductSaleCreate, ProductSaleInput, schemaVersion } from "../../Models/Products/ProductSale";
 import { DateTime } from "luxon";
-import { OrderRepository } from "../OrderRepository";
-import { ProductRepository } from "./ProductRepository";
 
 export class ProductSaleRepository extends MongoDB {
     private collection: Collection<ProductSaleCreate>
@@ -140,47 +138,7 @@ export class ProductSaleRepository extends MongoDB {
                     quantity: { $sum: "$metadata.quantity" },
                 })
 
-            const docs = await aggregation.toArray()
-
-            const promises = []
-
-            for (let i = 0; i < docs.length; i++) {
-                const doc = docs[i];
-
-                promises.push((async () => {
-                    const productRepository = await ProductRepository.getInstance()
-                    productRepository.updateImmutables(doc._id, {})
-                })())
-            }
-
             return await aggregation.toArray()
-        } catch (e) {
-            console.error(e)
-            return false
-        }
-
-    }
-
-    async getDaily(productId: string, from: number, to: number) {
-        try {
-            const sales = await this.collection.aggregate()
-                .match({
-                    timestamp: { $gte: DateTime.fromSeconds(from).toJSDate(), $lte: DateTime.fromSeconds(to).toJSDate() },
-                    'metadata.productId': ObjectId.createFromHexString(productId)
-                })
-                .group({
-                    _id: {
-                        year: { $year: "$timestamp" },
-                        month: { $month: "$timestamp" }
-                    },
-                    quantity: { $sum: 1 },
-                    firstTs: { $min: "$timestamp" },
-                    lastTs: { $max: "$timestamp" }
-                })
-                .sort({ "_id.year": 1, "_id.month": 1 })
-                .toArray()
-
-            return sales
         } catch (e) {
             console.error(e)
             return false

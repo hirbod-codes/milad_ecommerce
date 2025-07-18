@@ -1,11 +1,9 @@
 import { DateTime } from "luxon";
-import { Collection, Db, DeleteResult, InsertManyResult, InsertOneResult, MongoClient, ObjectId, UpdateResult } from 'mongodb'
+import { Collection, Db, DeleteResult, InsertManyResult, MongoClient, ObjectId, UpdateResult } from 'mongodb'
 import { MongoDB } from "../../mongodb";
-import { ProductSale, ProductSaleCreate, ProductSaleInput, schemaVersion } from "../../Models/Products/ProductSale";
+import { schemaVersion } from "../../Models/Products/ProductSale";
 import { ProductStatistics, ProductStatisticsCreate, ProductStatisticsInput } from "../../Models/Products/ProductStatistics";
 import { Product, ProductCreate, ProductUpdate } from "../../Models/Products/Product";
-import { ProductRepository } from "./ProductRepository";
-import { OrderRepository } from "../OrderRepository";
 import { number } from "yup";
 
 export class ProductStatisticsRepository extends MongoDB {
@@ -65,7 +63,7 @@ export class ProductStatisticsRepository extends MongoDB {
                         timestamp: thisYear.toUnixInteger(),
                     }
                 ]
-            )
+                , { session: this.session })
             if (!insertionResult.acknowledged || insertionResult.insertedCount !== 3)
                 throw new Error('Failed to create ProductStatistics document for weekly time period.')
 
@@ -212,7 +210,7 @@ export class ProductStatisticsRepository extends MongoDB {
             if (Object.keys(updates).length === 0)
                 return false
 
-            return await this.collection.updateMany({ productId }, { $set: { updatedAt, 'product.updatedAt': updatedAt, ...updates } })
+            return await this.collection.updateMany({ productId }, { $set: { updatedAt, 'product.updatedAt': updatedAt, ...updates } }, { session: this.session })
         } catch (e) {
             console.error(e)
             return false
@@ -225,18 +223,27 @@ export class ProductStatisticsRepository extends MongoDB {
      * @param now for testing and seeding purposes, current timestamp is given at run time.
      * @param count number of sold products
      */
-    async updateCount(productId: string, now: number, count: number) {
+    async updateCount(productId: string, now: number, count: number): Promise<{ weeklyZScore: number, monthlyZScore: number, yearlyZScore: number } | false> {
         try {
-            await this.updateWeeklyCount(productId, now, count)
-            await this.updateMonthlyCount(productId, now, count)
-            await this.updateYearlyCount(productId, now, count)
+            return {
+                weeklyZScore: await this.updateWeeklyCount(productId, now, count),
+                monthlyZScore: await this.updateMonthlyCount(productId, now, count),
+                yearlyZScore: await this.updateYearlyCount(productId, now, count)
+            }
         } catch (e) {
             console.error(e)
             return false
         }
     }
 
-    private async updateWeeklyCount(productId: string, now: number, count: number) {
+    /**
+     * 
+     * @param productId 
+     * @param now for testing and seeding purposes, current timestamp is given at run time.
+     * @param count number of sold products
+     * @returns calculated z-score
+     */
+    private async updateWeeklyCount(productId: string, now: number, count: number): Promise<number> {
         let thisWeek = DateTime.fromSeconds(now).set({ hour: 0, minute: 0, second: 0, millisecond: 0 })
         while (thisWeek.weekday !== 1) {
             thisWeek = thisWeek.minus({ days: 1 })
@@ -266,12 +273,21 @@ export class ProductStatisticsRepository extends MongoDB {
                     zScore
                 },
             }
-        )
+            , { session: this.session })
         if (!updateResult.acknowledged || updateResult.modifiedCount !== 1)
             throw new Error('failed to update ProductStatistics document with weekly calculated z-score')
+
+        return zScore
     }
 
-    private async updateMonthlyCount(productId: string, now: number, count: number) {
+    /**
+     * 
+     * @param productId 
+     * @param now for testing and seeding purposes, current timestamp is given at run time.
+     * @param count number of sold products
+     * @returns calculated z-score
+     */
+    private async updateMonthlyCount(productId: string, now: number, count: number): Promise<number> {
         const thisMonth = DateTime.fromSeconds(now).set({ day: 1, hour: 0, minute: 0, second: 0, millisecond: 0 })
 
         const aggregationResult = await this.getZScoreAggregationPipeline(productId.toString(), 2_592_000, [thisMonth.minus({ months: 12 }).toUnixInteger(), thisMonth.minus({ months: 1 }).toUnixInteger()], thisMonth.toUnixInteger(), count)
@@ -298,12 +314,21 @@ export class ProductStatisticsRepository extends MongoDB {
                     zScore
                 },
             }
-        )
+            , { session: this.session })
         if (!updateResult.acknowledged || updateResult.modifiedCount !== 1)
             throw new Error('failed to update ProductStatistics document with monthly calculated z-score')
+
+        return zScore
     }
 
-    private async updateYearlyCount(productId: string, now: number, count: number) {
+    /**
+     * 
+     * @param productId 
+     * @param now for testing and seeding purposes, current timestamp is given at run time.
+     * @param count number of sold products
+     * @returns calculated z-score
+     */
+    private async updateYearlyCount(productId: string, now: number, count: number): Promise<number> {
         const thisYear = DateTime.fromSeconds(now).set({ month: 1, day: 1, hour: 0, minute: 0, second: 0, millisecond: 0 })
 
         const aggregationResult = await this.getZScoreAggregationPipeline(productId.toString(), 31_104_000, [thisYear.minus({ years: 7 }).toUnixInteger(), thisYear.minus({ years: 1 }).toUnixInteger()], thisYear.toUnixInteger(), count)
@@ -330,9 +355,11 @@ export class ProductStatisticsRepository extends MongoDB {
                     zScore
                 },
             }
-        )
+            , { session: this.session })
         if (!updateResult.acknowledged || updateResult.modifiedCount !== 1)
             throw new Error('failed to update ProductStatistics document with yearly calculated z-score')
+
+        return zScore
     }
 
     private async getZScoreAggregationPipeline(productId: string, duration: number, period: [number, number], now: number, count: number) {

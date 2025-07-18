@@ -8,8 +8,8 @@ export const schemaVersion = 'v1.0.0'
 export const productSchema = object().required().strict(true).unknown(true).shape({
     schemaVersion: string().required().min(6).max(20),
     _id: likeObjectId.required(),
-    dailyOrderZScore: number().required().strict(true).integer().nullable(),
     weeklyOrderZScore: number().required().strict(true).integer().nullable(),
+    monthlyOrderZScore: number().required().strict(true).integer().nullable(),
     yearlyOrderZScore: number().required().strict(true).integer().nullable(),
     tags: array().optional().of(string().required()).test('unique-array', uniqueArrayTest),
     categories: array().optional().of(string().required()).test('unique-array', uniqueArrayTest),

@@ -32,8 +32,5 @@ export let productStatisticsUpdateSchema = productStatisticsSchema
     .partial()
 export type ProductStatisticsUpdate = InferType<typeof productStatisticsUpdateSchema>
 
-export const productImmutableSchema = productStatisticsSchema.required().noUnknown(true).strict(true).pick(Object.keys(productStatisticsSchema.fields).filter(f => !['_id', 'schemaVersion'].concat(Object.keys(productStatisticsUpdateSchema.fields)).includes(f)) as any).partial()
-export type ProductStatisticsImmutable = InferType<typeof productImmutableSchema>
-
 export const fields: (keyof ProductStatistics)[] = Object.keys(productStatisticsSchema.fields) as any
 export const readableFields: (keyof Omit<ProductStatistics, 'schemaVersion'>)[] = fields.filter(f => !['schemaVersion'].includes(f)) as any

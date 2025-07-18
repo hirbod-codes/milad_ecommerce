@@ -1,0 +1,33 @@
+{
+    "references": [
+        {
+            "path": "../API"
+        }
+    ],
+    "exclude": [
+        "node_modules",
+        "dist"
+    ],
+    "include": [
+        "src/**/*"
+    ],
+    "compilerOptions": {
+        "paths": {
+            "@/*": [
+                "./*"
+            ]
+        },
+        "outDir": "./dist",
+        "baseUrl": "./",
+        "sourceMap": true,
+        "resolveJsonModule": true,
+        "target": "ES2015",
+        "module": "CommonJS",
+        "moduleResolution": "node10",
+        "esModuleInterop": true,
+        "forceConsistentCasingInFileNames": true,
+        /* Type Checking */
+        "strict": true,
+        "skipLibCheck": true
+    }
+}

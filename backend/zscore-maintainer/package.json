@@ -1,0 +1,39 @@
+{
+    "name": "api",
+    "version": "0.0.0",
+    "author": "",
+    "license": "ISC",
+    "description": "",
+    "main": "./dist/index.js",
+    "scripts": {
+        "build": "npx tsc -b",
+        "start": "node -r ./bootstrap.js dist/index.js || exit 1",
+        "dev": "nodemon --config nodemon.json"
+    },
+    "_moduleAliases": {
+        "@/src": "./dist"
+    },
+    "dependencies": {
+        "dotenv": "^16.4.7",
+        "express": "^4.21.2",
+        "luxon": "^3.5.0",
+        "module-alias": "^2.2.3",
+        "mongodb": "6.8",
+        "node-cron": "^3.0.3",
+        "yup": "^1.6.1"
+    },
+    "devDependencies": {
+        "@types/dotenv": "^8.2.3",
+        "@types/express": "^5.0.0",
+        "@types/luxon": "^3.4.2",
+        "@types/module-alias": "^2.0.4",
+        "@types/mongodb": "^4.0.7",
+        "@types/node": "^22.13.8",
+        "@types/node-cron": "^3.0.11",
+        "@types/yup": "^0.32.0",
+        "concurrently": "^9.1.2",
+        "nodemon": "^3.1.9",
+        "ts-node": "^10.9.2",
+        "typescript": "^5.8.2"
+    }
+}

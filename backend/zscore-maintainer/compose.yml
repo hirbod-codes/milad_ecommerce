@@ -1,0 +1,53 @@
+version: '3.8'
+
+services:
+    ############################################################################################# zscore-manager-master
+    zscore-manager-master:
+        container_name: zscore-manager-master
+        build:
+            context: .
+            dockerfile: Dockerfile
+            target: development
+        volumes:
+            - .:/app
+            - /app/node_modules
+        environment:
+            - NODE_ENV=development
+            - DB_SUPPORTS_TRANSACTION=false
+            # - DB_URL=mongodb://main_mongodb:27017
+            - DB_URL=mongodb://${host_ip}:1509
+            - APP_MODE=master
+
+    ############################################################################################# zscore-manager-slave
+    zscore-manager-slave:
+        container_name: zscore-manager-slave
+        build:
+            context: .
+            dockerfile: Dockerfile
+            target: development
+        volumes:
+            - .:/app
+            - /app/node_modules
+        environment:
+            - NODE_ENV=development
+            - DB_SUPPORTS_TRANSACTION=false
+            # - DB_URL=mongodb://main_mongodb:27017
+            - DB_URL=mongodb://${host_ip}:1509
+            - APP_MODE=slave
+
+    ############################################################################################# zscore-manager-slave
+    zscore-manager-slave:
+        container_name: zscore-manager-slave
+        build:
+            context: .
+            dockerfile: Dockerfile
+            target: development
+        volumes:
+            - .:/app
+            - /app/node_modules
+        environment:
+            - NODE_ENV=development
+            - DB_SUPPORTS_TRANSACTION=false
+            # - DB_URL=mongodb://main_mongodb:27017
+            - DB_URL=mongodb://${host_ip}:1509
+            - APP_MODE=slave

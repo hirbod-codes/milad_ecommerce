@@ -91,8 +91,8 @@ export class ProductRepository extends MongoDB {
                                     price: { IRR: faker.number.int({ min: 0, max: 500_000_000 }), USD: faker.number.int({ min: 0, max: 500_000_000 }) },
                                     reviewsCount: faker.number.int({ min: 0, max: 1000 }),
                                     isAvailable: faker.datatype.boolean(0.7),
-                                    dailyOrderZScore: null,
                                     weeklyOrderZScore: null,
+                                    monthlyOrderZScore: null,
                                     yearlyOrderZScore: null,
                                     averageRating: faker.number.float({ min: 0, max: 5 }),
                                     ...(Object.fromEntries(new Array(faker.number.int({ min: 0, max: 10 })).fill(null).map(m => [faker.string.alpha({ length: { min: 2, max: 10 } }), faker.string.alpha({ length: { min: 2, max: 10 } })]))),
@@ -137,8 +137,8 @@ export class ProductRepository extends MongoDB {
             let p: ProductCreate = {
                 ...product,
                 schemaVersion,
-                dailyOrderZScore: null,
                 weeklyOrderZScore: null,
+                monthlyOrderZScore: null,
                 yearlyOrderZScore: null,
                 createdAt: now,
                 updatedAt: now,
@@ -147,6 +147,10 @@ export class ProductRepository extends MongoDB {
             const productInsertResult = await this.collection.insertOne(p, { session: this.session })
             if (!productInsertResult.acknowledged)
                 throw new Error('Failed to insert the product document')
+
+            const productStatisticsInsertResult = await this.productStatisticsRepository.create({ productId: productInsertResult.insertedId }, now)
+            if (productStatisticsInsertResult === false || !productStatisticsInsertResult.acknowledged)
+                throw new Error('Failed to insert the product\'s statistics documents')
 
             return productInsertResult
         } catch (e) {
@@ -240,7 +244,11 @@ export class ProductRepository extends MongoDB {
     }
 
     async update(id: string, product: ProductUpdate): Promise<UpdateResult | false> {
-        try { return await this.collection.updateOne({ _id: ObjectId.createFromHexString(id) }, { $set: { ...product, updatedAt: DateTime.utc().toUnixInteger() } }, { session: this.session }) }
+        try {
+            const updateResult = await this.collection.updateOne({ _id: ObjectId.createFromHexString(id) }, { $set: { ...product, updatedAt: DateTime.utc().toUnixInteger() } }, { session: this.session })
+            await this.productStatisticsRepository.update(product, id)
+            return updateResult
+        }
         catch (e) { console.error(e); return false }
     }
 
