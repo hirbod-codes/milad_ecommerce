@@ -3,6 +3,7 @@ import { MongoDB } from "../../mongodb";
 import { ProductSaleCreate, ProductSaleInput, schemaVersion } from "../../Models/Products/ProductSale";
 import { DateTime } from "luxon";
 import { OrderRepository } from "../OrderRepository";
+import { ProductRepository } from "./ProductRepository";
 
 export class ProductSaleRepository extends MongoDB {
     private collection: Collection<ProductSaleCreate>
@@ -89,6 +90,75 @@ export class ProductSaleRepository extends MongoDB {
             console.error(e)
             return false
         }
+    }
+
+    async divideByProductIds(from: number, to: number, buckets: number) {
+        try {
+            const aggregation = this.collection.aggregate()
+                .match({
+                    timestamp: {
+                        $gte: DateTime.fromSeconds(from).toJSDate(),
+                        $lt: DateTime.fromSeconds(to).toJSDate()
+                    }
+                })
+                .group({
+                    _id: "$metadata.productId",
+                    count: { $sum: 1 },
+                })
+                .addStage({
+                    $bucketAuto: {
+                        groupBy: "$_id",
+                        buckets,
+                        output: {
+                            count: { $sum: 1 },
+                        }
+                    }
+                })
+
+            return await aggregation.toArray()
+        } catch (e) {
+            console.error(e)
+            return false
+        }
+    }
+
+    async getGroupedByProductIds(minProductId: string, maxProductId: string, from: number, to: number) {
+        try {
+            const aggregation = this.collection.aggregate()
+                .match({
+                    timestamp: {
+                        $gte: DateTime.fromSeconds(from).toJSDate(),
+                        $lt: DateTime.fromSeconds(to).toJSDate()
+                    },
+                    "metadata.productId": {
+                        $gte: ObjectId.createFromHexString(minProductId),
+                        $lt: ObjectId.createFromHexString(maxProductId)
+                    }
+                })
+                .group({
+                    _id: "$metadata.productId",
+                    quantity: { $sum: "$metadata.quantity" },
+                })
+
+            const docs = await aggregation.toArray()
+
+            const promises = []
+
+            for (let i = 0; i < docs.length; i++) {
+                const doc = docs[i];
+
+                promises.push((async () => {
+                    const productRepository = await ProductRepository.getInstance()
+                    productRepository.updateImmutables(doc._id, {})
+                })())
+            }
+
+            return await aggregation.toArray()
+        } catch (e) {
+            console.error(e)
+            return false
+        }
+
     }
 
     async getDaily(productId: string, from: number, to: number) {
