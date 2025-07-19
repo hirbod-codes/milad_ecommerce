@@ -132,10 +132,6 @@ export class ProductSaleRepository extends MongoDB {
             }
 
             aggregation = aggregation
-                .group({
-                    _id: "$metadata.productId",
-                    count: { $sum: 1 },
-                })
                 .addStage({
                     $bucketAuto: {
                         groupBy: "$_id",

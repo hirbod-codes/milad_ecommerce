@@ -5,13 +5,13 @@ import { httpRequest, tryAndWait } from "../../API/src/helpers";
 import { Document } from "mongodb";
 import { MongoDB } from "../../API/src/DB/mongodb";
 import { schemaVersion as failedProductSaleRangeSchemaVersion, collectionName as failedProductSaleRangeCollectionName, FailedProductSaleRangeCreate } from "./DB/Models/FailedProductSaleRange";
-import { schemaVersion as zScoreMaintainerOptionsSchemaVersion, ZScoreMaintainerOptions, collectionName as zScoreMaintainerOptionsCollectionName } from "./DB/Models/zScoreMaintainerOptions";
+import { collectionName as zScoreMaintainerOptionsCollectionName } from "./DB/Models/zScoreMaintainerOptions";
 import { ObjectId } from 'mongodb'
 import { ZScoreMaintainerOptionsRepository } from "./DB/Repositories/ZScoreMaintainerOptionsRepository";
 
 let scheduledTask: ScheduledTask | undefined = undefined
 
-export function runCronJobs() {
+export function runMasterJobs() {
     scheduledTask = schedule(
         '* 4 * * *',
         async () => {
@@ -61,27 +61,30 @@ export function runCronJobs() {
                 if (result !== true)
                     throw new Error("product id ranges are not properly divided!")
 
+                // Send tasks
                 const promises = []
                 for (let i = 0; i < options.addresses.length; i++)
-                    promises.push(handleRange(options.addresses[i].host, options.addresses[i].port, ranges[i], i))
+                    promises.push(deliverTaskToSlave(options.addresses[i].host, options.addresses[i].port, ranges[i]))
 
                 await Promise.allSettled(promises)
 
+                // Find and report failed tasks
                 let failedIndexes: number[] = []
-                for (const promise of promises)
-                    await promise.then(async (v) => {
+                for (let i = 0; i < promises.length; i++)
+                    await promises[i].then(async (v) => {
                         if (v === true)
                             return
 
-                        const nextSlave = advanceIndex(options.addresses.length, v)
+                        // Try with another slave
+                        const nextSlave = (i + 1) <= (options.addresses.length - 1) ? i + 1 : 0
 
-                        if (await handleRange(options.addresses[nextSlave].host, options.addresses[nextSlave].port, ranges[v], v) !== true) {
-                            failedIndexes.push(v)
+                        if (await deliverTaskToSlave(options.addresses[nextSlave].host, options.addresses[nextSlave].port, ranges[i]) !== true) {
+                            failedIndexes.push(i)
 
                             const failedProductSale: FailedProductSaleRangeCreate = {
                                 schemaVersion: failedProductSaleRangeSchemaVersion,
-                                count: ranges[v].count,
-                                range: ranges[v]._id,
+                                count: ranges[i].count,
+                                range: ranges[i]._id,
                                 createdAt: DateTime.utc().toUnixInteger(),
                             }
 
@@ -92,6 +95,7 @@ export function runCronJobs() {
                         }
                     })
 
+                // Find the last processed Id
                 if (failedIndexes.length !== options.addresses.length) {
                     let maxI = -1
                     for (let i = 0; i < options.addresses.length; i++)
@@ -109,12 +113,9 @@ export function runCronJobs() {
                                 id = previousId
                         }
 
+                        const r = await zScoreMaintainerOptionsRepository.setLastProcessedId(id)
 
-                        const r = await db
-                            .collection(zScoreMaintainerOptionsCollectionName)
-                            .updateOne({}, { $set: { lastProcessedId: ObjectId.createFromHexString(id), updatedAt: DateTime.utc().toUnixInteger() } })
-
-                        if (!r.acknowledged || r.matchedCount !== 1)
+                        if (r === false || !r.acknowledged || r.matchedCount !== 1)
                             throw new Error('Failed to update options')
                     }, 120, 50)
 
@@ -131,27 +132,18 @@ export function runCronJobs() {
             console.log('done')
             console.timeEnd()
         },
-        { name: 'maintain z-score', runOnInit: true })
+        { name: 'maintain z-score', runOnInit: true, timezone: 'UTC' })
 }
 
-function advanceIndex(total: number, index: number) {
-    return (index + 1) <= (total - 1) ? index + 1 : 0
-}
-
-async function handleRange(host: string, port: number, range: Document, dataIndex: number): Promise<true | number> {
+async function deliverTaskToSlave(host: string, port: number, range: Document): Promise<boolean> {
     try {
-        let result = await tryAndWait(async () => {
-            let r = await httpRequest({ host, port, path: '/calculate-z-score', method: 'POST' }, JSON.stringify(range))
+        return await tryAndWait(async () => {
+            let r = await httpRequest({ host, port, path: '/calculate-z-score', method: 'POST' }, JSON.stringify({ range: range._id, count: range.count }))
             if (r.response.statusCode === undefined || r.response.statusCode < 200)
                 throw new Error('slave failed to handle productSale document range')
         }, 60, 3)
-
-        if (!result)
-            return dataIndex
-
-        return true
     } catch (e) {
         console.error(e)
-        return dataIndex
+        return false
     }
 }

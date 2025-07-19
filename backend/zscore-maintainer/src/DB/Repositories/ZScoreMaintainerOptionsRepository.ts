@@ -1,4 +1,4 @@
-import { Collection, Db, MongoClient } from "mongodb";
+import { ObjectId, Collection, Db, MongoClient } from "mongodb";
 import { MongoDB } from "../../../../API/src/DB/mongodb";
 import { schemaVersion as zScoreMaintainerOptionsSchemaVersion, collectionName, ZScoreMaintainerOptions, ZScoreMaintainerOptionsCreate } from "../Models/zScoreMaintainerOptions";
 import { DateTime } from "luxon";
@@ -40,5 +40,18 @@ export class ZScoreMaintainerOptionsRepository extends MongoDB {
 
     async getOptions() {
         return await this.collection.findOne()
+    }
+
+    async setLastProcessedId(id: string) {
+        try { return await this.collection.updateOne({}, { $set: { lastProcessedId: ObjectId.createFromHexString(id), updatedAt: DateTime.utc().toUnixInteger() } }) }
+        catch (e) { console.error(e); return false }
+    }
+
+    async pushSubscriber(host: string, port: number) {
+        try {
+            await this.collection.updateOne({}, { $pull: { addresses: { host } } })
+            return await this.collection.updateOne({}, { $push: { addresses: { host, port } }, $set: { updatedAt: DateTime.utc().toUnixInteger() } })
+        }
+        catch (e) { console.error(e); return false }
     }
 }
