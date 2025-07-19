@@ -12,7 +12,6 @@ import { ProductReviewCreate, collectionName as productReviewCollectionName } fr
 import { ProductViewCreate, collectionName as productViewCollectionName } from './Models/Products/ProductView'
 import { TagCreate, collectionName as tagCollectionName } from './Models/Tag'
 import { collectionName as productPictureCollectionName } from './Models/Products/ProductPicture'
-import { dbConfig } from '..'
 
 export type MongodbConfig = {
     supportsTransaction: boolean;
@@ -27,14 +26,10 @@ export type MongodbConfig = {
 export class MongoDB {
     private static client: MongoClient | undefined = undefined
 
+    public static config: MongodbConfig
+
     static getDbInstance() {
         return new MongoDB()
-    }
-
-    private config: MongodbConfig
-
-    constructor() {
-        this.config = dbConfig
     }
 
     async checkConnectionHealth(): Promise<boolean> {
@@ -49,6 +44,7 @@ export class MongoDB {
         }
     }
 
+    // For transactions between more than one collection, make sure same instance of MongoDB class is passed to getInstance static method of repository classes
     protected transactionClient: MongoClient | undefined = undefined
     protected session: ClientSession | undefined = undefined
 
@@ -57,7 +53,7 @@ export class MongoDB {
 
         console.log(funcName, 'called')
 
-        const supportsTransaction = this.config?.supportsTransaction
+        const supportsTransaction = MongoDB.config?.supportsTransaction
         if (!supportsTransaction) {
             console.log(funcName, 'Transactions are not supported.')
             return
@@ -74,7 +70,7 @@ export class MongoDB {
 
         console.log(funcName, 'called')
 
-        const supportsTransaction = this.config?.supportsTransaction
+        const supportsTransaction = MongoDB.config?.supportsTransaction
         if (!supportsTransaction) {
             console.log(funcName, 'Transactions are not supported.')
             return
@@ -88,7 +84,7 @@ export class MongoDB {
 
         console.log(funcName, 'called')
 
-        const supportsTransaction = this.config?.supportsTransaction
+        const supportsTransaction = MongoDB.config?.supportsTransaction
         if (!supportsTransaction) {
             console.log(funcName, 'Transactions are not supported.')
             return
@@ -102,7 +98,7 @@ export class MongoDB {
 
         console.log(funcName, 'called')
 
-        const supportsTransaction = this.config?.supportsTransaction
+        const supportsTransaction = MongoDB.config?.supportsTransaction
         if (!supportsTransaction) {
             console.log(funcName, 'Transactions are not supported.')
             return
@@ -118,17 +114,15 @@ export class MongoDB {
 
             console.log('creating mongodb client...')
 
-            const c = this.config
-
-            if (!c || !c)
+            if (!MongoDB.config)
                 throw new Error('Mongodb configuration not found.')
 
-            const client = new MongoClient(c.url, {
+            const client = new MongoClient(MongoDB.config.url, {
                 authMechanism: "DEFAULT",
-                auth: c.auth
+                auth: MongoDB.config.auth
                     ? {
-                        username: c.auth.username,
-                        password: c.auth.password,
+                        username: MongoDB.config.auth.username,
+                        password: MongoDB.config.auth.password,
                     }
                     : undefined
             })
@@ -162,7 +156,10 @@ export class MongoDB {
             if (client === undefined)
                 client = MongoDB.client ?? await this.getClient()
 
-            return client.db(this.config.databaseName)
+            if (!MongoDB.config)
+                throw new Error('Mongodb configuration not found.')
+
+            return client.db(MongoDB.config.databaseName)
         } catch (error) {
             console.error(error);
             await client?.close()
@@ -171,9 +168,15 @@ export class MongoDB {
         }
     }
 
-    async initializeDb(): Promise<void> {
+    async reset() {
         MongoDB.client = undefined
-        await this.addCollections()
+        if (this.session !== undefined)
+            try { await this.session.abortTransaction() }
+            finally { this.session = undefined }
+
+        if (this.transactionClient !== undefined)
+            try { await this.transactionClient.close(true) }
+            finally { this.transactionClient = undefined }
     }
 
     async dropAllCollections() {
@@ -185,7 +188,7 @@ export class MongoDB {
         await this.dropProductReviewsCollection(db)
         await this.dropProductViewCollection(db)
         await this.dropProductSaleCollection(db)
-        // await this.dropProductStatisticsCollection(db)
+        await this.dropProductStatisticsCollection(db)
     }
 
     async dropCategoryCollection(db: Db) {
@@ -223,10 +226,10 @@ export class MongoDB {
             await db.dropCollection(productSaleCollectionName)
     }
 
-    // async dropProductStatisticsCollection(db: Db) {
-    //     if ((await db.listCollections().toArray()).map(e => e.name).includes(productStatisticsCollectionName))
-    //         await db.dropCollection(productStatisticsCollectionName)
-    // }
+    async dropProductStatisticsCollection(db: Db) {
+        if ((await db.listCollections().toArray()).map(e => e.name).includes(productStatisticsCollectionName))
+            await db.dropCollection(productStatisticsCollectionName)
+    }
 
     async addCollections() {
         const db = await this.getDb()

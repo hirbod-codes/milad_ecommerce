@@ -15,8 +15,8 @@ export class OrderRepository extends MongoDB {
         this.collection = collection
     }
 
-    static async getInstance(client?: MongoClient, db?: Db): Promise<OrderRepository> {
-        return new OrderRepository(await MongoDB.getDbInstance().getOrderCollection(client, db))
+    static async getInstance(mongoDB?: MongoDB): Promise<OrderRepository> {
+        return new OrderRepository(await (mongoDB ? mongoDB : MongoDB.getDbInstance()).getOrderCollection())
     }
 
     static async seed(countPerUser: number) {

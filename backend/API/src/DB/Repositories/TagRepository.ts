@@ -12,8 +12,8 @@ export class TagRepository extends MongoDB {
         this.collection = collection
     }
 
-    static async getInstance(): Promise<TagRepository> {
-        return new TagRepository(await MongoDB.getDbInstance().getTagCollection())
+    static async getInstance(mongoDB?: MongoDB): Promise<TagRepository> {
+        return new TagRepository(await (mongoDB ? mongoDB : MongoDB.getDbInstance()).getTagCollection())
     }
 
     static async seed(count: number) {

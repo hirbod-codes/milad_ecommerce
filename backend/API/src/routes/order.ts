@@ -162,7 +162,7 @@ order.patch('/payed', authenticate, async (req, res) => {
             return
         }
 
-        const orderRepository = await OrderRepository.getInstance()
+        const orderRepository = await OrderRepository.getInstance(mongodb)
 
         let o = await orderRepository.getById(orderId)
         if (!o) {
@@ -189,7 +189,7 @@ order.patch('/payed', authenticate, async (req, res) => {
     }
 
     try {
-        const productSaleRepository = await ProductSaleRepository.getInstance()
+        const productSaleRepository = await ProductSaleRepository.getInstance(mongodb)
 
         // add to ProductSale collection
         const creations = await Promise.all(order.products.map(async ({ productId, quantity }) => {

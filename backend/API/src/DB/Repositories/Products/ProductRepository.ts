@@ -23,8 +23,8 @@ export class ProductRepository extends MongoDB {
         this.productViewRepository = productViewRepository
     }
 
-    static async getInstance(client?: MongoClient, db?: Db): Promise<ProductRepository> {
-        return new ProductRepository(await MongoDB.getDbInstance().getProductCollection(client, db), await ProductStatisticsRepository.getInstance(client, db), await ProductViewRepository.getInstance(client, db))
+    static async getInstance(mongoDB?: MongoDB): Promise<ProductRepository> {
+        return new ProductRepository(await (mongoDB ? mongoDB : MongoDB.getDbInstance()).getProductCollection(), await ProductStatisticsRepository.getInstance(), await ProductViewRepository.getInstance())
     }
 
     static async seed(count: number) {

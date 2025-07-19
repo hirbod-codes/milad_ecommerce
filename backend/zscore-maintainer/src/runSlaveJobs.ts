@@ -1,6 +1,7 @@
 import { DateTime } from "luxon";
 import { schedule } from "node-cron";
 import { httpRequest } from "../../API/src/helpers";
+import { ProductSaleRepository } from "../../API/src/DB/Repositories/Products/ProductSaleRepository";
 
 export async function runSlaveJobs(masterHost: string, masterPort: number, host: string, port: number) {
     schedule('* 1 * * *', async () => {
@@ -21,4 +22,9 @@ export async function runSlaveJobs(masterHost: string, masterPort: number, host:
 }
 
 export async function handleRange(doc: { range: { min: string, max: string }, count: number }) {
+    try {
+        const productSaleRepository = ProductSaleRepository.getInstance()
+    } catch (e) {
+        console.error(e)
+    }
 }

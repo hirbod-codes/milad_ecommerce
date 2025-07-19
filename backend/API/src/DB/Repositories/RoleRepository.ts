@@ -12,8 +12,8 @@ export class RoleRepository extends MongoDB {
         this.collection = collection
     }
 
-    static async getInstance(): Promise<RoleRepository> {
-        return new RoleRepository(await MongoDB.getDbInstance().getRoleCollection())
+    static async getInstance(mongoDB?: MongoDB): Promise<RoleRepository> {
+        return new RoleRepository(await (mongoDB ? mongoDB : MongoDB.getDbInstance()).getRoleCollection())
     }
 
     async getRolesWithPrivileges(): Promise<RoleWithPrivileges[] | false> {

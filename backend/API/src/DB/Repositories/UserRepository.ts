@@ -10,8 +10,8 @@ export class UserRepository extends MongoDB {
         this.collection = collection
     }
 
-    static async getInstance(): Promise<UserRepository> {
-        return new UserRepository(await MongoDB.getDbInstance().getUserCollection())
+    static async getInstance(mongoDB?: MongoDB): Promise<UserRepository> {
+        return new UserRepository(await (mongoDB ? mongoDB : MongoDB.getDbInstance()).getUserCollection())
     }
 
     async getById(id: string): Promise<User | null | undefined> {

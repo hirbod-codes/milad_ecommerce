@@ -12,8 +12,8 @@ export class CategoryRepository extends MongoDB {
         this.collection = collection
     }
 
-    static async getInstance(): Promise<CategoryRepository> {
-        return new CategoryRepository(await MongoDB.getDbInstance().getCategoryCollection())
+    static async getInstance(mongoDB?: MongoDB): Promise<CategoryRepository> {
+        return new CategoryRepository(await (mongoDB ? mongoDB : MongoDB.getDbInstance()).getCategoryCollection())
     }
 
     static async seed(count: number) {

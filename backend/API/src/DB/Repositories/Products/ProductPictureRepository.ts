@@ -10,8 +10,8 @@ export class ProductPictureRepository extends MongoDB {
         this.collection = collection
     }
 
-    static async getInstance(client?: MongoClient, db?: Db): Promise<ProductPictureRepository> {
-        return new ProductPictureRepository(await MongoDB.getDbInstance().getProductPictureBucket(client, db))
+    static async getInstance(mongoDB?: MongoDB): Promise<ProductPictureRepository> {
+        return new ProductPictureRepository(await (mongoDB ? mongoDB : MongoDB.getDbInstance()).getProductPictureBucket())
     }
 
     getReadStream(fileId: string | ObjectId): GridFSBucketReadStream {

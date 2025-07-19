@@ -14,6 +14,10 @@ export class ProductReviewsRepository extends MongoDB {
         this.collection = collection
     }
 
+    static async getInstance(mongoDB?: MongoDB): Promise<ProductReviewsRepository> {
+        return new ProductReviewsRepository(await (mongoDB ? mongoDB : MongoDB.getDbInstance()).getProductReviewsCollection())
+    }
+
     static async seed() {
         console.log('ProductReviewsRepository.seed()')
         console.time()
@@ -84,10 +88,6 @@ export class ProductReviewsRepository extends MongoDB {
 
             await Promise.allSettled(promises)
         } finally { console.timeEnd() }
-    }
-
-    static async getInstance(client?: MongoClient, db?: Db): Promise<ProductReviewsRepository> {
-        return new ProductReviewsRepository(await MongoDB.getDbInstance().getProductReviewsCollection(client, db))
     }
 
     async create(order: ProductReviewInput): Promise<InsertOneResult | false> {

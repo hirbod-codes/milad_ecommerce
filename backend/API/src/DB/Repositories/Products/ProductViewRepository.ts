@@ -10,8 +10,8 @@ export class ProductViewRepository extends MongoDB {
         this.collection = productViewCreate
     }
 
-    static async getInstance(client?: MongoClient, db?: Db): Promise<ProductViewRepository> {
-        return new ProductViewRepository(await MongoDB.getDbInstance().getProductViewCollection(client, db))
+    static async getInstance(mongoDB?: MongoDB): Promise<ProductViewRepository> {
+        return new ProductViewRepository(await (mongoDB ? mongoDB : MongoDB.getDbInstance()).getProductViewCollection())
     }
 
     async create(productViewInput: ProductViewInput, now: number) {

@@ -16,8 +16,8 @@ export class ProductStatisticsRepository extends MongoDB {
         this.productCollection = productCollection
     }
 
-    static async getInstance(client?: MongoClient, db?: Db): Promise<ProductStatisticsRepository> {
-        return new ProductStatisticsRepository(await MongoDB.getDbInstance().getProductStatisticsCollection(client, db), await MongoDB.getDbInstance().getProductCollection(client, db))
+    static async getInstance(mongoDB?: MongoDB): Promise<ProductStatisticsRepository> {
+        return new ProductStatisticsRepository(await (mongoDB ? mongoDB : MongoDB.getDbInstance()).getProductStatisticsCollection(), await (mongoDB ? mongoDB : MongoDB.getDbInstance()).getProductCollection())
     }
 
     async create(productStatistics: ProductStatisticsInput, now: number): Promise<InsertManyResult | false> {
