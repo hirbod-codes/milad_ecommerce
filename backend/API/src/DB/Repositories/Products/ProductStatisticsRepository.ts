@@ -363,7 +363,7 @@ export class ProductStatisticsRepository extends MongoDB {
     }
 
     private async getZScoreAggregationPipeline(productId: string, duration: number, period: [number, number], now: number, count: number) {
-        return await this.collection.aggregate()
+        return await this.collection.aggregate(undefined, { allowDiskUse: true })
             .addStage({
                 $facet: {
                     periods: [

@@ -2,7 +2,9 @@ import express from "express";
 import dotenv from "dotenv";
 import { getStringEnv, getIntegerEnv } from "../../API/src/helpers"
 import { runCronJobs } from "./cronJobs";
-import { mixed } from "yup";
+import { MongoDB } from "../../API/src/DB/mongodb";
+import { collectionName as failedProductSaleRangeCollectionName } from "./DB/Models/FailedProductSaleRange";
+import { collectionName as zScoreMaintainerOptionsCollectionName } from "./DB/Models/zScoreMaintainerOptions";
 
 console.log('running...');
 
@@ -13,19 +15,29 @@ export const isProduction = getStringEnv('NODE_ENV', 'The Node env environment v
 export const hostName = getStringEnv('HOST', 'The HOST environment variable is not provided')
 export const hostPort = getIntegerEnv('PORT', 'The PORT environment variable is not provided', (s) => s.min(1025))
 
-export const appMode = getStringEnv('APP_MODE', 'The APP_MODE environment variable is not provided', (s) => s.oneOf(['master', 'slave']))
+export const appMode = getStringEnv('APP_MODE', 'The APP_MODE environment variable is not provided', (s) => s.oneOf(['master', 'slave']));
 
-const app = express()
+(async () => {
+    const db = await MongoDB.getDbInstance().getDb()
 
-app.disable('x-powered-by')
+    if ((await db.collections()).find(f => f.collectionName === failedProductSaleRangeCollectionName) === undefined)
+        await db.createCollection(failedProductSaleRangeCollectionName)
 
-app.use(express.json())
+    if ((await db.collections()).find(f => f.collectionName === zScoreMaintainerOptionsCollectionName) === undefined)
+        await db.createCollection(zScoreMaintainerOptionsCollectionName)
 
-app.all('*', (req, res) => {
-    res.sendStatus(404)
-})
+    const app = express()
 
-app.listen(hostPort, hostName, () => console.log(`listening on ${hostName}:${hostPort}...`))
+    app.disable('x-powered-by')
 
-if (appMode === 'master')
-    runCronJobs()
+    app.use(express.json())
+
+    app.all('*', (req, res) => {
+        res.sendStatus(404)
+    })
+
+    app.listen(hostPort, hostName, () => console.log(`listening on ${hostName}:${hostPort}...`))
+
+    if (appMode === 'master')
+        runCronJobs()
+})()

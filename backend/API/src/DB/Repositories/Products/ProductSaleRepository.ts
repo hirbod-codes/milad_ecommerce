@@ -1,7 +1,8 @@
-import { Collection, Db, MongoClient, MongoServerError, MongoSystemError, ObjectId } from "mongodb";
+import { Collection, Db, Document, MongoClient, MongoServerError, MongoSystemError, ObjectId } from "mongodb";
 import { MongoDB } from "../../mongodb";
 import { ProductSaleCreate, ProductSaleInput, schemaVersion } from "../../Models/Products/ProductSale";
 import { DateTime } from "luxon";
+import { number, string } from "yup";
 
 export class ProductSaleRepository extends MongoDB {
     private collection: Collection<ProductSaleCreate>
@@ -90,15 +91,31 @@ export class ProductSaleRepository extends MongoDB {
         }
     }
 
-    async divideByProductIds(from: number, to: number, buckets: number) {
+    async getEstimatedCount() {
+        try { return await this.collection.countDocuments({}) }
+        catch (e) { console.error(e); return false }
+    }
+
+    async divideByProductIds(buckets: number): Promise<{ _id: { min: ObjectId | string, max: ObjectId | string }, count: number }[] | false>
+    async divideByProductIds(buckets: number, lastProcessedId: ObjectId | string): Promise<{ _id: { min: ObjectId | string, max: ObjectId | string }, count: number }[] | false>
+    async divideByProductIds(buckets: number, from: number, to: number): Promise<{ _id: { min: ObjectId | string, max: ObjectId | string }, count: number }[] | false>
+    async divideByProductIds(buckets: number, first?: ObjectId | string | number, second?: number): Promise<{ _id: { min: ObjectId | string, max: ObjectId | string }, count: number }[] | false> {
         try {
-            const aggregation = this.collection.aggregate()
-                .match({
-                    timestamp: {
-                        $gte: DateTime.fromSeconds(from).toJSDate(),
-                        $lt: DateTime.fromSeconds(to).toJSDate()
-                    }
-                })
+            let aggregation = this.collection.aggregate(undefined, { allowDiskUse: true })
+            if (string().required().isValidSync(first) && second === undefined) {
+                aggregation = aggregation
+                    .match({ _id: { $gt: ObjectId.createFromHexString(first) } })
+            } else if (number().required().isValidSync(first) && number().required().isValidSync(second)) {
+                aggregation = aggregation
+                    .match({
+                        timestamp: {
+                            $gte: DateTime.fromSeconds(first).toJSDate(),
+                            $lt: DateTime.fromSeconds(second).toJSDate()
+                        }
+                    })
+            }
+
+            aggregation = aggregation
                 .group({
                     _id: "$metadata.productId",
                     count: { $sum: 1 },
@@ -113,7 +130,7 @@ export class ProductSaleRepository extends MongoDB {
                     }
                 })
 
-            return await aggregation.toArray()
+            return await aggregation.toArray() as any[]
         } catch (e) {
             console.error(e)
             return false
@@ -122,7 +139,7 @@ export class ProductSaleRepository extends MongoDB {
 
     async getGroupedByProductIds(minProductId: string, maxProductId: string, from: number, to: number) {
         try {
-            const aggregation = this.collection.aggregate()
+            const aggregation = this.collection.aggregate(undefined, { allowDiskUse: true })
                 .match({
                     timestamp: {
                         $gte: DateTime.fromSeconds(from).toJSDate(),
