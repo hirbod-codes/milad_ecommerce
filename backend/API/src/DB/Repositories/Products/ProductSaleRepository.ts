@@ -149,17 +149,13 @@ export class ProductSaleRepository extends MongoDB {
         }
     }
 
-    async getGroupedByProductIds(minProductId: string, maxProductId: string, from: number, to: number) {
+    async getGroupedByProductIds(minId: string, maxId: string, from: number, to: number) {
         try {
             const aggregation = this.collection.aggregate(undefined, { allowDiskUse: true })
                 .match({
-                    timestamp: {
-                        $gte: DateTime.fromSeconds(from).toJSDate(),
-                        $lt: DateTime.fromSeconds(to).toJSDate()
-                    },
-                    "metadata.productId": {
-                        $gte: ObjectId.createFromHexString(minProductId),
-                        $lt: ObjectId.createFromHexString(maxProductId)
+                    _id: {
+                        $gte: ObjectId.createFromHexString(minId),
+                        $lt: ObjectId.createFromHexString(maxId)
                     }
                 })
                 .group({
