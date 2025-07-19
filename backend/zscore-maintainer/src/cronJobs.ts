@@ -99,9 +99,20 @@ export function runCronJobs() {
                             maxI = i
 
                     const result = await tryAndWait(async () => {
+                        let id = ranges[maxI]._id.max.toString()
+
+                        if (maxI !== (ranges.length - 1)) {
+                            const previousId = await productSaleRepository.getPreviousId(id)
+                            if (previousId === false)
+                                throw new Error('Failed to find previous id, Failed to update options')
+                            else
+                                id = previousId
+                        }
+
+
                         const r = await db
                             .collection(zScoreMaintainerOptionsCollectionName)
-                            .updateOne({}, { $set: { lastProcessedId: ObjectId.createFromHexString(ranges[maxI]._id.max.toString()), updatedAt: DateTime.utc().toUnixInteger() } })
+                            .updateOne({}, { $set: { lastProcessedId: ObjectId.createFromHexString(id), updatedAt: DateTime.utc().toUnixInteger() } })
 
                         if (!r.acknowledged || r.matchedCount !== 1)
                             throw new Error('Failed to update options')

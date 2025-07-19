@@ -96,6 +96,22 @@ export class ProductSaleRepository extends MongoDB {
         catch (e) { console.error(e); return false }
     }
 
+    async getPreviousId(id: string): Promise<string | false> {
+        try {
+            const r = await this.collection
+                .find({ _id: { $lt: ObjectId.createFromHexString(id) } })
+                .sort({ _id: -1 })
+                .limit(1)
+                .toArray()
+
+            if (r.length !== 1)
+                throw new Error('failed to find previous id.')
+
+            return r[0]._id.toString()
+        }
+        catch (e) { console.error(e); return false }
+    }
+
     async divideByProductIds(buckets: number): Promise<{ _id: { min: ObjectId | string, max: ObjectId | string }, count: number }[] | false>
     async divideByProductIds(buckets: number, lastProcessedId: ObjectId | string): Promise<{ _id: { min: ObjectId | string, max: ObjectId | string }, count: number }[] | false>
     async divideByProductIds(buckets: number, from: number, to: number): Promise<{ _id: { min: ObjectId | string, max: ObjectId | string }, count: number }[] | false>
