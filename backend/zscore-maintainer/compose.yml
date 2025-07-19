@@ -16,6 +16,8 @@ services:
             - DB_SUPPORTS_TRANSACTION=false
             # - DB_URL=mongodb://main_mongodb:27017
             - DB_URL=mongodb://${host_ip}:1509
+            - MONGODB_USERNAME=admin
+            - MONGODB_PASSWORD=password
             - APP_MODE=master
 
     ############################################################################################# zscore-manager-slave
@@ -33,6 +35,8 @@ services:
             - DB_SUPPORTS_TRANSACTION=false
             # - DB_URL=mongodb://main_mongodb:27017
             - DB_URL=mongodb://${host_ip}:1509
+            - MONGODB_USERNAME=admin
+            - MONGODB_PASSWORD=password
             - APP_MODE=slave
 
     ############################################################################################# zscore-manager-slave
@@ -50,4 +54,6 @@ services:
             - DB_SUPPORTS_TRANSACTION=false
             # - DB_URL=mongodb://main_mongodb:27017
             - DB_URL=mongodb://${host_ip}:1509
+            - MONGODB_USERNAME=admin
+            - MONGODB_PASSWORD=password
             - APP_MODE=slave

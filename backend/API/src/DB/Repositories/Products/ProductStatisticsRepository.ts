@@ -243,7 +243,7 @@ export class ProductStatisticsRepository extends MongoDB {
      * @param count number of sold products
      * @returns calculated z-score
      */
-    private async updateWeeklyCount(productId: string, now: number, count: number): Promise<number> {
+    async updateWeeklyCount(productId: string, now: number, count: number): Promise<number> {
         let thisWeek = DateTime.fromSeconds(now).set({ hour: 0, minute: 0, second: 0, millisecond: 0 })
         while (thisWeek.weekday !== 1) {
             thisWeek = thisWeek.minus({ days: 1 })
@@ -287,7 +287,7 @@ export class ProductStatisticsRepository extends MongoDB {
      * @param count number of sold products
      * @returns calculated z-score
      */
-    private async updateMonthlyCount(productId: string, now: number, count: number): Promise<number> {
+    async updateMonthlyCount(productId: string, now: number, count: number): Promise<number> {
         const thisMonth = DateTime.fromSeconds(now).set({ day: 1, hour: 0, minute: 0, second: 0, millisecond: 0 })
 
         const aggregationResult = await this.getZScoreAggregationPipeline(productId.toString(), 2_592_000, [thisMonth.minus({ months: 12 }).toUnixInteger(), thisMonth.minus({ months: 1 }).toUnixInteger()], thisMonth.toUnixInteger(), count)
@@ -328,7 +328,7 @@ export class ProductStatisticsRepository extends MongoDB {
      * @param count number of sold products
      * @returns calculated z-score
      */
-    private async updateYearlyCount(productId: string, now: number, count: number): Promise<number> {
+    async updateYearlyCount(productId: string, now: number, count: number): Promise<number> {
         const thisYear = DateTime.fromSeconds(now).set({ month: 1, day: 1, hour: 0, minute: 0, second: 0, millisecond: 0 })
 
         const aggregationResult = await this.getZScoreAggregationPipeline(productId.toString(), 31_104_000, [thisYear.minus({ years: 7 }).toUnixInteger(), thisYear.minus({ years: 1 }).toUnixInteger()], thisYear.toUnixInteger(), count)

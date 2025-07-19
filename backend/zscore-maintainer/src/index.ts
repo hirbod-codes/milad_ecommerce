@@ -1,12 +1,12 @@
 import express from "express";
 import dotenv from "dotenv";
-import { getStringEnv, getIntegerEnv } from "../../API/src/helpers"
+import { getStringEnv, getIntegerEnv, getBooleanEnv } from "../../API/src/helpers"
 import { runMasterJobs } from "./runMasterJobs";
 import { MongoDB } from "../../API/src/DB/mongodb";
 import { collectionName as failedProductSaleRangeCollectionName } from "./DB/Models/FailedProductSaleRange";
 import { collectionName as zScoreMaintainerOptionsCollectionName } from "./DB/Models/zScoreMaintainerOptions";
 import { ZScoreMaintainerOptionsRepository } from "./DB/Repositories/ZScoreMaintainerOptionsRepository";
-import { number, string, object } from "yup";
+import { boolean, number, string, object } from "yup";
 import { handleRange, runSlaveJobs } from "./runSlaveJobs";
 
 console.log('running...');
@@ -20,8 +20,24 @@ export const hostPort = getIntegerEnv('PORT', 'The PORT environment variable is 
 
 export const appMode = getStringEnv('APP_MODE', 'The APP_MODE environment variable is not provided', (s) => s.oneOf(['master', 'slave']));
 
+export const dbConfig = {
+    databaseName: getStringEnv('DB_DATABASE_NAME', 'The Db database name environment variable is not provided'),
+    supportsTransaction: getBooleanEnv('DB_SUPPORTS_TRANSACTION', 'The Db supports transaction environment variable is not provided'),
+    url: getStringEnv('DB_URL', 'The Db url environment variable is not provided'),
+    auth: {
+        username: getStringEnv('MONGODB_USERNAME', 'The Mongodb username environment variable is not provided'),
+        password: getStringEnv('MONGODB_PASSWORD', 'The Mongodb password environment variable is not provided'),
+    }
+};
+
 (async () => {
-    const db = await MongoDB.getDbInstance().getDb()
+    MongoDB.config = dbConfig
+
+    const mongodb = MongoDB.getDbInstance()
+
+    await mongodb.reset()
+
+    const db = await mongodb.getDb()
 
     if ((await db.collections()).find(f => f.collectionName === failedProductSaleRangeCollectionName) === undefined)
         await db.createCollection(failedProductSaleRangeCollectionName)
@@ -94,16 +110,20 @@ function runSlave() {
     })
 
     app.post('/calculate-z-score', (req, res) => {
-        const { range, count } = req.body
+        const { range, count, inclusive } = req.body
 
-        if (!object().required().shape({ min: string().required(), max: string().required() }).isValidSync(range) || !number().required().integer().positive().isValidSync(count)) {
+        if (
+            !object().required().shape({ min: string().required(), max: string().required() }).isValidSync(range) ||
+            !number().required().integer().positive().isValidSync(count) ||
+            !boolean().required().isValidSync(inclusive)
+        ) {
             res.sendStatus(400)
             return
         }
 
         res.sendStatus(200)
 
-        handleRange({ range, count })
+        handleRange(range, count, inclusive)
     })
 
     app.all('*', (req, res) => {

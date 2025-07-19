@@ -149,21 +149,23 @@ export class ProductSaleRepository extends MongoDB {
         }
     }
 
-    async getGroupedByProductIds(minId: string, maxId: string, from: number, to: number) {
+    async getGroupedByProductIds(minId: string, maxId: string, offset: number, limit: number, inclusive: boolean = false): Promise<false | { _id: ObjectId | string, quantity: number }[]> {
         try {
             const aggregation = this.collection.aggregate(undefined, { allowDiskUse: true })
                 .match({
                     _id: {
                         $gte: ObjectId.createFromHexString(minId),
-                        $lt: ObjectId.createFromHexString(maxId)
+                        [inclusive ? '$lte' : '$lt']: ObjectId.createFromHexString(maxId)
                     }
                 })
                 .group({
                     _id: "$metadata.productId",
                     quantity: { $sum: "$metadata.quantity" },
                 })
+                .skip(offset)
+                .limit(limit)
 
-            return await aggregation.toArray()
+            return await aggregation.toArray() as any
         } catch (e) {
             console.error(e)
             return false

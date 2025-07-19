@@ -39,7 +39,7 @@ export function runMasterJobs() {
                 const productSaleRepository = await ProductSaleRepository.getInstance()
                 const count = await productSaleRepository.getEstimatedCount()
 
-                if (!options?.lastProcessedId && (count === false || count > 50_000_000)) {
+                if (!options?.lastProcessedId && (count === false || count > 500_000_000)) {
                     console.warn('too much data to process!')
                     return
                 }
@@ -64,7 +64,7 @@ export function runMasterJobs() {
                 // Send tasks
                 const promises = []
                 for (let i = 0; i < options.addresses.length; i++)
-                    promises.push(deliverTaskToSlave(options.addresses[i].host, options.addresses[i].port, ranges[i]))
+                    promises.push(deliverTaskToSlave(options.addresses[i].host, options.addresses[i].port, ranges[i], i === (options.addresses.length - 1)))
 
                 await Promise.allSettled(promises)
 
@@ -78,7 +78,7 @@ export function runMasterJobs() {
                         // Try with another slave
                         const nextSlave = (i + 1) <= (options.addresses.length - 1) ? i + 1 : 0
 
-                        if (await deliverTaskToSlave(options.addresses[nextSlave].host, options.addresses[nextSlave].port, ranges[i]) !== true) {
+                        if (await deliverTaskToSlave(options.addresses[nextSlave].host, options.addresses[nextSlave].port, ranges[i], i === (promises.length - 1)) !== true) {
                             failedIndexes.push(i)
 
                             const failedProductSale: FailedProductSaleRangeCreate = {
@@ -135,10 +135,10 @@ export function runMasterJobs() {
         { name: 'maintain z-score', runOnInit: true, timezone: 'UTC' })
 }
 
-async function deliverTaskToSlave(host: string, port: number, range: Document): Promise<boolean> {
+async function deliverTaskToSlave(host: string, port: number, range: Document, inclusive: boolean): Promise<boolean> {
     try {
         return await tryAndWait(async () => {
-            let r = await httpRequest({ host, port, path: '/calculate-z-score', method: 'POST' }, JSON.stringify({ range: range._id, count: range.count }))
+            let r = await httpRequest({ host, port, path: '/calculate-z-score', method: 'POST' }, JSON.stringify({ range: range._id, count: range.count, inclusive }))
             if (r.response.statusCode === undefined || r.response.statusCode < 200)
                 throw new Error('slave failed to handle productSale document range')
         }, 60, 3)
