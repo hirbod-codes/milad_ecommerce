@@ -46,7 +46,7 @@ export async function handleRange(range: { min: string, max: string }, count: nu
                 await mongodb.startTransaction()
 
                 try {
-                    const updateCountResult = await productStatisticsRepository.updateCount(productSales._id.toString(), DateTime.utc().toUnixInteger(), productSales.quantity)
+                    const updateCountResult = await productStatisticsRepository.updateSaleCount(productSales._id.toString(), DateTime.utc().toUnixInteger(), productSales.quantity)
                     if (updateCountResult === false)
                         throw new Error('Failed to update product statistics document')
 

@@ -14,6 +14,8 @@ export const productStatisticsSchema = object().required().strict(true).noUnknow
     timestamp: number().required(),
     count: number().required(),
     zScore: number().required().nullable(),
+    viewCount: number().required(),
+    viewZScore: number().required().nullable(),
     product: productSchema.required()
 })
 export type ProductStatistics = InferType<typeof productStatisticsSchema>

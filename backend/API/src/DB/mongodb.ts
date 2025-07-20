@@ -392,18 +392,18 @@ export class MongoDB {
 
     private async addProductViewCollection(db: Db) {
         if (!(await db.listCollections().toArray()).map(e => e.name).includes(productViewCollectionName))
-            await db.createCollection(productViewCollectionName)
+            await db.createCollection(productViewCollectionName, { timeseries: { timeField: 'timestamp', granularity: 'hours', metaField: 'metadata' }, expireAfterSeconds: 5 * 12 * 30 * 24 * 60 * 60 })
 
         const indexes = await db.collection(productViewCollectionName).indexes()
 
-        if (indexes.find(i => i.name === 'uniqueness') === undefined)
-            await db.createIndex(productViewCollectionName, { productId: 1 }, { unique: true, name: 'uniqueness' })
+        if (indexes.find(i => i.name === 'productId') === undefined)
+            await db.createIndex(productViewCollectionName, { 'metadata.productId': 1 }, { name: 'productId' })
 
-        if (indexes.find(i => i.name === 'createdAt') === undefined)
-            await db.createIndex(productViewCollectionName, { createdAt: -1 }, { name: 'createdAt' })
+        if (indexes.find(i => i.name === 'userId') === undefined)
+            await db.createIndex(productViewCollectionName, { 'metadata.userId': 1 }, { name: 'userId' })
 
-        if (indexes.find(i => i.name === 'updatedAt') === undefined)
-            await db.createIndex(productViewCollectionName, { updatedAt: -1 }, { name: 'updatedAt' })
+        if (indexes.find(i => i.name === 'quantity') === undefined)
+            await db.createIndex(productViewCollectionName, { 'metadata.quantity': 1 }, { name: 'quantity' })
     }
 
     async getProductViewCollection(client?: MongoClient, db?: Db): Promise<Collection<ProductViewCreate>> {

@@ -29,10 +29,12 @@ export class ProductStatisticsRepository extends MongoDB {
             let p: ProductStatisticsCreate = {
                 ...productStatistics,
                 schemaVersion: schemaVersion,
-                count: 0,
                 duration: 0,
                 product,
+                count: 0,
                 zScore: 0,
+                viewCount: 0,
+                viewZScore: 0,
                 timestamp: now,
             }
 
@@ -223,12 +225,31 @@ export class ProductStatisticsRepository extends MongoDB {
      * @param now for testing and seeding purposes, current timestamp is given at run time.
      * @param count number of sold products
      */
-    async updateCount(productId: string, now: number, count: number): Promise<{ weeklyZScore: number, monthlyZScore: number, yearlyZScore: number } | false> {
+    async updateViewCount(productId: string, now: number, count: number): Promise<{ weeklyZScore: number, monthlyZScore: number, yearlyZScore: number } | false> {
         try {
             return {
-                weeklyZScore: await this.updateWeeklyCount(productId, now, count),
-                monthlyZScore: await this.updateMonthlyCount(productId, now, count),
-                yearlyZScore: await this.updateYearlyCount(productId, now, count)
+                weeklyZScore: await this.updateWeeklySaleCount(productId, now, count, 'viewZScore', 'viewCount'),
+                monthlyZScore: await this.updateMonthlySaleCount(productId, now, count, 'viewZScore', 'viewCount'),
+                yearlyZScore: await this.updateYearlySaleCount(productId, now, count, 'viewZScore', 'viewCount')
+            }
+        } catch (e) {
+            console.error(e)
+            return false
+        }
+    }
+
+    /**
+     * 
+     * @param productId 
+     * @param now for testing and seeding purposes, current timestamp is given at run time.
+     * @param count number of sold products
+     */
+    async updateSaleCount(productId: string, now: number, count: number): Promise<{ weeklyZScore: number, monthlyZScore: number, yearlyZScore: number } | false> {
+        try {
+            return {
+                weeklyZScore: await this.updateWeeklySaleCount(productId, now, count),
+                monthlyZScore: await this.updateMonthlySaleCount(productId, now, count),
+                yearlyZScore: await this.updateYearlySaleCount(productId, now, count)
             }
         } catch (e) {
             console.error(e)
@@ -243,13 +264,13 @@ export class ProductStatisticsRepository extends MongoDB {
      * @param count number of sold products
      * @returns calculated z-score
      */
-    async updateWeeklyCount(productId: string, now: number, count: number): Promise<number> {
+    async updateWeeklySaleCount(productId: string, now: number, count: number, zScoreField: string = 'zScore', countField: string = 'count'): Promise<number> {
         let thisWeek = DateTime.fromSeconds(now).set({ hour: 0, minute: 0, second: 0, millisecond: 0 })
         while (thisWeek.weekday !== 1) {
             thisWeek = thisWeek.minus({ days: 1 })
         }
 
-        const aggregationResult = await this.getZScoreAggregationPipeline(productId.toString(), 608_800, [thisWeek.minus({ weeks: 7 }).toUnixInteger(), thisWeek.minus({ weeks: 1 }).toUnixInteger()], thisWeek.toUnixInteger(), count)
+        const aggregationResult = await this.getZScoreAggregationPipeline(productId.toString(), 608_800, [thisWeek.minus({ weeks: 7 }).toUnixInteger(), thisWeek.minus({ weeks: 1 }).toUnixInteger()], thisWeek.toUnixInteger(), count, countField)
 
         let zScore: number | null | undefined
         if (aggregationResult && Array.isArray(aggregationResult) && aggregationResult[0]?.zScore && number().required().isValidSync(aggregationResult[0]?.zScore)) {
@@ -270,7 +291,7 @@ export class ProductStatisticsRepository extends MongoDB {
             {
                 $inc: { count },
                 $set: {
-                    zScore
+                    [zScoreField]: zScore
                 },
             }
             , { session: this.session })
@@ -287,10 +308,10 @@ export class ProductStatisticsRepository extends MongoDB {
      * @param count number of sold products
      * @returns calculated z-score
      */
-    async updateMonthlyCount(productId: string, now: number, count: number): Promise<number> {
+    async updateMonthlySaleCount(productId: string, now: number, count: number, zScoreField: string = 'zScore', countField: string = 'count'): Promise<number> {
         const thisMonth = DateTime.fromSeconds(now).set({ day: 1, hour: 0, minute: 0, second: 0, millisecond: 0 })
 
-        const aggregationResult = await this.getZScoreAggregationPipeline(productId.toString(), 2_592_000, [thisMonth.minus({ months: 12 }).toUnixInteger(), thisMonth.minus({ months: 1 }).toUnixInteger()], thisMonth.toUnixInteger(), count)
+        const aggregationResult = await this.getZScoreAggregationPipeline(productId.toString(), 2_592_000, [thisMonth.minus({ months: 12 }).toUnixInteger(), thisMonth.minus({ months: 1 }).toUnixInteger()], thisMonth.toUnixInteger(), count, countField)
 
         let zScore: number | null | undefined
         if (aggregationResult && Array.isArray(aggregationResult) && aggregationResult[0]?.zScore && number().required().isValidSync(aggregationResult[0]?.zScore)) {
@@ -311,7 +332,7 @@ export class ProductStatisticsRepository extends MongoDB {
             {
                 $inc: { count },
                 $set: {
-                    zScore
+                    [zScoreField]: zScore
                 },
             }
             , { session: this.session })
@@ -328,10 +349,10 @@ export class ProductStatisticsRepository extends MongoDB {
      * @param count number of sold products
      * @returns calculated z-score
      */
-    async updateYearlyCount(productId: string, now: number, count: number): Promise<number> {
+    async updateYearlySaleCount(productId: string, now: number, count: number, zScoreField: string = 'zScore', countField: string = 'count'): Promise<number> {
         const thisYear = DateTime.fromSeconds(now).set({ month: 1, day: 1, hour: 0, minute: 0, second: 0, millisecond: 0 })
 
-        const aggregationResult = await this.getZScoreAggregationPipeline(productId.toString(), 31_104_000, [thisYear.minus({ years: 7 }).toUnixInteger(), thisYear.minus({ years: 1 }).toUnixInteger()], thisYear.toUnixInteger(), count)
+        const aggregationResult = await this.getZScoreAggregationPipeline(productId.toString(), 31_104_000, [thisYear.minus({ years: 7 }).toUnixInteger(), thisYear.minus({ years: 1 }).toUnixInteger()], thisYear.toUnixInteger(), count, countField)
 
         let zScore: number | null | undefined
         if (aggregationResult && Array.isArray(aggregationResult) && aggregationResult[0]?.zScore && number().required().isValidSync(aggregationResult[0]?.zScore)) {
@@ -352,7 +373,7 @@ export class ProductStatisticsRepository extends MongoDB {
             {
                 $inc: { count },
                 $set: {
-                    zScore
+                    [zScoreField]: zScore
                 },
             }
             , { session: this.session })
@@ -362,7 +383,7 @@ export class ProductStatisticsRepository extends MongoDB {
         return zScore
     }
 
-    private async getZScoreAggregationPipeline(productId: string, duration: number, period: [number, number], now: number, count: number) {
+    private async getZScoreAggregationPipeline(productId: string, duration: number, period: [number, number], now: number, amountToAdd: number, countField: string = 'count') {
         return await this.collection.aggregate(undefined, { allowDiskUse: true })
             .addStage({
                 $facet: {
@@ -380,9 +401,9 @@ export class ProductStatisticsRepository extends MongoDB {
                                 periods: {
                                     $push: "$$ROOT"
                                 },
-                                mu: { $avg: "$count" },
+                                mu: { $avg: `${countField}` },
                                 sigma: {
-                                    $stdDevSamp: "$count"
+                                    $stdDevSamp: `${countField}`
                                 }
                             }
                         }
@@ -437,10 +458,10 @@ export class ProductStatisticsRepository extends MongoDB {
                                                                     0
                                                                 ]
                                                             },
-                                                            count
+                                                            amountToAdd
                                                         ]
                                                     },
-                                                    count
+                                                    amountToAdd
                                                 ]
                                             },
                                             {
