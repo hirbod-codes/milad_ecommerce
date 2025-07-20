@@ -5,28 +5,48 @@ import { httpRequest, tryAndWait } from "../../API/src/helpers";
 import { Document } from "mongodb";
 import { MongoDB } from "../../API/src/DB/mongodb";
 import { schemaVersion as failedProductSaleRangeSchemaVersion, collectionName as failedProductSaleRangeCollectionName, FailedProductSaleRangeCreate } from "./DB/Models/FailedProductSaleRange";
-import { ZScoreMaintainerOptions, collectionName as zScoreMaintainerOptionsCollectionName } from "./DB/Models/zScoreMaintainerOptions";
+import { ZScoreMaintainerOptions } from "./DB/Models/zScoreMaintainerOptions";
 import { ObjectId } from 'mongodb'
 import { ZScoreMaintainerOptionsRepository } from "./DB/Repositories/ZScoreMaintainerOptionsRepository";
+import { ProductViewRepository } from "../../API/src/DB/Repositories/Products/ProductViewRepository";
 
-let scheduledTask: ScheduledTask | undefined = undefined
+let salesJob: ScheduledTask | undefined = undefined
+let viewsJob: ScheduledTask | undefined = undefined
 
 export function runMasterJobs() {
-    scheduledTask = schedule(
+    salesJob = schedule(
         '* 4 * * *',
         async () => {
             console.time()
-            console.log(`running cron job: "maintain z-score" at ${DateTime.utc().toISO()}...`)
+            console.log(`running cron job: "maintain sales z-score" at ${DateTime.utc().toISO()}...`)
 
             try {
                 const zScoreMaintainerOptionsRepository = await ZScoreMaintainerOptionsRepository.getInstance()
                 const productSaleRepository = await ProductSaleRepository.getInstance()
 
-                const options = await getOptions(zScoreMaintainerOptionsRepository, productSaleRepository)
-                if (!options || !validateOptions(productSaleRepository, options))
+                const options = await getOptions(zScoreMaintainerOptionsRepository)
+
+                const count = await productSaleRepository.getEstimatedCount()
+
+                if (count === false || !options || !validateOptions(count, options))
                     return
 
-                const ranges = await getRanges(zScoreMaintainerOptionsRepository, productSaleRepository, options)
+                // Fetch ranges
+                let ranges: { _id: { min: ObjectId | string; max: ObjectId | string; }; count: number; }[] = []
+                const result = await tryAndWait(async () => {
+                    let r
+                    if (options.lastProcessedId)
+                        r = await productSaleRepository.divideByProductIds(options.addresses.length, options.lastProcessedId)
+                    else
+                        r = await productSaleRepository.divideByProductIds(options.addresses.length)
+
+                    if (r === false || (await getOptions(zScoreMaintainerOptionsRepository))?.addresses.length !== r.length)
+                        throw new Error('failed to fetch product id ranges')
+
+                    ranges = r
+                }, 60, 3)
+                if (result !== true)
+                    throw new Error("product id ranges are not properly divided!")
 
                 // Send tasks
                 const promises = []
@@ -37,7 +57,13 @@ export function runMasterJobs() {
 
                 const failedIndexes: number[] = await findFailedIndexes(options, promises, ranges)
 
-                await findAndStoreLastProcessedId(zScoreMaintainerOptionsRepository, productSaleRepository, options, failedIndexes, ranges, scheduledTask)
+                const id = await findLastProcessedId(productSaleRepository.getPreviousId, options, failedIndexes, ranges, salesJob)
+                if (!id)
+                    return
+
+                const r = await zScoreMaintainerOptionsRepository.setLastProcessedId(id)
+                if (r === false || !r.acknowledged || r.matchedCount !== 1)
+                    throw new Error('Failed to update options')
             } catch (e) {
                 console.error(e)
             }
@@ -45,7 +71,66 @@ export function runMasterJobs() {
             console.log('done')
             console.timeEnd()
         },
-        { name: 'maintain z-score', runOnInit: true, timezone: 'UTC' })
+        { name: 'maintain sales z-score', runOnInit: true, timezone: 'UTC' })
+
+    viewsJob = schedule(
+        '* 4 * * *',
+        async () => {
+            console.time()
+            console.log(`running cron job: "maintain views z-score" at ${DateTime.utc().toISO()}...`)
+
+            try {
+                const zScoreMaintainerOptionsRepository = await ZScoreMaintainerOptionsRepository.getInstance()
+                const productViewRepository = await ProductViewRepository.getInstance()
+
+                const options = await getOptions(zScoreMaintainerOptionsRepository)
+
+                const count = await productViewRepository.getEstimatedCount()
+
+                if (count === false || !options || !validateOptions(count, options))
+                    return
+
+                // Fetch ranges
+                let ranges: { _id: { min: ObjectId | string; max: ObjectId | string; }; count: number; }[] = []
+                const result = await tryAndWait(async () => {
+                    let r
+                    if (options.lastProcessedId)
+                        r = await productViewRepository.divideByProductIds(options.addresses.length, options.lastProcessedId)
+                    else
+                        r = await productViewRepository.divideByProductIds(options.addresses.length)
+
+                    if (r === false || (await getOptions(zScoreMaintainerOptionsRepository))?.addresses.length !== r.length)
+                        throw new Error('failed to fetch product id ranges')
+
+                    ranges = r
+                }, 60, 3)
+                if (result !== true)
+                    throw new Error("product id ranges are not properly divided!")
+
+                // Send tasks
+                const promises = []
+                for (let i = 0; i < options.addresses.length; i++)
+                    promises.push(deliverTaskToSlave(options.addresses[i].host, options.addresses[i].port, ranges[i], i === (options.addresses.length - 1)))
+
+                await Promise.allSettled(promises)
+
+                const failedIndexes: number[] = await findFailedIndexes(options, promises, ranges)
+
+                const id = await findLastProcessedId(productViewRepository.getPreviousId, options, failedIndexes, ranges, salesJob)
+                if (!id)
+                    return
+
+                const r = await zScoreMaintainerOptionsRepository.setLastProcessedId(id)
+                if (r === false || !r.acknowledged || r.matchedCount !== 1)
+                    throw new Error('Failed to update options')
+            } catch (e) {
+                console.error(e)
+            }
+
+            console.log('done')
+            console.timeEnd()
+        },
+        { name: 'maintain views z-score', runOnInit: true, timezone: 'UTC' })
 }
 
 async function deliverTaskToSlave(host: string, port: number, range: Document, inclusive: boolean): Promise<boolean> {
@@ -61,7 +146,7 @@ async function deliverTaskToSlave(host: string, port: number, range: Document, i
     }
 }
 
-async function getOptions(zScoreMaintainerOptionsRepository: ZScoreMaintainerOptionsRepository, productSaleRepository: ProductSaleRepository) {
+async function getOptions(zScoreMaintainerOptionsRepository: ZScoreMaintainerOptionsRepository) {
     const options = await zScoreMaintainerOptionsRepository.getOptions()
     if (!options) {
         const result = await zScoreMaintainerOptionsRepository.createOptions()
@@ -73,7 +158,7 @@ async function getOptions(zScoreMaintainerOptionsRepository: ZScoreMaintainerOpt
     return options
 }
 
-async function validateOptions(productSaleRepository: ProductSaleRepository, options?: ZScoreMaintainerOptions) {
+async function validateOptions(count: number, options?: ZScoreMaintainerOptions) {
     if (!options)
         return false
 
@@ -82,35 +167,12 @@ async function validateOptions(productSaleRepository: ProductSaleRepository, opt
         return false
     }
 
-    const count = await productSaleRepository.getEstimatedCount()
-
-    if (!options?.lastProcessedId && (count === false || count > 500_000_000)) {
+    if (!options?.lastProcessedId && count > 500_000_000) {
         console.warn('too much data to process!')
         return false
     }
 
     return true
-}
-
-async function getRanges(zScoreMaintainerOptionsRepository: ZScoreMaintainerOptionsRepository, productSaleRepository: ProductSaleRepository, options: ZScoreMaintainerOptions) {
-    let ranges: { _id: { min: ObjectId | string; max: ObjectId | string; }; count: number; }[] = []
-
-    const result = await tryAndWait(async () => {
-        let r
-        if (options.lastProcessedId)
-            r = await productSaleRepository.divideByProductIds(options.addresses.length, options.lastProcessedId)
-        else
-            r = await productSaleRepository.divideByProductIds(options.addresses.length)
-
-        if (r === false || (await getOptions(zScoreMaintainerOptionsRepository, productSaleRepository))?.addresses.length !== r.length)
-            throw new Error('failed to fetch product id ranges')
-
-        ranges = r
-    }, 60, 3)
-    if (result !== true)
-        throw new Error("product id ranges are not properly divided!")
-
-    return ranges
 }
 
 async function findFailedIndexes(options: ZScoreMaintainerOptions, promises: Promise<boolean>[], ranges: { _id: { min: ObjectId | string; max: ObjectId | string; }; count: number; }[]) {
@@ -144,7 +206,7 @@ async function findFailedIndexes(options: ZScoreMaintainerOptions, promises: Pro
     return failedIndexes
 }
 
-async function findAndStoreLastProcessedId(zScoreMaintainerOptionsRepository: ZScoreMaintainerOptionsRepository, productSaleRepository: ProductSaleRepository, options: ZScoreMaintainerOptions, failedIndexes: number[], ranges: { _id: { min: ObjectId | string; max: ObjectId | string; }; count: number; }[], scheduledTask?: ScheduledTask) {
+async function findLastProcessedId(getPreviousId: (id: string) => Promise<string | false>, options: ZScoreMaintainerOptions, failedIndexes: number[], ranges: { _id: { min: ObjectId | string; max: ObjectId | string; }; count: number; }[], scheduledTask?: ScheduledTask) {
     if (failedIndexes.length === options.addresses.length)
         return
 
@@ -153,21 +215,19 @@ async function findAndStoreLastProcessedId(zScoreMaintainerOptionsRepository: ZS
         if (!failedIndexes.includes(i) && maxI < i)
             maxI = i
 
+    let foundId: string | undefined = undefined
     const result = await tryAndWait(async () => {
         let id = ranges[maxI]._id.max.toString()
 
         if (maxI !== (ranges.length - 1)) {
-            const previousId = await productSaleRepository.getPreviousId(id)
+            const previousId = await getPreviousId(id)
             if (previousId === false)
                 throw new Error('Failed to find previous id, Failed to update options')
             else
                 id = previousId
         }
 
-        const r = await zScoreMaintainerOptionsRepository.setLastProcessedId(id)
-
-        if (r === false || !r.acknowledged || r.matchedCount !== 1)
-            throw new Error('Failed to update options')
+        foundId = id
     }, 120, 50)
 
     if (result !== true) {
@@ -176,4 +236,5 @@ async function findAndStoreLastProcessedId(zScoreMaintainerOptionsRepository: ZS
     } else
         console.log('successfully updated options.')
 
+    return foundId
 }
