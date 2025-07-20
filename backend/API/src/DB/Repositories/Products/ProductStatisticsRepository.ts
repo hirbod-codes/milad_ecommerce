@@ -3,7 +3,7 @@ import { Collection, Db, DeleteResult, InsertManyResult, MongoClient, ObjectId, 
 import { MongoDB } from "../../mongodb";
 import { schemaVersion } from "../../Models/Products/ProductSale";
 import { ProductStatistics, ProductStatisticsCreate, ProductStatisticsInput } from "../../Models/Products/ProductStatistics";
-import { Product, ProductCreate, ProductUpdate } from "../../Models/Products/Product";
+import { Product, ProductCreate, ProductImmutable, ProductUpdate } from "../../Models/Products/Product";
 import { number } from "yup";
 
 export class ProductStatisticsRepository extends MongoDB {
@@ -212,11 +212,29 @@ export class ProductStatisticsRepository extends MongoDB {
             if (Object.keys(updates).length === 0)
                 return false
 
-            return await this.collection.updateMany({ productId }, { $set: { updatedAt, 'product.updatedAt': updatedAt, ...updates } }, { session: this.session })
+            return await this.collection.updateMany({ productId: typeof productId === 'string' ? ObjectId.createFromHexString(productId) : productId }, { $set: { ...updates, updatedAt, 'product.updatedAt': updatedAt } }, { session: this.session })
         } catch (e) {
             console.error(e)
             return false
         }
+    }
+
+    async updateImmutables(productId: string | ObjectId, product: ProductImmutable): Promise<UpdateResult | false> {
+        try {
+            const updatedAt = DateTime.utc().toUnixInteger()
+            const updates: any = {}
+            for (const key in product) {
+                if (Object.prototype.hasOwnProperty.call(product, key)) {
+                    const value = (product as any)[key]
+                    updates[`product.${key}`] = value
+                }
+            }
+            if (Object.keys(updates).length === 0)
+                return false
+
+            return await this.collection.updateMany({ productId: typeof productId === 'string' ? ObjectId.createFromHexString(productId) : productId }, { $set: { ...updates, updatedAt, 'product.updatedAt': updatedAt } }, { session: this.session })
+        }
+        catch (e) { console.error(e); return false }
     }
 
     /**

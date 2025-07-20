@@ -8,7 +8,8 @@ export const schemaVersion = 'v1.0.0'
 export const zScoreMaintainerOptionsSchema = object().required().strict(true).noUnknown(true).shape({
     schemaVersion: string().required().min(6).max(20),
     _id: likeObjectId.required(),
-    lastProcessedId: likeObjectId.optional(),
+    lastProcessedSaleId: likeObjectId.optional(),
+    lastProcessedViewId: likeObjectId.optional(),
     addresses: array().required().of(object().required().shape({ host: string().required(), port: number().required() })),
     updatedAt: number().strict(true).required(),
     createdAt: number().strict(true).required()

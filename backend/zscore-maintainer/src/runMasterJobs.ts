@@ -24,19 +24,28 @@ export function runMasterJobs() {
                 const zScoreMaintainerOptionsRepository = await ZScoreMaintainerOptionsRepository.getInstance()
                 const productSaleRepository = await ProductSaleRepository.getInstance()
 
+                // Validation
                 const options = await getOptions(zScoreMaintainerOptionsRepository)
-
-                const count = await productSaleRepository.getEstimatedCount()
-
-                if (count === false || !options || !validateOptions(count, options))
+                if (!options){
+                    console.warn('Options not found!')
                     return
+                }
+                if (!options?.addresses) {
+                    console.warn('No slave found!')
+                    return
+                }
+                const count = await productSaleRepository.getEstimatedCount()
+                if (count === false || !options?.lastProcessedSaleId && count > 500_000_000) {
+                    console.warn('too much data to process!')
+                    return
+                }
 
                 // Fetch ranges
                 let ranges: { _id: { min: ObjectId | string; max: ObjectId | string; }; count: number; }[] = []
                 const result = await tryAndWait(async () => {
                     let r
-                    if (options.lastProcessedId)
-                        r = await productSaleRepository.divideByProductIds(options.addresses.length, options.lastProcessedId)
+                    if (options.lastProcessedSaleId)
+                        r = await productSaleRepository.divideByProductIds(options.addresses.length, options.lastProcessedSaleId)
                     else
                         r = await productSaleRepository.divideByProductIds(options.addresses.length)
 
@@ -61,7 +70,7 @@ export function runMasterJobs() {
                 if (!id)
                     return
 
-                const r = await zScoreMaintainerOptionsRepository.setLastProcessedId(id)
+                const r = await zScoreMaintainerOptionsRepository.setLastProcessedSaleId(id)
                 if (r === false || !r.acknowledged || r.matchedCount !== 1)
                     throw new Error('Failed to update options')
             } catch (e) {
@@ -83,29 +92,38 @@ export function runMasterJobs() {
                 const zScoreMaintainerOptionsRepository = await ZScoreMaintainerOptionsRepository.getInstance()
                 const productViewRepository = await ProductViewRepository.getInstance()
 
+                // Validation
                 const options = await getOptions(zScoreMaintainerOptionsRepository)
-
-                const count = await productViewRepository.getEstimatedCount()
-
-                if (count === false || !options || !validateOptions(count, options))
+                if (!options){
+                    console.warn('Options not found!')
                     return
+                }
+                if (!options?.addresses) {
+                    console.warn('No slave found!')
+                    return
+                }
+                const count = await productViewRepository.getEstimatedCount()
+                if (count === false || !options?.lastProcessedViewId && count > 500_000_000) {
+                    console.warn('too much data to process!')
+                    return
+                }
 
                 // Fetch ranges
                 let ranges: { _id: { min: ObjectId | string; max: ObjectId | string; }; count: number; }[] = []
                 const result = await tryAndWait(async () => {
                     let r
-                    if (options.lastProcessedId)
-                        r = await productViewRepository.divideByProductIds(options.addresses.length, options.lastProcessedId)
+                    if (options.lastProcessedViewId)
+                        r = await productViewRepository.divideByProductIds(options.addresses.length, options.lastProcessedViewId)
                     else
                         r = await productViewRepository.divideByProductIds(options.addresses.length)
 
                     if (r === false || (await getOptions(zScoreMaintainerOptionsRepository))?.addresses.length !== r.length)
-                        throw new Error('failed to fetch product id ranges')
+                        throw new Error('failed to fetch id ranges')
 
                     ranges = r
                 }, 60, 3)
                 if (result !== true)
-                    throw new Error("product id ranges are not properly divided!")
+                    throw new Error("Id ranges are not properly divided!")
 
                 // Send tasks
                 const promises = []
@@ -120,7 +138,7 @@ export function runMasterJobs() {
                 if (!id)
                     return
 
-                const r = await zScoreMaintainerOptionsRepository.setLastProcessedId(id)
+                const r = await zScoreMaintainerOptionsRepository.setLastProcessedViewId(id)
                 if (r === false || !r.acknowledged || r.matchedCount !== 1)
                     throw new Error('Failed to update options')
             } catch (e) {
@@ -156,23 +174,6 @@ async function getOptions(zScoreMaintainerOptionsRepository: ZScoreMaintainerOpt
     }
 
     return options
-}
-
-async function validateOptions(count: number, options?: ZScoreMaintainerOptions) {
-    if (!options)
-        return false
-
-    if (!options?.addresses) {
-        console.warn('No slave found!')
-        return false
-    }
-
-    if (!options?.lastProcessedId && count > 500_000_000) {
-        console.warn('too much data to process!')
-        return false
-    }
-
-    return true
 }
 
 async function findFailedIndexes(options: ZScoreMaintainerOptions, promises: Promise<boolean>[], ranges: { _id: { min: ObjectId | string; max: ObjectId | string; }; count: number; }[]) {

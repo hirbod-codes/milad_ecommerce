@@ -94,6 +94,9 @@ export class ProductRepository extends MongoDB {
                                     weeklyOrderZScore: null,
                                     monthlyOrderZScore: null,
                                     yearlyOrderZScore: null,
+                                    weeklyViewZScore: null,
+                                    monthlyViewZScore: null,
+                                    yearlyViewZScore: null,
                                     averageRating: faker.number.float({ min: 0, max: 5 }),
                                     ...(Object.fromEntries(new Array(faker.number.int({ min: 0, max: 10 })).fill(null).map(m => [faker.string.alpha({ length: { min: 2, max: 10 } }), faker.string.alpha({ length: { min: 2, max: 10 } })]))),
                                     createdAt: ts,
@@ -140,6 +143,9 @@ export class ProductRepository extends MongoDB {
                 weeklyOrderZScore: null,
                 monthlyOrderZScore: null,
                 yearlyOrderZScore: null,
+                weeklyViewZScore: null,
+                monthlyViewZScore: null,
+                yearlyViewZScore: null,
                 createdAt: now,
                 updatedAt: now,
             }
@@ -252,8 +258,12 @@ export class ProductRepository extends MongoDB {
         catch (e) { console.error(e); return false }
     }
 
-    async updateImmutables(id: string | ObjectId, immutableFields: ProductImmutable): Promise<UpdateResult | false> {
-        try { return await this.collection.updateOne({ _id: typeof id === 'string' ? ObjectId.createFromHexString(id) : id }, { $set: { ...immutableFields, updatedAt: DateTime.utc().toUnixInteger() } }) }
+    async updateImmutables(id: string | ObjectId, product: ProductImmutable): Promise<UpdateResult | false> {
+        try {
+            const updateResult = await this.collection.updateOne({ _id: typeof id === 'string' ? ObjectId.createFromHexString(id) : id }, { $set: { ...product, updatedAt: DateTime.utc().toUnixInteger() } })
+            await this.productStatisticsRepository.updateImmutables(id, product)
+            return updateResult
+        }
         catch (e) { console.error(e); return false }
     }
 

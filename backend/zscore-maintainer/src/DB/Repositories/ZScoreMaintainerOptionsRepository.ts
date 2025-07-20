@@ -23,7 +23,8 @@ export class ZScoreMaintainerOptionsRepository extends MongoDB {
 
             const result = await this.collection.insertOne({
                 schemaVersion: zScoreMaintainerOptionsSchemaVersion,
-                lastProcessedId: undefined,
+                lastProcessedSaleId: undefined,
+                lastProcessedViewId: undefined,
                 addresses: [],
                 updatedAt: DateTime.utc().toUnixInteger(),
                 createdAt: DateTime.utc().toUnixInteger(),
@@ -42,8 +43,13 @@ export class ZScoreMaintainerOptionsRepository extends MongoDB {
         return await this.collection.findOne()
     }
 
-    async setLastProcessedId(id: string) {
-        try { return await this.collection.updateOne({}, { $set: { lastProcessedId: ObjectId.createFromHexString(id), updatedAt: DateTime.utc().toUnixInteger() } }) }
+    async setLastProcessedSaleId(id: string) {
+        try { return await this.collection.updateOne({}, { $set: { lastProcessedSaleId: ObjectId.createFromHexString(id), updatedAt: DateTime.utc().toUnixInteger() } }) }
+        catch (e) { console.error(e); return false }
+    }
+
+    async setLastProcessedViewId(id: string) {
+        try { return await this.collection.updateOne({}, { $set: { lastProcessedViewId: ObjectId.createFromHexString(id), updatedAt: DateTime.utc().toUnixInteger() } }) }
         catch (e) { console.error(e); return false }
     }
 
