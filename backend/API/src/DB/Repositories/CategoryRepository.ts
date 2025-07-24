@@ -1,30 +1,58 @@
-import { Collection, DeleteResult, InsertOneResult, MongoSystemError, ObjectId, UpdateResult } from 'mongodb'
+import { ClientSession, Collection, Db, DeleteResult, InsertOneResult, MongoSystemError, ObjectId, UpdateResult } from 'mongodb'
 import { DateTime } from 'luxon'
-import { Category, CategoryCreate, CategoryImmutable, CategoryInput, CategoryUpdate, schemaVersion } from '../Models/Category'
+import { Category, CategoryCreate, CategoryImmutable, CategoryInput, CategoryUpdate, collectionName, schemaVersion } from '../Models/Category'
 import { MongoDB } from '../mongodb';
 import { faker, fakerFA } from "@faker-js/faker"
+import { IRepository } from '../IRepository';
 
-export class CategoryRepository extends MongoDB {
-    private collection: Collection<CategoryCreate>
+export class CategoryRepository implements IRepository {
+    private session: ClientSession | undefined = undefined
 
-    constructor(collection: Collection<CategoryCreate>) {
-        super();
-        this.collection = collection
+    setTransactionSession(session?: ClientSession): void {
+        this.session = session
     }
 
-    static async getInstance(mongoDB?: MongoDB): Promise<CategoryRepository> {
-        return new CategoryRepository(await (mongoDB ? mongoDB : MongoDB.getDbInstance()).getCategoryCollection())
+    unsetTransactionSession(): void {
+        this.session = undefined
     }
 
-    static async seed(count: number) {
+    async addCollection(db: Db): Promise<void> {
+        if (!(await db.listCollections().toArray()).map(e => e.name).includes(collectionName))
+            await db.createCollection(collectionName)
+
+        const indexes = await db.collection(collectionName).indexes()
+
+        if (indexes.find(i => i.name === 'unique-name') === undefined)
+            await db.createIndex(collectionName, { name: 1 }, { unique: true, name: 'unique-name' })
+
+        if (indexes.find(i => i.name === 'createdAt') === undefined)
+            await db.createIndex(collectionName, { createdAt: -1 }, { name: 'createdAt' })
+
+        if (indexes.find(i => i.name === 'updatedAt') === undefined)
+            await db.createIndex(collectionName, { updatedAt: -1 }, { name: 'updatedAt' })
+    }
+
+    async getCollection(): Promise<Collection<CategoryCreate>> {
+        return (await MongoDB.getDb()).collection<CategoryCreate>(collectionName)
+    }
+
+    async dropCollection(db: Db) {
+        if ((await db.listCollections().toArray()).map(e => e.name).includes(collectionName))
+            await db.dropCollection(collectionName)
+    }
+
+    async seed(count?: number) {
         console.log('CategoryRepository.seed()')
         console.time()
 
         try {
-            const collection = await MongoDB.getDbInstance().getCategoryCollection()
+            const collection = await this.getCollection()
 
             if (!(await collection.deleteMany()).acknowledged)
                 throw new Error('seeding categories failed!')
+
+            if (count === undefined)
+                count = 50
 
             const startTimeTS = DateTime.utc().minus({ years: 2 }).toUnixInteger()
             const endTimeTS = DateTime.utc().minus({ months: 2 }).toUnixInteger()
@@ -96,42 +124,42 @@ export class CategoryRepository extends MongoDB {
             updatedAt: ts,
         }
 
-        try { return await this.collection.insertOne(o) }
+        try { return await (await this.getCollection()).insertOne(o) }
         catch (e) { console.error(e); return false }
     }
 
     async isNameExist(name: string): Promise<boolean> {
-        try { return await this.collection.countDocuments({ name }) !== 0 }
+        try { return await (await this.getCollection()).countDocuments({ name }) !== 0 }
         catch (e) { console.error(e); return false }
     }
 
     async get(): Promise<Category[] | false> {
-        try { return await this.collection.find().toArray() }
+        try { return await (await this.getCollection()).find().toArray() }
         catch (e) { console.error(e); return false }
     }
 
     async getById(id: string): Promise<Category | null | undefined> {
-        try { return await this.collection.findOne({ _id: ObjectId.createFromHexString(id) }) }
+        try { return await (await this.getCollection()).findOne({ _id: ObjectId.createFromHexString(id) }) }
         catch (e) { console.error(e); return undefined }
     }
 
     async update(id: string, category: CategoryUpdate): Promise<UpdateResult | false> {
-        try { return await this.collection.updateOne({ _id: ObjectId.createFromHexString(id) }, { $set: { ...category, updatedAt: DateTime.utc().toUnixInteger() } }) }
+        try { return await (await this.getCollection()).updateOne({ _id: ObjectId.createFromHexString(id) }, { $set: { ...category, updatedAt: DateTime.utc().toUnixInteger() } }) }
         catch (e) { console.error(e); return false }
     }
 
     async updateImmutables(id: string, immutableFields: CategoryImmutable): Promise<UpdateResult | false> {
-        try { return await this.collection.updateOne({ _id: ObjectId.createFromHexString(id) }, { $set: { ...immutableFields, updatedAt: DateTime.utc().toUnixInteger() } }) }
+        try { return await (await this.getCollection()).updateOne({ _id: ObjectId.createFromHexString(id) }, { $set: { ...immutableFields, updatedAt: DateTime.utc().toUnixInteger() } }) }
         catch (e) { console.error(e); return false }
     }
 
     async addViews(id: string | ObjectId, count: number): Promise<UpdateResult | false> {
-        try { return await this.collection.updateOne({ _id: typeof id === 'string' ? ObjectId.createFromHexString(id) : id }, { $inc: { views: count }, $set: { updatedAt: DateTime.utc().toUnixInteger() } }) }
+        try { return await (await this.getCollection()).updateOne({ _id: typeof id === 'string' ? ObjectId.createFromHexString(id) : id }, { $inc: { views: count }, $set: { updatedAt: DateTime.utc().toUnixInteger() } }) }
         catch (e) { console.error(e); return false }
     }
 
     async delete(id: string): Promise<DeleteResult | false> {
-        try { return await this.collection.deleteOne({ _id: ObjectId.createFromHexString(id) }) }
+        try { return await (await this.getCollection()).deleteOne({ _id: ObjectId.createFromHexString(id) }) }
         catch (e) { console.error(e); return false }
     }
 }

@@ -1,30 +1,57 @@
-import { Db, GridFSBucket, GridFSBucketReadStream, GridFSBucketWriteStream, GridFSFile, MongoClient, ObjectId } from "mongodb";
+import { ClientSession, Db, GridFSBucket, GridFSBucketReadStream, GridFSBucketWriteStream, GridFSFile, MongoClient, ObjectId } from "mongodb";
 import { MongoDB } from "../../mongodb";
 import { contentType } from "prom-client";
+import { IRepository } from "../../IRepository";
+import { collectionName } from "../../Models/Products/ProductPicture";
 
-export class ProductPictureRepository extends MongoDB {
-    private collection: GridFSBucket
+export class ProductPictureRepository implements IRepository {
+    private session: ClientSession | undefined = undefined
 
-    constructor(collection: GridFSBucket) {
-        super();
-        this.collection = collection
+    setTransactionSession(session?: ClientSession): void {
+        this.session = session
     }
 
-    static async getInstance(mongoDB?: MongoDB): Promise<ProductPictureRepository> {
-        return new ProductPictureRepository(await (mongoDB ? mongoDB : MongoDB.getDbInstance()).getProductPictureBucket())
+    unsetTransactionSession(): void {
+        this.session = undefined
     }
 
-    getReadStream(fileId: string | ObjectId): GridFSBucketReadStream {
-        return this.collection.openDownloadStream(typeof fileId === 'string' ? ObjectId.createFromHexString(fileId) : fileId)
+    async addCollection(db: Db): Promise<void> {
+        if (!(await db.listCollections().toArray()).map(e => e.name).includes(collectionName))
+            await db.createCollection(collectionName)
+
+        const indexes = await db.collection(collectionName).indexes()
+
+        if (indexes.find(i => i.name === 'createdAt') === undefined)
+            await db.createIndex(collectionName, { createdAt: -1 }, { name: 'createdAt' })
+
+        if (indexes.find(i => i.name === 'updatedAt') === undefined)
+            await db.createIndex(collectionName, { updatedAt: -1 }, { name: 'updatedAt' })
     }
 
-    getWriteStream(fileName: string, productId: string | ObjectId, contentType?: string): GridFSBucketWriteStream {
-        return this.collection.openUploadStream(fileName, { metadata: { productId: typeof productId === 'string' ? ObjectId.createFromHexString(productId) : productId, contentType } })
+    async getCollection(): Promise<GridFSBucket> {
+        return new GridFSBucket(await MongoDB.getDb(), { bucketName: collectionName });
+    }
+
+    async dropCollection(db: Db): Promise<void> {
+        if ((await db.listCollections().toArray()).map(e => e.name).includes(collectionName))
+            await db.dropCollection(collectionName)
+    }
+
+    async seed(count?: number): Promise<void> {
+        throw new Error("Method not implemented.");
+    }
+
+    async getReadStream(fileId: string | ObjectId): Promise<GridFSBucketReadStream> {
+        return (await this.getCollection()).openDownloadStream(typeof fileId === 'string' ? ObjectId.createFromHexString(fileId) : fileId)
+    }
+
+    async getWriteStream(fileName: string, productId: string | ObjectId, contentType?: string): Promise<GridFSBucketWriteStream> {
+        return (await this.getCollection()).openUploadStream(fileName, { metadata: { productId: typeof productId === 'string' ? ObjectId.createFromHexString(productId) : productId, contentType } })
     }
 
     async uploadFile(productId: string, file: { fileName: string; bytes: Buffer | Uint8Array; contentType?: string }): Promise<string | undefined> {
         const result = await (() => new Promise<string | undefined>(async (res, rej) => {
-            const upload = this.getWriteStream(file.fileName, productId, file.contentType)
+            const upload = await this.getWriteStream(file.fileName, productId, file.contentType)
             upload
                 .on('close', () => { res(upload.id.toString()) })
                 .write(file.bytes, (e) => {
@@ -44,8 +71,8 @@ export class ProductPictureRepository extends MongoDB {
         console.log(productId, files.length);
 
         for (const file of files) {
-            const result = await (() => new Promise<boolean>((res, rej) => {
-                const upload = this.getWriteStream(file.fileName, productId, file.contentType)
+            const result = await (() => new Promise<boolean>(async (res, rej) => {
+                const upload = await this.getWriteStream(file.fileName, productId, file.contentType)
                 upload
                     .on('close', () => { console.log('on close'); res(true) })
                     .write(file.bytes, (e) => {
@@ -72,7 +99,7 @@ export class ProductPictureRepository extends MongoDB {
 
     async getFile(fileId: string): Promise<GridFSFile | undefined> {
         try {
-            return (await this.collection.find({ _id: ObjectId.createFromHexString(fileId) }).toArray())[0];
+            return (await (await this.getCollection()).find({ _id: ObjectId.createFromHexString(fileId) }).toArray())[0];
         } catch (e) {
             console.error(e)
             return undefined
@@ -81,7 +108,7 @@ export class ProductPictureRepository extends MongoDB {
 
     async getFiles(fileIds: string[]): Promise<GridFSFile[]> {
         try {
-            return await this.collection.find({ _id: { $in: fileIds.map(id => ObjectId.createFromHexString(id)) } }).toArray();
+            return await (await this.getCollection()).find({ _id: { $in: fileIds.map(id => ObjectId.createFromHexString(id)) } }).toArray();
         } catch (e) {
             console.error(e)
             return []
@@ -90,7 +117,7 @@ export class ProductPictureRepository extends MongoDB {
 
     async getFilesByProductId(productIds: string | string[]): Promise<GridFSFile[]> {
         try {
-            return await this.collection.find({ 'metadata.productId': typeof productIds === 'string' ? ObjectId.createFromHexString(productIds) : { $in: productIds.map(id => typeof id === 'string' ? ObjectId.createFromHexString(id) : id) } }).toArray();
+            return await (await this.getCollection()).find({ 'metadata.productId': typeof productIds === 'string' ? ObjectId.createFromHexString(productIds) : { $in: productIds.map(id => typeof id === 'string' ? ObjectId.createFromHexString(id) : id) } }).toArray();
         } catch (e) {
             console.error(e)
             return []
@@ -101,7 +128,7 @@ export class ProductPictureRepository extends MongoDB {
         console.log('downloading file...');
 
         return new Promise<boolean>(async (resolve, reject) => {
-            const readStream = this.getReadStream(fileId)
+            const readStream = await this.getReadStream(fileId)
 
             readStream
                 .on('close', async () => {
@@ -116,10 +143,10 @@ export class ProductPictureRepository extends MongoDB {
 
     async deleteFilesByProductId(productId: string): Promise<boolean> {
         try {
-            const cursor = await this.collection.find({ 'metadata.productId': typeof productId === 'string' ? ObjectId.createFromHexString(productId) : productId }).toArray()
+            const cursor = await (await this.getCollection()).find({ 'metadata.productId': typeof productId === 'string' ? ObjectId.createFromHexString(productId) : productId }).toArray()
 
             for (const doc of cursor)
-                await this.collection.delete(new ObjectId(doc._id))
+                await (await this.getCollection()).delete(new ObjectId(doc._id))
 
             return true
         } catch (e) {
@@ -131,10 +158,10 @@ export class ProductPictureRepository extends MongoDB {
     async deleteFiles(fileIds?: string[]): Promise<boolean> {
         try {
             if (!fileIds)
-                fileIds = (await this.collection.find().toArray()).map(m => m._id.toString())
+                fileIds = (await (await this.getCollection()).find().toArray()).map(m => m._id.toString())
 
             for (const id of fileIds)
-                await this.collection.delete(ObjectId.createFromHexString(id))
+                await (await this.getCollection()).delete(ObjectId.createFromHexString(id))
 
             return true
         } catch (e) {
@@ -145,7 +172,7 @@ export class ProductPictureRepository extends MongoDB {
 
     async deleteFile(fileId: string): Promise<boolean> {
         try {
-            await this.collection.delete(ObjectId.createFromHexString(fileId))
+            await (await this.getCollection()).delete(ObjectId.createFromHexString(fileId))
 
             return true
         } catch (e) {

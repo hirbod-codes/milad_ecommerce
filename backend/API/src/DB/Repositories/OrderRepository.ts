@@ -1,32 +1,53 @@
-import { Collection, Db, DeleteResult, Filter, InsertOneResult, MongoClient, MongoSystemError, ObjectId, Sort, SortDirection, UpdateResult } from 'mongodb'
-import { Order, OrderCreate, OrderImmutable, OrderInput, OrderUpdate, schemaVersion } from '../Models/Order'
+import { ClientSession, Collection, Db, DeleteResult, Filter, InsertOneResult, MongoSystemError, ObjectId, Sort, SortDirection, UpdateResult } from 'mongodb'
+import { collectionName, Order, OrderCreate, OrderImmutable, OrderInput, OrderUpdate, schemaVersion } from '../Models/Order'
 import { DateTime } from 'luxon'
 import { MongoDB } from '../mongodb';
 import { faker } from '@faker-js/faker/.';
 import { ProductRepository } from './Products/ProductRepository';
 import { UserRepository } from './UserRepository';
-import { ProductStatisticsRepository } from './Products/ProductStatisticsRepository';
+import { IRepository } from '../IRepository';
 
-export class OrderRepository extends MongoDB {
-    private collection: Collection<OrderCreate>
+export class OrderRepository implements IRepository {
+    private session: ClientSession | undefined = undefined
 
-    constructor(collection: Collection<OrderCreate>) {
-        super();
-        this.collection = collection
+    setTransactionSession(session?: ClientSession): void {
+        this.session = session
     }
 
-    static async getInstance(mongoDB?: MongoDB): Promise<OrderRepository> {
-        return new OrderRepository(await (mongoDB ? mongoDB : MongoDB.getDbInstance()).getOrderCollection())
+    unsetTransactionSession(): void {
+        this.session = undefined
     }
 
-    static async seed(countPerUser: number) {
+    async addCollection(db: Db): Promise<void> {
+        if (!(await db.listCollections().toArray()).map(e => e.name).includes(collectionName))
+            await db.createCollection(collectionName)
+
+        const indexes = await db.collection(collectionName).indexes()
+
+        if (indexes.find(i => i.name === 'createdAt') === undefined)
+            await db.createIndex(collectionName, { createdAt: -1 }, { name: 'createdAt' })
+
+        if (indexes.find(i => i.name === 'updatedAt') === undefined)
+            await db.createIndex(collectionName, { updatedAt: -1 }, { name: 'updatedAt' })
+    }
+
+    async getCollection(): Promise<Collection<OrderCreate>> {
+        return (await MongoDB.getDb()).collection<OrderCreate>(collectionName)
+    }
+
+    async dropCollection(db: Db): Promise<void> {
+        if ((await db.listCollections().toArray()).map(e => e.name).includes(collectionName))
+            await db.dropCollection(collectionName)
+    }
+
+    async seed(count?: number) {
         console.log('OrderRepository.seed()')
         console.time()
 
         try {
-            const collection = await MongoDB.getDbInstance().getOrderCollection()
-            const productRepository = await ProductRepository.getInstance()
-            const userRepository = await UserRepository.getInstance()
+            const collection = await this.getCollection()
+            const productRepository = new ProductRepository()
+            const userRepository = new UserRepository()
 
             if (!(await collection.deleteMany()).acknowledged)
                 throw new Error('seeding orders failed!')
@@ -39,6 +60,9 @@ export class OrderRepository extends MongoDB {
             if (products.length === 0)
                 throw new Error('no product!')
 
+            if (count === undefined)
+                count = 100
+
             const endTimeTS = DateTime.utc().minus({ months: 2 }).toUnixInteger()
 
             const promises = []
@@ -46,7 +70,7 @@ export class OrderRepository extends MongoDB {
             for (let j = 0; j < users.length; j++) {
                 const user = users[j]
 
-                for (let i = 0; i < countPerUser; i++) {
+                for (let i = 0; i < count; i++) {
                     promises.push(
                         (async () => {
                             let safety = 0
@@ -120,7 +144,7 @@ export class OrderRepository extends MongoDB {
             updatedAt: ts,
         }
 
-        try { return await this.collection.insertOne(o) }
+        try { return await (await this.getCollection()).insertOne(o) }
         catch (e) { console.error(e); return false }
     }
 
@@ -135,7 +159,7 @@ export class OrderRepository extends MongoDB {
             else if (filter)
                 finalFilter = filter
 
-            let cursor = finalFilter !== undefined ? this.collection.find(finalFilter) : this.collection.find()
+            let cursor = finalFilter !== undefined ? (await this.getCollection()).find(finalFilter) : (await this.getCollection()).find()
 
             if (sorts !== undefined)
                 sorts.forEach(sort => cursor.sort(sort.field, sort.direction))
@@ -146,27 +170,27 @@ export class OrderRepository extends MongoDB {
     }
 
     async getById(id: string): Promise<Order | null | undefined> {
-        try { return await this.collection.findOne({ _id: ObjectId.createFromHexString(id) }) }
+        try { return await (await this.getCollection()).findOne({ _id: ObjectId.createFromHexString(id) }) }
         catch (e) { console.error(e); return undefined }
     }
 
     async getAll(sorts?: Sort): Promise<Order[]> {
-        try { return await this.collection.find({}, { sort: sorts }).toArray() }
+        try { return await (await this.getCollection()).find({}, { sort: sorts }).toArray() }
         catch (e) { console.error(e); return [] }
     }
 
     async update(id: string, order: OrderUpdate): Promise<UpdateResult | false> {
-        try { return await this.collection.updateOne({ _id: ObjectId.createFromHexString(id) }, { $set: { ...order, updatedAt: DateTime.utc().toUnixInteger() } }) }
+        try { return await (await this.getCollection()).updateOne({ _id: ObjectId.createFromHexString(id) }, { $set: { ...order, updatedAt: DateTime.utc().toUnixInteger() } }) }
         catch (e) { console.error(e); return false }
     }
 
     async updateImmutables(id: string, immutableFields: OrderImmutable): Promise<UpdateResult | false> {
-        try { return await this.collection.updateOne({ _id: ObjectId.createFromHexString(id) }, { $set: { ...immutableFields, updatedAt: DateTime.utc().toUnixInteger() } }) }
+        try { return await (await this.getCollection()).updateOne({ _id: ObjectId.createFromHexString(id) }, { $set: { ...immutableFields, updatedAt: DateTime.utc().toUnixInteger() } }) }
         catch (e) { console.error(e); return false }
     }
 
     async payed(orderId: string | ObjectId): Promise<UpdateResult | false> {
-        try { return await this.collection.updateOne({ _id: typeof orderId === 'string' ? ObjectId.createFromHexString(orderId) : orderId }, { $set: { isPayed: true, updatedAt: DateTime.utc().toUnixInteger() } }) }
+        try { return await (await this.getCollection()).updateOne({ _id: typeof orderId === 'string' ? ObjectId.createFromHexString(orderId) : orderId }, { $set: { isPayed: true, updatedAt: DateTime.utc().toUnixInteger() } }) }
         catch (e) { console.error(e); return false }
     }
 
@@ -177,7 +201,7 @@ export class OrderRepository extends MongoDB {
         if (typeof orderId === 'string')
             orderId = ObjectId.createFromHexString(orderId)
 
-        try { return await this.collection.updateOne({ _id: orderId, userId }, { $set: { ...order, updatedAt: DateTime.utc().toUnixInteger() } }) }
+        try { return await (await this.getCollection()).updateOne({ _id: orderId, userId }, { $set: { ...order, updatedAt: DateTime.utc().toUnixInteger() } }) }
         catch (e) { console.error(e); return false }
     }
 
@@ -188,12 +212,12 @@ export class OrderRepository extends MongoDB {
         if (typeof orderId === 'string')
             orderId = ObjectId.createFromHexString(orderId)
 
-        try { return await this.collection.updateOne({ _id: orderId, userId }, { $set: { ...immutableFields, updatedAt: DateTime.utc().toUnixInteger() } }) }
+        try { return await (await this.getCollection()).updateOne({ _id: orderId, userId }, { $set: { ...immutableFields, updatedAt: DateTime.utc().toUnixInteger() } }) }
         catch (e) { console.error(e); return false }
     }
 
     async delete(id: string): Promise<DeleteResult | false> {
-        try { return await this.collection.deleteOne({ _id: ObjectId.createFromHexString(id) }) }
+        try { return await (await this.getCollection()).deleteOne({ _id: ObjectId.createFromHexString(id) }) }
         catch (e) { console.error(e); return false }
     }
 
@@ -204,7 +228,7 @@ export class OrderRepository extends MongoDB {
         if (typeof orderId === 'string')
             orderId = ObjectId.createFromHexString(orderId)
 
-        try { return await this.collection.deleteOne({ _id: orderId, userId }) }
+        try { return await (await this.getCollection()).deleteOne({ _id: orderId, userId }) }
         catch (e) { console.error(e); return false }
     }
 }

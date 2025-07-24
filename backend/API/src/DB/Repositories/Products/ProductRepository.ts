@@ -1,41 +1,100 @@
 import { DateTime } from "luxon";
 import { Product, ProductInput, ProductCreate, schemaVersion, ProductUpdate, ProductImmutable } from "../../Models/Products/Product";
-import { Collection, Db, DeleteResult, Filter, InsertOneResult, MongoClient, MongoServerError, MongoSystemError, ObjectId, SortDirection, UpdateResult } from 'mongodb'
+import { ClientSession, Collection, Db, DeleteResult, Filter, InsertOneResult, MongoServerError, MongoSystemError, ObjectId, SortDirection, UpdateResult } from 'mongodb'
 import { MongoDB } from "../../mongodb";
 import { faker, fakerFA } from "@faker-js/faker/";
 import { CategoryRepository } from "../CategoryRepository";
 import { TagRepository } from "../TagRepository";
 import { ProductPictureRepository } from "./ProductPictureRepository";
 import fs from 'fs'
+import { IRepository } from "../../IRepository";
+import { collectionName } from "../../Models/Privilege";
 import { ProductStatisticsRepository } from "./ProductStatisticsRepository";
-import { ProductViewRepository } from "./ProductViewRepository";
-import { clearLine, cursorTo } from "readline";
 
-export class ProductRepository extends MongoDB {
-    private collection: Collection<ProductCreate>
-    private productStatisticsRepository: ProductStatisticsRepository
-    private productViewRepository: ProductViewRepository
+export class ProductRepository implements IRepository {
+    private session: ClientSession | undefined = undefined
 
-    constructor(collection: Collection<ProductCreate>, productStatisticsRepository: ProductStatisticsRepository, productViewRepository: ProductViewRepository) {
-        super();
-        this.collection = collection
-        this.productStatisticsRepository = productStatisticsRepository
-        this.productViewRepository = productViewRepository
+    setTransactionSession(session: ClientSession): void {
+        this.session = session
     }
 
-    static async getInstance(mongoDB?: MongoDB): Promise<ProductRepository> {
-        return new ProductRepository(await (mongoDB ? mongoDB : MongoDB.getDbInstance()).getProductCollection(), await ProductStatisticsRepository.getInstance(), await ProductViewRepository.getInstance())
+    unsetTransactionSession(): void {
+        this.session = undefined
     }
 
-    static async seed(count: number) {
+    async addCollection(db: Db): Promise<void> {
+        if (!(await db.listCollections().toArray()).map(e => e.name).includes(collectionName))
+            await db.createCollection(collectionName)
+
+        const indexes = await db.collection(collectionName).indexes()
+
+        if (indexes.find(i => i.name === 'unique-name') === undefined)
+            await db.createIndex(collectionName, { name: 1 }, { unique: true, name: 'unique-name' })
+
+        if (indexes.find(i => i.name === 'search') === undefined)
+            await db.createIndex(
+                collectionName,
+                { name: 'text', 'displayName.en': 'text', 'displayName.fa': 'text', 'description.en': 'text', 'description.fa': 'text' },
+                {
+                    weights: {
+                        'name': 10,
+                        'displayName.en': 5,
+                        'displayName.fa': 5,
+                        'description.en': 1,
+                        'description.fa': 1,
+                    }, name: 'search'
+                }
+            )
+
+        if (indexes.find(i => i.name === 'dailyOrderZScore') === undefined)
+            await db.createIndex(collectionName, { dailyOrderZScore: -1 }, { name: 'dailyOrderZScore' })
+
+        if (indexes.find(i => i.name === 'weeklyOrderZScore') === undefined)
+            await db.createIndex(collectionName, { weeklyOrderZScore: -1 }, { name: 'weeklyOrderZScore' })
+
+        if (indexes.find(i => i.name === 'yearlyOrderZScore') === undefined)
+            await db.createIndex(collectionName, { yearlyOrderZScore: -1 }, { name: 'yearlyOrderZScore' })
+
+        if (indexes.find(i => i.name === 'categories') === undefined)
+            await db.createIndex(collectionName, { categories: -1 }, { name: 'categories' })
+
+        if (indexes.find(i => i.name === 'tags') === undefined)
+            await db.createIndex(collectionName, { tags: -1 }, { name: 'tags' })
+
+        if (indexes.find(i => i.name === 'isAvailable') === undefined)
+            await db.createIndex(collectionName, { isAvailable: -1 }, { name: 'isAvailable' })
+
+        if (indexes.find(i => i.name === 'reviewsCount') === undefined)
+            await db.createIndex(collectionName, { reviewsCount: -1 }, { name: 'reviewsCount' })
+
+        if (indexes.find(i => i.name === 'averageRating') === undefined)
+            await db.createIndex(collectionName, { averageRating: -1 }, { name: 'averageRating' })
+
+        if (indexes.find(i => i.name === 'createdAt') === undefined)
+            await db.createIndex(collectionName, { createdAt: -1 }, { name: 'createdAt' })
+
+        if (indexes.find(i => i.name === 'updatedAt') === undefined)
+            await db.createIndex(collectionName, { updatedAt: -1 }, { name: 'updatedAt' })
+    }
+
+    async getCollection(): Promise<Collection<ProductCreate>> {
+        return (await MongoDB.getDb()).collection<ProductCreate>(collectionName)
+    }
+
+    async dropCollection(db: Db): Promise<void> {
+        if ((await db.listCollections().toArray()).map(e => e.name).includes(collectionName))
+            await db.dropCollection(collectionName)
+    }
+
+    async seed(count?: number) {
         console.log('ProductRepository.seed()')
         console.time()
 
         try {
-            const collection = await MongoDB.getDbInstance().getProductCollection()
-            const categoryRepository = await CategoryRepository.getInstance()
-            const tagRepository = await TagRepository.getInstance()
-            const productPictureRepository = await ProductPictureRepository.getInstance()
+            const collection = await this.getCollection()
+            const categoryRepository = new CategoryRepository()
+            const tagRepository = new TagRepository()
+            const productPictureRepository = new ProductPictureRepository()
 
             if (!(await collection.deleteMany()).acknowledged || !await productPictureRepository.deleteFiles())
                 throw new Error('seeding products failed!')
@@ -50,6 +109,9 @@ export class ProductRepository extends MongoDB {
             const tags = await tagRepository.get()
             if (tags === false || tags.length === 0)
                 throw new Error('no tag!')
+
+            if (count === undefined)
+                count = 100
 
             const names = faker.definitions.commerce?.product_name
             const firstDigit = names.product
@@ -150,11 +212,11 @@ export class ProductRepository extends MongoDB {
                 updatedAt: now,
             }
 
-            const productInsertResult = await this.collection.insertOne(p, { session: this.session })
+            const productInsertResult = await (await this.getCollection()).insertOne(p, { session: this.session })
             if (!productInsertResult.acknowledged)
                 throw new Error('Failed to insert the product document')
 
-            const productStatisticsInsertResult = await this.productStatisticsRepository.create({ productId: productInsertResult.insertedId }, now)
+            const productStatisticsInsertResult = await (new ProductStatisticsRepository()).create({ productId: productInsertResult.insertedId }, now)
             if (productStatisticsInsertResult === false || !productStatisticsInsertResult.acknowledged)
                 throw new Error('Failed to insert the product\'s statistics documents')
 
@@ -166,22 +228,22 @@ export class ProductRepository extends MongoDB {
     }
 
     async isNameExist(name: string): Promise<boolean> {
-        try { return await this.collection.countDocuments({ name }) !== 0 }
+        try { return await (await this.getCollection()).countDocuments({ name }) !== 0 }
         catch (e) { console.error(e); return false }
     }
 
     async getById(id: string | ObjectId): Promise<Product | null | undefined> {
-        try { return await this.collection.findOne({ _id: typeof id === 'string' ? ObjectId.createFromHexString(id) : id }) }
+        try { return await (await this.getCollection()).findOne({ _id: typeof id === 'string' ? ObjectId.createFromHexString(id) : id }) }
         catch (e) { console.error(e); return undefined }
     }
 
     async getByIds(ids: (string | ObjectId)[]): Promise<Product[] | undefined> {
-        try { return await this.collection.find({ _id: { $in: ids.map(id => typeof id === 'string' ? ObjectId.createFromHexString(id) : id) } }).toArray() }
+        try { return await (await this.getCollection()).find({ _id: { $in: ids.map(id => typeof id === 'string' ? ObjectId.createFromHexString(id) : id) } }).toArray() }
         catch (e) { console.error(e); return undefined }
     }
 
     async getAll(): Promise<Product[]> {
-        try { return await this.collection.find().toArray() }
+        try { return await (await this.getCollection()).find().toArray() }
         catch (e) { console.error(e); return [] }
     }
 
@@ -196,9 +258,9 @@ export class ProductRepository extends MongoDB {
                 filter.tags = { $in: tags }
 
             if (!tags && !categories)
-                cursor = this.collection.find()
+                cursor = (await this.getCollection()).find()
             else
-                cursor = this.collection.find(filter)
+                cursor = (await this.getCollection()).find(filter)
 
             return await cursor.sort({ views: -1 }).skip(offset).limit(limit).toArray()
         }
@@ -207,7 +269,7 @@ export class ProductRepository extends MongoDB {
 
     async get(filter: Filter<Product>, sorts: { field: keyof Product, direction: SortDirection }[], limit: number, skip: number): Promise<Product[] | false> {
         try {
-            let cursor = this.collection.find(filter)
+            let cursor = (await this.getCollection()).find(filter)
 
             sorts.forEach(sort => cursor.sort(sort.field, sort.direction))
 
@@ -218,7 +280,7 @@ export class ProductRepository extends MongoDB {
 
     async search(search: string): Promise<Product[] | false> {
         try {
-            return this.collection
+            return (await this.getCollection())
                 .find({ $text: { $search: search } })
                 .sort({ score: { $meta: "textScore" } })
                 .toArray()
@@ -228,7 +290,7 @@ export class ProductRepository extends MongoDB {
 
     async sumPriceOfAvailable(selectedProducts: { productId: string, quantity: number }[], unit: string): Promise<number | false> {
         try {
-            let products = await this.collection.find({ isAvailable: true, _id: { $in: selectedProducts.map(p => ObjectId.createFromHexString(p.productId)) } }).toArray()
+            let products = await (await this.getCollection()).find({ isAvailable: true, _id: { $in: selectedProducts.map(p => ObjectId.createFromHexString(p.productId)) } }).toArray()
             if (products.length !== selectedProducts.length)
                 return false
 
@@ -245,14 +307,16 @@ export class ProductRepository extends MongoDB {
     }
 
     async getAvailableByIds(ids: (string | ObjectId)[]): Promise<Product[] | undefined> {
-        try { return await this.collection.find({ _id: { $in: ids.map(id => typeof id === 'string' ? ObjectId.createFromHexString(id) : id) }, isAvailable: true }).toArray() }
+        try { return await (await this.getCollection()).find({ _id: { $in: ids.map(id => typeof id === 'string' ? ObjectId.createFromHexString(id) : id) }, isAvailable: true }).toArray() }
         catch (e) { console.error(e); return undefined }
     }
 
     async update(id: string, product: ProductUpdate): Promise<UpdateResult | false> {
         try {
-            const updateResult = await this.collection.updateOne({ _id: ObjectId.createFromHexString(id) }, { $set: { ...product, updatedAt: DateTime.utc().toUnixInteger() } }, { session: this.session })
-            await this.productStatisticsRepository.update(product, id)
+            const updateResult = await (await this.getCollection()).updateOne({ _id: ObjectId.createFromHexString(id) }, { $set: { ...product, updatedAt: DateTime.utc().toUnixInteger() } }, { session: this.session })
+            const productStatisticsRepository = new ProductStatisticsRepository()
+            productStatisticsRepository.setTransactionSession(this.session)
+            await productStatisticsRepository.update(product, id)
             return updateResult
         }
         catch (e) { console.error(e); return false }
@@ -260,15 +324,17 @@ export class ProductRepository extends MongoDB {
 
     async updateImmutables(id: string | ObjectId, product: ProductImmutable): Promise<UpdateResult | false> {
         try {
-            const updateResult = await this.collection.updateOne({ _id: typeof id === 'string' ? ObjectId.createFromHexString(id) : id }, { $set: { ...product, updatedAt: DateTime.utc().toUnixInteger() } })
-            await this.productStatisticsRepository.updateImmutables(id, product)
+            const updateResult = await (await this.getCollection()).updateOne({ _id: typeof id === 'string' ? ObjectId.createFromHexString(id) : id }, { $set: { ...product, updatedAt: DateTime.utc().toUnixInteger() } })
+            const productStatisticsRepository = new ProductStatisticsRepository()
+            productStatisticsRepository.setTransactionSession(this.session)
+            await productStatisticsRepository.updateImmutables(id, product)
             return updateResult
         }
         catch (e) { console.error(e); return false }
     }
 
     async delete(id: string): Promise<DeleteResult | false> {
-        try { return await this.collection.deleteOne({ _id: ObjectId.createFromHexString(id) }) }
+        try { return await (await this.getCollection()).deleteOne({ _id: ObjectId.createFromHexString(id) }) }
         catch (e) { console.error(e); return false }
     }
 }

@@ -1,28 +1,54 @@
-import { Collection, Db, Document, MongoClient, MongoServerError, MongoSystemError, ObjectId } from "mongodb";
+import { ClientSession, Collection, Db, MongoServerError, MongoSystemError, ObjectId } from "mongodb";
 import { MongoDB } from "../../mongodb";
-import { ProductSaleCreate, ProductSaleInput, schemaVersion } from "../../Models/Products/ProductSale";
+import { collectionName, ProductSaleCreate, ProductSaleInput, schemaVersion } from "../../Models/Products/ProductSale";
 import { DateTime } from "luxon";
 import { number, string } from "yup";
+import { IRepository } from "../../IRepository";
+import { collectionName as orderCollectionName, OrderCreate } from "../../Models/Order";
 
-export class ProductSaleRepository extends MongoDB {
-    private collection: Collection<ProductSaleCreate>
+export class ProductSaleRepository implements IRepository {
+    private session: ClientSession | undefined = undefined
 
-    constructor(productSaleCreate: Collection<ProductSaleCreate>) {
-        super();
-        this.collection = productSaleCreate
+    setTransactionSession(session?: ClientSession): void {
+        this.session = session
     }
 
-    static async getInstance(mongoDB?: MongoDB): Promise<ProductSaleRepository> {
-        return new ProductSaleRepository(await (mongoDB ? mongoDB : MongoDB.getDbInstance()).getProductSaleCollection())
+    unsetTransactionSession(): void {
+        this.session = undefined
     }
 
-    static async seed() {
+    async addCollection(db: Db): Promise<void> {
+        if (!(await db.listCollections().toArray()).map(e => e.name).includes(collectionName))
+            await db.createCollection(collectionName, { timeseries: { timeField: 'timestamp', granularity: 'hours', metaField: 'metadata' }, expireAfterSeconds: 5 * 12 * 30 * 24 * 60 * 60 })
+
+        const indexes = await db.collection(collectionName).indexes()
+
+        if (indexes.find(i => i.name === 'productId') === undefined)
+            await db.createIndex(collectionName, { 'metadata.productId': 1 }, { name: 'productId' })
+
+        if (indexes.find(i => i.name === 'userId') === undefined)
+            await db.createIndex(collectionName, { 'metadata.userId': 1 }, { name: 'userId' })
+
+        if (indexes.find(i => i.name === 'quantity') === undefined)
+            await db.createIndex(collectionName, { 'metadata.quantity': 1 }, { name: 'quantity' })
+    }
+
+    async getCollection(): Promise<Collection<ProductSaleCreate>> {
+        return (await MongoDB.getDb()).collection<ProductSaleCreate>(collectionName)
+    }
+
+    async dropCollection(db: Db): Promise<void> {
+        if ((await db.listCollections().toArray()).map(e => e.name).includes(collectionName))
+            await db.dropCollection(collectionName)
+    }
+
+    async seed(count?: number) {
         console.log('ProductSaleRepository.seed()')
         console.time()
 
         try {
-            const collection = await MongoDB.getDbInstance().getProductSaleCollection()
-            const orderCollection = await MongoDB.getDbInstance().getOrderCollection()
+            const collection = await this.getCollection()
+            const orderCollection = (await MongoDB.getDb()).collection<OrderCreate>(orderCollectionName)
 
             if (!(await collection.deleteMany()).acknowledged)
                 throw new Error('seeding product sales failed!')
@@ -83,7 +109,7 @@ export class ProductSaleRepository extends MongoDB {
     async create(productSaleInput: ProductSaleInput, now: number) {
         try {
             const p: ProductSaleCreate = { ...productSaleInput, timestamp: DateTime.fromSeconds(now).toJSDate(), schemaVersion: schemaVersion }
-            const insertionResult = this.collection.insertOne(p, { session: this.session })
+            const insertionResult = (await this.getCollection()).insertOne(p, { session: this.session })
             return insertionResult
         } catch (e) {
             console.error(e)
@@ -92,13 +118,13 @@ export class ProductSaleRepository extends MongoDB {
     }
 
     async getEstimatedCount() {
-        try { return await this.collection.countDocuments({}) }
+        try { return await (await this.getCollection()).countDocuments({}) }
         catch (e) { console.error(e); return false }
     }
 
     async getPreviousId(id: string): Promise<string | false> {
         try {
-            const r = await this.collection
+            const r = await (await this.getCollection())
                 .find({ _id: { $lt: ObjectId.createFromHexString(id) } })
                 .sort({ _id: -1 })
                 .limit(1)
@@ -117,7 +143,7 @@ export class ProductSaleRepository extends MongoDB {
     async divideByProductIds(buckets: number, from: number, to: number): Promise<{ _id: { min: ObjectId | string, max: ObjectId | string }, count: number }[] | false>
     async divideByProductIds(buckets: number, first?: ObjectId | string | number, second?: number): Promise<{ _id: { min: ObjectId | string, max: ObjectId | string }, count: number }[] | false> {
         try {
-            let aggregation = this.collection.aggregate(undefined, { allowDiskUse: true })
+            let aggregation = (await this.getCollection()).aggregate(undefined, { allowDiskUse: true })
             if (string().required().isValidSync(first) && second === undefined) {
                 aggregation = aggregation
                     .match({ _id: { $gt: ObjectId.createFromHexString(first) } })
@@ -151,7 +177,7 @@ export class ProductSaleRepository extends MongoDB {
 
     async getGroupedByProductIds(minId: string, maxId: string, offset: number, limit: number, inclusive: boolean = false): Promise<false | { _id: ObjectId | string, quantity: number }[]> {
         try {
-            const aggregation = this.collection.aggregate(undefined, { allowDiskUse: true })
+            const aggregation = (await this.getCollection()).aggregate(undefined, { allowDiskUse: true })
                 .match({
                     _id: {
                         $gte: ObjectId.createFromHexString(minId),

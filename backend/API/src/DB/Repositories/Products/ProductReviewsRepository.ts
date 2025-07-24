@@ -1,31 +1,56 @@
-import { Collection, Db, DeleteResult, InsertOneResult, MongoClient, MongoSystemError, ObjectId, UpdateResult } from 'mongodb'
-import { ProductReview, ProductReviewCreate, ProductReviewInput, ProductReviewUpdate, schemaVersion } from '../../Models/Products/ProductReview'
+import { ClientSession, Collection, Db, DeleteResult, InsertOneResult, MongoClient, MongoSystemError, ObjectId, UpdateResult } from 'mongodb'
+import { collectionName, ProductReview, ProductReviewCreate, ProductReviewInput, ProductReviewUpdate, schemaVersion } from '../../Models/Products/ProductReview'
 import { DateTime } from 'luxon'
 import { MongoDB } from '../../mongodb';
 import { faker } from '@faker-js/faker/.';
 import { ProductRepository } from './ProductRepository';
 import { UserRepository } from '../UserRepository';
+import { IRepository } from '../../IRepository';
 
-export class ProductReviewsRepository extends MongoDB {
-    private collection: Collection<ProductReviewCreate>
+export class ProductReviewsRepository implements IRepository {
+    private session: ClientSession | undefined = undefined
 
-    constructor(collection: Collection<ProductReviewCreate>) {
-        super();
-        this.collection = collection
+    setTransactionSession(session?: ClientSession): void {
+        this.session = session
     }
 
-    static async getInstance(mongoDB?: MongoDB): Promise<ProductReviewsRepository> {
-        return new ProductReviewsRepository(await (mongoDB ? mongoDB : MongoDB.getDbInstance()).getProductReviewsCollection())
+    unsetTransactionSession(): void {
+        this.session = undefined
     }
 
-    static async seed() {
+    async addCollection(db: Db): Promise<void> {
+        if (!(await db.listCollections().toArray()).map(e => e.name).includes(collectionName))
+            await db.createCollection(collectionName)
+
+        const indexes = await db.collection(collectionName).indexes()
+
+        if (indexes.find(i => i.name === 'uniqueness') === undefined)
+            await db.createIndex(collectionName, { userId: 1, productId: 1 }, { unique: true, name: 'uniqueness' })
+
+        if (indexes.find(i => i.name === 'createdAt') === undefined)
+            await db.createIndex(collectionName, { createdAt: -1 }, { name: 'createdAt' })
+
+        if (indexes.find(i => i.name === 'updatedAt') === undefined)
+            await db.createIndex(collectionName, { updatedAt: -1 }, { name: 'updatedAt' })
+    }
+
+    async getCollection(): Promise<Collection<ProductReviewCreate>> {
+        return (await MongoDB.getDb()).collection<ProductReviewCreate>(collectionName)
+    }
+
+    async dropCollection(db: Db): Promise<void> {
+        if ((await db.listCollections().toArray()).map(e => e.name).includes(collectionName))
+            await db.dropCollection(collectionName)
+    }
+
+    async seed() {
         console.log('ProductReviewsRepository.seed()')
         console.time()
 
         try {
-            const collection = await MongoDB.getDbInstance().getProductReviewsCollection()
-            const productRepository = await ProductRepository.getInstance()
-            const userRepository = await UserRepository.getInstance()
+            const collection = await this.getCollection()
+            const productRepository = new ProductRepository()
+            const userRepository = new UserRepository()
 
             if (!(await collection.deleteMany()).acknowledged)
                 throw new Error('seeding users failed!')
@@ -100,22 +125,22 @@ export class ProductReviewsRepository extends MongoDB {
             updatedAt: ts,
         }
 
-        try { return await this.collection.insertOne(pr) }
+        try { return await (await this.getCollection()).insertOne(pr) }
         catch (e) { console.error(e); return false }
     }
 
     async getById(id: string): Promise<ProductReview | null | undefined> {
-        try { return await this.collection.findOne({ _id: ObjectId.createFromHexString(id) }) }
+        try { return await (await this.getCollection()).findOne({ _id: ObjectId.createFromHexString(id) }) }
         catch (e) { console.error(e); return undefined }
     }
 
     async updateById(id: string, order: ProductReviewUpdate): Promise<UpdateResult | false> {
-        try { return await this.collection.updateOne({ _id: ObjectId.createFromHexString(id) }, { $set: { ...order, updatedAt: DateTime.utc().toUnixInteger() } }) }
+        try { return await (await this.getCollection()).updateOne({ _id: ObjectId.createFromHexString(id) }, { $set: { ...order, updatedAt: DateTime.utc().toUnixInteger() } }) }
         catch (e) { console.error(e); return false }
     }
 
     async delete(id: string): Promise<DeleteResult | false> {
-        try { return await this.collection.deleteOne({ _id: ObjectId.createFromHexString(id) }) }
+        try { return await (await this.getCollection()).deleteOne({ _id: ObjectId.createFromHexString(id) }) }
         catch (e) { console.error(e); return false }
     }
 }

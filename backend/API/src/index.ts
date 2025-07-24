@@ -19,6 +19,11 @@ import prometheusClient from 'prom-client'
 import { runCronJobs } from "./cronJobs";
 import { ProductSaleRepository } from "./DB/Repositories/Products/ProductSaleRepository";
 import { MongoDB } from "./DB/mongodb";
+import { ProductPictureRepository } from "./DB/Repositories/Products/ProductPictureRepository";
+import { ProductStatisticsRepository } from "./DB/Repositories/Products/ProductStatisticsRepository";
+import { ProductViewRepository } from "./DB/Repositories/Products/ProductViewRepository";
+import { UserRepository } from "./DB/Repositories/UserRepository";
+import { RoleRepository } from "./DB/Repositories/RoleRepository";
 
 console.log('running...');
 
@@ -74,29 +79,31 @@ export const queueManagement = new QueueManagement(messageBrokerUrl, messageBrok
 
 (async () => {
     await tryAndWait(async () => {
+        MongoDB.config = dbConfig
+
+        const db = MongoDB.getDbInstance()
+
+        await db.reset();
+
+        db.addRepository(new CategoryRepository())
+        db.addRepository(new TagRepository())
+        db.addRepository(new ProductRepository())
+        db.addRepository(new OrderRepository())
+        db.addRepository(new ProductReviewsRepository())
+        db.addRepository(new ProductSaleRepository())
+        db.addRepository(new ProductViewRepository())
+        db.addRepository(new ProductPictureRepository())
+        db.addRepository(new ProductStatisticsRepository())
+        db.addRepository(new UserRepository())
+        db.addRepository(new RoleRepository())
+
         if (!isProduction)
             await MongoDB.getDbInstance().dropAllCollections()
 
-        await MongoDB.getDbInstance().initializeDb();
+        await db.createCollections()
 
-        if (isProduction !== true) {
-            console.time('seed')
-
-            try {
-                await CategoryRepository.seed(50)
-                await TagRepository.seed(150)
-                await ProductRepository.seed(800)
-                await ProductReviewsRepository.seed()
-                await OrderRepository.seed(50)
-
-                await ProductSaleRepository.seed()
-
-                console.timeEnd('seed')
-            } catch (e) {
-                console.timeEnd('seed')
-                throw e
-            }
-        }
+        if (!isProduction)
+            await db.seedCollections()
     })
 
     await tryAndWait(async () => await queueManagement.subscribeConsumers(messageBrokerUrl))
