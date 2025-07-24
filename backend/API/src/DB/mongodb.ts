@@ -1,16 +1,6 @@
-import { ClientSession, Collection, Db, GridFSBucket, MongoClient } from 'mongodb'
+import { ClientSession, Db, MongoClient } from 'mongodb'
 import { DbConfigurationError } from './Exceptions/DbConfigurationError'
 import { ConnectionError } from './Exceptions/ConnectionError'
-import { User, collectionName as userCollectionName } from './Models/User'
-import { RoleCreate, collectionName as roleCollectionName } from './Models/Role'
-import { CategoryCreate, collectionName as categoryCollectionName } from './Models/Category'
-import { OrderCreate, collectionName as orderCollectionName } from './Models/Order'
-import { ProductCreate, collectionName as productCollectionName } from './Models/Products/Product'
-import { ProductSaleCreate, collectionName as productSaleCollectionName } from './Models/Products/ProductSale'
-import { ProductStatisticsCreate, collectionName as productStatisticsCollectionName } from './Models/Products/ProductStatistics'
-import { ProductReviewCreate, collectionName as productReviewCollectionName } from './Models/Products/ProductReview'
-import { ProductViewCreate, collectionName as productViewCollectionName } from './Models/Products/ProductView'
-import { collectionName as productPictureCollectionName } from './Models/Products/ProductPicture'
 import { IRepository } from './IRepository'
 import { UserRepository } from './Repositories/UserRepository'
 import { RoleRepository } from './Repositories/RoleRepository'
@@ -60,7 +50,7 @@ export class MongoDB {
     // For transactions between more than one collection, make sure same instance of MongoDB class is passed to getInstance static method of repository classes
     protected session: ClientSession | undefined = undefined
 
-    async startTransaction(): Promise<void> {
+    async startTransaction(): Promise<ClientSession | undefined> {
         const funcName = 'startTransaction'
 
         console.log(funcName, 'called')
@@ -74,6 +64,8 @@ export class MongoDB {
         this.session = (await MongoDB.getClient()).startSession()
 
         this.session.startTransaction()
+
+        return this.session
     }
 
     async abortTransaction(): Promise<void> {
