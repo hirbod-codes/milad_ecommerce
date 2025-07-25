@@ -4,6 +4,7 @@ import { Tag, TagCreate, TagImmutable, TagInput, TagUpdate, collectionName, sche
 import { MongoDB } from '../mongodb';
 import { faker, fakerFA } from '@faker-js/faker/';
 import { IRepository } from '../IRepository';
+import { v4 as uuid } from 'uuid';
 
 export class TagRepository implements IRepository {
     private session: ClientSession | undefined = undefined
@@ -32,7 +33,7 @@ export class TagRepository implements IRepository {
             await db.createIndex(collectionName, { updatedAt: -1 }, { name: 'updatedAt' })
     }
 
-    async getCollection(): Promise<Collection<TagCreate>> {
+    private async getCollection(): Promise<Collection<TagCreate>> {
         return (await MongoDB.getDb()).collection<TagCreate>(collectionName)
     }
 
@@ -48,17 +49,16 @@ export class TagRepository implements IRepository {
         try {
             const collection = await this.getCollection()
 
-            if (!(await collection.deleteMany()).acknowledged)
-                throw new Error('seeding tags failed!')
+            if ((await collection.countDocuments()) !== 0) {
+                console.warn(`${collectionName} collection is not empty!`)
+                return
+            }
 
             if (count === undefined)
-                count = 100
+                count = 150
 
             const startTimeTS = DateTime.utc().minus({ years: 2 }).toUnixInteger()
             const endTimeTS = DateTime.utc().minus({ months: 2 }).toUnixInteger()
-
-            const names = faker.helpers.uniqueArray(faker.definitions.person.first_name.generic!, count)
-            const faNames = fakerFA.helpers.uniqueArray(fakerFA.definitions.person.first_name.generic!, count)
 
             const promises = []
 
@@ -70,12 +70,13 @@ export class TagRepository implements IRepository {
                             safety++
                             try {
                                 const ts = faker.number.int({ min: startTimeTS, max: endTimeTS })
-
+                                const name = faker.person.firstName() + uuid()
+                                const faName = fakerFA.person.firstName() + uuid()
 
                                 let r = await collection.insertOne({
                                     schemaVersion,
-                                    name: names[i],
-                                    displayName: { fa: faNames[i], en: names[i] },
+                                    name: name,
+                                    displayName: { fa: faName, en: name },
                                     views: faker.number.int({ min: 0, max: 100000 }),
                                     createdAt: ts,
                                     updatedAt: ts,

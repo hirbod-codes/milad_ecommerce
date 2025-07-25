@@ -4,6 +4,7 @@ import { ConnectionError } from './Exceptions/ConnectionError'
 import { IRepository } from './IRepository'
 import { UserRepository } from './Repositories/UserRepository'
 import { RoleRepository } from './Repositories/RoleRepository'
+import { tryAndWait } from '../helpers'
 
 export type MongodbConfig = {
     supportsTransaction: boolean;
@@ -196,7 +197,25 @@ export class MongoDB {
     }
 
     async seedCollections() {
-        for (const repository of this.repositories)
-            repository.seed()
+        console.time('seeding...')
+
+        try {
+            let safety = 0
+            while (safety < 10_000) {
+                safety++
+
+                let failed = false
+                for (const repository of this.repositories)
+                    try { await repository.seed() }
+                    catch (e) { failed = true; console.error(e) }
+
+                if (!failed)
+                    break
+            }
+        } catch (e) {
+            console.error(e)
+            throw e
+        } finally { console.timeEnd('seed') }
+
     }
 }

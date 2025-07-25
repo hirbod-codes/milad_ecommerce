@@ -28,7 +28,7 @@ export class ProductPictureRepository implements IRepository {
             await db.createIndex(collectionName, { updatedAt: -1 }, { name: 'updatedAt' })
     }
 
-    async getCollection(): Promise<GridFSBucket> {
+    private async getCollection(): Promise<GridFSBucket> {
         return new GridFSBucket(await MongoDB.getDb(), { bucketName: collectionName });
     }
 

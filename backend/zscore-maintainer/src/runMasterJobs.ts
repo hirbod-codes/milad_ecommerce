@@ -22,11 +22,11 @@ export function runMasterJobs() {
 
             try {
                 const zScoreMaintainerOptionsRepository = await ZScoreMaintainerOptionsRepository.getInstance()
-                const productSaleRepository = await ProductSaleRepository.getInstance()
+                const productSaleRepository = new ProductSaleRepository()
 
                 // Validation
                 const options = await getOptions(zScoreMaintainerOptionsRepository)
-                if (!options){
+                if (!options) {
                     console.warn('Options not found!')
                     return
                 }
@@ -90,11 +90,11 @@ export function runMasterJobs() {
 
             try {
                 const zScoreMaintainerOptionsRepository = await ZScoreMaintainerOptionsRepository.getInstance()
-                const productViewRepository = await ProductViewRepository.getInstance()
+                const productViewRepository = new ProductViewRepository()
 
                 // Validation
                 const options = await getOptions(zScoreMaintainerOptionsRepository)
-                if (!options){
+                if (!options) {
                     console.warn('Options not found!')
                     return
                 }
@@ -196,7 +196,7 @@ async function findFailedIndexes(options: ZScoreMaintainerOptions, promises: Pro
                     createdAt: DateTime.utc().toUnixInteger(),
                 }
 
-                const db = await MongoDB.getDbInstance().getDb()
+                const db = await MongoDB.getDb()
                 const result = await db.collection(failedProductSaleRangeCollectionName).insertOne(failedProductSale as any)
 
                 if (!result.acknowledged)

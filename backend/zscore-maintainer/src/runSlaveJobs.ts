@@ -27,9 +27,9 @@ export async function runSlaveJobs(masterHost: string, masterPort: number, host:
 export async function handleRange(range: { min: string, max: string }, count: number, inclusive: boolean) {
     try {
         const mongodb = MongoDB.getDbInstance()
-        const productRepository = await ProductRepository.getInstance(mongodb)
-        const productSaleRepository = await ProductSaleRepository.getInstance(mongodb)
-        const productStatisticsRepository = await ProductStatisticsRepository.getInstance(mongodb)
+        const productRepository = new ProductRepository()
+        const productSaleRepository = new ProductSaleRepository()
+        const productStatisticsRepository = new ProductStatisticsRepository()
 
         let i = 0, fetchedProductSales = []
         const limit = 500_000

@@ -47,7 +47,7 @@ export class ProductStatisticsRepository implements IRepository {
             await db.createIndex(collectionName, { zScore: -1 }, { name: 'zScore' })
     }
 
-    async getCollection(): Promise<Collection<ProductStatisticsCreate>> {
+    private async getCollection(): Promise<Collection<ProductStatisticsCreate>> {
         return (await MongoDB.getDb()).collection<ProductStatisticsCreate>(collectionName)
     }
 

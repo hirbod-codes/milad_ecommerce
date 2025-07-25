@@ -33,7 +33,7 @@ export class RoleRepository implements IRepository {
             await db.createIndex(collectionName, { updatedAt: -1 }, { name: 'updatedAt' })
     }
 
-    async getCollection(): Promise<Collection<RoleCreate>> {
+    private async getCollection(): Promise<Collection<RoleCreate>> {
         return (await MongoDB.getDb()).collection<RoleCreate>(collectionName)
     }
 
@@ -43,7 +43,20 @@ export class RoleRepository implements IRepository {
     }
 
     async seed(count?: number): Promise<void> {
-        throw new Error('Method not implemented.')
+        console.log('RoleRepository.seed()')
+        console.time()
+
+        try {
+            const collection = await this.getCollection()
+
+            if ((await collection.countDocuments()) !== 0) {
+                console.warn(`${collectionName} collection is not empty!`)
+                return
+            }
+
+            // handled by the Authorization service
+            throw new Error("Method not implemented.");
+        } finally { console.timeEnd() }
     }
 
     async getRolesWithPrivileges(): Promise<RoleWithPrivileges[] | false> {

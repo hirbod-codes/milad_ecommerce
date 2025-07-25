@@ -36,12 +36,25 @@ export class UserRepository implements IRepository {
             await db.createIndex(collectionName, { updatedAt: -1 }, { name: 'updatedAt' })
     }
 
-    async getCollection(): Promise<Collection<User>> {
+    private async getCollection(): Promise<Collection<User>> {
         return (await MongoDB.getDb()).collection<User>(collectionName)
     }
 
     async seed(count?: number): Promise<void> {
-        throw new Error("Method not implemented.");
+        console.log('UserRepository.seed()')
+        console.time()
+
+        try {
+            const collection = await this.getCollection()
+
+            if ((await collection.countDocuments()) !== 0) {
+                console.warn(`${collectionName} collection is not empty!`)
+                return
+            }
+
+            // handled by the Authorization service
+            throw new Error("Method not implemented.");
+        } finally { console.timeEnd() }
     }
 
     async dropCollection(db: Db): Promise<void> {

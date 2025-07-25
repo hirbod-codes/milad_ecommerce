@@ -33,7 +33,7 @@ export class ProductSaleRepository implements IRepository {
             await db.createIndex(collectionName, { 'metadata.quantity': 1 }, { name: 'quantity' })
     }
 
-    async getCollection(): Promise<Collection<ProductSaleCreate>> {
+    private async getCollection(): Promise<Collection<ProductSaleCreate>> {
         return (await MongoDB.getDb()).collection<ProductSaleCreate>(collectionName)
     }
 
@@ -50,8 +50,10 @@ export class ProductSaleRepository implements IRepository {
             const collection = await this.getCollection()
             const orderCollection = (await MongoDB.getDb()).collection<OrderCreate>(orderCollectionName)
 
-            if (!(await collection.deleteMany()).acknowledged)
-                throw new Error('seeding product sales failed!')
+            if ((await collection.countDocuments()) !== 0) {
+                console.warn(`${collectionName} collection is not empty!`)
+                return
+            }
 
             const orders = await orderCollection.find({ isPayed: true }).toArray()
 

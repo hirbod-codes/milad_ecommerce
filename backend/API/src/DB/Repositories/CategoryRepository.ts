@@ -4,6 +4,7 @@ import { Category, CategoryCreate, CategoryImmutable, CategoryInput, CategoryUpd
 import { MongoDB } from '../mongodb';
 import { faker, fakerFA } from "@faker-js/faker"
 import { IRepository } from '../IRepository';
+import { v4 as uuid } from 'uuid';
 
 export class CategoryRepository implements IRepository {
     private session: ClientSession | undefined = undefined
@@ -32,7 +33,7 @@ export class CategoryRepository implements IRepository {
             await db.createIndex(collectionName, { updatedAt: -1 }, { name: 'updatedAt' })
     }
 
-    async getCollection(): Promise<Collection<CategoryCreate>> {
+    private async getCollection(): Promise<Collection<CategoryCreate>> {
         return (await MongoDB.getDb()).collection<CategoryCreate>(collectionName)
     }
 
@@ -48,8 +49,10 @@ export class CategoryRepository implements IRepository {
         try {
             const collection = await this.getCollection()
 
-            if (!(await collection.deleteMany()).acknowledged)
-                throw new Error('seeding categories failed!')
+            if ((await collection.countDocuments()) !== 0) {
+                console.warn(`${collectionName} collection is not empty!`)
+                return
+            }
 
             if (count === undefined)
                 count = 50
@@ -58,9 +61,6 @@ export class CategoryRepository implements IRepository {
             const endTimeTS = DateTime.utc().minus({ months: 2 }).toUnixInteger()
 
             const localCategoryIds: string[] = []
-
-            const names = faker.helpers.uniqueArray(faker.definitions.person.first_name.generic!, count)
-            const faNames = fakerFA.helpers.uniqueArray(fakerFA.definitions.person.first_name.generic!, count)
 
             const promises = []
 
@@ -72,14 +72,15 @@ export class CategoryRepository implements IRepository {
                             safety++
                             try {
                                 const ts = faker.number.int({ min: startTimeTS, max: endTimeTS })
+                                const name = faker.person.firstName() + uuid()
+                                const faName = fakerFA.person.firstName() + uuid()
 
-                                const name = names[i]
                                 const parentCategory = i === 0 || faker.datatype.boolean(0.3) ? undefined : faker.helpers.arrayElement(localCategoryIds)
 
                                 let r = await collection.insertOne({
                                     schemaVersion,
                                     name,
-                                    displayName: { fa: faNames[i], en: name },
+                                    displayName: { fa: faName, en: name },
                                     parentCategory,
                                     recommendedProductProperties: new Array(faker.number.int({ min: 1, max: 15 })).fill(null).map(() => {
                                         const key = faker.string.alpha({ length: { min: 3, max: 20 } })

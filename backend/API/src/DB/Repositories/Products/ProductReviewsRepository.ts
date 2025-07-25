@@ -34,7 +34,7 @@ export class ProductReviewsRepository implements IRepository {
             await db.createIndex(collectionName, { updatedAt: -1 }, { name: 'updatedAt' })
     }
 
-    async getCollection(): Promise<Collection<ProductReviewCreate>> {
+    private async getCollection(): Promise<Collection<ProductReviewCreate>> {
         return (await MongoDB.getDb()).collection<ProductReviewCreate>(collectionName)
     }
 
@@ -52,16 +52,18 @@ export class ProductReviewsRepository implements IRepository {
             const productRepository = new ProductRepository()
             const userRepository = new UserRepository()
 
-            if (!(await collection.deleteMany()).acknowledged)
-                throw new Error('seeding users failed!')
+            if ((await collection.countDocuments()) !== 0) {
+                console.warn(`${collectionName} collection is not empty!`)
+                return
+            }
 
             const users = await userRepository.get()
             if (users.length === 0)
-                throw new Error('seeding users failed!')
+                throw new Error('No users!')
 
             const products = await productRepository.getAll()
             if (products.length === 0)
-                throw new Error('seeding users failed!')
+                throw new Error('No products!')
 
             const startTimeTS = DateTime.utc().minus({ years: 2 }).toUnixInteger()
             const endTimeTS = DateTime.utc().minus({ months: 2 }).toUnixInteger()

@@ -32,7 +32,7 @@ export class ProductViewRepository implements IRepository {
             await db.createIndex(collectionName, { 'metadata.quantity': 1 }, { name: 'quantity' })
     }
 
-    async getCollection(): Promise<Collection<ProductViewCreate>> {
+    private async getCollection(): Promise<Collection<ProductViewCreate>> {
         return (await MongoDB.getDb()).collection<ProductViewCreate>(collectionName)
     }
 

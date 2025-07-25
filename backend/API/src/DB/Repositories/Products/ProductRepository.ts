@@ -77,7 +77,7 @@ export class ProductRepository implements IRepository {
             await db.createIndex(collectionName, { updatedAt: -1 }, { name: 'updatedAt' })
     }
 
-    async getCollection(): Promise<Collection<ProductCreate>> {
+    private async getCollection(): Promise<Collection<ProductCreate>> {
         return (await MongoDB.getDb()).collection<ProductCreate>(collectionName)
     }
 
@@ -96,8 +96,10 @@ export class ProductRepository implements IRepository {
             const tagRepository = new TagRepository()
             const productPictureRepository = new ProductPictureRepository()
 
-            if (!(await collection.deleteMany()).acknowledged || !await productPictureRepository.deleteFiles())
-                throw new Error('seeding products failed!')
+            if ((await collection.countDocuments()) !== 0) {
+                console.warn(`${collectionName} collection is not empty!`)
+                return
+            }
 
             const startTimeTS = DateTime.utc().minus({ years: 2 }).toUnixInteger()
             const endTimeTS = DateTime.utc().minus({ years: 1 }).toUnixInteger()

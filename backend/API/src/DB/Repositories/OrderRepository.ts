@@ -31,7 +31,7 @@ export class OrderRepository implements IRepository {
             await db.createIndex(collectionName, { updatedAt: -1 }, { name: 'updatedAt' })
     }
 
-    async getCollection(): Promise<Collection<OrderCreate>> {
+    private async getCollection(): Promise<Collection<OrderCreate>> {
         return (await MongoDB.getDb()).collection<OrderCreate>(collectionName)
     }
 
@@ -49,8 +49,10 @@ export class OrderRepository implements IRepository {
             const productRepository = new ProductRepository()
             const userRepository = new UserRepository()
 
-            if (!(await collection.deleteMany()).acknowledged)
-                throw new Error('seeding orders failed!')
+            if ((await collection.countDocuments()) !== 0) {
+                console.warn(`${collectionName} collection is not empty!`)
+                return
+            }
 
             const users = await userRepository.get()
             if (users.length === 0)
@@ -61,7 +63,7 @@ export class OrderRepository implements IRepository {
                 throw new Error('no product!')
 
             if (count === undefined)
-                count = 100
+                count = 50
 
             const endTimeTS = DateTime.utc().minus({ months: 2 }).toUnixInteger()
 
