@@ -73,7 +73,7 @@ export class QueueManagement {
                                     safety++
 
                                     try {
-                                        const roleRepository = await RoleRepository.getInstance()
+                                        const roleRepository = new RoleRepository()
                                         if (await roleRepository.fetchRolesWithPrivileges() !== false)
                                             break
                                     } catch (e) { console.error(e) }
