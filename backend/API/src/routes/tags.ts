@@ -21,7 +21,7 @@ tags.post('/', authenticate, async (req, res) => {
             return
         }
 
-        const tagRepository = await TagRepository.getInstance()
+        const tagRepository = new TagRepository()
         const r = await tagRepository.create(tagInputSchema.cast(tag))
 
         if (r === false || r.acknowledged !== true)
@@ -36,7 +36,7 @@ tags.post('/', authenticate, async (req, res) => {
 
 tags.get('/', async (req, res) => {
     try {
-        const tagRepository = await TagRepository.getInstance()
+        const tagRepository = new TagRepository()
         const result = await tagRepository.get()
         if (result === false)
             res.sendStatus(500)
@@ -62,7 +62,7 @@ tags.patch('/', authenticate, async (req, res) => {
             return
         }
 
-        const tagRepository = await TagRepository.getInstance()
+        const tagRepository = new TagRepository()
         const result = await tagRepository.update(id, tagUpdateSchema.cast(tag))
 
         if (result === false || result.acknowledged !== true)
@@ -89,7 +89,7 @@ tags.patch('/immutables', authenticate, async (req, res) => {
             return
         }
 
-        const tagRepository = await TagRepository.getInstance()
+        const tagRepository = new TagRepository()
         const result = await tagRepository.updateImmutables(id, tagImmutableSchema.cast(tag))
 
         if (result === false || result.acknowledged !== true)
@@ -116,7 +116,7 @@ tags.delete('/', authenticate, async (req, res) => {
             return
         }
 
-        const tagRepository = await TagRepository.getInstance()
+        const tagRepository = new TagRepository()
         const result = await tagRepository.delete(id)
 
         if (result === false || result.acknowledged !== true)

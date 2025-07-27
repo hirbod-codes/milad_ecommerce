@@ -9,7 +9,6 @@ import Jwt from "jsonwebtoken";
 import { Filter, SortDirection } from "mongodb";
 import { OrderRepository } from "../DB/Repositories/OrderRepository";
 import { ProductRepository } from "../DB/Repositories/Products/ProductRepository";
-import { ProductStatisticsRepository } from "../DB/Repositories/Products/ProductStatisticsRepository";
 import { DateTime } from "luxon";
 import { ProductSaleRepository } from "../DB/Repositories/Products/ProductSaleRepository";
 import { MongoDB } from "../DB/mongodb";
@@ -38,14 +37,14 @@ order.post('/', authenticate, async (req, res) => {
 
         order = orderInputSchema.cast(order)
 
-        const productRepository = await ProductRepository.getInstance()
+        const productRepository = new ProductRepository()
         let cost: number | false = await productRepository.sumPriceOfAvailable(order.products, 'IRR')
         if (cost === false) {
             res.sendStatus(400)
             return
         }
 
-        const orderRepository = await OrderRepository.getInstance()
+        const orderRepository = new OrderRepository()
         const r = await orderRepository.create(userId, order, { IRR: cost })
         if (r === false || r.acknowledged !== true)
             res.sendStatus(500)
@@ -128,7 +127,7 @@ order.get('/', authenticate, async (req, res) => {
             }
         }
 
-        const orderRepository = await OrderRepository.getInstance()
+        const orderRepository = new OrderRepository()
         const orders = await orderRepository.get(limit, skip, filter, sort, userId)
         if (orders === false)
             res.sendStatus(500)
@@ -142,27 +141,27 @@ order.get('/', authenticate, async (req, res) => {
 
 // add order record to productSale collection
 order.patch('/payed', authenticate, async (req, res) => {
-    let userId = (Jwt.decode(req.headers['authorization']!.replace('Bearer ', '')!) as Jwt.JwtPayload)?.sub ?? ''
-    if (!stringObjectId.required().isValidSync(userId)) {
-        res.sendStatus(403)
-        return
-    }
-
-    const { orderId }: { orderId: string } = req.body
-
-    let order: Order = undefined!
-
-    // payment logic
-
-    const mongodb = MongoDB.getDbInstance()
-
     try {
+        let userId = (Jwt.decode(req.headers['authorization']!.replace('Bearer ', '')!) as Jwt.JwtPayload)?.sub ?? ''
+        if (!stringObjectId.required().isValidSync(userId)) {
+            res.sendStatus(403)
+            return
+        }
+
+        const { orderId }: { orderId: string } = req.body
+
+        let order: Order = undefined!
+
+        // payment logic
+
+        const mongodb = MongoDB.getDbInstance()
+        const orderRepository = new OrderRepository()
+        const productSaleRepository = new ProductSaleRepository()
+
         if (!stringObjectId.required().isValidSync(orderId)) {
             res.sendStatus(400)
             return
         }
-
-        const orderRepository = await OrderRepository.getInstance(mongodb)
 
         let o = await orderRepository.getById(orderId)
         if (!o) {
@@ -171,38 +170,46 @@ order.patch('/payed', authenticate, async (req, res) => {
         }
         order = o
 
-        await mongodb.startTransaction()
+        try {
+            const session = await mongodb.startTransaction()
+            if (session === undefined)
+                throw new Error('Transaction session initialization failed!')
 
-        const r = await orderRepository.payed(o._id)
-        if (r === false || !r.acknowledged) {
+            orderRepository.setTransactionSession(session)
+            productSaleRepository.setTransactionSession(session)
+
+            const r = await orderRepository.payed(o._id)
+            if (r === false || !r.acknowledged) {
+                res.sendStatus(500)
+                await mongodb.abortTransaction()
+                return
+            }
+
+            res.sendStatus(200)
+        } catch (e) {
+            console.error(e)
             res.sendStatus(500)
             await mongodb.abortTransaction()
             return
         }
 
-        res.sendStatus(200)
+        try {
+            // add to ProductSale collection
+            const creations = await Promise.all(order.products.map(async ({ productId, quantity }) => {
+                return productSaleRepository.create({ metadata: { productId, quantity, userId } }, DateTime.utc().toUnixInteger());
+            }))
+            for (const c of creations)
+                if (c === false || !c.acknowledged)
+                    throw new Error('')
+
+            await mongodb.commitTransaction()
+        } catch (e) {
+            console.error(e)
+            await mongodb.abortTransaction()
+        }
     } catch (e) {
         console.error(e)
         res.sendStatus(500)
-        await mongodb.abortTransaction()
-        return
-    }
-
-    try {
-        const productSaleRepository = await ProductSaleRepository.getInstance(mongodb)
-
-        // add to ProductSale collection
-        const creations = await Promise.all(order.products.map(async ({ productId, quantity }) => {
-            return productSaleRepository.create({ metadata: { productId, quantity, userId } }, DateTime.utc().toUnixInteger());
-        }))
-        for (const c of creations)
-            if (c === false || !c.acknowledged)
-                throw new Error('')
-
-        await mongodb.commitTransaction()
-    } catch (e) {
-        console.error(e)
-        await mongodb.abortTransaction()
     }
 })
 
@@ -226,7 +233,7 @@ order.patch('/', authenticate, async (req, res) => {
             return
         }
 
-        const orderRepository = await OrderRepository.getInstance()
+        const orderRepository = new OrderRepository()
         const result = await orderRepository.updateForUser(userId, orderId, orderUpdateSchema.cast(order))
 
         if (result === false || result.acknowledged !== true)
@@ -259,7 +266,7 @@ order.patch('/immutables', authenticate, async (req, res) => {
             return
         }
 
-        const orderRepository = await OrderRepository.getInstance()
+        const orderRepository = new OrderRepository()
         const result = await orderRepository.updateImmutablesForUser(userId, orderId, orderImmutableSchema.cast(order))
 
         if (result === false || result.acknowledged !== true)
@@ -292,7 +299,7 @@ order.delete('/', authenticate, async (req, res) => {
             return
         }
 
-        const orderRepository = await OrderRepository.getInstance()
+        const orderRepository = new OrderRepository()
         const result = await orderRepository.deleteForUser(userId, orderId)
         if (result === false || result.acknowledged !== true)
             res.sendStatus(500)

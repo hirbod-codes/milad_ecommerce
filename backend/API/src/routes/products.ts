@@ -30,7 +30,7 @@ products.post('/', authenticate, async (req, res) => {
             return
         }
 
-        const productRepository = await ProductRepository.getInstance()
+        const productRepository = new ProductRepository()
         const r = await productRepository.create(productInputSchema.cast(product), DateTime.utc().toUnixInteger())
 
         if (r === false || r.acknowledged !== true)
@@ -58,7 +58,7 @@ products.get('/ids', async (req, res) => {
             return
         }
 
-        const productRepository = await ProductRepository.getInstance()
+        const productRepository = new ProductRepository()
         const r = await productRepository.getByIds(ids)
         if (!r)
             res.sendStatus(404)
@@ -79,7 +79,7 @@ products.get('/search', async (req, res) => {
             return
         }
 
-        const productRepository = await ProductRepository.getInstance()
+        const productRepository = new ProductRepository()
         const products = await productRepository.search(search)
         console.log('products', products)
         if (products === false)
@@ -143,7 +143,7 @@ products.get('/trending', async (req, res) => {
             return
         }
 
-        const productRepository = await ProductStatisticsRepository.getInstance()
+        const productRepository = new ProductStatisticsRepository()
         const products = await productRepository.getTrendingProducts(duration, categories, tags, skip, limit)
 
         if (products === false)
@@ -203,7 +203,7 @@ products.get('/topSelling', async (req, res) => {
             return
         }
 
-        const productRepository = await ProductStatisticsRepository.getInstance()
+        const productRepository = new ProductStatisticsRepository()
         const products = await productRepository.getTopSellingProducts(duration, categories, tags, skip, limit)
 
         if (products === false)
@@ -258,7 +258,7 @@ products.get('/mostViewed', async (req, res) => {
             return
         }
 
-        const productRepository = await ProductRepository.getInstance()
+        const productRepository = new ProductRepository()
         const products = await productRepository.getMostViewedProducts(categories, tags, skip, limit)
 
         if (products === false)
@@ -279,7 +279,7 @@ products.get('/picture/fileId', async (req, res) => {
             res.sendStatus(400)
             return
         }
-        const productPictureRepository = await ProductPictureRepository.getInstance()
+        const productPictureRepository = new ProductPictureRepository()
         const file = await productPictureRepository.getFile(fileId)
         if (file === undefined) {
             res.sendStatus(404)
@@ -288,7 +288,7 @@ products.get('/picture/fileId', async (req, res) => {
 
         res.setHeader('Content-Type', file?.metadata?.contentType)
 
-        const readstream = productPictureRepository.getReadStream(file._id);
+        const readstream = await productPictureRepository.getReadStream(file._id);
         console.log('readstream', readstream)
 
         readstream.pipe(res)
@@ -319,7 +319,7 @@ products.get('/pictures/productIds', async (req, res) => {
             return
         }
 
-        const productPictureRepository = await ProductPictureRepository.getInstance()
+        const productPictureRepository = new ProductPictureRepository()
         const files = await productPictureRepository.getFilesByProductId(ids)
 
         res.json(files)
@@ -343,7 +343,7 @@ products.get('/:id', async (req, res) => {
             return
         }
 
-        const productRepository = await ProductRepository.getInstance()
+        const productRepository = new ProductRepository()
         const product = await productRepository.getById(id)
         if (!product)
             res.sendStatus(404)
@@ -418,7 +418,7 @@ products.get('/', async (req, res) => {
             }
         }
 
-        const productRepository = await ProductRepository.getInstance()
+        const productRepository = new ProductRepository()
         const products = await productRepository.get(filter, sort, limit, skip)
         if (products === false)
             res.sendStatus(500)
@@ -486,7 +486,7 @@ products.post('/pictures/:productId', authenticate, async (req, res) => {
             });
         })
 
-        const productPictureRepository = await ProductPictureRepository.getInstance()
+        const productPictureRepository = new ProductPictureRepository()
 
         bb.on("finish", () => {
             if (files.length === 0)
@@ -495,7 +495,7 @@ products.post('/pictures/:productId', authenticate, async (req, res) => {
             const uploadedFiles: { filename: string, id: string }[] = [];
 
             files.forEach(async (file) => {
-                const writeStream = productPictureRepository.getWriteStream(file.filename, productId, file.mimeType)
+                const writeStream = await productPictureRepository.getWriteStream(file.filename, productId, file.mimeType)
 
                 writeStream.on("finish", () => {
                     uploadedFiles.push({ filename: file.filename, id: writeStream.id.toString() });
@@ -536,7 +536,7 @@ products.delete('/picture', async (req, res) => {
             return
         }
 
-        const productPictureRepository = await ProductPictureRepository.getInstance()
+        const productPictureRepository = new ProductPictureRepository()
         const file = await productPictureRepository.deleteFile(fileId)
         if (file === false) {
             res.sendStatus(404)
@@ -569,7 +569,7 @@ products.patch('/', authenticate, async (req, res) => {
             return
         }
 
-        const productRepository = await ProductRepository.getInstance()
+        const productRepository = new ProductRepository()
         const result = await productRepository.update(id, productUpdateSchema.cast(product))
 
         if (result === false || result.acknowledged !== true)
@@ -596,7 +596,7 @@ products.patch('/immutables', authenticate, async (req, res) => {
             return
         }
 
-        const productRepository = await ProductRepository.getInstance()
+        const productRepository = new ProductRepository()
         const result = await productRepository.updateImmutables(id, productImmutableSchema.cast(product))
 
         if (result === false || result.acknowledged !== true)
@@ -623,7 +623,7 @@ products.delete('/', authenticate, async (req, res) => {
             return
         }
 
-        const productRepository = await ProductRepository.getInstance()
+        const productRepository = new ProductRepository()
         const result = await productRepository.delete(id)
 
         if (result === false || result.acknowledged !== true)

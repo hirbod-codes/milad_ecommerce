@@ -22,7 +22,7 @@ categories.post('/', authenticate, async (req, res) => {
             return
         }
 
-        const categoryRepository = await CategoryRepository.getInstance()
+        const categoryRepository = new CategoryRepository()
         const r = await categoryRepository.create(categoryInputSchema.cast(category))
 
         if (r === false || r.acknowledged !== true)
@@ -44,7 +44,7 @@ categories.get('/:id', async (req, res) => {
             return
         }
 
-        const categoryRepository = await CategoryRepository.getInstance()
+        const categoryRepository = new CategoryRepository()
         const category = await categoryRepository.getById(id)
         if (!category)
             res.sendStatus(404)
@@ -58,7 +58,7 @@ categories.get('/:id', async (req, res) => {
 
 categories.get('/', async (req, res) => {
     try {
-        const categoryRepository = await CategoryRepository.getInstance()
+        const categoryRepository = new CategoryRepository()
         const result = await categoryRepository.get()
         if (result === false)
             res.sendStatus(500)
@@ -86,7 +86,7 @@ categories.patch('/', authenticate, async (req, res) => {
                 return
             }
 
-            const categoryRepository = await CategoryRepository.getInstance()
+            const categoryRepository = new CategoryRepository()
             result = await categoryRepository.addViews(id, addViews)
 
             if (result === false || result.acknowledged !== true)
@@ -97,7 +97,7 @@ categories.patch('/', authenticate, async (req, res) => {
                 return
             }
 
-            const categoryRepository = await CategoryRepository.getInstance()
+            const categoryRepository = new CategoryRepository()
             result = await categoryRepository.update(id, categoryUpdateSchema.pick(['recommendedProductProperties']).cast({ recommendedProductProperties }))
 
             if (result === false || result.acknowledged !== true)
@@ -125,7 +125,7 @@ categories.patch('/immutables', authenticate, async (req, res) => {
             return
         }
 
-        const categoryRepository = await CategoryRepository.getInstance()
+        const categoryRepository = new CategoryRepository()
         const result = await categoryRepository.updateImmutables(id, categoryImmutableSchema.cast(category))
 
         if (result === false || result.acknowledged !== true)
@@ -152,7 +152,7 @@ categories.delete('/', authenticate, async (req, res) => {
             return
         }
 
-        const categoryRepository = await CategoryRepository.getInstance()
+        const categoryRepository = new CategoryRepository()
         const result = await categoryRepository.delete(id)
 
         if (result === false || result.acknowledged !== true)

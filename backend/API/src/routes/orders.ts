@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { forbiddenFieldsToFilter, Order, orderImmutableSchema, orderInputSchema, orderSchema, orderUpdateSchema, readableFields } from "@/src/DB/Models/Order";
+import { forbiddenFieldsToFilter, Order, orderImmutableSchema, orderInputSchema, orderSchema, readableFields } from "@/src/DB/Models/Order";
 import { authenticate } from "@/src/middlewares/authenticate";
 import { authorize } from "@/src/middlewares/authorize";
 import { FilterManagement } from "@/src/DB/FilterManagement";
@@ -32,14 +32,14 @@ orders.post('/', authenticate, async (req, res) => {
 
         order = orderInputSchema.cast(order)
 
-        const productRepository = await ProductRepository.getInstance()
+        const productRepository = new ProductRepository()
         let cost: number | false = await productRepository.sumPriceOfAvailable(order.products, 'IRR')
         if (cost === false) {
             res.status(400).json({ errors: ['invalid product list'] })
             return
         }
 
-        const orderRepository = await OrderRepository.getInstance()
+        const orderRepository = new OrderRepository()
         const r = await orderRepository.create(userId, order, { IRR: cost })
         if (r === false || r.acknowledged !== true)
             res.sendStatus(500)
@@ -116,7 +116,7 @@ orders.get('/', authenticate, async (req, res) => {
             }
         }
 
-        const orderRepository = await OrderRepository.getInstance()
+        const orderRepository = new OrderRepository()
         const orders = await orderRepository.get(limit, skip, filter, sort, userId)
         if (orders === false)
             res.sendStatus(500)
@@ -142,7 +142,7 @@ orders.patch('/', authenticate, async (req, res) => {
             return
         }
 
-        const orderRepository = await OrderRepository.getInstance()
+        const orderRepository = new OrderRepository()
         const result = await orderRepository.update(orderId, orderImmutableSchema.cast(order))
 
         if (result === false || result.acknowledged !== true)
@@ -169,7 +169,7 @@ orders.patch('/immutables', authenticate, async (req, res) => {
             return
         }
 
-        const orderRepository = await OrderRepository.getInstance()
+        const orderRepository = new OrderRepository()
         const result = await orderRepository.updateImmutables(orderId, orderImmutableSchema.cast(order))
 
         if (result === false || result.acknowledged !== true)
@@ -196,7 +196,7 @@ orders.delete('/', authenticate, async (req, res) => {
             return
         }
 
-        const orderRepository = await OrderRepository.getInstance()
+        const orderRepository = new OrderRepository()
         const result = await orderRepository.delete(orderId)
 
         if (result === false || result.acknowledged !== true)

@@ -16,7 +16,6 @@ import { QueueManagement } from "./QueueManagement";
 import { RevokedAccessTokenManager } from "./RevokedAccessTokens/RevokedAccessTokenManager";
 import { SessionManager } from "./Session/SessionManager";
 import prometheusClient from 'prom-client'
-import { runCronJobs } from "./cronJobs";
 import { ProductSaleRepository } from "./DB/Repositories/Products/ProductSaleRepository";
 import { MongoDB } from "./DB/mongodb";
 import { ProductPictureRepository } from "./DB/Repositories/Products/ProductPictureRepository";
@@ -161,6 +160,4 @@ export const queueManagement = new QueueManagement(messageBrokerUrl, messageBrok
     })
 
     app.listen(hostPort, hostName, () => console.log(`listening on ${hostName}:${hostPort}...`))
-
-    runCronJobs()
 })()
