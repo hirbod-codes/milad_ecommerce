@@ -1,5 +1,5 @@
 {
-    "name": "authorization",
+    "name": "@monorepo/authorization",
     "version": "0.0.0",
     "author": "",
     "license": "ISC",
@@ -15,6 +15,8 @@
         "@faker-js": "./node_modules/@faker-js"
     },
     "dependencies": {
+        "@monorepo/mongodb": "^1.0.0",
+        "@monorepo/utils": "^1.0.0",
         "amqplib": "^0.10.5",
         "busboy": "^1.6.0",
         "cookie-parser": "^1.4.7",

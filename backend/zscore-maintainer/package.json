@@ -1,5 +1,5 @@
 {
-    "name": "api",
+    "name": "@monorepo/zscore-maintainer",
     "version": "0.0.0",
     "author": "",
     "license": "ISC",
@@ -14,6 +14,8 @@
         "@/src": "./dist"
     },
     "dependencies": {
+        "@monorepo/mongodb": "^1.0.0",
+        "@monorepo/utils": "^1.0.0",
         "dotenv": "^16.4.7",
         "express": "^4.21.2",
         "luxon": "^3.5.0",
@@ -28,7 +30,7 @@
         "@types/luxon": "^3.4.2",
         "@types/module-alias": "^2.0.4",
         "@types/mongodb": "^4.0.7",
-        "@types/node": "^22.13.8",
+        "@types/node": "^24.1.0",
         "@types/node-cron": "^3.0.11",
         "@types/yup": "^0.32.0",
         "concurrently": "^9.1.2",

@@ -1,12 +1,11 @@
 import { DateTime } from "luxon";
-import { ClientSession, Collection, Db, DeleteResult, InsertManyResult, MongoClient, ObjectId, UpdateResult } from 'mongodb'
-import { MongoDB } from "../../mongodb";
+import { ClientSession, Collection, Db, DeleteResult, InsertManyResult, ObjectId, UpdateResult } from 'mongodb'
 import { schemaVersion } from "../../Models/Products/ProductSale";
 import { collectionName, ProductStatistics, ProductStatisticsCreate, ProductStatisticsInput } from "../../Models/Products/ProductStatistics";
 import { collectionName as productCollectionName } from "../../Models/Products/Product";
 import { Product, ProductCreate, ProductImmutable, ProductUpdate } from "../../Models/Products/Product";
 import { number } from "yup";
-import { IRepository } from "../../IRepository";
+import { IRepository, MongoDB } from '@monorepo/mongodb'
 
 export class ProductStatisticsRepository implements IRepository {
     private session: ClientSession | undefined = undefined

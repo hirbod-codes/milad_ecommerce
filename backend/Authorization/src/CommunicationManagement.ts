@@ -43,17 +43,17 @@ export class CommunicationManagement {
     static async notify(mode: 'email', notificationOptions: { content: string, to: string, subject: string }): Promise<void>
     static async notify(mode: 'sms', notificationOptions: { content: string, to: string }): Promise<void>
     static async notify(mode: 'email' | 'sms', notificationOptions: { content: string, to: string, subject?: string }): Promise<void> {
-        try {
-            if (mode === 'email' && notificationOptions.subject)
-                await this.sendEmail(notificationOptions.content, notificationOptions.subject!, notificationOptions.to)
-            else if (mode === 'sms')
-                await this.sendSms(notificationOptions.content, notificationOptions.to)
-            else
-                throw new Error('Unsupported communication mode requested')
-        } catch (e) {
-            console.error(e)
-            throw new Error('system failed to notify user')
-        }
+        // try {
+        //     if (mode === 'email' && notificationOptions.subject)
+        //         await this.sendEmail(notificationOptions.content, notificationOptions.subject!, notificationOptions.to)
+        //     else if (mode === 'sms')
+        //         await this.sendSms(notificationOptions.content, notificationOptions.to)
+        //     else
+        //         throw new Error('Unsupported communication mode requested')
+        // } catch (e) {
+        //     console.error(e)
+        //     throw new Error('system failed to notify user')
+        // }
     }
 
     static async notifyAndRemember(mode: 'email', notificationOptions: { content: string, to: string, subject: string }, sessionOptions: { content: string | object, identifier: string, expiresAfterSeconds: number }): Promise<string>

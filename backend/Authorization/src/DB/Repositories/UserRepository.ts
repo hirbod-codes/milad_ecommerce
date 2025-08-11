@@ -1,25 +1,60 @@
 import { DateTime } from "luxon";
-import { schemaVersion, User, UserCreate, UserImmutable, UserInput, UserUpdate } from "../Models/User";
-import { Collection, DeleteResult, Filter, InsertOneResult, MongoSystemError, ObjectId, SortDirection, UpdateResult } from 'mongodb'
+import { collectionName, schemaVersion, User, UserCreate, UserImmutable, UserInput, UserUpdate } from "../Models/User";
+import { ClientSession, Collection, Db, DeleteResult, Filter, InsertOneResult, MongoSystemError, ObjectId, SortDirection, UpdateResult } from 'mongodb'
 import crypto from "crypto";
-import { MongoDB } from '../mongodb'
 import { faker } from "@faker-js/faker"
 import { RoleRepository } from "./RoleRepository";
+import { MongoDB, IRepository } from "@monorepo/mongodb";
 
-export class UserRepository {
-    private collection: Collection<UserCreate>
+export class UserRepository implements IRepository {
+    private session: ClientSession | undefined = undefined
 
-    constructor(collection: Collection<UserCreate>) {
-        this.collection = collection
+    setTransactionSession(session?: ClientSession): void {
+        this.session = session
+    }
+
+    unsetTransactionSession(): void {
+        this.session = undefined
+    }
+
+    async addCollection(db: Db): Promise<void> {
+        if (!(await db.listCollections().toArray()).map(e => e.name).includes(collectionName))
+            await db.createCollection(collectionName)
+
+        const indexes = await db.collection(collectionName).indexes()
+
+        if (indexes.find(i => i.name === 'unique-username') === undefined)
+            await db.createIndex(collectionName, { username: 1 }, { unique: true, name: 'unique-username' })
+
+        if (indexes.find(i => i.name === 'unique-email') === undefined)
+            await db.createIndex(collectionName, { email: 1 }, { sparse: true, unique: true, name: 'email' })
+
+        if (indexes.find(i => i.name === 'unique-phoneNumber') === undefined)
+            await db.createIndex(collectionName, { phoneNumber: 1 }, { sparse: true, unique: true, name: 'phoneNumber' })
+
+        if (indexes.find(i => i.name === 'createdAt') === undefined)
+            await db.createIndex(collectionName, { createdAt: 1 }, { name: 'createdAt' })
+
+        if (indexes.find(i => i.name === 'updatedAt') === undefined)
+            await db.createIndex(collectionName, { updatedAt: 1 }, { name: 'updatedAt' })
+    }
+
+    async dropCollection(db: Db): Promise<void> {
+        if ((await db.listCollections().toArray()).map(e => e.name).includes(collectionName))
+            await db.dropCollection(collectionName)
+    }
+
+    private async getCollection(): Promise<Collection<UserCreate>> {
+        return (await MongoDB.getDb()).collection<UserCreate>(collectionName)
     }
 
     static async getInstance(): Promise<UserRepository> {
-        return new UserRepository(await MongoDB.getDbInstance().getUserCollection())
+        return new UserRepository()
     }
 
     static async initialize(adminUsername: string, adminPhoneNumber: string, adminEmail: string, adminPassword: string) {
         console.log('adminPassword', adminPassword)
-        const collection = await MongoDB.getDbInstance().getUserCollection()
+        const collection = (await MongoDB.getDb()).collection<UserCreate>(collectionName)
 
         if (await collection.estimatedDocumentCount() === 0) {
             let nowTS = DateTime.utc().toUnixInteger()
@@ -53,8 +88,8 @@ export class UserRepository {
         }
     }
 
-    static async seed(count: number = 50) {
-        const collection = await MongoDB.getDbInstance().getUserCollection()
+    async seed(count: number = 50) {
+        const collection = (await MongoDB.getDb()).collection<UserCreate>(collectionName)
         const roleRepository = await RoleRepository.getInstance()
 
         if (!(await collection.deleteMany({ role: { $ne: 'admin' } })).acknowledged)
@@ -128,23 +163,23 @@ export class UserRepository {
             createdAt: ts,
             updatedAt: ts,
         }
-        try { return await this.collection.insertOne(u) }
+        try { return await (await this.getCollection()).insertOne(u) }
         catch (e) { console.error(e); return false }
     }
 
     async getById(id: string): Promise<User | null | undefined> {
-        try { return await this.collection.findOne({ _id: ObjectId.createFromHexString(id) }) }
+        try { return await (await this.getCollection()).findOne({ _id: ObjectId.createFromHexString(id) }) }
         catch (e) { console.error(e); return undefined }
     }
 
     async getByIds(ids: (string | ObjectId)[]): Promise<User[] | undefined> {
-        try { return await this.collection.find({ _id: { $in: ids.map(id => typeof id === 'string' ? ObjectId.createFromHexString(id) : id) } }).toArray() }
+        try { return await (await this.getCollection()).find({ _id: { $in: ids.map(id => typeof id === 'string' ? ObjectId.createFromHexString(id) : id) } }).toArray() }
         catch (e) { console.error(e); return undefined }
     }
 
     async get(filter: Filter<User>, sorts: { field: keyof User, direction: SortDirection }[], limit: number, skip: number): Promise<User[] | false> {
         try {
-            let cursor = this.collection.find(filter)
+            let cursor = (await this.getCollection()).find(filter)
 
             sorts.forEach(sort => cursor.sort(sort.field, sort.direction))
 
@@ -154,57 +189,57 @@ export class UserRepository {
     }
 
     async getUserByEmail(email: string): Promise<User | null | undefined> {
-        try { return await this.collection.findOne({ email }) }
+        try { return await (await this.getCollection()).findOne({ email }) }
         catch (e) { console.error(e); return undefined }
     }
 
     async getUserByPhoneNumber(phoneNumber: string): Promise<User | null | undefined> {
-        try { return await this.collection.findOne({ phoneNumber }) }
+        try { return await (await this.getCollection()).findOne({ phoneNumber }) }
         catch (e) { console.error(e); return undefined }
     }
 
     async usernameExists(username: string): Promise<boolean> {
-        try { return await this.collection.countDocuments({ username }) > 0 }
+        try { return await (await this.getCollection()).countDocuments({ username }) > 0 }
         catch (e) { console.error(e); return false }
     }
 
     async phoneNumberExists(phoneNumber: string): Promise<boolean> {
-        try { return await this.collection.countDocuments({ phoneNumber }) > 0 }
+        try { return await (await this.getCollection()).countDocuments({ phoneNumber }) > 0 }
         catch (e) { console.error(e); return false }
     }
 
     async emailExists(email: string): Promise<boolean> {
-        try { return await this.collection.countDocuments({ email }) > 0 }
+        try { return await (await this.getCollection()).countDocuments({ email }) > 0 }
         catch (e) { console.error(e); return false }
     }
 
     async updateRole(id: string, role: string): Promise<UpdateResult | false> {
-        try { return await this.collection.updateOne({ _id: ObjectId.createFromHexString(id) }, { $set: { role, updateAt: DateTime.utc().toUnixInteger() } }) }
+        try { return await (await this.getCollection()).updateOne({ _id: ObjectId.createFromHexString(id) }, { $set: { role, updateAt: DateTime.utc().toUnixInteger() } }) }
         catch (e) { console.error(e); return false }
     }
 
     async update(id: string, user: UserUpdate): Promise<UpdateResult | false> {
-        try { return await this.collection.updateOne({ _id: ObjectId.createFromHexString(id) }, { $set: { ...user, updateAt: DateTime.utc().toUnixInteger() } }) }
+        try { return await (await this.getCollection()).updateOne({ _id: ObjectId.createFromHexString(id) }, { $set: { ...user, updateAt: DateTime.utc().toUnixInteger() } }) }
         catch (e) { console.error(e); return false }
     }
 
     async updateImmutable(id: string, user: UserImmutable): Promise<UpdateResult | false> {
-        try { return await this.collection.updateOne({ _id: ObjectId.createFromHexString(id) }, { $set: { ...user, updateAt: DateTime.utc().toUnixInteger() } }) }
+        try { return await (await this.getCollection()).updateOne({ _id: ObjectId.createFromHexString(id) }, { $set: { ...user, updateAt: DateTime.utc().toUnixInteger() } }) }
         catch (e) { console.error(e); return false }
     }
 
     async delete(id: string): Promise<DeleteResult | false> {
-        try { return await this.collection.deleteOne({ _id: ObjectId.createFromHexString(id) }) }
+        try { return await (await this.getCollection()).deleteOne({ _id: ObjectId.createFromHexString(id) }) }
         catch (e) { console.error(e); return false }
     }
 
     async deleteEmail(id: string) {
-        try { return await this.collection.updateOne({ _id: ObjectId.createFromHexString(id) }, { $unset: { email: 1 } }) }
+        try { return await (await this.getCollection()).updateOne({ _id: ObjectId.createFromHexString(id) }, { $unset: { email: 1 } }) }
         catch (e) { console.error(e); return false }
     }
 
     async deletePhoneNumber(id: string) {
-        try { return await this.collection.updateOne({ _id: ObjectId.createFromHexString(id) }, { $unset: { phoneNumber: 1 } }) }
+        try { return await (await this.getCollection()).updateOne({ _id: ObjectId.createFromHexString(id) }, { $unset: { phoneNumber: 1 } }) }
         catch (e) { console.error(e); return false }
     }
 }

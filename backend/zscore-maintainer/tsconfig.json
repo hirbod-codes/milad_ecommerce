@@ -1,9 +1,5 @@
 {
-    "references": [
-        {
-            "path": "../API"
-        }
-    ],
+    "extends": "../../tsconfig.json",
     "exclude": [
         "node_modules",
         "dist"
@@ -11,23 +7,16 @@
     "include": [
         "src/**/*"
     ],
-    "compilerOptions": {
-        "paths": {
-            "@/*": [
-                "./*"
-            ]
+    "references": [
+        {
+            "path": "../../packages/mongodb"
         },
+        {
+            "path": "../../packages/utils"
+        }
+    ],
+    "compilerOptions": {
         "outDir": "./dist",
-        "baseUrl": "./",
-        "sourceMap": true,
-        "resolveJsonModule": true,
-        "target": "ES2015",
-        "module": "CommonJS",
-        "moduleResolution": "node10",
-        "esModuleInterop": true,
-        "forceConsistentCasingInFileNames": true,
-        /* Type Checking */
-        "strict": true,
-        "skipLibCheck": true
+        "baseUrl": "./"
     }
 }

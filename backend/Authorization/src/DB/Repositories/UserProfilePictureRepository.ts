@@ -1,5 +1,6 @@
+import { MongoDB } from "@monorepo/mongodb";
 import { GridFSBucket, GridFSBucketReadStream, GridFSBucketWriteStream, GridFSFile, ObjectId } from "mongodb";
-import { MongoDB } from '../mongodb'
+import { collectionName } from "../Models/UserProfilePicture";
 
 export class UserProfilePictureRepository {
     private collection: GridFSBucket
@@ -9,7 +10,7 @@ export class UserProfilePictureRepository {
     }
 
     static async getInstance(): Promise<UserProfilePictureRepository> {
-        return new UserProfilePictureRepository(await MongoDB.getDbInstance().getUserProfilePictureBucket())
+        return new UserProfilePictureRepository(new GridFSBucket(await MongoDB.getDb(), { bucketName: collectionName }))
     }
 
     getReadStream(fileId: string | ObjectId): GridFSBucketReadStream {

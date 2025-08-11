@@ -1,9 +1,8 @@
 import { ClientSession, Collection, Db, DeleteResult, InsertOneResult, MongoSystemError, ObjectId, UpdateResult } from 'mongodb'
 import { DateTime } from 'luxon'
 import { Tag, TagCreate, TagImmutable, TagInput, TagUpdate, collectionName, schemaVersion } from '../Models/Tag'
-import { MongoDB } from '../mongodb';
+import { IRepository, MongoDB } from '@monorepo/mongodb';
 import { faker, fakerFA } from '@faker-js/faker/';
-import { IRepository } from '../IRepository';
 import { v4 as uuid } from 'uuid';
 
 export class TagRepository implements IRepository {

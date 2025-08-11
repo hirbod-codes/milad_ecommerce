@@ -1,8 +1,6 @@
 import dotenv from "dotenv";
 import express from "express";
 import pino from 'pino-http'
-import { MongoDB } from "./DB/mongodb";
-import { getBooleanEnv, getIntegerEnv, getStringEnv, tryAndWait } from "./helpers";
 import nodemailer from "nodemailer";
 import { UserRepository } from "./DB/Repositories/UserRepository";
 import { RoleRepository } from "./DB/Repositories/RoleRepository";
@@ -21,6 +19,8 @@ import cookieParser from "cookie-parser";
 import { SessionManager } from "./DB/Session/SessionManager";
 import { RevokedAccessTokenManager } from "./RevokedAccessTokens/RevokedAccessTokenManager";
 import prometheusClient from 'prom-client'
+import { getBooleanEnv, getIntegerEnv, getStringEnv, tryAndWait } from "@monorepo/utils";
+import { MongoDB } from "@monorepo/mongodb";
 
 dotenv.config({ debug: process.env.DEBUG !== undefined ? Boolean(process.env.DEBUG) : undefined })
 
@@ -104,26 +104,31 @@ export const queueManagement = new QueueManagement(messageBrokerUrl, messageBrok
 
 (async () => {
     if (!await tryAndWait(async () => {
+        MongoDB.config = dbConfig
+
+        const db = MongoDB.getDbInstance()
+
+        await db.reset();
+
+        db.addRepository(new UserRepository())
+        db.addRepository(new RoleRepository())
+
         if (!isProduction)
             await MongoDB.getDbInstance().dropAllCollections()
 
-        await MongoDB.getDbInstance().initializeDb();
+        await db.createCollections()
+
+        if (!isProduction) {
+            await UserRepository.initialize(adminUsername, adminPhoneNumber, adminEmail, adminPassword)
+            await PrivilegeRepository.initialize()
+            await RoleRepository.initialize()
+
+            await db.seedCollections()
+        }
     }))
         exit(1)
 
     if (!await tryAndWait(async () => await queueManagement.subscribeConsumers(messageBrokerUrl)))
-        exit(1)
-
-    if (!await tryAndWait(async () => {
-        await UserRepository.initialize(adminUsername, adminPhoneNumber, adminEmail, adminPassword)
-        await PrivilegeRepository.initialize()
-        await RoleRepository.initialize()
-
-        if (isProduction !== true) {
-            await RoleRepository.seed()
-            await UserRepository.seed()
-        }
-    }))
         exit(1)
 
     const collectDefaultMetrics = prometheusClient.collectDefaultMetrics;

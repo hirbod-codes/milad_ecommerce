@@ -1,7 +1,6 @@
 import { collectionName, User } from "../Models/User";
 import { ClientSession, Collection, Db, ObjectId } from 'mongodb'
-import { MongoDB } from "../mongodb";
-import { IRepository } from "../IRepository";
+import { IRepository, MongoDB } from '@monorepo/mongodb';
 
 export class UserRepository implements IRepository {
     private session: ClientSession | undefined = undefined

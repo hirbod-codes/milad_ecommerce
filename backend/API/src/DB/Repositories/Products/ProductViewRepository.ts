@@ -1,9 +1,8 @@
 import { ClientSession, Collection, Db, ObjectId } from "mongodb";
-import { MongoDB } from "../../mongodb";
+import { IRepository, MongoDB } from '@monorepo/mongodb';
 import { collectionName, ProductViewCreate, ProductViewInput, schemaVersion } from "../../Models/Products/ProductView";
 import { number, string } from "yup";
 import { DateTime } from "luxon";
-import { IRepository } from "../../IRepository";
 
 export class ProductViewRepository implements IRepository {
     private session: ClientSession | undefined = undefined

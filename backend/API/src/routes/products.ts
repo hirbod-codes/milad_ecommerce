@@ -2,7 +2,6 @@ import { Router } from "express";
 import { FilterManagement } from "@/src/DB/FilterManagement";
 import { Product, productImmutableSchema, productInputSchema, productSchema, productUpdateSchema, readableFields, forbiddenFieldsToFilter } from "@/src/DB/Models/Products/Product";
 import { array, mixed, number, object, string, } from "yup";
-import { stringObjectId } from "@/src/DB/Models/common_schemas";
 import { authenticate } from "@/src/middlewares/authenticate";
 import { authorize } from "@/src/middlewares/authorize";
 import busboy from "busboy";
@@ -13,6 +12,7 @@ import { flattenSchema } from "../DB/Models/helpers";
 import { SessionManager } from "../Session/SessionManager";
 import { ProductStatisticsRepository } from "../DB/Repositories/Products/ProductStatisticsRepository";
 import { DateTime } from "luxon";
+import { stringObjectId } from "@monorepo/mongodb";
 
 const products = Router()
 

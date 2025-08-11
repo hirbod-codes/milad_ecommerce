@@ -1,5 +1,5 @@
 import { addMethod, array, boolean, InferType, number, object, string } from "yup";
-import { likeObjectId, price } from "./common_schemas";
+import { likeObjectId, price } from "@monorepo/mongodb";
 
 export const collectionName = 'order'
 

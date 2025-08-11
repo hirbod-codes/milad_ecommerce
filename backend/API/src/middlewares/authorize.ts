@@ -8,7 +8,7 @@ export async function authorize(req: Request, privilegeNames: string | string[],
     if (!userRole)
         return false
 
-    const roleRepository = await RoleRepository.getInstance()
+    const roleRepository = new RoleRepository()
     const roles = await roleRepository.getRolesWithPrivileges()
     if (roles === false)
         return false

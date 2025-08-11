@@ -1,5 +1,5 @@
 import { array, InferType, number, object, string } from "yup";
-import { likeObjectId } from "../../../../API/src/DB/Models/common_schemas";
+import { likeObjectId } from "@monorepo/mongodb";
 
 export const collectionName = 'zScoreMaintainerOptions'
 

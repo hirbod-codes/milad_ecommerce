@@ -1,5 +1,5 @@
 import { date, InferType, mixed, number, object, string } from "yup";
-import { likeObjectId } from "../common_schemas";
+import { likeObjectId } from "@monorepo/mongodb";
 
 export const collectionName = 'productSale'
 

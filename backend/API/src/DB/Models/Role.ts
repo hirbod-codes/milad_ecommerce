@@ -1,6 +1,6 @@
 import { array, InferType, mixed, number, object, string } from "yup";
 import { Privilege } from "./Privilege";
-import { likeObjectId, localizedText } from "./common_schemas";
+import { likeObjectId, localizedText } from "@monorepo/mongodb";
 
 export const collectionName = 'role'
 

@@ -1,14 +1,12 @@
 import Jwt from 'jsonwebtoken'
 import type { StringValue } from "ms";
-import { accessTokenExpiresIn, jwtSecret, refreshTokenExpiresIn } from '.';
-import { DeletionFailure } from './DB/Exceptions/DeletionFailure';
+import { jwtSecret, refreshTokenExpiresIn } from '.';
 import { DateTime } from 'luxon';
-import { InsertionFailure } from './DB/Exceptions/InsertionFailure';
 import { RevokedAccessTokenManager } from './RevokedAccessTokens/RevokedAccessTokenManager';
-import { privilegeNames } from "@/src/DB/Models/privilegeNames"
+import { privilegeNames } from "./DB/Models/privilegeNames"
 import { ObjectId } from 'mongodb';
-import { RefreshToken } from './DB/Models/RefreshToken';
-import { MongoDB } from './DB/mongodb';
+import { collectionName as refreshTokenCollectionName, RefreshToken } from './DB/Models/RefreshToken';
+import { DeletionFailure, InsertionFailure, MongoDB } from '@monorepo/mongodb';
 
 export class AuthManager {
     static getInstance() {
@@ -61,7 +59,7 @@ export class AuthManager {
 
         const accessToken = await this.generateAccessToken(userId, role)
 
-        let doc = await (await MongoDB.getDbInstance().getRefreshTokensCollection()).findOneAndUpdate({ userId }, { $set: { accessToken } })
+        let doc = await (await (await (MongoDB.getDb())).collection<RefreshToken>(refreshTokenCollectionName)).findOneAndUpdate({ userId }, { $set: { accessToken } })
 
         if (doc) {
             let payload = Jwt.decode(doc.accessToken, { json: true })
@@ -76,7 +74,7 @@ export class AuthManager {
 
         const refreshToken = await this.generateRefreshToken(userId, role)
 
-        let createResult = await (await MongoDB.getDbInstance().getRefreshTokensCollection()).insertOne({
+        let createResult = await (await (await (MongoDB.getDb())).collection<RefreshToken>(refreshTokenCollectionName)).insertOne({
             userId: userId,
             refreshToken,
             accessToken,
@@ -122,7 +120,7 @@ export class AuthManager {
 
                 const accessToken = await this.generateAccessToken(userId, role)
 
-                let doc = await (await MongoDB.getDbInstance().getRefreshTokensCollection()).findOneAndUpdate({ userId }, { $set: { accessToken } })
+                let doc = await (await (await (MongoDB.getDb())).collection<RefreshToken>(refreshTokenCollectionName)).findOneAndUpdate({ userId }, { $set: { accessToken } })
                 if (!doc)
                     throw new Error('Refresh token not found in db')
 
@@ -139,7 +137,7 @@ export class AuthManager {
     }
 
     async revokeRefreshTokenByUserId(userId: string | ObjectId): Promise<boolean> {
-        let refreshToken = await (await MongoDB.getDbInstance().getRefreshTokensCollection()).findOne({ userId: typeof userId === 'string' ? ObjectId.createFromHexString(userId) : userId })
+        let refreshToken = await (await (await (MongoDB.getDb())).collection<RefreshToken>(refreshTokenCollectionName)).findOne({ userId: typeof userId === 'string' ? ObjectId.createFromHexString(userId) : userId })
         if (!refreshToken)
             return false
 
@@ -148,7 +146,7 @@ export class AuthManager {
 
     async revokeRefreshToken(refreshToken: string | RefreshToken): Promise<boolean> {
         if (typeof refreshToken === 'string') {
-            let t = await (await MongoDB.getDbInstance().getRefreshTokensCollection()).findOne({ refreshToken })
+            let t = await (await (await (MongoDB.getDb())).collection<RefreshToken>(refreshTokenCollectionName)).findOne({ refreshToken })
             if (!t)
                 return false
             refreshToken = t
@@ -161,7 +159,7 @@ export class AuthManager {
         if (res[0] === false || res[1] === false)
             return false
 
-        let r = await (await MongoDB.getDbInstance().getRefreshTokensCollection()).deleteMany({ refreshToken: refreshToken.refreshToken })
+        let r = await (await (await (MongoDB.getDb())).collection<RefreshToken>(refreshTokenCollectionName)).deleteMany({ refreshToken: refreshToken.refreshToken })
 
         if (!r.acknowledged)
             throw new DeletionFailure()

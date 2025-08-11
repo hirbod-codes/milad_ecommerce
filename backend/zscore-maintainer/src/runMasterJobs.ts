@@ -1,14 +1,14 @@
 import { DateTime } from "luxon";
 import { schedule, ScheduledTask } from "node-cron";
-import { ProductSaleRepository } from "../../API/src/DB/Repositories/Products/ProductSaleRepository";
-import { httpRequest, tryAndWait } from "../../API/src/helpers";
 import { Document } from "mongodb";
-import { MongoDB } from "../../API/src/DB/mongodb";
-import { schemaVersion as failedProductSaleRangeSchemaVersion, collectionName as failedProductSaleRangeCollectionName, FailedProductSaleRangeCreate } from "./DB/Models/FailedProductSaleRange";
+import { collectionName as failedProductSaleRangeCollectionName } from "./DB/Models/FailedProductSaleRange";
 import { ZScoreMaintainerOptions } from "./DB/Models/zScoreMaintainerOptions";
 import { ObjectId } from 'mongodb'
 import { ZScoreMaintainerOptionsRepository } from "./DB/Repositories/ZScoreMaintainerOptionsRepository";
-import { ProductViewRepository } from "../../API/src/DB/Repositories/Products/ProductViewRepository";
+import { FailedProductSaleRangeRepository } from "./DB/Repositories/FailedProductSaleRangeRepository";
+import { httpRequest, tryAndWait } from "@monorepo/utils";
+import { ProductSaleRepository } from "./DB/Repositories/ProductSaleRepository";
+import { ProductViewRepository } from "./DB/Repositories/ProductViewRepository";
 
 let salesJob: ScheduledTask | undefined = undefined
 let viewsJob: ScheduledTask | undefined = undefined
@@ -21,7 +21,7 @@ export function runMasterJobs() {
             console.log(`running cron job: "maintain sales z-score" at ${DateTime.utc().toISO()}...`)
 
             try {
-                const zScoreMaintainerOptionsRepository = await ZScoreMaintainerOptionsRepository.getInstance()
+                const zScoreMaintainerOptionsRepository = new ZScoreMaintainerOptionsRepository();
                 const productSaleRepository = new ProductSaleRepository()
 
                 // Validation
@@ -89,7 +89,7 @@ export function runMasterJobs() {
             console.log(`running cron job: "maintain views z-score" at ${DateTime.utc().toISO()}...`)
 
             try {
-                const zScoreMaintainerOptionsRepository = await ZScoreMaintainerOptionsRepository.getInstance()
+                const zScoreMaintainerOptionsRepository = new ZScoreMaintainerOptionsRepository()
                 const productViewRepository = new ProductViewRepository()
 
                 // Validation
@@ -189,17 +189,11 @@ async function findFailedIndexes(options: ZScoreMaintainerOptions, promises: Pro
             if (await deliverTaskToSlave(options.addresses[nextSlave].host, options.addresses[nextSlave].port, ranges[i], i === (promises.length - 1)) !== true) {
                 failedIndexes.push(i)
 
-                const failedProductSale: FailedProductSaleRangeCreate = {
-                    schemaVersion: failedProductSaleRangeSchemaVersion,
-                    count: ranges[i].count,
-                    range: ranges[i]._id,
-                    createdAt: DateTime.utc().toUnixInteger(),
-                }
+                const failedProductSale = { range: ranges[i]._id, count: ranges[i].count }
 
-                const db = await MongoDB.getDb()
-                const result = await db.collection(failedProductSaleRangeCollectionName).insertOne(failedProductSale as any)
+                const result = await (new FailedProductSaleRangeRepository()).create(failedProductSale)
 
-                if (!result.acknowledged)
+                if (result === false)
                     console.error(`System Failed to insert failedProductSale document to ${failedProductSaleRangeCollectionName} collection: ${JSON.stringify(failedProductSale)}`)
             }
         })

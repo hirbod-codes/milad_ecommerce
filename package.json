@@ -1,0 +1,20 @@
+{
+    "name": "monorepo",
+    "private": true,
+    "workspaces": [
+        "packages/*",
+        "backend/*"
+    ],
+    "devDependencies": {
+        "typescript": "^5.0.0",
+        "ts-node": "^10.0.0",
+        "nodemon": "^2.0.0"
+    },
+    "scripts": {
+        "build": "npx tsc --build ./tsconfig.base.json",
+        "dev:api": "npm run dev --workspace=api",
+        "dev:authorization": "npm run dev --workspace=authorization",
+        "dev:zscore-maintainer": "npm run dev --workspace=zscore-maintainer",
+        "dev:web": "npm run dev --workspace=web"
+    }
+}

@@ -1,5 +1,5 @@
 {
-    "name": "api",
+    "name": "@monorepo/api",
     "version": "0.0.0",
     "author": "",
     "license": "ISC",
@@ -15,6 +15,8 @@
         "@faker-js": "./node_modules/@faker-js"
     },
     "dependencies": {
+        "@monorepo/mongodb": "^1.0.0",
+        "@monorepo/utils": "^1.0.0",
         "amqplib": "^0.10.5",
         "archiver": "^7.0.1",
         "busboy": "^1.6.0",

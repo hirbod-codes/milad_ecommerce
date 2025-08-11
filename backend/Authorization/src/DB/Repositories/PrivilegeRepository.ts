@@ -1,8 +1,8 @@
 import { Collection, DeleteResult, InsertOneResult, ObjectId, UpdateResult } from 'mongodb'
 import { DateTime } from 'luxon'
-import { Privilege, PrivilegeCreate, PrivilegeInput, PrivilegeUpdate, schemaVersion } from '../Models/Privilege'
+import { collectionName, Privilege, PrivilegeCreate, PrivilegeInput, PrivilegeUpdate, schemaVersion } from '../Models/Privilege'
 import { privilegeNames } from '../Models/privilegeNames'
-import { MongoDB } from '../mongodb'
+import { MongoDB } from '@monorepo/mongodb'
 
 export class PrivilegeRepository {
     private collection: Collection<PrivilegeCreate>
@@ -12,11 +12,11 @@ export class PrivilegeRepository {
     }
 
     static async getInstance(): Promise<PrivilegeRepository> {
-        return new PrivilegeRepository(await MongoDB.getDbInstance().getPrivilegeCollection())
+        return new PrivilegeRepository(await (await MongoDB.getDb()).collection(collectionName))
     }
 
     static async initialize() {
-        const collection = await MongoDB.getDbInstance().getPrivilegeCollection()
+        const collection = await (await MongoDB.getDb()).collection(collectionName)
 
         if (await collection.estimatedDocumentCount() === 0) {
             let nowTS = DateTime.utc().toUnixInteger()

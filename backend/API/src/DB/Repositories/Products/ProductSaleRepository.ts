@@ -1,9 +1,8 @@
 import { ClientSession, Collection, Db, MongoServerError, MongoSystemError, ObjectId } from "mongodb";
-import { MongoDB } from "../../mongodb";
+import { IRepository, MongoDB } from '@monorepo/mongodb';
 import { collectionName, ProductSaleCreate, ProductSaleInput, schemaVersion } from "../../Models/Products/ProductSale";
 import { DateTime } from "luxon";
 import { number, string } from "yup";
-import { IRepository } from "../../IRepository";
 import { collectionName as orderCollectionName, OrderCreate } from "../../Models/Order";
 
 export class ProductSaleRepository implements IRepository {

@@ -1,8 +1,7 @@
 import { ClientSession, Collection, Db } from 'mongodb'
 import { RoleWithPrivileges, RoleCreate } from '../Models/Role'
 import { collectionName } from '../Models/Privilege'
-import { MongoDB } from '../mongodb'
-import { IRepository } from '../IRepository'
+import { IRepository, MongoDB } from '@monorepo/mongodb';
 
 export class RoleRepository implements IRepository {
     private session: ClientSession | undefined = undefined

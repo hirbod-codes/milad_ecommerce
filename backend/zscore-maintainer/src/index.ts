@@ -1,13 +1,13 @@
 import express from "express";
 import dotenv from "dotenv";
-import { getStringEnv, getIntegerEnv, getBooleanEnv } from "../../API/src/helpers"
 import { runMasterJobs } from "./runMasterJobs";
-import { MongoDB } from "../../API/src/DB/mongodb";
 import { collectionName as failedProductSaleRangeCollectionName } from "./DB/Models/FailedProductSaleRange";
 import { collectionName as zScoreMaintainerOptionsCollectionName } from "./DB/Models/zScoreMaintainerOptions";
 import { ZScoreMaintainerOptionsRepository } from "./DB/Repositories/ZScoreMaintainerOptionsRepository";
 import { boolean, number, string, object } from "yup";
 import { handleRange, runSlaveJobs } from "./runSlaveJobs";
+import { getBooleanEnv, getIntegerEnv, getStringEnv, tryAndWait } from "@monorepo/utils";
+import { MongoDB } from "@monorepo/mongodb";
 
 console.log('running...');
 
@@ -31,19 +31,23 @@ export const dbConfig = {
 };
 
 (async () => {
-    MongoDB.config = dbConfig
+    await tryAndWait(async () => {
+        MongoDB.config = dbConfig
 
-    const mongodb = MongoDB.getDbInstance()
+        const db = MongoDB.getDbInstance()
 
-    await mongodb.reset()
+        await db.reset();
 
-    const db = await mongodb.getDb()
+        db.addRepository(new ZScoreMaintainerOptionsRepository())
 
-    if ((await db.collections()).find(f => f.collectionName === failedProductSaleRangeCollectionName) === undefined)
-        await db.createCollection(failedProductSaleRangeCollectionName)
+        if (!isProduction)
+            await MongoDB.getDbInstance().dropAllCollections()
 
-    if ((await db.collections()).find(f => f.collectionName === zScoreMaintainerOptionsCollectionName) === undefined)
-        await db.createCollection(zScoreMaintainerOptionsCollectionName)
+        await db.createCollections()
+
+        if (!isProduction)
+            await db.seedCollections()
+    })
 
     if (appMode === 'master')
         runMaster()
@@ -66,22 +70,19 @@ function runMaster() {
             return
         }
 
-        ZScoreMaintainerOptionsRepository.getInstance()
-            .then((zScoreMaintainerOptionsRepository) => {
-                zScoreMaintainerOptionsRepository.getOptions()
-                    .then((options) => {
-                        const address = options?.addresses.find(f => f.host === host)
-                        if (address === undefined || address.port !== port)
-                            zScoreMaintainerOptionsRepository.pushSubscriber(host, port)
-                                .then((r) => {
-                                    if (r === false || !r.acknowledged)
-                                        res.sendStatus(500)
+        (new ZScoreMaintainerOptionsRepository()).getOptions()
+            .then((options) => {
+                const address = options?.addresses.find(f => f.host === host)
+                if (address === undefined || address.port !== port)
+                    (new ZScoreMaintainerOptionsRepository()).pushSubscriber(host, port)
+                        .then((r) => {
+                            if (r === false || !r.acknowledged)
+                                res.sendStatus(500)
 
-                                    res.sendStatus(201)
-                                })
-                        else
                             res.sendStatus(201)
-                    })
+                        })
+                else
+                    res.sendStatus(201)
             })
     })
 

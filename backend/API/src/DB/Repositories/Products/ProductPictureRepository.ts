@@ -1,7 +1,5 @@
 import { ClientSession, Db, GridFSBucket, GridFSBucketReadStream, GridFSBucketWriteStream, GridFSFile, MongoClient, ObjectId } from "mongodb";
-import { MongoDB } from "../../mongodb";
-import { contentType } from "prom-client";
-import { IRepository } from "../../IRepository";
+import { IRepository, MongoDB } from '@monorepo/mongodb';
 import { collectionName } from "../../Models/Products/ProductPicture";
 
 export class ProductPictureRepository implements IRepository {

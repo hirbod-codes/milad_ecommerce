@@ -1,11 +1,10 @@
 import { ClientSession, Collection, Db, DeleteResult, InsertOneResult, MongoClient, MongoSystemError, ObjectId, UpdateResult } from 'mongodb'
 import { collectionName, ProductReview, ProductReviewCreate, ProductReviewInput, ProductReviewUpdate, schemaVersion } from '../../Models/Products/ProductReview'
 import { DateTime } from 'luxon'
-import { MongoDB } from '../../mongodb';
+import { IRepository, MongoDB } from '@monorepo/mongodb';
 import { faker } from '@faker-js/faker/.';
 import { ProductRepository } from './ProductRepository';
 import { UserRepository } from '../UserRepository';
-import { IRepository } from '../../IRepository';
 
 export class ProductReviewsRepository implements IRepository {
     private session: ClientSession | undefined = undefined

@@ -1,27 +1,54 @@
-import { Collection, DeleteResult, InsertOneResult, MongoSystemError, ObjectId, UpdateResult } from 'mongodb'
+import { ClientSession, Collection, Db, DeleteResult, InsertOneResult, MongoSystemError, ObjectId, UpdateResult } from 'mongodb'
 import { DateTime } from 'luxon'
 import { RoleCreate, RoleInput, RoleUpdate, RoleWithPrivileges, schemaVersion } from '../Models/Role'
 import { collectionName } from '../Models/Privilege'
 import { defaultRolePrivilegeNames } from '../Models/privilegeNames'
-import { MongoDB } from '../mongodb'
 import { PrivilegeRepository } from './PrivilegeRepository'
 import { faker, fakerFA } from '@faker-js/faker/'
+import { IRepository, MongoDB } from '@monorepo/mongodb'
 
-export class RoleRepository extends MongoDB {
-    private collection: Collection<RoleCreate>
+export class RoleRepository implements IRepository {
+    private session: ClientSession | undefined = undefined
 
-    constructor(collection: Collection<RoleCreate>) {
-        super();
+    setTransactionSession(session?: ClientSession): void {
+        this.session = session
+    }
 
-        this.collection = collection
+    unsetTransactionSession(): void {
+        this.session = undefined
+    }
+
+    async addCollection(db: Db): Promise<void> {
+        if (!(await db.listCollections().toArray()).map(e => e.name).includes(collectionName))
+            await db.createCollection(collectionName)
+
+        const indexes = await db.collection(collectionName).indexes()
+
+        if (indexes.find(i => i.name === 'unique-name') === undefined)
+            await db.createIndex(collectionName, { name: 1 }, { unique: true, name: 'unique-name' })
+
+        if (indexes.find(i => i.name === 'createdAt') === undefined)
+            await db.createIndex(collectionName, { createdAt: 1 }, { name: 'createdAt' })
+
+        if (indexes.find(i => i.name === 'updatedAt') === undefined)
+            await db.createIndex(collectionName, { updatedAt: 1 }, { name: 'updatedAt' })
+    }
+
+    async dropCollection(db: Db): Promise<void> {
+        if ((await db.listCollections().toArray()).map(e => e.name).includes(collectionName))
+            await db.dropCollection(collectionName)
+    }
+
+    private async getCollection(): Promise<Collection<RoleCreate>> {
+        return (await MongoDB.getDb()).collection<RoleCreate>(collectionName)
     }
 
     static async getInstance(): Promise<RoleRepository> {
-        return new RoleRepository(await MongoDB.getDbInstance().getRoleCollection())
+        return new RoleRepository()
     }
 
     static async initialize() {
-        const collection = await MongoDB.getDbInstance().getRoleCollection()
+        const collection = (await MongoDB.getDb()).collection<RoleCreate>(collectionName)
         const roleRepository = await RoleRepository.getInstance()
 
         if ((await collection.estimatedDocumentCount()) === 0) {
@@ -48,8 +75,8 @@ export class RoleRepository extends MongoDB {
         }
     }
 
-    static async seed(count: number = 10) {
-        const collection = await MongoDB.getDbInstance().getRoleCollection()
+    async seed(count: number = 10) {
+        const collection = (await MongoDB.getDb()).collection<RoleCreate>(collectionName)
         const privilegeRepository = await PrivilegeRepository.getInstance()
 
         if (!(await collection.deleteMany({ name: { $ne: 'admin' } })).acknowledged)
@@ -101,18 +128,18 @@ export class RoleRepository extends MongoDB {
             updatedAt: ts,
         }
 
-        try { return await this.collection.insertOne(o) }
+        try { return await (await this.getCollection()).insertOne(o) }
         catch (e) { console.error(e); return false }
     }
 
     async isNameExist(name: string): Promise<boolean> {
-        try { return await this.collection.countDocuments({ name }) !== 0 }
+        try { return await (await this.getCollection()).countDocuments({ name }) !== 0 }
         catch (e) { console.error(e); return false }
     }
 
     async get(): Promise<RoleWithPrivileges[]> {
         try {
-            return await this.collection.aggregate()
+            return await (await this.getCollection()).aggregate()
                 .lookup({
                     from: collectionName,
                     localField: 'privileges',
@@ -129,7 +156,7 @@ export class RoleRepository extends MongoDB {
             if (typeof id === 'string')
                 id = ObjectId.createFromHexString(id)
 
-            return (await this.collection.aggregate()
+            return (await (await this.getCollection()).aggregate()
                 .match({ _id: id })
                 .lookup({
                     from: collectionName,
@@ -146,7 +173,7 @@ export class RoleRepository extends MongoDB {
         try {
             ids = ids.map(id => typeof id === 'string' ? ObjectId.createFromHexString(id) : id)
 
-            return await this.collection.aggregate()
+            return await (await this.getCollection()).aggregate()
                 .match({ _id: { $in: ids } })
                 .lookup({
                     from: collectionName,
@@ -161,7 +188,7 @@ export class RoleRepository extends MongoDB {
 
     async getByNames(names: string[]): Promise<RoleWithPrivileges[]> {
         try {
-            return await this.collection.aggregate()
+            return await (await this.getCollection()).aggregate()
                 .match({ name: { $in: names } })
                 .lookup({
                     from: collectionName,
@@ -179,7 +206,7 @@ export class RoleRepository extends MongoDB {
             if (roles && !Array.isArray(roles))
                 roles = [roles]
 
-            let aggregate = this.collection.aggregate()
+            let aggregate = (await this.getCollection()).aggregate()
 
             if (roles)
                 aggregate = aggregate.match({ name: { $in: roles } })
@@ -197,7 +224,7 @@ export class RoleRepository extends MongoDB {
     }
 
     async update(id: string, role: RoleUpdate): Promise<UpdateResult | false> {
-        try { return await this.collection.updateOne({ _id: ObjectId.createFromHexString(id) }, { $set: { ...role, updatedAt: DateTime.utc().toUnixInteger() } }) }
+        try { return await (await this.getCollection()).updateOne({ _id: ObjectId.createFromHexString(id) }, { $set: { ...role, updatedAt: DateTime.utc().toUnixInteger() } }) }
         catch (e) { console.error(e); return false }
     }
 
@@ -206,28 +233,16 @@ export class RoleRepository extends MongoDB {
             if (typeof id === 'string')
                 id = ObjectId.createFromHexString(id)
 
-            await this.startTransaction()
-
-            const role = await this.collection.findOne({ _id: id })
-            if (!role || role.name === 'default' || role.name === 'admin') {
-                await this.abortTransaction()
+            const role = await (await this.getCollection()).findOne({ _id: id })
+            if (!role || role.name === 'default' || role.name === 'admin')
                 return false
-            }
 
-            const deleteResult = await this.collection.deleteOne({ $and: [{ _id: id }, { name: { $nin: ['default', 'admin'] } }] });
+            const deleteResult = await (await this.getCollection()).deleteOne({ $and: [{ _id: id }, { name: { $nin: ['default', 'admin'] } }] });
 
-            const updateResult = await (await this.getUserCollection()).updateMany({ role: role.name }, { $set: { role: 'default' } })
-            if (!updateResult.acknowledged) {
-                await this.abortTransaction()
+            if (!deleteResult.acknowledged)
                 return false
-            }
 
-            if (!deleteResult.acknowledged) {
-                await this.abortTransaction()
-                return false
-            }
-
-            await this.commitTransaction()
+            // Add logic to handle users with the deleted role
 
             return deleteResult
         }

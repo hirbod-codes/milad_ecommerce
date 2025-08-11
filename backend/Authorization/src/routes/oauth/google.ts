@@ -1,10 +1,10 @@
 import { Router } from "express";
 import { googleOAuth2Config } from "@/src/";
-import { httpsRequest } from "@/src/helpers";
 import { string } from "yup";
 import { User } from "@/src/DB/Models/User";
 import { UserRepository } from "@/src/DB/Repositories/UserRepository";
 import { AuthManager } from "@/src/AuthManager";
+import { httpsRequest } from "@monorepo/utils";
 
 const oauthGoogleRouter = Router()
 

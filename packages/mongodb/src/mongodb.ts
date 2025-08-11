@@ -2,9 +2,6 @@ import { ClientSession, Db, MongoClient } from 'mongodb'
 import { DbConfigurationError } from './Exceptions/DbConfigurationError'
 import { ConnectionError } from './Exceptions/ConnectionError'
 import { IRepository } from './IRepository'
-import { UserRepository } from './Repositories/UserRepository'
-import { RoleRepository } from './Repositories/RoleRepository'
-import { tryAndWait } from '../helpers'
 
 export type MongodbConfig = {
     supportsTransaction: boolean;
@@ -184,9 +181,6 @@ export class MongoDB {
     async dropAllCollections() {
         const db = await MongoDB.getDb()
         for (const repository of this.repositories)
-            if (repository instanceof UserRepository || repository instanceof RoleRepository)
-                continue
-            else
                 repository.dropCollection(db)
     }
 

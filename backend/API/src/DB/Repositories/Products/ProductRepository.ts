@@ -1,14 +1,12 @@
 import { DateTime } from "luxon";
-import { Product, ProductInput, ProductCreate, schemaVersion, ProductUpdate, ProductImmutable } from "../../Models/Products/Product";
+import { Product, ProductInput, ProductCreate, schemaVersion, ProductUpdate, ProductImmutable, collectionName } from "../../Models/Products/Product";
 import { ClientSession, Collection, Db, DeleteResult, Filter, InsertOneResult, MongoServerError, MongoSystemError, ObjectId, SortDirection, UpdateResult } from 'mongodb'
-import { MongoDB } from "../../mongodb";
+import { IRepository, MongoDB } from '@monorepo/mongodb';
 import { faker, fakerFA } from "@faker-js/faker/";
 import { CategoryRepository } from "../CategoryRepository";
 import { TagRepository } from "../TagRepository";
 import { ProductPictureRepository } from "./ProductPictureRepository";
-import fs from 'fs'
-import { IRepository } from "../../IRepository";
-import { collectionName } from "../../Models/Privilege";
+import * as fs from 'fs'
 import { ProductStatisticsRepository } from "./ProductStatisticsRepository";
 
 export class ProductRepository implements IRepository {

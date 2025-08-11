@@ -1,11 +1,10 @@
 import { ClientSession, Collection, Db, DeleteResult, Filter, InsertOneResult, MongoSystemError, ObjectId, Sort, SortDirection, UpdateResult } from 'mongodb'
 import { collectionName, Order, OrderCreate, OrderImmutable, OrderInput, OrderUpdate, schemaVersion } from '../Models/Order'
 import { DateTime } from 'luxon'
-import { MongoDB } from '../mongodb';
-import { faker } from '@faker-js/faker/.';
+import { IRepository, MongoDB } from '@monorepo/mongodb';
+import { faker } from '@faker-js/faker';
 import { ProductRepository } from './Products/ProductRepository';
 import { UserRepository } from './UserRepository';
-import { IRepository } from '../IRepository';
 
 export class OrderRepository implements IRepository {
     private session: ClientSession | undefined = undefined

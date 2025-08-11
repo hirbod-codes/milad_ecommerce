@@ -1,5 +1,5 @@
 import { array, InferType, number, object, string } from "yup";
-import { likeObjectId, localizedText } from "./common_schemas";
+import { likeObjectId, localizedText } from "@monorepo/mongodb";
 
 export const collectionName = 'category'
 

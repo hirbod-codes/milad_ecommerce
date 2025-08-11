@@ -1,9 +1,9 @@
 import { Router } from "express";
 import { tagImmutableSchema, tagInputSchema, tagUpdateSchema } from "@/src/DB/Models/Tag";
-import { stringObjectId } from "@/src/DB/Models/common_schemas";
 import { authenticate } from "@/src/middlewares/authenticate";
 import { authorize } from "@/src/middlewares/authorize";
 import { TagRepository } from "../DB/Repositories/TagRepository";
+import { stringObjectId } from "@monorepo/mongodb";
 
 const tags = Router()
 

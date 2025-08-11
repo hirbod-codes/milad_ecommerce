@@ -1,10 +1,10 @@
 import { Router } from "express";
 import { categoryImmutableSchema, categoryInputSchema, categoryUpdateSchema } from "@/src/DB/Models/Category";
-import { stringObjectId } from "@/src/DB/Models/common_schemas";
 import { authenticate } from "@/src/middlewares/authenticate";
 import { authorize } from "@/src/middlewares/authorize";
 import { number } from "yup";
 import { CategoryRepository } from "../DB/Repositories/CategoryRepository";
+import { stringObjectId } from "@monorepo/mongodb";
 
 const categories = Router()
 

@@ -1,9 +1,8 @@
 import { ClientSession, Collection, Db, DeleteResult, InsertOneResult, MongoSystemError, ObjectId, UpdateResult } from 'mongodb'
 import { DateTime } from 'luxon'
 import { Category, CategoryCreate, CategoryImmutable, CategoryInput, CategoryUpdate, collectionName, schemaVersion } from '../Models/Category'
-import { MongoDB } from '../mongodb';
+import { IRepository, MongoDB } from '@monorepo/mongodb';
 import { faker, fakerFA } from "@faker-js/faker"
-import { IRepository } from '../IRepository';
 import { v4 as uuid } from 'uuid';
 
 export class CategoryRepository implements IRepository {
