@@ -1,8 +1,8 @@
 .vscode
 
-node_mdoules
+node_modules
 
-*/**/node_mdoules
+*/**/node_modules
 
 */**/dist
 
