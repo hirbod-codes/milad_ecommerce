@@ -1,5 +1,9 @@
 .vscode
 
+node_mdoules
+
 */**/node_mdoules
+
+*/**/dist
 
 */**/.env
