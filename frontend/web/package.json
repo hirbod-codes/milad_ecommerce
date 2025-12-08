@@ -5,7 +5,7 @@
     "type": "module",
     "scripts": {
         "dev": "vite --mode development",
-        "build-dev": "tsc -b && vite build --watch -d true -m dev --sourcemap true --minify false",
+        "build-dev": "vite build --watch -d true -m dev --sourcemap true --minify false",
         "build": "vite build",
         "lint": "eslint .",
         "preview": "vite preview"

@@ -12,6 +12,12 @@
     ],
     "scripts": {
         "build": "npx tsc --build ./tsconfig.base.json",
+        "build:api": "npm run dev --workspace=api",
+        "build:authorization": "npm run dev --workspace=authorization",
+        "build:zscore-maintainer": "npm run dev --workspace=zscore-maintainer",
+        "build:web": "npm run dev --workspace=web",
+        "build:utils": "npm run dev --workspace=utils",
+        "build:mongodb": "npm run dev --workspace=mongodb",
         "dev:api": "npm run dev --workspace=api",
         "dev:authorization": "npm run dev --workspace=authorization",
         "dev:zscore-maintainer": "npm run dev --workspace=zscore-maintainer",
