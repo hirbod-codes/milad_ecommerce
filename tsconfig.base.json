@@ -1,20 +1,28 @@
 {
-    "files": [],
-    "references": [
-        {
-            "path": "packages/utils"
+    "compilerOptions": {
+        "target": "ES2022",
+        "module": "CommonJS",
+        "lib": [
+            "ES2022"
+        ],
+        "strict": true,
+        "esModuleInterop": true,
+        "moduleResolution": "node",
+        "baseUrl": ".",
+        "paths": {
+            "@utils/*": [
+                "packages/utils/src/*"
+            ],
+            "@mongodb/*": [
+                "packages/mongodb/src/*"
+            ]
         },
-        {
-            "path": "packages/mongodb"
-        },
-        {
-            "path": "backend/API"
-        },
-        {
-            "path": "backend/Authorization"
-        },
-        {
-            "path": "backend/zscore-maintainer"
-        }
-    ]
+        "typeRoots": [
+            "./node_modules",
+            "./node_modules/@types"
+        ],
+        "types": [
+            "node"
+        ]
+    }
 }

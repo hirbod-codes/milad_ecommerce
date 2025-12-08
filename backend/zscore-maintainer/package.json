@@ -1,6 +1,6 @@
 {
-    "name": "@monorepo/zscore-maintainer",
-    "version": "0.0.0",
+    "name": "zscore-maintainer",
+    "version": "1.0.0",
     "author": "",
     "license": "ISC",
     "description": "",
@@ -14,8 +14,8 @@
         "@/src": "./dist"
     },
     "dependencies": {
-        "@monorepo/mongodb": "^1.0.0",
-        "@monorepo/utils": "^1.0.0",
+        "@monorepo/mongodb": "1.0.0",
+        "@monorepo/utils": "1.0.0",
         "dotenv": "^16.4.7",
         "express": "^4.21.2",
         "luxon": "^3.5.0",

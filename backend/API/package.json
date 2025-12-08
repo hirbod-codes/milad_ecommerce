@@ -1,6 +1,6 @@
 {
-    "name": "@monorepo/api",
-    "version": "0.0.0",
+    "name": "api",
+    "version": "1.0.0",
     "author": "",
     "license": "ISC",
     "description": "",
@@ -15,8 +15,8 @@
         "@faker-js": "./node_modules/@faker-js"
     },
     "dependencies": {
-        "@monorepo/mongodb": "^1.0.0",
-        "@monorepo/utils": "^1.0.0",
+        "@monorepo/mongodb": "1.0.0",
+        "@monorepo/utils": "1.0.0",
         "amqplib": "^0.10.5",
         "archiver": "^7.0.1",
         "busboy": "^1.6.0",
@@ -39,6 +39,7 @@
         "@types/amqplib": "^0.10.7",
         "@types/archiver": "^6.0.3",
         "@types/busboy": "^1.5.4",
+        "@types/cookie-parser": "^1.4.10",
         "@types/dotenv": "^8.2.3",
         "@types/express": "^5.0.0",
         "@types/jsonwebtoken": "^9.0.9",

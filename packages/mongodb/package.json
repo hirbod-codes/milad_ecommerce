@@ -4,10 +4,11 @@
     "main": "dist/index.js",
     "types": "dist/index.d.ts",
     "scripts": {
-        "build": "tsc --build"
+        "build": "tsc --build",
+        "typecheck": "tsc --noEmit -p tsconfig.json"
     },
     "dependencies": {
-        "@monorepo/utils": "^1.0.0",
+        "@monorepo/utils": "1.0.0",
         "mongodb": "6.8"
     },
     "devDependencies": {
