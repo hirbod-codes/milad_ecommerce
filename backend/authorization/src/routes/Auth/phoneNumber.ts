@@ -47,7 +47,7 @@ from sender`
             if (!otpResponse.ok)
                 throw new Error('system failed to send an otp message')
 
-            let responseStatus = Number((await otpResponse.json()).value)
+            let responseStatus = Number((await otpResponse.json() as any)?.value ?? 0)
             if (responseStatus <= 35)
                 throw new Error('system failed to send an otp message')
         } catch (e) {
