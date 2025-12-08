@@ -5,6 +5,12 @@
     ],
     "compilerOptions": {
         "outDir": "./dist",
-        "declaration": true
+        "declaration": true,
+        "baseUrl": "./",
+        "paths": {
+            "@/*": [
+                "./*"
+            ]
+        }
     }
 }

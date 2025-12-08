@@ -1,6 +1,6 @@
 import Jwt from 'jsonwebtoken'
 import type { StringValue } from "ms";
-import { jwtSecret, refreshTokenExpiresIn } from '.';
+import { jwtSecret, refreshTokenExpiresIn, accessTokenExpiresIn } from '.';
 import { DateTime } from 'luxon';
 import { RevokedAccessTokenManager } from './RevokedAccessTokens/RevokedAccessTokenManager';
 import { privilegeNames } from "./DB/Models/privilegeNames"
