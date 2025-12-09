@@ -18,8 +18,9 @@ RUN npm run build:api
 
 FROM node:18-alpine AS development
 
-COPY --from=build /app/backend/api/node_modules ./node_modules
-COPY --from=build /app/backend/api/dist ./dist
+COPY --from=build /app /app
+
+WORKDIR /app
 
 CMD npm run dev:api
 

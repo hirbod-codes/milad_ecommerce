@@ -18,8 +18,9 @@ RUN npm run build:authorization
 
 FROM node:18-alpine AS development
 
-COPY --from=build /app/backend/authorization/node_modules ./node_modules
-COPY --from=build /app/backend/authorization/dist ./dist
+COPY --from=build /app /app
+
+WORKDIR /app
 
 CMD npm run dev:authorization
 

@@ -112,9 +112,9 @@ services:
             VITE_AUTH_API_URL: https://localhost/api
             VITE_REDIRECT_URI: http://127.0.0.1:443/
         volumes:
-            - ../../frontend/web/dist/:/usr/share/nginx/html/
-            - ../../frontend/web/nginx.development.conf:/etc/nginx/conf.d/default.conf
-            - ../../frontend/web/https/:/etc/ngonx/ssl/
+            - ./frontend/web/dist/:/usr/share/nginx/html/
+            - ./frontend/web/nginx.development.conf:/etc/nginx/conf.d/default.conf
+            - ./frontend/web/https/:/etc/ngonx/ssl/
         ports:
             - 80:80
             - 443:443
@@ -173,7 +173,7 @@ services:
         ports:
             - 81:80
         volumes:
-            - ./frontend/web/:/app
+            - ./frontend/web/:/app/frontend/web
         environment:
             NODE_ENV: development
             VITE_API_URL: https://localhost/api
@@ -192,7 +192,7 @@ services:
         ports:
             - 3000:3000
         volumes:
-            - ./backend/api:/app
+            - ./backend/api:/app/backend/api
             - /app/node_modules
         environment:
             - NODE_ENV=development
@@ -228,14 +228,14 @@ services:
     ############################################################################################# authorization
     authorization:
         container_name: authorization
-        build: 
+        build:
             context: .
             dockerfile: ./backend/authorization/Dockerfile
             target: development
         ports:
             - 3001:3000
         volumes:
-            - ./backend/authorization:/app
+            - ./backend/authorization:/app/backend/authorization
             - /app/node_modules
         environment:
             - NODE_ENV=development
@@ -279,7 +279,7 @@ services:
             dockerfile: ./backend/zscore-maintainer/Dockerfile
             target: development
         volumes:
-            - ./backend/zscore-maintainer:/app
+            - ./backend/zscore-maintainer:/app/backend/zscore-maintainer
             - /app/node_modules
         environment:
             - NODE_ENV=development
@@ -300,7 +300,7 @@ services:
             dockerfile: ./backend/zscore-maintainer/Dockerfile
             target: development
         volumes:
-            - ./backend/zscore-maintainer:/app
+            - ./backend/zscore-maintainer:/app/backend/zscore-maintainer
             - /app/node_modules
         environment:
             - NODE_ENV=development
@@ -321,7 +321,7 @@ services:
             dockerfile: ./backend/zscore-maintainer/Dockerfile
             target: development
         volumes:
-            - ./backend/zscore-maintainer:/app
+            - ./backend/zscore-maintainer:/app/backend/zscore-maintainer
             - /app/node_modules
         environment:
             - NODE_ENV=development

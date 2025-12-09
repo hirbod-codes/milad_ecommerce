@@ -18,10 +18,11 @@ RUN npm run build:zscore-maintainer
 
 FROM node:18-alpine AS development
 
-COPY --from=build /app/backend/zscore-maintainer/node_modules ./node_modules
-COPY --from=build /app/backend/zscore-maintainer/dist ./dist
+COPY --from=build /app /app
 
-CMD npm run dev:zscore-maintainer
+WORKDIR /app
+
+CMD ls -al /app && npm run dev:zscore-maintainer
 
 
 FROM build AS production_build
