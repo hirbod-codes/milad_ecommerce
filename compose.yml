@@ -1,21 +1,146 @@
 version: '3.8'
 
+networks:
+    gateway:
+    db:
+    api:
+    api_redis:
+    authorization:
+    authorization_redis:
+    zscore_manager:
+
 services:
+    # ############################################################################################# Prometheus
+    # prometheus:
+    #     container_name: prometheus
+    #     image: prom/prometheus:latest
+    #     volumes:
+    #         - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    #     ports:
+    #         - "9090:9090"
+
+    # ############################################################################################# Grafana
+    # grafana:
+    #     container_name: grafana
+    #     image: grafana/grafana:latest
+    #     ports:
+    #         - "3030:3000"
+    #     volumes:
+    #         - /var/lib/grafana
+    #     environment:
+    #         - GF_SECURITY_ADMIN_USER=admin
+    #         - GF_SECURITY_ADMIN_PASSWORD=admin
+    #     depends_on:
+    #         - prometheus
+
+    # ############################################################################################# OpenSearch
+    # opensearch:
+    #     container_name: opensearch
+    #     image: opensearchproject/opensearch:2.11.1
+    #     environment:
+    #         - discovery.type=single-node
+    #         - plugins.security.disabled=true
+    #         - OPENSEARCH_INITIAL_ADMIN_PASSWORD=password
+    #     # ulimits:
+    #     #     memlock:
+    #     #         soft: -1
+    #     #         hard: -1
+    #     #     mem_limit: 2048
+    #     ports:
+    #         - "9200:9200"
+    #     volumes:
+    #         - /usr/share/opensearch/data
+
+    # ############################################################################################# OpenSearch Dashboards
+    # dashboards:
+    #     container_name: dashboards
+    #     image: opensearchproject/opensearch-dashboards:2.11.1
+    #     ports:
+    #         - "5601:5601"
+    #     environment:
+    #         - OPENSEARCH_HOSTS=["http://opensearch:9200"]
+    #         - DISABLE_SECURITY_DASHBOARDS_PLUGIN=true
+    #         - OPENSEARCH_INITIAL_ADMIN_PASSWORD=password
+    #     depends_on:
+    #         - opensearch
+
+    ############################################################################################# mongo_express
+    mongo_express:
+        container_name: mongo_express
+        image: mongo-express:latest
+        environment:
+            - ME_CONFIG_MONGODB_SERVER=${mongodb_host_ip}
+            - ME_CONFIG_MONGODB_PORT=${mongodb_host_port}
+            - ME_CONFIG_MONGODB_ADMINUSERNAME=admin
+            - ME_CONFIG_MONGODB_ADMINPASSWORD=password
+            - ME_CONFIG_BASICAUTH_USERNAME=admin
+            - ME_CONFIG_BASICAUTH_PASSWORD=password
+        ports:
+            - 8081:8081
+        depends_on:
+            - main_mongodb
+        networks:
+            - db
+
+    ############################################################################################# redis_commander
+    redis_commander:
+        container_name: redis_commander
+        hostname: redis_commander
+        user: redis
+        image: ghcr.io/joeferner/redis-commander:latest
+        restart: always
+        environment:
+            - REDIS_HOSTS=local:revoked_access_tokens_redis:6379,local:api_redis:6379,local:authorization_redis:6379
+        ports:
+            - 8082:8081
+        depends_on:
+            - revoked_access_tokens_redis
+            - authorization_redis
+            - api_redis
+        networks:
+            - db
+            - api_redis
+            - authorization_redis
+
+    ############################################################################################# gateway
+    gateway:
+        container_name: gateway
+        image: nginx:alpine
+        restart: always
+        environment:
+            VITE_API_URL: https://localhost/auth
+            VITE_AUTH_API_URL: https://localhost/api
+            VITE_REDIRECT_URI: http://127.0.0.1:443/
+        volumes:
+            - ../../frontend/web/dist/:/usr/share/nginx/html/
+            - ../../frontend/web/nginx.development.conf:/etc/nginx/conf.d/default.conf
+            - ../../frontend/web/https/:/etc/ngonx/ssl/
+        ports:
+            - 80:80
+            - 443:443
+        depends_on:
+            - web
+            - api
+            - authorization
+        networks:
+            - gateway
+
     ############################################################################################# main_mongodb
     main_mongodb:
         container_name: main_mongodb
         build:
             context: .
             dockerfile: mongodb/single/Dockerfile
-            target: production
+            target: development
+        # To be reachable with MongoDB Compass application
         ports:
-                - 8082:27017
+            - 8083:27017
         environment:
             MONGODB_USERNAME: admin
             MONGODB_PASSWORD: password
             databaseName: primaryDB
         networks:
-            - base
+            - db
 
     ############################################################################################# revoked_access_tokens_redis
     revoked_access_tokens_redis:
@@ -24,7 +149,7 @@ services:
         ports:
             - 6379:6379
         networks:
-            - base
+            - db
 
     ############################################################################################# rabbitmq
     rabbitmq:
@@ -38,24 +163,43 @@ services:
             RABBITMQ_DEFAULT_USER: admin
             RABBITMQ_DEFAULT_PASS: password
         networks:
-            - base
+            - db
+
+    ############################################################################################# web
+    web:
+        container_name: web
+        image: node:18-alpine
+        command: ["/bin/sh", "-c", "mkdir -p /app && cd /app && ls && npm run dev"]
+        ports:
+            - 81:80
+        volumes:
+            - ./frontend/web/:/app
+        environment:
+            NODE_ENV: development
+            VITE_API_URL: https://localhost/api
+            VITE_AUTH_API_URL: https://localhost/auth
+            VITE_REDIRECT_URI: http://127.0.0.1:443/
+        networks:
+            - gateway
 
     ############################################################################################# api
     api:
         container_name: api
         build:
-            context: ./backend/API
-            dockerfile: Dockerfile
-            target: production
+            context: .
+            dockerfile: ./backend/api/Dockerfile
+            target: development
         ports:
             - 3000:3000
         volumes:
-            - ./backend/API:/app
+            - ./backend/api:/app
             - /app/node_modules
         environment:
-            - NODE_ENV=production
+            - NODE_ENV=development
             - DB_SUPPORTS_TRANSACTION=false
-            - DB_URL=mongodb://main_mongodb:27017
+            - DB_URL=mongodb://${mongodb_host_ip}:${mongodb_host_port}
+            - MONGODB_USERNAME=admin
+            - MONGODB_PASSWORD=password
             - SESSION_REDIS_TYPE=single
             - SESSION_REDIS_INITIAL_NODE_URL=redis://api_redis:6379
             - REVOKED_TOKENS_REDIS_TYPE=single
@@ -64,10 +208,13 @@ services:
             - MESSAGE_BROKER_URL=rabbitmq:5672
             - MESSAGE_BROKER_USERNAME=admin
             - MESSAGE_BROKER_PASSWORD=password
+            - ALLOWED_ORIGINS=https://localhost,http://localhost:81
         networks:
-            - base
+            - gateway
+            - db
             - api
             - api_redis
+            - zscore_manager
 
     ############################################################################################# api_redis
     api_redis:
@@ -82,18 +229,25 @@ services:
     authorization:
         container_name: authorization
         build: 
-            context: ./backend/Authorization
-            dockerfile: Dockerfile
-            target: production
+            context: .
+            dockerfile: ./backend/authorization/Dockerfile
+            target: development
         ports:
             - 3001:3000
         volumes:
-            - ./backend/Authorization:/app
+            - ./backend/authorization:/app
             - /app/node_modules
         environment:
-            - NODE_ENV=production
+            - NODE_ENV=development
+            - ADMIN_USERNAME=hirbod
+            - ADMIN_PHONE_NUMBER=09999999999
+            - ADMIN_EMAIL=example@domain.com
+            - ADMIN_PASSWORD=Pass99%aa
+            - ALLOWED_ORIGINS=https://localhost,http://localhost:81
             - DB_SUPPORTS_TRANSACTION=false
-            - DB_URL=mongodb://main_mongodb:27017
+            - DB_URL=mongodb://${mongodb_host_ip}:${mongodb_host_port}
+            - MONGODB_USERNAME=admin
+            - MONGODB_PASSWORD=password
             - SESSION_REDIS_TYPE=single
             - SESSION_REDIS_INITIAL_NODE_URL=redis://authorization_redis:6379
             - REVOKED_TOKENS_REDIS_TYPE=single
@@ -103,7 +257,8 @@ services:
             - MESSAGE_BROKER_USERNAME=admin
             - MESSAGE_BROKER_PASSWORD=password
         networks:
-            - base
+            - gateway
+            - db
             - authorization
             - authorization_redis
 
@@ -116,9 +271,65 @@ services:
         networks:
             - authorization_redis
 
-networks:
-    base:
-    api:
-    api_redis:
-    authorization:
-    authorization_redis:
+    ############################################################################################# zscore-manager-master
+    zscore-manager-master:
+        container_name: zscore-manager-master
+        build:
+            context: .
+            dockerfile: ./backend/zscore-maintainer/Dockerfile
+            target: development
+        volumes:
+            - ./backend/zscore-maintainer:/app
+            - /app/node_modules
+        environment:
+            - NODE_ENV=development
+            - DB_SUPPORTS_TRANSACTION=false
+            - DB_URL=mongodb://${mongodb_host_ip}:${mongodb_host_port}
+            - MONGODB_USERNAME=admin
+            - MONGODB_PASSWORD=password
+            - APP_MODE=master
+        networks:
+            - db
+            - zscore_manager
+
+    ############################################################################################# zscore-manager-slave1
+    zscore-manager-slave1:
+        container_name: zscore-manager-slave1
+        build:
+            context: .
+            dockerfile: ./backend/zscore-maintainer/Dockerfile
+            target: development
+        volumes:
+            - ./backend/zscore-maintainer:/app
+            - /app/node_modules
+        environment:
+            - NODE_ENV=development
+            - DB_SUPPORTS_TRANSACTION=false
+            - DB_URL=mongodb://${mongodb_host_ip}:${mongodb_host_port}
+            - MONGODB_USERNAME=admin
+            - MONGODB_PASSWORD=password
+            - APP_MODE=slave
+        networks:
+            - db
+            - zscore_manager
+
+    ############################################################################################# zscore-manager-slave2
+    zscore-manager-slave2:
+        container_name: zscore-manager-slave2
+        build:
+            context: .
+            dockerfile: ./backend/zscore-maintainer/Dockerfile
+            target: development
+        volumes:
+            - ./backend/zscore-maintainer:/app
+            - /app/node_modules
+        environment:
+            - NODE_ENV=development
+            - DB_SUPPORTS_TRANSACTION=false
+            - DB_URL=mongodb://${mongodb_host_ip}:${mongodb_host_port}
+            - MONGODB_USERNAME=admin
+            - MONGODB_PASSWORD=password
+            - APP_MODE=slave
+        networks:
+            - db
+            - zscore_manager

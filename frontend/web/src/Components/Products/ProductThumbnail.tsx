@@ -5,23 +5,26 @@ import { array } from "yup";
 import { Stack } from "../Base/Stack";
 import { ConfigurationContext } from "@/src/Contexts/Configuration/ConfigurationContext";
 import { StarIcon } from "lucide-react";
+import { useNavigate } from "react-router";
 
 export function ProductThumbnail({ product }: { product: Product }) {
     const configuration = useContext(ConfigurationContext)
 
+    const navigate = useNavigate()
+
     const [image, setImage] = useState(undefined)
 
     useEffect(() => {
-        fetchData(`${getApiUrl()}/products/pictures/productIds?productIds=${product._id}`)
-            .then(r => {
-                if (r.response && r.response.ok && array().required().min(1).isValidSync(r.data))
-                    fetchData(`${getApiUrl()}/products/picture/fileId?fileId=${r.data[0]._id}`)
-                        .then(rr => {
-                            if (r.response && r.response.ok)
-                                // setImage(URL.createObjectURL(rr.data))
-                                setImage(`${getApiUrl()}/products/picture/fileId?fileId=${r.data[0]._id}`)
-                        })
-            })
+        // fetchData(`${getApiUrl()}/products/pictures/productIds?productIds=${product._id}`)
+        //     .then(r => {
+        //         if (r.response && r.response.ok && array().required().min(1).isValidSync(r.data))
+        //             fetchData(`${getApiUrl()}/products/picture/fileId?fileId=${r.data[0]._id}`)
+        //                 .then(rr => {
+        //                     if (r.response && r.response.ok)
+        //                         // setImage(URL.createObjectURL(rr.data))
+        //                         setImage(`${getApiUrl()}/products/picture/fileId?fileId=${r.data[0]._id}`)
+        //                 })
+        //     })
     }, [])
 
     return (
@@ -30,7 +33,7 @@ export function ProductThumbnail({ product }: { product: Product }) {
                 <img src={image} className="w-full" loading="lazy" />
             </div>
 
-            <Stack direction="vertical">
+            <Stack direction="vertical" stackProps={{ className: 'cursor-pointer', onClick: () => navigate(`/`) }}>
                 <Stack stackProps={{ className: 'justify-between' }}>
                     <div className="hover:underline text-md text-ellipsis text-nowrap overflow-hidden">
                         {product.displayName[configuration.local.language]}

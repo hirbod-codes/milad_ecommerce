@@ -1,36 +1,43 @@
+FROM node:18-alpine AS build
+
+WORKDIR /app
+
+COPY ./package.json ./
+COPY ./package-lock.json ./
+
+COPY ./backend/api/package.json ./backend/api/package.json
+COPY ./packages/utils/package.json ./packages/utils/package.json
+COPY ./packages/mongodb/package.json ./packages/mongodb/package.json
+
+RUN npm install
+
+COPY . .
+
+RUN npm run build:api
+
+
 FROM node:18-alpine AS development
 
-WORKDIR /app
+COPY --from=build /app/backend/api/node_modules ./node_modules
+COPY --from=build /app/backend/api/dist ./dist
 
-COPY package*.json ./
+CMD npm run dev:api
 
-RUN npm install
 
-COPY . .
-
-CMD npm run dev
-
-FROM node:18-alpine AS production_build
+FROM build AS production_build
 
 WORKDIR /app
-
-COPY package*.json ./
-
-RUN npm install
-
-COPY . .
-
-RUN npm run build
 
 # Remove dev dependencies
 RUN npm prune --production
+
 
 FROM node:18-alpine AS production
 
 WORKDIR /app
 
-COPY --from=production_build /app/node_modules ./node_modules
-COPY --from=production_build /app/dist ./dist
+COPY --from=production_build /app/backend/api/node_modules ./node_modules
+COPY --from=production_build /app/backend/api/dist ./dist
 
 ENV NODE_ENV=production
 ENV PORT=3000

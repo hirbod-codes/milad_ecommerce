@@ -84,13 +84,8 @@ export function Main() {
                     ]
                 },
                 {
-                    path: "/Products",
-                    children: [
-                        {
-                            path: "Category",
-                            element: category
-                        }
-                    ]
+                    path: "Category",
+                    element: category
                 },
                 {
                     path: "error",

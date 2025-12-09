@@ -53,11 +53,11 @@ function Category({ category, allCategories }: { category: CategoryType, allCate
     return (
         <div className="w-full px-2">
             {childrenCategories.length === 0
-                ? <div className="cursor-pointer hover:underline py-2" onClick={() => navigate(`/Products/Category?category=${category.name}`)}>{category.name}</div>
+                ? <div className="cursor-pointer hover:underline py-2" onClick={() => navigate(`/Category?category=${category.name}`)}>{category.name}</div>
                 : <Accordion type="single" collapsible className=''>
                     <AccordionItem value="item-1" className="border-0">
                         <AccordionTrigger className="py-2">
-                            <div className="text-md" onClick={() => navigate(`/Products/Category?category=${category.name}`)}>
+                            <div className="text-md" onClick={() => navigate(`/Category?category=${category.name}`)}>
                                 {category.name}
                             </div>
                         </AccordionTrigger>

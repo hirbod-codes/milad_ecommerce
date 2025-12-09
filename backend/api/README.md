@@ -15,27 +15,6 @@ docker system prune -f ---volumes; docker rm -f $(docker ps -aq); docker image r
 mongodb_host_ip=localhost mongodb_host_port=27017 docker compose -f compose.yml up --build --remove-orphans
 ```
 
-visit `https://localhost:443`
-
-## HTTPS for localhost
-
-generate certificates properly and add them to your browser:
-
-```bash
-openssl req -newkey rsa:2048 -nodes -keyout localhost.key -out localhost.csr
-openssl x509 -req -days 365 -in localhost.csr -signkey localhost.key -out localhost.crt
-
-mkdir ./authority
-cd ./authority
-openssl req -x509 -newkey rsa:2048 -nodes -keyout ca.key -out ca.crt -days 3650
-
-cd ..
-openssl x509 -req -in localhost.csr -CA ./authority/ca.crt -CAkey ./authority/ca.key -CAcreateserial -out localhost.crt -days 365 -sha256
-
-# firefox only accepts pkcs12 format
-openssl pkcs12 -export -in localhost.crt -inkey localhost.key -out localhost.p12
-```
-
 ## Note
 
 Due to lack of support for time-series collection in docker image mongo:4 and lack of AVX extension on my old CPU which is required by mongodb:5 and after, mongodb database is deployed on another host with a CPU with AVX extension support, to serve the development environment.

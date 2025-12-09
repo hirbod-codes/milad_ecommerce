@@ -86,7 +86,7 @@ export function Category() {
             <Stack stackProps={{ className: 'items-center p-2' }}>
                 {parentCategories.map((n, i) =>
                     <Fragment key={i}>
-                        <div className="text-sm text-outline cursor-pointer" onClick={() => navigate(`/Products/Category?category=${n}`, { viewTransition: true, replace: true })}>
+                        <div className="text-sm text-outline cursor-pointer" onClick={() => navigate(`/Category?category=${n}`, { viewTransition: true, replace: true })}>
                             {configuration.categories?.find(f => f.name === n)?.displayName[configuration.local.language]}
                         </div>
 
