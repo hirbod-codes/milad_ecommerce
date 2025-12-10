@@ -1,4 +1,7 @@
 {
+    "buildOptions": {
+        "verbose": true
+    },
     "compilerOptions": {
         "target": "ES2022",
         "module": "CommonJS",

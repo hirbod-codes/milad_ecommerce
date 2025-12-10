@@ -6,12 +6,11 @@
     "description": "",
     "main": "./dist/index.js",
     "scripts": {
-        "build": "npx tsc -p ./tsconfig.json",
-        "start": "node -r ./bootstrap.js dist/index.js || exit 1",
-        "dev": "nodemon --config nodemon.json"
-    },
-    "_moduleAliases": {
-        "@/src": "./dist"
+        "dev": "concurrently \"npm:watch-ts\" \"npm:watch-alias\" \"npm:watch-node\"",
+        "watch-ts": "tsc --watch --preserveWatchOutput",
+        "watch-alias": "tsc-alias --watch",
+        "watch-node": "nodemon dist/index.js",
+        "build": "npx tsc -p ./tsconfig.json"
     },
     "dependencies": {
         "@monorepo/mongodb": "1.0.0",
@@ -19,7 +18,6 @@
         "dotenv": "^16.4.7",
         "express": "^4.21.2",
         "luxon": "^3.5.0",
-        "module-alias": "^2.2.3",
         "mongodb": "6.8",
         "node-cron": "^3.0.3",
         "yup": "^1.6.1"

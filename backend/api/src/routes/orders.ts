@@ -1,8 +1,8 @@
 import { Router } from "express";
-import { forbiddenFieldsToFilter, Order, orderImmutableSchema, orderInputSchema, orderSchema, readableFields } from "@/src/DB/Models/Order";
-import { authenticate } from "@/src/middlewares/authenticate";
-import { authorize } from "@/src/middlewares/authorize";
-import { FilterManagement } from "@/src/DB/FilterManagement";
+import { forbiddenFieldsToFilter, Order, orderImmutableSchema, orderInputSchema, orderSchema, readableFields } from "@/DB/Models/Order";
+import { authenticate } from "@/middlewares/authenticate";
+import { authorize } from "@/middlewares/authorize";
+import { FilterManagement } from "@/DB/FilterManagement";
 import { array, number, object, string } from "yup";
 import { Filter, SortDirection } from "mongodb";
 import { ProductRepository } from "../DB/Repositories/Products/ProductRepository";

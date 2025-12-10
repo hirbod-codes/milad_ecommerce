@@ -6,13 +6,11 @@
     "description": "",
     "main": "./dist/index.js",
     "scripts": {
-        "build": "npx tsc -p ./tsconfig.json",
-        "start": "node dist/index.js || exit 1",
-        "dev": "nodemon --config nodemon.json"
-    },
-    "_moduleAliases": {
-        "@/src": "./dist",
-        "@faker-js": "./node_modules/@faker-js"
+        "dev": "concurrently \"npm:watch-ts\" \"npm:watch-alias\" \"npm:watch-node\"",
+        "watch-ts": "tsc --watch --preserveWatchOutput",
+        "watch-alias": "tsc-alias --watch",
+        "watch-node": "nodemon dist/index.js",
+        "build": "npx tsc -p ./tsconfig.json"
     },
     "dependencies": {
         "@monorepo/mongodb": "1.0.0",
@@ -24,7 +22,6 @@
         "express": "^4.21.2",
         "jsonwebtoken": "^9.0.2",
         "luxon": "^3.5.0",
-        "module-alias": "^2.2.3",
         "mongodb": "6.8",
         "nodemailer": "^6.10.0",
         "pino-http": "^10.4.0",
@@ -33,7 +30,6 @@
         "yup": "^1.6.1"
     },
     "devDependencies": {
-        "@faker-js/faker": "^9.6.0",
         "@types/amqplib": "^0.10.7",
         "@types/busboy": "^1.5.4",
         "@types/cookie-parser": "^1.4.8",

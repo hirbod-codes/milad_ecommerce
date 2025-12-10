@@ -1,7 +1,7 @@
 import { Router } from "express";
-import { categoryImmutableSchema, categoryInputSchema, categoryUpdateSchema } from "@/src/DB/Models/Category";
-import { authenticate } from "@/src/middlewares/authenticate";
-import { authorize } from "@/src/middlewares/authorize";
+import { categoryImmutableSchema, categoryInputSchema, categoryUpdateSchema } from "@/DB/Models/Category";
+import { authenticate } from "@/middlewares/authenticate";
+import { authorize } from "@/middlewares/authorize";
 import { number } from "yup";
 import { CategoryRepository } from "../DB/Repositories/CategoryRepository";
 import { stringObjectId } from "@monorepo/mongodb";

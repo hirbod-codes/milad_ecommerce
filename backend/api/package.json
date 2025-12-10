@@ -5,13 +5,12 @@
     "license": "ISC",
     "description": "",
     "main": "./dist/index.js",
-    "type": "module",
     "scripts": {
-        "dev": "concurrently \"npm run dev:tsc\" \"npm run dev:nodemon\"",
-        "dev:tsc": "tsc --watch --preserveWatchOutput",
-        "dev:nodemon": "nodemon --config nodemon,json dist/index.js",
-        "build": "npx tsc -p ./tsconfig.json",
-        "start": "node -r ./bootstrap.js dist/index.js || exit 1"
+        "dev": "concurrently \"npm:watch-ts\" \"npm:watch-alias\" \"npm:watch-node\"",
+        "watch-ts": "tsc --watch --preserveWatchOutput",
+        "watch-alias": "tsc-alias --watch",
+        "watch-node": "nodemon dist/index.js",
+        "build": "npx tsc -p ./tsconfig.json"
     },
     "dependencies": {
         "@monorepo/mongodb": "1.0.0",
@@ -23,7 +22,6 @@
         "express": "^4.21.2",
         "jsonwebtoken": "^9.0.2",
         "luxon": "^3.5.0",
-        "module-alias": "^2.2.3",
         "mongodb": "6.8",
         "node-cron": "^3.0.3",
         "nodemailer": "^6.10.0",
@@ -53,8 +51,9 @@
         "@types/uuid": "^10.0.0",
         "@types/yup": "^0.32.0",
         "concurrently": "^9.1.2",
-        "nodemon": "^3.1.9",
+        "nodemon": "^3.1.11",
         "ts-node": "^10.9.2",
+        "tsc-alias": "^1.8.16",
         "typescript": "^5.8.2"
     }
 }

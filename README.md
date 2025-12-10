@@ -12,7 +12,7 @@ docker images -q | grep -v "$(docker images -q mongo:4.0 redis:7.0 rabbitmq:3-ma
 docker system prune -f ---volumes; docker rm -f $(docker ps -aq); docker image rm -f $(docker image ls -f "dangling=true" -q); docker rm -f $(docker ps -aq); docker volume rm -f $(docker volume ls -q); 
 
 # Run containers
-mongodb_host_ip=localhost mongodb_host_port=27017 docker compose -f compose.yml up --build --remove-orphans
+mongodb_host_ip=main_mongodb mongodb_host_port=27017 docker compose -f compose.yml up --build --remove-orphans
 ```
 
 visit `https://localhost:443`

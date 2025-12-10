@@ -4,7 +4,7 @@ import { RoleCreate, RoleInput, RoleUpdate, RoleWithPrivileges, schemaVersion } 
 import { collectionName } from '../Models/Privilege'
 import { defaultRolePrivilegeNames } from '../Models/privilegeNames'
 import { PrivilegeRepository } from './PrivilegeRepository'
-import { faker, fakerFA } from '@faker-js/faker/'
+import { faker, fakerFA } from '@faker-js/faker'
 import { IRepository, MongoDB } from '@monorepo/mongodb'
 
 export class RoleRepository implements IRepository {

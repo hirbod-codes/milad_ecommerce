@@ -2,7 +2,7 @@ import { DateTime } from "luxon";
 import { Product, ProductInput, ProductCreate, schemaVersion, ProductUpdate, ProductImmutable, collectionName } from "../../Models/Products/Product";
 import { ClientSession, Collection, Db, DeleteResult, Filter, InsertOneResult, MongoServerError, MongoSystemError, ObjectId, SortDirection, UpdateResult } from 'mongodb'
 import { IRepository, MongoDB } from '@monorepo/mongodb';
-import { faker, fakerFA } from "@faker-js/faker/";
+import { faker, fakerFA } from "@faker-js/faker";
 import { CategoryRepository } from "../CategoryRepository";
 import { TagRepository } from "../TagRepository";
 import { ProductPictureRepository } from "./ProductPictureRepository";

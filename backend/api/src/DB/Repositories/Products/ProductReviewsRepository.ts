@@ -2,7 +2,7 @@ import { ClientSession, Collection, Db, DeleteResult, InsertOneResult, MongoClie
 import { collectionName, ProductReview, ProductReviewCreate, ProductReviewInput, ProductReviewUpdate, schemaVersion } from '../../Models/Products/ProductReview'
 import { DateTime } from 'luxon'
 import { IRepository, MongoDB } from '@monorepo/mongodb';
-import { faker } from '@faker-js/faker/.';
+import { faker } from '@faker-js/faker';
 import { ProductRepository } from './ProductRepository';
 import { UserRepository } from '../UserRepository';
 

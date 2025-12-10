@@ -24,6 +24,7 @@ import { ProductViewRepository } from "./DB/Repositories/Products/ProductViewRep
 import { UserRepository } from "./DB/Repositories/UserRepository";
 import { RoleRepository } from "./DB/Repositories/RoleRepository";
 
+
 console.log('running...');
 
 dotenv.config({ debug: process.env.DEBUG !== undefined ? Boolean(process.env.DEBUG) : undefined })

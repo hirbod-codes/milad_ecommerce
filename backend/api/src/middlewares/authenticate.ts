@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express"
-import { RevokedAccessTokenManager } from "@/src/RevokedAccessTokens/RevokedAccessTokenManager"
+import { RevokedAccessTokenManager } from "@/RevokedAccessTokens/RevokedAccessTokenManager"
 import { AuthManager } from "../Auth/AuthManager"
 
 export async function authenticate(req: Request, res: Response, next: NextFunction) {

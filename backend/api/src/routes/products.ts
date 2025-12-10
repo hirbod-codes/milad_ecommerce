@@ -1,9 +1,9 @@
 import { Router } from "express";
-import { FilterManagement } from "@/src/DB/FilterManagement";
-import { Product, productImmutableSchema, productInputSchema, productSchema, productUpdateSchema, readableFields, forbiddenFieldsToFilter } from "@/src/DB/Models/Products/Product";
+import { FilterManagement } from "@/DB/FilterManagement";
+import { Product, productImmutableSchema, productInputSchema, productSchema, productUpdateSchema, readableFields, forbiddenFieldsToFilter } from "@/DB/Models/Products/Product";
 import { array, mixed, number, object, string, } from "yup";
-import { authenticate } from "@/src/middlewares/authenticate";
-import { authorize } from "@/src/middlewares/authorize";
+import { authenticate } from "@/middlewares/authenticate";
+import { authorize } from "@/middlewares/authorize";
 import busboy from "busboy";
 import { Filter, SortDirection } from "mongodb";
 import { ProductRepository } from "../DB/Repositories/Products/ProductRepository";

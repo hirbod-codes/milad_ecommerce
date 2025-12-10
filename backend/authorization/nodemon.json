@@ -1,11 +1,11 @@
 {
     "watch": [
-        "src"
+        "dist"
     ],
-    "ext": "ts,js,json",
+    "ext": "js,json",
     "ignore": [
-        "dist/*",
-        "src/**/*.test.ts"
+        "src/**/*.test.ts",
+        "node_modules"
     ],
-    "exec": "npm run build && node -r ./bootstrap.js dist/index.js || exit 1"
+    "delay": "200"
 }

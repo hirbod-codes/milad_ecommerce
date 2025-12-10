@@ -37,7 +37,7 @@ export class FailedProductSaleRangeRepository implements IRepository {
     }
 
     async seed(count?: number) {
-        throw new Error("This method has not implemented.")
+        // throw new Error("This method has not implemented.")
     }
 
     async create(failedProductSaleRange: FailedProductSaleRangeInput, now?: number) {

@@ -5,8 +5,15 @@
     ],
     "compilerOptions": {
         "rootDir": "src",
+        "baseUrl": "src",
         "outDir": "./dist",
+        "forceConsistentCasingInFileNames": true,
+        "preserveWatchOutput": false,
         "declaration": true,
-        "baseUrl": "./"
+        "paths": {
+            "@/*": [
+                "*"
+            ]
+        }
     }
 }

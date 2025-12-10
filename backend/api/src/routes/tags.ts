@@ -1,7 +1,7 @@
 import { Router } from "express";
-import { tagImmutableSchema, tagInputSchema, tagUpdateSchema } from "@/src/DB/Models/Tag";
-import { authenticate } from "@/src/middlewares/authenticate";
-import { authorize } from "@/src/middlewares/authorize";
+import { tagImmutableSchema, tagInputSchema, tagUpdateSchema } from "@/DB/Models/Tag";
+import { authenticate } from "@/middlewares/authenticate";
+import { authorize } from "@/middlewares/authorize";
 import { TagRepository } from "../DB/Repositories/TagRepository";
 import { stringObjectId } from "@monorepo/mongodb";
 
