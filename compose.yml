@@ -168,7 +168,7 @@ services:
     ############################################################################################# web
     web:
         container_name: web
-        image: node:18-alpine
+        image: node:24-alpine
         command: ["/bin/sh", "-c", "mkdir -p /app && cd /app && ls && npm run dev"]
         ports:
             - 81:80
