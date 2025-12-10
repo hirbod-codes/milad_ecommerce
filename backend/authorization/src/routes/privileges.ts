@@ -1,8 +1,8 @@
 import { Router } from "express"
-import { stringObjectId } from "@/src/DB/Models/common_schemas"
-import { privilegeInputSchema } from "@/src/DB/Models/Privilege"
-import { authenticate } from "@/src/middlewares/authenticate"
-import { authorize } from "@/src/middlewares/authorize"
+import { stringObjectId } from "@/DB/Models/common_schemas"
+import { privilegeInputSchema } from "@/DB/Models/Privilege"
+import { authenticate } from "@/middlewares/authenticate"
+import { authorize } from "@/middlewares/authorize"
 import { AuthManager } from "../AuthManager"
 import { string, ValidationError } from "yup"
 import Jwt from "jsonwebtoken";

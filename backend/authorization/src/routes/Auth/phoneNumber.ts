@@ -1,11 +1,11 @@
 import { Router } from "express";
 import { DateTime } from "luxon";
-import { otpProviderConfig } from "@/src/";
-import { SessionManager } from "@/src/DB/Session/SessionManager";
+import { otpProviderConfig } from "@/index";
+import { SessionManager } from "@/DB/Session/SessionManager";
 import { number } from "yup";
-import { User, userInputSchema } from "@/src/DB/Models/User";
-import { UserRepository } from "@/src/DB/Repositories/UserRepository";
-import { AuthManager } from "@/src/AuthManager";
+import { User, userInputSchema } from "@/DB/Models/User";
+import { UserRepository } from "@/DB/Repositories/UserRepository";
+import { AuthManager } from "@/AuthManager";
 
 const phoneNumberRouter = Router()
 

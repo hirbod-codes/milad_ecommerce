@@ -1,9 +1,9 @@
 import { Router } from "express";
-import { refreshTokenInputSchema } from "@/src/DB/Models/RefreshToken";
-import { authenticate } from "@/src/middlewares/authenticate";
-import { stringObjectId } from "@/src/DB/Models/common_schemas";
+import { refreshTokenInputSchema } from "@/DB/Models/RefreshToken";
+import { authenticate } from "@/middlewares/authenticate";
+import { stringObjectId } from "@/DB/Models/common_schemas";
 import Jwt from "jsonwebtoken";
-import { AuthManager } from "@/src/AuthManager";
+import { AuthManager } from "@/AuthManager";
 
 const tokenRouter = Router()
 
