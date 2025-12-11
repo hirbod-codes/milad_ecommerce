@@ -78,7 +78,7 @@ phoneNumberRouter.post('/authenticate', async (req, res) => {
 
         let { phoneNumber, code }: { phoneNumber: string, code: number } = req.body
 
-        const badRequestErrors = []
+        const badRequestErrors: string[] = []
 
         if (!userInputSchema.pick(['phoneNumber']).strict(true).required().isValidSync({ phoneNumber }))
             badRequestErrors.push('invalid Phone number')
@@ -93,7 +93,7 @@ phoneNumberRouter.post('/authenticate', async (req, res) => {
 
         console.log('from user', { phoneNumber, code })
 
-        let json = undefined
+        let json: string | undefined = undefined
         try { json = await SessionManager.getSession(phoneNumber) }
         catch (e) {
             console.error(e)
@@ -133,7 +133,10 @@ phoneNumberRouter.post('/authenticate', async (req, res) => {
             throw new Error('system failed to create a user')
         }
 
-        let tokens = undefined
+        let tokens: {
+            accessToken: string;
+            refreshToken: string;
+        } | undefined = undefined
         try { tokens = await AuthManager.getInstance().generateTokens(userId, user?.role ?? 'default') }
         catch (e) {
             console.error(e)

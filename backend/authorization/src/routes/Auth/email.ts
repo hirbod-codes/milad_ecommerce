@@ -62,7 +62,7 @@ emailRouter.post('/signup', async (req, res) => {
 
         const { email, password, code } = req.body
 
-        const badRequestErrors = []
+        const badRequestErrors: string[] = []
 
         if (!userInputSchema.pick(['email']).required().isValidSync({ email }))
             badRequestErrors.push('invalid email')
@@ -80,7 +80,7 @@ emailRouter.post('/signup', async (req, res) => {
 
         console.log('from user', { email, password, code })
 
-        let json = undefined
+        let json: string | undefined = undefined
         try { json = await SessionManager.getSession(email) }
         catch (e) {
             console.error(e)
@@ -142,7 +142,10 @@ emailRouter.post('/signup', async (req, res) => {
             throw new Error('system failed to create a user')
         }
 
-        let tokens = undefined
+        let tokens: {
+            accessToken: string;
+            refreshToken: string;
+        } | undefined = undefined
         try { tokens = await AuthManager.getInstance().generateTokens(userId, 'default') }
         catch (e) {
             console.error(e)
@@ -170,7 +173,7 @@ emailRouter.post('/login', async (req, res) => {
 
         const { email, password } = req.body
 
-        const badRequestErrors = []
+        const badRequestErrors: string[] = []
 
         if (!userInputSchema.pick(['email']).required().isValidSync({ email }))
             badRequestErrors.push('invalid email')
@@ -210,7 +213,10 @@ emailRouter.post('/login', async (req, res) => {
             return
         }
 
-        let tokens = undefined
+        let tokens: {
+            accessToken: string;
+            refreshToken: string;
+        } | undefined = undefined
         try { tokens = await AuthManager.getInstance().generateTokens(user._id.toString(), user.role) }
         catch (e) {
             console.error(e)

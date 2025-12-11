@@ -327,7 +327,7 @@ user.post('/code', authenticate, async (req, res) => {
             return
         }
 
-        let json = undefined
+        let json: string | undefined = undefined
         try { json = await SessionManager.getSession(sessionId) }
         catch (e) {
             console.error(e)
@@ -413,7 +413,7 @@ user.patch('/sensitive', authenticate, async (req, res) => {
             return
         }
 
-        let json = undefined
+        let json: string | undefined = undefined
         try { json = await SessionManager.getSession(sessionId) }
         catch (e) {
             console.error(e)
@@ -530,7 +530,7 @@ user.patch('/confirm', authenticate, async (req, res) => {
             return
         }
 
-        let json = undefined
+        let json: string | undefined = undefined
         try { json = await SessionManager.getSession(sessionId) }
         catch (e) {
             console.error(e)
@@ -657,7 +657,7 @@ user.post('/delete-code', authenticate, async (req, res) => {
             return
         }
 
-        let json = undefined
+        let json: string | undefined = undefined
         try { json = await SessionManager.getSession(sessionId) }
         catch (e) {
             console.error(e)
@@ -729,7 +729,7 @@ user.delete('/', authenticate, async (req, res) => {
             return
         }
 
-        let json = undefined
+        let json: string | undefined = undefined
         try { json = await SessionManager.getSession(sessionId) }
         catch (e) {
             console.error(e)
@@ -795,7 +795,7 @@ user.delete('/email', authenticate, async (req, res) => {
             return
         }
 
-        let json = undefined
+        let json: string | undefined = undefined
         try { json = await SessionManager.getSession(sessionId) }
         catch (e) {
             console.error(e)
@@ -868,7 +868,7 @@ user.delete('/phoneNumber', authenticate, async (req, res) => {
             return
         }
 
-        let json = undefined
+        let json: string | undefined = undefined
         try { json = await SessionManager.getSession(sessionId) }
         catch (e) {
             console.error(e)

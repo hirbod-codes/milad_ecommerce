@@ -15,7 +15,7 @@ tokenRouter.post('/retrieve-access-token', async (req, res) => {
     try {
         const refreshToken = req?.cookies?.token
 
-        const badRequestErrors = []
+        const badRequestErrors: string[] = []
 
         if (!refreshTokenInputSchema.pick(['refreshToken']).required().isValidSync({ refreshToken }))
             badRequestErrors.push('invalid refresh token')

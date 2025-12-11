@@ -7,6 +7,7 @@
         "rootDir": "src",
         "baseUrl": "src",
         "outDir": "./dist",
+        "noImplicitAny": false,
         "forceConsistentCasingInFileNames": true,
         "preserveWatchOutput": false,
         "declaration": true,

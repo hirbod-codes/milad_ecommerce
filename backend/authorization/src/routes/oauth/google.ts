@@ -5,6 +5,7 @@ import { User } from "@/DB/Models/User";
 import { UserRepository } from "@/DB/Repositories/UserRepository";
 import { AuthManager } from "@/AuthManager";
 import { httpsRequest } from "@monorepo/utils";
+import { InsertOneResult } from "mongodb";
 
 const oauthGoogleRouter = Router()
 
@@ -71,7 +72,7 @@ oauthGoogleRouter.post('/token', async (req, res) => {
 
         console.log('accessToken', accessToken)
 
-        let userInfo = undefined
+        let userInfo: any = undefined
         try {
             let userInfoResponse = await httpsRequest({
                 hostname: 'www.googleapis.com',
@@ -95,7 +96,7 @@ oauthGoogleRouter.post('/token', async (req, res) => {
         console.log('userInfo', userInfo)
 
         let userId: string = undefined!, user: User | undefined | null
-        let r = undefined
+        let r: InsertOneResult | false | undefined = undefined
         try {
             const userRepository = await UserRepository.getInstance()
             let user = await userRepository.getUserByEmail(userInfo.email)
@@ -121,7 +122,10 @@ oauthGoogleRouter.post('/token', async (req, res) => {
             throw new Error('system failed to create user')
         }
 
-        let tokens = undefined
+        let tokens: {
+            accessToken: string;
+            refreshToken: string;
+        } | undefined = undefined
         try { tokens = await AuthManager.getInstance().generateTokens(userId, user?.role ?? 'default') }
         catch (e) {
             console.error(e)
