@@ -7,8 +7,8 @@
     "main": "./dist/index.js",
     "scripts": {
         "dev": "concurrently \"npm:watch-ts\" \"npm:watch-alias\" \"npm:watch-node\"",
-        "watch-ts": "tsc --watch --preserveWatchOutput",
-        "watch-alias": "tsc-alias --watch",
+        "watch-ts": "tsc -p ./tsconfig.json --watch --preserveWatchOutput",
+        "watch-alias": "tsc-alias -p ./tsconfig.json --watch",
         "watch-node": "nodemon dist/index.js",
         "build": "npx tsc -p ./tsconfig.json"
     },
@@ -23,6 +23,7 @@
         "yup": "^1.6.1"
     },
     "devDependencies": {
+        "@faker-js/faker": "^7.6.0",
         "@types/dotenv": "^8.2.3",
         "@types/express": "^5.0.0",
         "@types/luxon": "^3.4.2",

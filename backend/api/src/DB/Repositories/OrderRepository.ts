@@ -78,21 +78,21 @@ export class OrderRepository implements IRepository {
                             while (safety < 10) {
                                 safety++
                                 try {
-                                    const selectedProducts = faker.helpers.arrayElements(products, faker.number.int({ min: 3, max: 5 }))
-                                    const orderProducts = selectedProducts.map(m => ({ productId: m._id, quantity: faker.number.int({ min: 1, max: 400 }) }))
+                                    const selectedProducts = faker.helpers.arrayElements(products, faker.datatype.number({ min: 3, max: 5 }))
+                                    const orderProducts = selectedProducts.map(m => ({ productId: m._id, quantity: faker.datatype.number({ min: 1, max: 400 }) }))
                                     const cost = { IRR: orderProducts.reduce((p, c) => p + products.find(f => f._id === c.productId)!.price.IRR * c.quantity, 0), USD: orderProducts.reduce((p, c) => p + products.find(f => f._id === c.productId)!.price.USD * c.quantity, 0) }
 
-                                    const ts = faker.number.int({ min: selectedProducts.reduce((p, c) => c.createdAt > p ? c.createdAt : p, 0), max: endTimeTS })
+                                    const ts = faker.datatype.number({ min: selectedProducts.reduce((p, c) => c.createdAt > p ? c.createdAt : p, 0), max: endTimeTS })
 
                                     const orderCreate: OrderCreate = {
                                         schemaVersion,
                                         userId: user._id,
-                                        isPayed: faker.datatype.boolean(0.8),
-                                        isSent: faker.datatype.boolean(0.5),
+                                        isPayed: faker.datatype.boolean(),
+                                        isSent: faker.datatype.boolean(),
                                         products: orderProducts,
                                         cost,
                                         address: {
-                                            text: faker.lorem.lines({ min: 1, max: 5 }),
+                                            text: faker.address.streetAddress(),
                                             googleMap: faker.datatype.boolean() ? undefined : faker.internet.url()
                                         },
                                         createdAt: ts,

@@ -2,7 +2,7 @@ import { DateTime } from "luxon";
 import { Product, ProductInput, ProductCreate, schemaVersion, ProductUpdate, ProductImmutable, collectionName } from "../../Models/Products/Product";
 import { ClientSession, Collection, Db, DeleteResult, Filter, InsertOneResult, MongoServerError, MongoSystemError, ObjectId, SortDirection, UpdateResult } from 'mongodb'
 import { IRepository, MongoDB } from '@monorepo/mongodb';
-import { faker, fakerFA } from "@faker-js/faker";
+import { faker } from "@faker-js/faker";
 import { CategoryRepository } from "../CategoryRepository";
 import { TagRepository } from "../TagRepository";
 import { ProductPictureRepository } from "./ProductPictureRepository";
@@ -114,6 +114,9 @@ export class ProductRepository implements IRepository {
                 count = 100
 
             const names = faker.definitions.commerce?.product_name
+            if (names === undefined)
+                throw new Error("failed to produce fake product information")
+
             const firstDigit = names.product
             const secondDigit = names.material
             const thirdDigit = names.adjective
@@ -131,7 +134,7 @@ export class ProductRepository implements IRepository {
                         while (safety < 10) {
                             safety++
                             try {
-                                const ts = faker.number.int({ min: startTimeTS, max: endTimeTS })
+                                const ts = faker.datatype.number({ min: startTimeTS, max: endTimeTS })
 
                                 let name: string = undefined!
                                 if (i < firstDigitNumbers)
@@ -143,31 +146,36 @@ export class ProductRepository implements IRepository {
                                 else
                                     throw new Error('out of unique values for product name')
 
+                                faker.setLocale('fa')
+                                const displayName = { fa: faker.commerce.productName(), en: name }
+                                const description = { fa: faker.commerce.productDescription(), en: faker.commerce.productDescription() }
+                                faker.setLocale('en_US')
+
                                 let r = await collection.insertOne({
                                     schemaVersion,
-                                    categories: faker.helpers.arrayElements(categories, faker.number.int({ min: 1, max: 5 })).map(m => m.name),
-                                    tags: faker.helpers.arrayElements(tags, faker.number.int({ min: 1, max: 5 })).map(m => m.name),
+                                    categories: faker.helpers.arrayElements(categories, faker.datatype.number({ min: 1, max: 5 })).map(m => m.name),
+                                    tags: faker.helpers.arrayElements(tags, faker.datatype.number({ min: 1, max: 5 })).map(m => m.name),
                                     name,
-                                    displayName: { fa: fakerFA.commerce.productName(), en: name },
-                                    description: { fa: fakerFA.commerce.productDescription(), en: faker.commerce.productDescription() },
-                                    price: { IRR: faker.number.int({ min: 0, max: 500_000_000 }), USD: faker.number.int({ min: 0, max: 500_000_000 }) },
-                                    reviewsCount: faker.number.int({ min: 0, max: 1000 }),
-                                    isAvailable: faker.datatype.boolean(0.7),
+                                    displayName: displayName,
+                                    description: description,
+                                    price: { IRR: faker.datatype.number({ min: 0, max: 500_000_000 }), USD: faker.datatype.number({ min: 0, max: 500_000_000 }) },
+                                    reviewsCount: faker.datatype.number({ min: 0, max: 1000 }),
+                                    isAvailable: faker.datatype.boolean(),
                                     weeklyOrderZScore: null,
                                     monthlyOrderZScore: null,
                                     yearlyOrderZScore: null,
                                     weeklyViewZScore: null,
                                     monthlyViewZScore: null,
                                     yearlyViewZScore: null,
-                                    averageRating: faker.number.float({ min: 0, max: 5 }),
-                                    ...(Object.fromEntries(new Array(faker.number.int({ min: 0, max: 10 })).fill(null).map(m => [faker.string.alpha({ length: { min: 2, max: 10 } }), faker.string.alpha({ length: { min: 2, max: 10 } })]))),
+                                    averageRating: faker.datatype.number({ min: 0, max: 5 }),
+                                    ...(Object.fromEntries(new Array(faker.datatype.number({ min: 0, max: 10 })).fill(null).map(m => [faker.random.alpha({ count: faker.datatype.number({ min: 2, max: 10 }) }), faker.random.alpha({ count: faker.datatype.number({ min: 2, max: 10 }) })]))),
                                     createdAt: ts,
                                     updatedAt: ts,
                                 })
                                 if (!r.acknowledged)
                                     throw new Error('insertion failed')
 
-                                let picNum = faker.helpers.arrayElements([1, 2, 3], faker.number.int({ min: 0, max: 3 }))
+                                let picNum = faker.helpers.arrayElements([1, 2, 3], faker.datatype.number({ min: 0, max: 3 }))
 
                                 for (let i = 0; i < picNum.length; i++)
                                     if (await productPictureRepository.uploadFile(r.insertedId.toString(), { fileName: `sample${picNum[i]}.jpeg`, contentType: 'image/jpeg', bytes: fs.readFileSync(`./src/DB/Repositories/Products/sample${picNum[i]}.jpeg`) }) === undefined)

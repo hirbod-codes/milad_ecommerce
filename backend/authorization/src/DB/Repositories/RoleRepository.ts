@@ -4,7 +4,7 @@ import { RoleCreate, RoleInput, RoleUpdate, RoleWithPrivileges, schemaVersion } 
 import { collectionName } from '../Models/Privilege'
 import { defaultRolePrivilegeNames } from '../Models/privilegeNames'
 import { PrivilegeRepository } from './PrivilegeRepository'
-import { faker, fakerFA } from '@faker-js/faker'
+import { faker } from '@faker-js/faker'
 import { IRepository, MongoDB } from '@monorepo/mongodb'
 
 export class RoleRepository implements IRepository {
@@ -94,14 +94,18 @@ export class RoleRepository implements IRepository {
             while (safety < 10) {
                 safety++
                 try {
-                    const name = faker.person.firstName()
-                    const selectedPrivileges = faker.helpers.arrayElements(privileges, faker.number.int({ min: 1, max: 12 }))
-                    const ts = faker.number.int({ min: startTimeTS, max: endTimeTS })
+                    const name = faker.name.firstName()
+                    const selectedPrivileges = faker.helpers.arrayElements(privileges, faker.datatype.number({ min: 1, max: 12 }))
+                    const ts = faker.datatype.number({ min: startTimeTS, max: endTimeTS })
+
+                    faker.setLocale('fa')
+                    const displayName = { fa: faker.name.firstName(), en: name }
+                    faker.setLocale('en_US')
 
                     let r = await collection.insertOne({
                         schemaVersion,
                         name,
-                        displayName: { fa: fakerFA.person.firstName(), en: name },
+                        displayName,
                         privileges: selectedPrivileges.map(sp => sp._id),
                         createdAt: ts,
                         updatedAt: ts,

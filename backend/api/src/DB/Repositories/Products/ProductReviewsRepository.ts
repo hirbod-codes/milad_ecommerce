@@ -75,7 +75,7 @@ export class ProductReviewsRepository implements IRepository {
                 for (let j = 0; j < products.length; j++) {
                     const product = products[j];
 
-                    if (faker.datatype.boolean(0.3))
+                    if (faker.datatype.boolean())
                         continue
 
                     promises.push(
@@ -85,14 +85,14 @@ export class ProductReviewsRepository implements IRepository {
                             while (safety < 10) {
                                 safety++
                                 try {
-                                    const ts = faker.number.int({ min: startTimeTS, max: endTimeTS })
+                                    const ts = faker.datatype.number({ min: startTimeTS, max: endTimeTS })
 
                                     let r = await collection.insertOne({
                                         schemaVersion,
                                         productId: product._id.toString(),
                                         userId: user._id.toString(),
-                                        rating: faker.number.int({ min: 0, max: 5 }),
-                                        content: faker.word.words({ count: { min: 20, max: 100 } }),
+                                        rating: faker.datatype.number({ min: 0, max: 5 }),
+                                        content: faker.random.words(faker.datatype.number({ min: 20, max: 100 })),
                                         createdAt: ts,
                                         updatedAt: ts,
                                     })

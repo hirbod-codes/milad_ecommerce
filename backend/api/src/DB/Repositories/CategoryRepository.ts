@@ -2,7 +2,7 @@ import { ClientSession, Collection, Db, DeleteResult, InsertOneResult, MongoSyst
 import { DateTime } from 'luxon'
 import { Category, CategoryCreate, CategoryImmutable, CategoryInput, CategoryUpdate, collectionName, schemaVersion } from '../Models/Category'
 import { IRepository, MongoDB } from '@monorepo/mongodb';
-import { faker, fakerFA } from "@faker-js/faker"
+import { faker } from "@faker-js/faker"
 import { v4 as uuid } from 'uuid';
 
 export class CategoryRepository implements IRepository {
@@ -70,22 +70,29 @@ export class CategoryRepository implements IRepository {
                         while (safety < 10) {
                             safety++
                             try {
-                                const ts = faker.number.int({ min: startTimeTS, max: endTimeTS })
-                                const name = faker.person.firstName() + uuid()
-                                const faName = fakerFA.person.firstName() + uuid()
+                                const ts = faker.datatype.number({ min: startTimeTS, max: endTimeTS })
+                                const name = faker.name.firstName() + uuid()
+                                faker.setLocale('fa')
+                                const faName = faker.name.firstName() + uuid()
+                                faker.setLocale('en_US')
 
-                                const parentCategory = i === 0 || faker.datatype.boolean(0.3) ? undefined : faker.helpers.arrayElement(localCategoryIds)
+                                const parentCategory = i === 0 || faker.datatype.boolean() ? undefined : faker.helpers.arrayElement(localCategoryIds)
 
                                 let r = await collection.insertOne({
                                     schemaVersion,
                                     name,
                                     displayName: { fa: faName, en: name },
                                     parentCategory,
-                                    recommendedProductProperties: new Array(faker.number.int({ min: 1, max: 15 })).fill(null).map(() => {
-                                        const key = faker.string.alpha({ length: { min: 3, max: 20 } })
-                                        return ({ name: key, display: { fa: fakerFA.string.alpha({ length: { min: 3, max: 20 } }), en: key } });
+                                    recommendedProductProperties: new Array(faker.datatype.number({ min: 1, max: 15 })).fill(null).map(() => {
+                                        const key = faker.random.alpha({ count: faker.datatype.number({ min: 3, max: 20 }) })
+
+                                        faker.setLocale('fa')
+                                        const display = { fa: faker.random.alpha({ count: faker.datatype.number({ min: 3, max: 20 }) }), en: key }
+                                        faker.setLocale('en_US')
+
+                                        return ({ name: key, display });
                                     }),
-                                    views: faker.number.int({ min: 0, max: 100000 }),
+                                    views: faker.datatype.number({ min: 0, max: 100000 }),
                                     createdAt: ts,
                                     updatedAt: ts,
                                 })
