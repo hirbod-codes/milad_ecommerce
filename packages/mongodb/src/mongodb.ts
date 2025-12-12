@@ -181,7 +181,7 @@ export class MongoDB {
     async dropAllCollections() {
         const db = await MongoDB.getDb()
         for (const repository of this.repositories)
-                repository.dropCollection(db)
+            await repository.dropCollection(db)
     }
 
     async createCollections() {
@@ -191,7 +191,7 @@ export class MongoDB {
     }
 
     async seedCollections() {
-        console.time('seeding...')
+        console.time('seed')
 
         try {
             let safety = 0

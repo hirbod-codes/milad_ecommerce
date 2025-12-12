@@ -135,8 +135,9 @@ export async function tryAndWait(callback: CallableFunction, secondsToWait: numb
             await callback()
             return true
         }
-        catch (e) { console.error(e) }
-        finally {
+        catch (e) {
+            console.error(e)
+
             await (() => new Promise<void>((res, rej) => {
                 console.log('waiting for 5 seconds...')
                 setTimeout(() => { res() }, secondsToWait * 1000)

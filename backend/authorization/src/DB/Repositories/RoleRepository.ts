@@ -1,7 +1,6 @@
 import { ClientSession, Collection, Db, DeleteResult, InsertOneResult, MongoSystemError, ObjectId, UpdateResult } from 'mongodb'
 import { DateTime } from 'luxon'
-import { RoleCreate, RoleInput, RoleUpdate, RoleWithPrivileges, schemaVersion } from '../Models/Role'
-import { collectionName } from '../Models/Privilege'
+import { RoleCreate, RoleInput, RoleUpdate, RoleWithPrivileges, schemaVersion, collectionName } from '../Models/Role'
 import { defaultRolePrivilegeNames } from '../Models/privilegeNames'
 import { PrivilegeRepository } from './PrivilegeRepository'
 import { faker } from '@faker-js/faker'
@@ -48,46 +47,53 @@ export class RoleRepository implements IRepository {
     }
 
     static async initialize() {
+        console.log('Initializing Roles...');
+
         const collection = (await MongoDB.getDb()).collection<RoleCreate>(collectionName)
         const roleRepository = await RoleRepository.getInstance()
 
-        if ((await collection.estimatedDocumentCount()) === 0) {
-            let privileges = await (await PrivilegeRepository.getInstance()).get()
+        if ((await collection.estimatedDocumentCount()) !== 0)
+            return
 
-            if (privileges === false || privileges.length === 0)
-                throw new Error('System failed to initialize roles')
+        let privileges = await (await PrivilegeRepository.getInstance()).get()
 
-            let r = await roleRepository.create({
-                name: 'admin',
-                privileges: privileges.map(p => p._id),
-            })
-            if (r === false || !r.acknowledged)
-                throw new Error('System failed to initialize roles')
+        if (privileges === false || privileges.length === 0)
+            throw new Error('System failed to initialize roles')
 
-            r = false
+        let r = await roleRepository.create({
+            name: 'admin',
+            privileges: privileges.map(p => p._id),
+        })
+        if (r === false || !r.acknowledged)
+            throw new Error('System failed to initialize roles')
 
-            r = await roleRepository.create({
-                name: 'default',
-                privileges: privileges.filter(f => defaultRolePrivilegeNames.includes(f.name)).map(p => p._id),
-            })
-            if (r === false || !r.acknowledged)
-                throw new Error('System failed to initialize roles')
-        }
+        r = false
+
+        r = await roleRepository.create({
+            name: 'default',
+            privileges: privileges.filter(f => defaultRolePrivilegeNames.includes(f.name)).map(p => p._id),
+        })
+        if (r === false || !r.acknowledged)
+            throw new Error('System failed to initialize roles')
+
+        console.log('Initialized Roles');
     }
 
     async seed(count: number = 10) {
         const collection = (await MongoDB.getDb()).collection<RoleCreate>(collectionName)
         const privilegeRepository = await PrivilegeRepository.getInstance()
 
+        console.log('Seeding roles...');
+
         if (!(await collection.deleteMany({ name: { $ne: 'admin' } })).acknowledged)
-            throw new Error('seeding roles failed!')
+            throw new Error('Deleting roles failed!')
 
         const startTimeTS = DateTime.utc().minus({ years: 2 }).toUnixInteger()
         const endTimeTS = DateTime.utc().minus({ months: 2 }).toUnixInteger()
 
         const privileges = await privilegeRepository.get()
         if (privileges === false || privileges.length === 0)
-            throw new Error('seeding roles failed')
+            throw new Error('No privileges found!')
 
         for (let i = 0; i < count; i++) {
             let safety = 0
@@ -110,14 +116,20 @@ export class RoleRepository implements IRepository {
                         createdAt: ts,
                         updatedAt: ts,
                     })
+                    console.log('Seeded roles', r);
                     if (r.acknowledged)
                         break
                 } catch (e) {
                     if (!(e instanceof MongoSystemError) || e.code !== 11000)
                         throw e
                 }
+
+                if (safety >= 10)
+                    throw new Error('Failed to insert a role')
             }
         }
+
+        console.log('Seeded roles');
     }
 
     async create(role: RoleInput): Promise<InsertOneResult | false> {

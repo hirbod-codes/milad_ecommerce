@@ -119,8 +119,8 @@ export const queueManagement = new QueueManagement(messageBrokerUrl, messageBrok
         await db.createCollections()
 
         if (!isProduction) {
-            await UserRepository.initialize(adminUsername, adminPhoneNumber, adminEmail, adminPassword)
             await PrivilegeRepository.initialize()
+            await UserRepository.initialize(adminUsername, adminPhoneNumber, adminEmail, adminPassword)
             await RoleRepository.initialize()
 
             await db.seedCollections()

@@ -53,51 +53,59 @@ export class UserRepository implements IRepository {
     }
 
     static async initialize(adminUsername: string, adminPhoneNumber: string, adminEmail: string, adminPassword: string) {
+        console.log('Initializing Users...');
+
         console.log('adminPassword', adminPassword)
         const collection = (await MongoDB.getDb()).collection<UserCreate>(collectionName)
 
-        if (await collection.estimatedDocumentCount() === 0) {
-            let nowTS = DateTime.utc().toUnixInteger()
-            let passwordSalt: string | undefined = undefined, passwordIterations: number = 1000
-            const password: string = await (async () => {
-                return new Promise((resolve, reject) => {
-                    passwordSalt = crypto.randomBytes(128).toString('base64')
-                    crypto.pbkdf2(adminPassword, passwordSalt, passwordIterations, 64, 'sha512', (err, derivedKey) => {
-                        if (err)
-                            reject(err)
-                        else
-                            resolve(derivedKey.toString('hex'))
-                    })
-                })
-            })()
+        if (await collection.estimatedDocumentCount() !== 0)
+            return
 
-            let r = await collection.insertOne({
-                schemaVersion,
-                username: adminUsername,
-                role: 'admin',
-                email: adminEmail,
-                phoneNumber: adminPhoneNumber,
-                passwordIterations,
-                passwordSalt,
-                password,
-                createdAt: nowTS,
-                updatedAt: nowTS,
+        let nowTS = DateTime.utc().toUnixInteger()
+        let passwordSalt: string | undefined = undefined, passwordIterations: number = 1000
+        const password: string = await (async () => {
+            return new Promise((resolve, reject) => {
+                passwordSalt = crypto.randomBytes(128).toString('base64')
+                crypto.pbkdf2(adminPassword, passwordSalt, passwordIterations, 64, 'sha512', (err, derivedKey) => {
+                    if (err)
+                        reject(err)
+                    else
+                        resolve(derivedKey.toString('hex'))
+                })
             })
-            if (!r.acknowledged)
-                throw new Error('System failed to initialize users')
-        }
+        })()
+
+        let r = await collection.insertOne({
+            schemaVersion,
+            username: adminUsername,
+            role: 'admin',
+            email: adminEmail,
+            phoneNumber: adminPhoneNumber,
+            passwordIterations,
+            passwordSalt,
+            password,
+            createdAt: nowTS,
+            updatedAt: nowTS,
+        })
+        if (!r.acknowledged)
+            throw new Error('System failed to initialize users')
+
+
+        console.log('Initialized Users');
     }
 
     async seed(count: number = 50) {
         const collection = (await MongoDB.getDb()).collection<UserCreate>(collectionName)
         const roleRepository = await RoleRepository.getInstance()
 
+        console.log('Seeding users...');
+
         if (!(await collection.deleteMany({ role: { $ne: 'admin' } })).acknowledged)
-            throw new Error('seeding users failed!')
+            throw new Error('Deleting users failed!')
 
         const roles = await roleRepository.get()
         if (roles.length === 0)
-            throw new Error('seeding users failed!')
+            throw new Error('No roles found!')
 
         const startTimeTS = DateTime.utc().minus({ years: 2 }).toUnixInteger()
         const endTimeTS = DateTime.utc().minus({ months: 2 }).toUnixInteger()
@@ -120,16 +128,16 @@ export class UserRepository implements IRepository {
             while (safety < 10) {
                 safety++
                 try {
-                    const ts = faker.number.int({ min: startTimeTS, max: endTimeTS })
+                    const ts = faker.datatype.number({ min: startTimeTS, max: endTimeTS })
 
-                    const setCred = faker.datatype.boolean(0.3) ? 2 : (faker.datatype.boolean(0.5) ? 1 : 0)
+                    const setCred = faker.datatype.boolean() ? 2 : (faker.datatype.boolean() ? 1 : 0)
 
                     const user: UserCreate = {
                         schemaVersion,
                         role: faker.helpers.arrayElement(roles.filter(f => f.name !== 'admin').map(m => m.name)),
-                        firstName: faker.person.firstName(),
-                        lastName: faker.person.lastName(),
-                        username: faker.internet.username(),
+                        firstName: faker.name.firstName(),
+                        lastName: faker.name.lastName(),
+                        username: faker.internet.userName(),
                         password: hashedPassword,
                         passwordIterations,
                         passwordSalt,
@@ -138,7 +146,7 @@ export class UserRepository implements IRepository {
                     }
 
                     if (setCred === 2 || setCred === 0)
-                        user.phoneNumber = '09' + faker.string.numeric({ length: 9, allowLeadingZeros: true })
+                        user.phoneNumber = '09' + faker.random.numeric(9, { allowLeadingZeros: true })
 
                     if (setCred === 2 || setCred === 1)
                         user.email = faker.internet.exampleEmail()
@@ -152,6 +160,8 @@ export class UserRepository implements IRepository {
                 }
             }
         }
+
+        console.log('Seeded users');
     }
 
     async createUser(user: UserInput): Promise<InsertOneResult | false> {

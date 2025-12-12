@@ -1,24 +1,55 @@
-import { Collection, DeleteResult, InsertOneResult, ObjectId, UpdateResult } from 'mongodb'
+import { ClientSession, Collection, Db, DeleteResult, InsertOneResult, ObjectId, UpdateResult } from 'mongodb'
 import { DateTime } from 'luxon'
 import { collectionName, Privilege, PrivilegeCreate, PrivilegeInput, PrivilegeUpdate, schemaVersion } from '../Models/Privilege'
 import { privilegeNames } from '../Models/privilegeNames'
-import { MongoDB } from '@monorepo/mongodb'
+import { IRepository, MongoDB } from '@monorepo/mongodb'
 
-export class PrivilegeRepository {
+export class PrivilegeRepository implements IRepository {
     private collection: Collection<PrivilegeCreate>
 
     constructor(collection: Collection<PrivilegeCreate>) {
         this.collection = collection
     }
 
+    setTransactionSession(session?: ClientSession): void {
+    }
+
+    unsetTransactionSession(): void {
+    }
+
+    async addCollection(db: Db): Promise<void> {
+        if (!(await db.listCollections().toArray()).map(e => e.name).includes(collectionName))
+            await db.createCollection(collectionName)
+
+        const indexes = await db.collection(collectionName).indexes()
+
+        if (indexes.find(i => i.name === 'unique-name') === undefined)
+            await db.createIndex(collectionName, { name: 1 }, { unique: true, name: 'unique-name' })
+
+        if (indexes.find(i => i.name === 'createdAt') === undefined)
+            await db.createIndex(collectionName, { createdAt: 1 }, { name: 'createdAt' })
+
+        if (indexes.find(i => i.name === 'updatedAt') === undefined)
+            await db.createIndex(collectionName, { updatedAt: 1 }, { name: 'updatedAt' })
+    }
+
+    async dropCollection(db: Db): Promise<void> {
+    }
+
+    async seed(count?: number): Promise<void> {
+    }
+
+
     static async getInstance(): Promise<PrivilegeRepository> {
         return new PrivilegeRepository(await (await MongoDB.getDb()).collection(collectionName))
     }
 
     static async initialize() {
-        const collection = await (await MongoDB.getDb()).collection(collectionName)
+        console.log('Initializing privileges...');
 
-        if (await collection.estimatedDocumentCount() === 0) {
+        const collection = (await MongoDB.getDb()).collection(collectionName)
+
+        if ((await collection.estimatedDocumentCount()) === 0) {
             let nowTS = DateTime.utc().toUnixInteger()
 
             let r = await collection.insertMany(privilegeNames.map(name => ({
@@ -31,6 +62,8 @@ export class PrivilegeRepository {
             if (!r.acknowledged)
                 throw new Error('System failed to initialize roles')
         }
+
+        console.log('Initialized privileges');
     }
 
     async create(privilege: PrivilegeInput): Promise<InsertOneResult | false> {
