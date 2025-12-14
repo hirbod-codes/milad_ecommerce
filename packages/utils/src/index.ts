@@ -44,6 +44,8 @@ export function validateIntegerEnv(env?: number, message?: string, validate?: (s
 export function getStringEnv(key: string, message?: string, validate?: (schema: StringSchema) => StringSchema, manuallyValidate?: (env?: string) => boolean): string {
     const env = process.env[key]
 
+    console.log(`${key}: ${env}`)
+
     validateStringEnv(env, message, validate, manuallyValidate)
 
     return env!
@@ -52,6 +54,8 @@ export function getStringEnv(key: string, message?: string, validate?: (schema: 
 export function getIntegerEnv(key: string, message?: string, validate?: (schema: NumberSchema) => NumberSchema, manuallyValidate?: (env?: number) => boolean): number {
     const env = Number(process.env[key])
 
+    console.log(`${key}: ${env}`)
+
     validateIntegerEnv(env, message, validate, manuallyValidate)
 
     return env!
@@ -59,6 +63,8 @@ export function getIntegerEnv(key: string, message?: string, validate?: (schema:
 
 export function getBooleanEnv(key: string, message?: string, validate?: (schema: BooleanSchema) => BooleanSchema, manuallyValidate?: (env?: boolean) => boolean): boolean {
     const env = Boolean(process.env[key])
+
+    console.log(`${key}: ${env}`)
 
     validateBooleanEnv(env, message, validate, manuallyValidate)
 

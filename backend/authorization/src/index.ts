@@ -62,7 +62,7 @@ export const messageBrokerUsername = getStringEnv('MESSAGE_BROKER_USERNAME', 'Th
 export const messageBrokerPassword = getStringEnv('MESSAGE_BROKER_PASSWORD', 'The Message broker password environment variable is not provided')!
 export const messageBrokerType = getStringEnv('MESSAGE_BROKER_TYPE', 'The Message broker type environment variable is not provided', undefined, e => ['single', 'cluster'].includes(e ?? ''))!
 export const messageBrokerManagementApiUrl = getStringEnv('MESSAGE_BROKER_MANAGEMENT_API_URL', 'The Message broker management api url environment variable is not provided', s => s.optional())
-export const messageBrokerSingleUrl = getStringEnv('MESSAGE_BROKER_URL', 'The Message broker url environment variable is not provided', s => s.optional())
+export const messageBrokerSingleUrl = getStringEnv('MESSAGE_BROKER_SINGLE_URL', 'The Message broker url environment variable is not provided', s => s.optional())
 
 if ((messageBrokerType === 'single' && messageBrokerSingleUrl === undefined) || (messageBrokerType === 'cluster' && messageBrokerManagementApiUrl === undefined))
     throw new Error('Invalid environment variables is provided for rabbitMQ cluster')
