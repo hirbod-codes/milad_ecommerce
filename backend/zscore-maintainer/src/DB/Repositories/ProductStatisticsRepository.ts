@@ -202,12 +202,12 @@ export class ProductStatisticsRepository implements IDropable, IRepository {
      * @param now for testing and seeding purposes, current timestamp is given at run time.
      * @param count number of sold products
      */
-    async updateViewCount(productId: string, now: number, count: number): Promise<{ weeklyZScore: number, monthlyZScore: number, yearlyZScore: number } | false> {
+    async updateViewCount(productId: string, now: number, count: number): Promise<{ weeklyCount: UpdateResult, monthlyCount: UpdateResult, yearlyCount: UpdateResult } | false> {
         try {
             return {
-                weeklyZScore: await this.updateWeeklySaleCount(productId, now, count, 'viewZScore', 'viewCount'),
-                monthlyZScore: await this.updateMonthlySaleCount(productId, now, count, 'viewZScore', 'viewCount'),
-                yearlyZScore: await this.updateYearlySaleCount(productId, now, count, 'viewZScore', 'viewCount')
+                weeklyCount: await this.updateWeeklySaleCount(productId, now, count, 'viewCount'),
+                monthlyCount: await this.updateMonthlySaleCount(productId, now, count, 'viewCount'),
+                yearlyCount: await this.updateYearlySaleCount(productId, now, count, 'viewCount')
             }
         } catch (e) {
             console.error(e)
@@ -221,12 +221,50 @@ export class ProductStatisticsRepository implements IDropable, IRepository {
      * @param now for testing and seeding purposes, current timestamp is given at run time.
      * @param count number of sold products
      */
-    async updateSaleCount(productId: string, now: number, count: number): Promise<{ weeklyZScore: number, monthlyZScore: number, yearlyZScore: number } | false> {
+    async updateViewZScore(productId: string, now: number, count: number): Promise<{ weeklyZScore: number, monthlyZScore: number, yearlyZScore: number } | false> {
         try {
             return {
-                weeklyZScore: await this.updateWeeklySaleCount(productId, now, count),
-                monthlyZScore: await this.updateMonthlySaleCount(productId, now, count),
-                yearlyZScore: await this.updateYearlySaleCount(productId, now, count)
+                weeklyZScore: await this.updateWeeklySaleZScore(productId, now, count, 'viewZScore'),
+                monthlyZScore: await this.updateMonthlySaleZScore(productId, now, count, 'viewZScore'),
+                yearlyZScore: await this.updateYearlySaleZScore(productId, now, count, 'viewZScore')
+            }
+        } catch (e) {
+            console.error(e)
+            return false
+        }
+    }
+
+    /**
+     * 
+     * @param productId 
+     * @param now for testing and seeding purposes, current timestamp is given at run time.
+     * @param count number of sold products
+     */
+    async updateSaleCount(productId: string, now: number, count: number): Promise<{ weeklyResult: UpdateResult, monthlyResult: UpdateResult, yearlyResult: UpdateResult } | false> {
+        try {
+            return {
+                weeklyResult: await this.updateWeeklySaleCount(productId, now, count, 'count'),
+                monthlyResult: await this.updateMonthlySaleCount(productId, now, count, 'count'),
+                yearlyResult: await this.updateYearlySaleCount(productId, now, count, 'count')
+            }
+        } catch (e) {
+            console.error(e)
+            return false
+        }
+    }
+
+    /**
+     * 
+     * @param productId 
+     * @param now for testing and seeding purposes, current timestamp is given at run time.
+     * @param count number of sold products
+     */
+    async updateSaleZScore(productId: string, now: number, count: number): Promise<{ weeklyZScore: number, monthlyZScore: number, yearlyZScore: number } | false> {
+        try {
+            return {
+                weeklyZScore: await this.updateWeeklySaleZScore(productId, now, count, 'zScore'),
+                monthlyZScore: await this.updateMonthlySaleZScore(productId, now, count, 'zScore'),
+                yearlyZScore: await this.updateYearlySaleZScore(productId, now, count, 'zScore')
             }
         } catch (e) {
             console.error(e)
@@ -241,7 +279,7 @@ export class ProductStatisticsRepository implements IDropable, IRepository {
      * @param count number of sold products
      * @returns calculated z-score
      */
-    async updateWeeklySaleCount(productId: string, now: number, count: number, zScoreField: string = 'zScore', countField: string = 'count'): Promise<number> {
+    async updateWeeklySaleCount(productId: string, now: number, count: number, countField: string = 'count'): Promise<UpdateResult> {
         let thisWeek = DateTime.fromSeconds(now).set({ hour: 0, minute: 0, second: 0, millisecond: 0 })
         while (thisWeek.weekday !== 1) {
             thisWeek = thisWeek.minus({ days: 1 })
@@ -249,7 +287,35 @@ export class ProductStatisticsRepository implements IDropable, IRepository {
 
         await this.createRecordsIfNotExist(productId.toString(), 'weekly', [thisWeek.minus({ weeks: 7 }).toUnixInteger(), thisWeek.minus({ weeks: 1 }).toUnixInteger()], thisWeek.toUnixInteger())
 
-        const aggregationResult = await this.getZScoreAggregationPipeline(productId.toString(), 608_800, [thisWeek.minus({ weeks: 7 }).toUnixInteger(), thisWeek.minus({ weeks: 1 }).toUnixInteger()], thisWeek.toUnixInteger(), count, countField)
+        return await (await this.getCollection()).updateOne(
+            {
+                productId: ObjectId.createFromHexString(productId.toString()),
+                duration: this.WEEK_SECONDS,
+                timestamp: thisWeek.toUnixInteger(),
+            },
+            {
+                $inc: { [countField]: count }
+            }
+            , { session: this.session }
+        )
+    }
+
+    /**
+     * 
+     * @param productId 
+     * @param now for testing and seeding purposes, current timestamp is given at run time.
+     * @param count number of sold products
+     * @returns calculated z-score
+     */
+    async updateWeeklySaleZScore(productId: string, now: number, count: number, zScoreField: string = 'zScore', countField: string = 'count'): Promise<number> {
+        let thisWeek = DateTime.fromSeconds(now).set({ hour: 0, minute: 0, second: 0, millisecond: 0 })
+        while (thisWeek.weekday !== 1) {
+            thisWeek = thisWeek.minus({ days: 1 })
+        }
+
+        await this.createRecordsIfNotExist(productId.toString(), 'weekly', [thisWeek.minus({ weeks: 7 }).toUnixInteger(), thisWeek.minus({ weeks: 1 }).toUnixInteger()], thisWeek.toUnixInteger())
+
+        const aggregationResult = await this.getZScoreAggregationPipeline(productId.toString(), this.WEEK_SECONDS, [thisWeek.minus({ weeks: 7 }).toUnixInteger(), thisWeek.minus({ weeks: 1 }).toUnixInteger()], thisWeek.toUnixInteger(), countField)
 
         let zScore: number | null | undefined
         if (aggregationResult && Array.isArray(aggregationResult) && aggregationResult[0]?.zScore && number().required().isValidSync(aggregationResult[0]?.zScore)) {
@@ -257,7 +323,6 @@ export class ProductStatisticsRepository implements IDropable, IRepository {
             if (zScore >= 20)
                 console.log('aggregationResult', JSON.stringify(aggregationResult, undefined, 4))
         }
-
         if (!zScore)
             throw new Error('Failed to calculate weekly zScore.')
 
@@ -268,7 +333,6 @@ export class ProductStatisticsRepository implements IDropable, IRepository {
                 timestamp: thisWeek.toUnixInteger(),
             },
             {
-                $inc: { count },
                 $set: {
                     [zScoreField]: zScore
                 },
@@ -287,10 +351,32 @@ export class ProductStatisticsRepository implements IDropable, IRepository {
      * @param count number of sold products
      * @returns calculated z-score
      */
-    async updateMonthlySaleCount(productId: string, now: number, count: number, zScoreField: string = 'zScore', countField: string = 'count'): Promise<number> {
+    async updateMonthlySaleCount(productId: string, now: number, count: number, countField: string = 'count'): Promise<UpdateResult> {
         const thisMonth = DateTime.fromSeconds(now).set({ day: 1, hour: 0, minute: 0, second: 0, millisecond: 0 })
 
-        const aggregationResult = await this.getZScoreAggregationPipeline(productId.toString(), 2_592_000, [thisMonth.minus({ months: 12 }).toUnixInteger(), thisMonth.minus({ months: 1 }).toUnixInteger()], thisMonth.toUnixInteger(), count, countField)
+        return await (await this.getCollection()).updateOne(
+            {
+                productId: ObjectId.createFromHexString(productId.toString()),
+                duration: 2_592_000, // a month in seconds
+                timestamp: thisMonth.toUnixInteger(),
+            },
+            {
+                $inc: { [countField]: count }
+            }
+            , { session: this.session })
+    }
+
+    /**
+     * 
+     * @param productId 
+     * @param now for testing and seeding purposes, current timestamp is given at run time.
+     * @param count number of sold products
+     * @returns calculated z-score
+     */
+    async updateMonthlySaleZScore(productId: string, now: number, count: number, zScoreField: string = 'zScore', countField: string = 'count'): Promise<number> {
+        const thisMonth = DateTime.fromSeconds(now).set({ day: 1, hour: 0, minute: 0, second: 0, millisecond: 0 })
+
+        const aggregationResult = await this.getZScoreAggregationPipeline(productId.toString(), this.MONTH_SECONDS, [thisMonth.minus({ months: 12 }).toUnixInteger(), thisMonth.minus({ months: 1 }).toUnixInteger()], thisMonth.toUnixInteger(), countField)
 
         let zScore: number | null | undefined
         if (aggregationResult && Array.isArray(aggregationResult) && aggregationResult[0]?.zScore && number().required().isValidSync(aggregationResult[0]?.zScore)) {
@@ -305,11 +391,10 @@ export class ProductStatisticsRepository implements IDropable, IRepository {
         let updateResult = await (await this.getCollection()).updateOne(
             {
                 productId: ObjectId.createFromHexString(productId.toString()),
-                duration: 2_592_000, // a month in seconds
+                duration: this.MONTH_SECONDS,
                 timestamp: thisMonth.toUnixInteger(),
             },
             {
-                $inc: { count },
                 $set: {
                     [zScoreField]: zScore
                 },
@@ -328,10 +413,32 @@ export class ProductStatisticsRepository implements IDropable, IRepository {
      * @param count number of sold products
      * @returns calculated z-score
      */
-    async updateYearlySaleCount(productId: string, now: number, count: number, zScoreField: string = 'zScore', countField: string = 'count'): Promise<number> {
+    async updateYearlySaleCount(productId: string, now: number, count: number, countField: string = 'count'): Promise<UpdateResult> {
         const thisYear = DateTime.fromSeconds(now).set({ month: 1, day: 1, hour: 0, minute: 0, second: 0, millisecond: 0 })
 
-        const aggregationResult = await this.getZScoreAggregationPipeline(productId.toString(), 31_104_000, [thisYear.minus({ years: 7 }).toUnixInteger(), thisYear.minus({ years: 1 }).toUnixInteger()], thisYear.toUnixInteger(), count, countField)
+        return await (await this.getCollection()).updateOne(
+            {
+                productId: ObjectId.createFromHexString(productId.toString()),
+                duration: this.YEAR_SECONDS,
+                timestamp: thisYear.toUnixInteger(),
+            },
+            {
+                $inc: { [countField]: count }
+            }
+            , { session: this.session })
+    }
+
+    /**
+     * 
+     * @param productId 
+     * @param now for testing and seeding purposes, current timestamp is given at run time.
+     * @param count number of sold products
+     * @returns calculated z-score
+     */
+    async updateYearlySaleZScore(productId: string, now: number, count: number, zScoreField: string = 'zScore', countField: string = 'count'): Promise<number> {
+        const thisYear = DateTime.fromSeconds(now).set({ month: 1, day: 1, hour: 0, minute: 0, second: 0, millisecond: 0 })
+
+        const aggregationResult = await this.getZScoreAggregationPipeline(productId.toString(), 31_104_000, [thisYear.minus({ years: 7 }).toUnixInteger(), thisYear.minus({ years: 1 }).toUnixInteger()], thisYear.toUnixInteger(), countField)
 
         let zScore: number | null | undefined
         if (aggregationResult && Array.isArray(aggregationResult) && aggregationResult[0]?.zScore && number().required().isValidSync(aggregationResult[0]?.zScore)) {
@@ -346,11 +453,10 @@ export class ProductStatisticsRepository implements IDropable, IRepository {
         let updateResult = await (await this.getCollection()).updateOne(
             {
                 productId: ObjectId.createFromHexString(productId.toString()),
-                duration: 31_104_000, // a year in seconds
+                duration: this.YEAR_SECONDS,
                 timestamp: thisYear.toUnixInteger(),
             },
             {
-                $inc: { count },
                 $set: {
                     [zScoreField]: zScore
                 },
@@ -397,7 +503,7 @@ export class ProductStatisticsRepository implements IDropable, IRepository {
 
     }
 
-    private async getZScoreAggregationPipeline(productId: string, duration: number, period: [number, number], now: number, amountToAdd: number, countField: string = 'count') {
+    private async getZScoreAggregationPipeline(productId: string, duration: number, period: [number, number], now: number, countField: string = 'count') {
         return await (await this.getCollection()).aggregate(undefined, { allowDiskUse: true })
             .addStage({
                 $facet: {
@@ -472,10 +578,10 @@ export class ProductStatisticsRepository implements IDropable, IRepository {
                                                                     0
                                                                 ]
                                                             },
-                                                            amountToAdd
+                                                            0
                                                         ]
                                                     },
-                                                    amountToAdd
+                                                    0
                                                 ]
                                             },
                                             {

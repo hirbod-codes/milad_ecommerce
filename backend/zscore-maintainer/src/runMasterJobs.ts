@@ -1,14 +1,12 @@
 import { DateTime } from "luxon";
 import { schedule, ScheduledTask } from "node-cron";
-import { collectionName as failedProductSaleRangeCollectionName } from "./DB/Models/FailedProductSaleRange";
-import { ZScoreMaintainerOptions } from "./DB/Models/zScoreMaintainerOptions";
 import { ObjectId } from 'mongodb'
 import { ZScoreMaintainerOptionsRepository } from "./DB/Repositories/ZScoreMaintainerOptionsRepository";
-import { FailedProductSaleRangeRepository } from "./DB/Repositories/FailedProductSaleRangeRepository";
 import { httpRequest, tryAndWait } from "@monorepo/utils";
 import { ProductSaleRepository } from "./DB/Repositories/ProductSaleRepository";
 import { ProductViewRepository } from "./DB/Repositories/ProductViewRepository";
 import { ProductSaleRangeRepository } from "./DB/Repositories/ProductSaleRangeRepository";
+import { ProductViewRangeRepository } from "./DB/Repositories/ProductViewRangeRepository";
 
 let salesJob: ScheduledTask | undefined = undefined
 let viewsJob: ScheduledTask | undefined = undefined
@@ -110,8 +108,9 @@ export function runMasterJobs() {
             console.log(`running cron job: "maintain views z-score" at ${DateTime.utc().toISO()}...`)
 
             try {
-                const zScoreMaintainerOptionsRepository = new ZScoreMaintainerOptionsRepository()
+                const zScoreMaintainerOptionsRepository = new ZScoreMaintainerOptionsRepository();
                 const productViewRepository = new ProductViewRepository()
+                const productViewRangeRepository = new ProductViewRangeRepository()
 
                 // Validation
                 const options = await getOptions(zScoreMaintainerOptionsRepository)
@@ -119,50 +118,66 @@ export function runMasterJobs() {
                     console.warn('Options not found!')
                     return
                 }
+
                 if (!options?.addresses) {
                     console.warn('No slave found!')
                     return
                 }
+
+                const addresses: {
+                    host: string;
+                    port: number;
+                }[] = []
+                for (let i = 0; i < options.addresses.length; i++) {
+                    const v = options.addresses[i];
+
+                    const result = await httpRequest({ host: v.host, port: v.port, path: '/heart-beat' })
+                    if (result.response.statusCode && result.response.statusCode >= 200)
+                        addresses.push(v)
+                }
+                if (addresses.length === 0)
+                    throw new Error('No slave found!')
+
                 const count = await productViewRepository.getEstimatedCount()
-                console.log(`productView documents estimated counts: ${count}`)
-                if (count === false || !options?.lastProcessedViewId && count > 500_000_000) {
-                    console.warn('too much data to process!')
+                if (count === false) {
+                    console.warn('Failed to count productView documents.')
                     return
                 }
-
-                // Fetch ranges
-                let ranges: { _id: { min: ObjectId | string; max: ObjectId | string; }; count: number; }[] = []
-                const result = await tryAndWait(async () => {
-                    let r
-                    if (options.lastProcessedViewId)
-                        r = await productViewRepository.divideByProductIds(options.addresses.length, options.lastProcessedViewId)
-                    else
-                        r = await productViewRepository.divideByProductIds(options.addresses.length)
-
-                    if (r === false || (await getOptions(zScoreMaintainerOptionsRepository))?.addresses.length !== r.length)
-                        throw new Error('failed to fetch id ranges')
-
-                    ranges = r
-                }, 60, 3)
-                if (result !== true)
-                    throw new Error("Id ranges are not properly divided!")
-
-                // Send tasks
-                const promises = []
-                for (let i = 0; i < options.addresses.length; i++)
-                    promises.push(deliverTaskToSlave(options.addresses[i].host, options.addresses[i].port, ranges[i], i === (options.addresses.length - 1)))
-
-                await Promise.allSettled(promises)
-
-                const failedIndexes: number[] = await findFailedIndexes(options, promises, ranges)
-
-                const id = await findLastProcessedId(productViewRepository.getPreviousId, options, failedIndexes, ranges, salesJob)
-                if (!id)
+                console.log(`productView documents estimated counts: ${count}`)
+                if (count === 0)
                     return
 
-                const r = await zScoreMaintainerOptionsRepository.setLastProcessedViewId(id)
-                if (r === false || !r.acknowledged || r.matchedCount !== 1)
-                    throw new Error('Failed to update options')
+                const lastProductViewObjectId = await productViewRepository.getLastProductViewId()
+                if (lastProductViewObjectId === undefined)
+                    throw new Error('Failed to get the last productView document id.')
+                const lastProductViewId = ObjectId.createFromHexString(lastProductViewObjectId)
+
+                const lastProductViewRangeId = await productViewRangeRepository.getLastProductViewRangeId()
+
+                const cursor: ObjectId | undefined = lastProductViewRangeId ? ObjectId.createFromHexString(lastProductViewRangeId) : undefined
+                let i = 0
+                while (cursor === undefined || cursor < lastProductViewId) {
+                    // Get productViews documents
+                    const productViews = await productViewRepository.getProductViews(10_000, cursor?.toString())
+                    if (productViews.length === 0)
+                        break
+
+                    const range = [productViews[0]._id.toString(), productViews[productViews.length - 1]._id.toString()]
+                    // Track this range in db
+                    if (!await tryAndWait((async () => {
+                        const result = await productViewRangeRepository.create({ duration: 14400, count: productViews.length, min: range[0], max: range[1] }, DateTime.utc().toUnixInteger())
+                        if (result === false)
+                            throw new Error('failed to track this range in db')
+                    })))
+                        throw new Error('failed to track this range in db')
+
+                    // Assign this range to a slave
+                    const result = await deliverTaskToSlave(addresses[i % addresses.length].host, addresses[i % addresses.length].port, { min: range[0], max: range[1] }, productViews.length, true)
+                    if (result !== true)
+                        throw new Error('failed to deliver this range to a slave')
+
+                    i++
+                }
             } catch (e) {
                 console.error(e)
             }
@@ -196,62 +211,4 @@ async function getOptions(zScoreMaintainerOptionsRepository: ZScoreMaintainerOpt
     }
 
     return options
-}
-
-async function findFailedIndexes(options: ZScoreMaintainerOptions, promises: Promise<boolean>[], ranges: { _id: { min: ObjectId | string; max: ObjectId | string; }; count: number; }[]) {
-    const failedIndexes: number[] = []
-    for (let i = 0; i < promises.length; i++)
-        await promises[i].then(async (v) => {
-            if (v === true)
-                return
-
-            // Try with another slave
-            const nextSlave = (i + 1) <= (options.addresses.length - 1) ? i + 1 : 0
-
-            if (await deliverTaskToSlave(options.addresses[nextSlave].host, options.addresses[nextSlave].port, ranges[i], i === (promises.length - 1)) !== true) {
-                failedIndexes.push(i)
-
-                const failedProductSale = { range: ranges[i]._id, count: ranges[i].count }
-
-                const result = await (new FailedProductSaleRangeRepository()).create(failedProductSale)
-
-                if (result === false)
-                    console.error(`System Failed to insert failedProductSale document to ${failedProductSaleRangeCollectionName} collection: ${JSON.stringify(failedProductSale)}`)
-            }
-        })
-
-    return failedIndexes
-}
-
-async function findLastProcessedId(getPreviousId: (id: string) => Promise<string | false>, options: ZScoreMaintainerOptions, failedIndexes: number[], ranges: { _id: { min: ObjectId | string; max: ObjectId | string; }; count: number; }[], scheduledTask?: ScheduledTask) {
-    if (failedIndexes.length === options.addresses.length)
-        return
-
-    let maxI = -1
-    for (let i = 0; i < options.addresses.length; i++)
-        if (!failedIndexes.includes(i) && maxI < i)
-            maxI = i
-
-    let foundId: string | undefined = undefined
-    const result = await tryAndWait(async () => {
-        let id = ranges[maxI]._id.max.toString()
-
-        if (maxI !== (ranges.length - 1)) {
-            const previousId = await getPreviousId(id)
-            if (previousId === false)
-                throw new Error('Failed to find previous id, Failed to update options')
-            else
-                id = previousId
-        }
-
-        foundId = id
-    }, 120, 50)
-
-    if (result !== true) {
-        console.error('maximum attempts reached while trying to update options, terminating...')
-        scheduledTask?.stop()
-    } else
-        console.log('successfully updated options.')
-
-    return foundId
 }

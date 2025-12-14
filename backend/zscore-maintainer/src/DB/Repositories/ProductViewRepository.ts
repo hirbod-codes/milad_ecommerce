@@ -2,11 +2,32 @@ import { Collection, ObjectId } from "mongodb";
 import { MongoDB } from '@monorepo/mongodb';
 import { number, string } from "yup";
 import { DateTime } from "luxon";
-import { collectionName, ProductViewCreate } from "../Models/ProductView";
+import { collectionName, ProductView, ProductViewCreate } from "../Models/ProductView";
 
 export class ProductViewRepository {
     private async getCollection(): Promise<Collection<ProductViewCreate>> {
         return (await MongoDB.getDb()).collection<ProductViewCreate>(collectionName)
+    }
+
+    async getProductViews(limit: number, offsetId?: string, maxId?: string, inclusive: boolean = false): Promise<ProductView[]> {
+        const filter: any = {}
+
+        if (offsetId)
+            filter._id = { $gte: ObjectId.createFromHexString(offsetId) }
+
+        if (maxId)
+            if (filter._id)
+                filter._id[inclusive ? '$lte' : '$lt'] = ObjectId.createFromHexString(maxId)
+            else if (!filter._id)
+                filter._id = { [inclusive ? '$lte' : '$lt']: ObjectId.createFromHexString(maxId) }
+
+        return await (await this.getCollection()).find(filter, { sort: [['_id', 1]] }).limit(limit).toArray()
+    }
+
+    async getLastProductViewId(): Promise<string | undefined> {
+        const doc = await (await this.getCollection()).findOne({}, { sort: [['_id', -1]] })
+
+        return doc?._id.toString() ?? undefined
     }
 
     async getEstimatedCount() {
