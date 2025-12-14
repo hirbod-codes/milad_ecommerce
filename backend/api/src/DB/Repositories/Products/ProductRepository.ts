@@ -230,10 +230,6 @@ export class ProductRepository implements IRepository, ISeedable, IDropable {
             if (!productInsertResult.acknowledged)
                 throw new Error('Failed to insert the product document')
 
-            const productStatisticsInsertResult = await (new ProductStatisticsRepository()).create({ productId: productInsertResult.insertedId }, now)
-            if (productStatisticsInsertResult === false || !productStatisticsInsertResult.acknowledged)
-                throw new Error('Failed to insert the product\'s statistics documents')
-
             return productInsertResult
         } catch (e) {
             console.error(e)

@@ -152,6 +152,9 @@ order.patch('/payed', authenticate, async (req, res) => {
         let order: Order = undefined!
 
         // payment logic
+        // .
+        // .
+        // .
 
         const mongodb = MongoDB.getDbInstance()
         const orderRepository = new OrderRepository()
@@ -183,8 +186,6 @@ order.patch('/payed', authenticate, async (req, res) => {
                 await mongodb.abortTransaction()
                 return
             }
-
-            res.sendStatus(200)
         } catch (e) {
             console.error(e)
             res.sendStatus(500)
@@ -205,7 +206,11 @@ order.patch('/payed', authenticate, async (req, res) => {
         } catch (e) {
             console.error(e)
             await mongodb.abortTransaction()
+            res.sendStatus(500)
+            return
         }
+
+        res.sendStatus(200)
     } catch (e) {
         console.error(e)
         res.sendStatus(500)

@@ -2,7 +2,6 @@ import { ObjectId, Collection, Db, ClientSession } from "mongodb";
 import { schemaVersion as zScoreMaintainerOptionsSchemaVersion, collectionName, ZScoreMaintainerOptionsCreate } from "../Models/zScoreMaintainerOptions";
 import { DateTime } from "luxon";
 import { IRepository, MongoDB } from "@monorepo/mongodb";
-import { ISeedable } from '@monorepo/mongodb/dist/ISeedable';
 
 export class ZScoreMaintainerOptionsRepository implements IRepository {
     IRepository: 'IRepository' = 'IRepository';

@@ -1,11 +1,19 @@
 import { DateTime } from "luxon";
-import { ClientSession, Collection, DeleteResult, ObjectId, UpdateResult } from 'mongodb'
-import { collectionName, ProductStatisticsCreate } from "../Models/ProductStatistics";
+import { ClientSession, Collection, Db, DeleteResult, InsertManyResult, InsertOneResult, ObjectId, Timestamp, UpdateResult } from 'mongodb'
+import { collectionName, ProductStatisticsCreate, ProductStatisticsInput, schemaVersion } from "../Models/ProductStatistics";
 import { number } from "yup";
-import { MongoDB } from '@monorepo/mongodb'
-import { ProductImmutable } from "../Models/Product";
+import { IRepository, MongoDB } from '@monorepo/mongodb'
+import { ProductCreate, ProductImmutable } from "../Models/Product";
+import { IDropable } from "@monorepo/mongodb/dist/IDropable";
+import { collectionName as productCollectionName } from "../Models/Product";
 
-export class ProductStatisticsRepository {
+export class ProductStatisticsRepository implements IDropable, IRepository {
+    IRepository: 'IRepository' = 'IRepository';
+    IDropable: "IDropable" = "IDropable";
+
+    private WEEK_SECONDS = 604_800
+    private MONTH_SECONDS = 2_592_000
+    private YEAR_SECONDS = 31_104_000
     private session: ClientSession | undefined = undefined
 
     setTransactionSession(session?: ClientSession): void {
@@ -16,8 +24,158 @@ export class ProductStatisticsRepository {
         this.session = undefined
     }
 
+    async addCollection(db: Db): Promise<void> {
+        if (!(await db.listCollections().toArray()).map(e => e.name).includes(collectionName))
+            await db.createCollection(collectionName)
+
+        const indexes = await db.collection(collectionName).indexes()
+
+        if (indexes.find(i => i.name === 'timestamp') === undefined)
+            await db.createIndex(collectionName, { timestamp: -1 }, { name: 'timestamp' })
+
+        if (indexes.find(i => i.name === 'productId') === undefined)
+            await db.createIndex(collectionName, { productId: -1 }, { name: 'productId' })
+
+        if (indexes.find(i => i.name === 'tags') === undefined)
+            await db.createIndex(collectionName, { tags: 1 }, { name: 'tags' })
+
+        if (indexes.find(i => i.name === 'categories') === undefined)
+            await db.createIndex(collectionName, { categories: 1 }, { name: 'categories' })
+
+        if (indexes.find(i => i.name === 'count') === undefined)
+            await db.createIndex(collectionName, { count: -1 }, { name: 'count' })
+
+        if (indexes.find(i => i.name === 'duration') === undefined)
+            await db.createIndex(collectionName, { duration: -1 }, { name: 'duration' })
+
+        if (indexes.find(i => i.name === 'zScore') === undefined)
+            await db.createIndex(collectionName, { zScore: -1 }, { name: 'zScore' })
+    }
+
     private async getCollection(): Promise<Collection<ProductStatisticsCreate>> {
         return (await MongoDB.getDb()).collection<ProductStatisticsCreate>(collectionName)
+    }
+
+    async dropCollection(db: Db): Promise<void> {
+        if ((await db.listCollections().toArray()).map(e => e.name).includes(collectionName))
+            await db.dropCollection(collectionName)
+    }
+
+    async createWeekly(productStatistics: ProductStatisticsInput, now: number): Promise<InsertOneResult | false> {
+        try {
+            const product = await ((await MongoDB.getDb()).collection<ProductCreate>(productCollectionName)).findOne({ _id: productStatistics.productId.toString() })
+            if (!product)
+                throw new Error('No product was found with provided product id.')
+
+            let p: ProductStatisticsCreate = {
+                ...productStatistics,
+                schemaVersion: schemaVersion,
+                duration: 0,
+                product,
+                count: 0,
+                zScore: 0,
+                viewCount: 0,
+                viewZScore: 0,
+                timestamp: now,
+            }
+
+            let thisWeek = DateTime.fromSeconds(now).set({ hour: 0, minute: 0, second: 0, millisecond: 0 })
+            while (thisWeek.weekday !== 1) {
+                thisWeek = thisWeek.minus({ days: 1 })
+            }
+
+            let result = await (await this.getCollection()).insertOne(
+                {
+                    ...p,
+                    duration: this.WEEK_SECONDS,
+                    timestamp: thisWeek.toUnixInteger(),
+                }
+                , { session: this.session }
+            )
+            if (!result.acknowledged)
+                throw new Error('Failed to create ProductStatistics document for weekly time period.')
+
+            return result
+        } catch (e) {
+            console.error(e)
+            return false
+        }
+    }
+
+    async createMonthly(productStatistics: ProductStatisticsInput, now: number): Promise<InsertOneResult | false> {
+        try {
+            const product = await ((await MongoDB.getDb()).collection<ProductCreate>(productCollectionName)).findOne({ _id: productStatistics.productId.toString() })
+            if (!product)
+                throw new Error('No product was found with provided product id.')
+
+            let p: ProductStatisticsCreate = {
+                ...productStatistics,
+                schemaVersion: schemaVersion,
+                duration: 0,
+                product,
+                count: 0,
+                zScore: 0,
+                viewCount: 0,
+                viewZScore: 0,
+                timestamp: now,
+            }
+
+            const thisMonth = DateTime.fromSeconds(now).set({ day: 1, hour: 0, minute: 0, second: 0, millisecond: 0 })
+
+            let result = await (await this.getCollection()).insertOne(
+                {
+                    ...p,
+                    duration: this.MONTH_SECONDS,
+                    timestamp: thisMonth.toUnixInteger(),
+                }
+                , { session: this.session }
+            )
+            if (!result.acknowledged)
+                throw new Error('Failed to create ProductStatistics document for weekly time period.')
+
+            return result
+        } catch (e) {
+            console.error(e)
+            return false
+        }
+    }
+
+    async createYearly(productStatistics: ProductStatisticsInput, now: number): Promise<InsertOneResult | false> {
+        try {
+            const product = await ((await MongoDB.getDb()).collection<ProductCreate>(productCollectionName)).findOne({ _id: productStatistics.productId.toString() })
+            if (!product)
+                throw new Error('No product was found with provided product id.')
+
+            let p: ProductStatisticsCreate = {
+                ...productStatistics,
+                schemaVersion: schemaVersion,
+                duration: 0,
+                product,
+                count: 0,
+                zScore: 0,
+                viewCount: 0,
+                viewZScore: 0,
+                timestamp: now,
+            }
+
+            const thisYear = DateTime.fromSeconds(now).set({ month: 1, day: 1, hour: 0, minute: 0, second: 0, millisecond: 0 })
+
+            let result = await (await this.getCollection()).insertOne(
+                {
+                    ...p,
+                    duration: this.YEAR_SECONDS,
+                    timestamp: thisYear.toUnixInteger(),
+                }
+                , { session: this.session }
+            )
+            if (!result.acknowledged)
+                throw new Error('Failed to create ProductStatistics document for weekly time period.')
+
+            return result
+        } catch (e) {
+            console.error(e)
+            return false
+        }
     }
 
     async updateImmutables(productId: string | ObjectId, product: ProductImmutable): Promise<UpdateResult | false> {
@@ -88,6 +246,8 @@ export class ProductStatisticsRepository {
         while (thisWeek.weekday !== 1) {
             thisWeek = thisWeek.minus({ days: 1 })
         }
+
+        await this.createRecordsIfNotExist(productId.toString(), 'weekly', [thisWeek.minus({ weeks: 7 }).toUnixInteger(), thisWeek.minus({ weeks: 1 }).toUnixInteger()], thisWeek.toUnixInteger())
 
         const aggregationResult = await this.getZScoreAggregationPipeline(productId.toString(), 608_800, [thisWeek.minus({ weeks: 7 }).toUnixInteger(), thisWeek.minus({ weeks: 1 }).toUnixInteger()], thisWeek.toUnixInteger(), count, countField)
 
@@ -200,6 +360,41 @@ export class ProductStatisticsRepository {
             throw new Error('failed to update ProductStatistics document with yearly calculated z-score')
 
         return zScore
+    }
+
+    private async createRecordsIfNotExist(productId: string, duration: 'monthly' | 'weekly' | 'yearly', period: [number, number], now: number) {
+        let cursor: number = period[0]
+        while (cursor < period[1]) {
+            let document = (await this.getCollection()).findOne({ duration: this.WEEK_SECONDS, timestamp: cursor })
+            if (document === undefined || document === null) {
+                if (duration === 'weekly')
+                    await this.createWeekly({ productId }, cursor)
+                if (duration === 'monthly')
+                    await this.createMonthly({ productId }, cursor)
+                if (duration === 'yearly')
+                    await this.createYearly({ productId }, cursor)
+            }
+
+            let cursorDT = DateTime.fromSeconds(now)
+            if (duration === 'weekly')
+                cursorDT = cursorDT.plus({ weeks: 1 })
+            if (duration === 'monthly')
+                cursorDT = cursorDT.plus({ months: 1 })
+            if (duration === 'yearly')
+                cursorDT = cursorDT.plus({ years: 1 })
+            cursor = cursorDT.toUnixInteger()
+        }
+
+        let document = (await this.getCollection()).findOne({ duration: this.WEEK_SECONDS, timestamp: now })
+        if (document === undefined || document === null) {
+            if (duration === 'weekly')
+                await this.createWeekly({ productId }, now)
+            if (duration === 'monthly')
+                await this.createMonthly({ productId }, now)
+            if (duration === 'yearly')
+                await this.createYearly({ productId }, now)
+        }
+
     }
 
     private async getZScoreAggregationPipeline(productId: string, duration: number, period: [number, number], now: number, amountToAdd: number, countField: string = 'count') {

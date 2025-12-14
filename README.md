@@ -39,3 +39,5 @@ openssl pkcs12 -export -in localhost.crt -inkey localhost.key -out localhost.p12
 ## Note
 
 Due to lack of support for time-series collection in docker image mongo:4 and lack of AVX extension on my old CPU which is required by mongodb:5 and after, mongodb database is deployed on another host with a CPU with AVX extension support, to serve the development environment.
+
+For now repositories are coupled with MongoDB database to make development process faster.
