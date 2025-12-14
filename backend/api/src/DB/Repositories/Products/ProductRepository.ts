@@ -8,8 +8,12 @@ import { TagRepository } from "../TagRepository";
 import { ProductPictureRepository } from "./ProductPictureRepository";
 import * as fs from 'fs'
 import { ProductStatisticsRepository } from "./ProductStatisticsRepository";
+import { ISeedable } from "@monorepo/mongodb/dist/ISeedable";
 
-export class ProductRepository implements IRepository {
+export class ProductRepository implements IRepository, ISeedable {
+    IRepository: 'IRepository' = 'IRepository';
+    ISeedable: 'ISeedable' = 'ISeedable';
+
     private session: ClientSession | undefined = undefined
 
     setTransactionSession(session: ClientSession): void {

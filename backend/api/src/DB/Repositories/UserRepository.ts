@@ -3,6 +3,8 @@ import { ClientSession, Collection, Db, ObjectId } from 'mongodb'
 import { IRepository, MongoDB } from '@monorepo/mongodb';
 
 export class UserRepository implements IRepository {
+    IRepository: 'IRepository' = 'IRepository';
+
     private session: ClientSession | undefined = undefined
 
     setTransactionSession(session?: ClientSession): void {
@@ -37,28 +39,6 @@ export class UserRepository implements IRepository {
 
     private async getCollection(): Promise<Collection<User>> {
         return (await MongoDB.getDb()).collection<User>(collectionName)
-    }
-
-    async seed(count?: number): Promise<void> {
-        console.log('UserRepository.seed()')
-        console.time()
-
-        try {
-            const collection = await this.getCollection()
-
-            if ((await collection.countDocuments()) !== 0) {
-                console.warn(`${collectionName} collection is not empty!`)
-                return
-            }
-
-            // handled by the Authorization service
-            throw new Error("Method not implemented.");
-        } finally { console.timeEnd() }
-    }
-
-    async dropCollection(db: Db): Promise<void> {
-        if ((await db.listCollections().toArray()).map(e => e.name).includes(collectionName))
-            await db.dropCollection(collectionName)
     }
 
     async getById(id: string): Promise<User | null | undefined> {

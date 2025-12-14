@@ -5,8 +5,12 @@ import { defaultRolePrivilegeNames } from '../Models/privilegeNames'
 import { PrivilegeRepository } from './PrivilegeRepository'
 import { faker } from '@faker-js/faker'
 import { IRepository, MongoDB } from '@monorepo/mongodb'
+import { ISeedable } from '@monorepo/mongodb/dist/ISeedable';
 
-export class RoleRepository implements IRepository {
+export class RoleRepository implements IRepository, ISeedable {
+    IRepository: 'IRepository' = 'IRepository';
+    ISeedable: 'ISeedable' = 'ISeedable';
+
     private session: ClientSession | undefined = undefined
 
     setTransactionSession(session?: ClientSession): void {

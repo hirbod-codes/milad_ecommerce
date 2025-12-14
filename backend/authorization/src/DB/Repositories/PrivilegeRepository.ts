@@ -3,8 +3,12 @@ import { DateTime } from 'luxon'
 import { collectionName, Privilege, PrivilegeCreate, PrivilegeInput, PrivilegeUpdate, schemaVersion } from '../Models/Privilege'
 import { privilegeNames } from '../Models/privilegeNames'
 import { IRepository, MongoDB } from '@monorepo/mongodb'
+import { ISeedable } from '@monorepo/mongodb/dist/ISeedable';
 
-export class PrivilegeRepository implements IRepository {
+export class PrivilegeRepository implements IRepository, ISeedable {
+    IRepository: 'IRepository' = 'IRepository';
+    ISeedable: 'ISeedable' = 'ISeedable';
+
     private collection: Collection<PrivilegeCreate>
 
     constructor(collection: Collection<PrivilegeCreate>) {

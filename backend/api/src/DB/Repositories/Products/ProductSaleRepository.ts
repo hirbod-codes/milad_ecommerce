@@ -4,8 +4,12 @@ import { collectionName, ProductSaleCreate, ProductSaleInput, schemaVersion } fr
 import { DateTime } from "luxon";
 import { number, string } from "yup";
 import { collectionName as orderCollectionName, OrderCreate } from "../../Models/Order";
+import { ISeedable } from "@monorepo/mongodb/dist/ISeedable";
 
-export class ProductSaleRepository implements IRepository {
+export class ProductSaleRepository implements IRepository, ISeedable {
+    IRepository: 'IRepository' = 'IRepository';
+    ISeedable: 'ISeedable' = 'ISeedable';
+
     private session: ClientSession | undefined = undefined
 
     setTransactionSession(session?: ClientSession): void {

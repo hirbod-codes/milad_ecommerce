@@ -1,8 +1,12 @@
 import { ClientSession, Db, GridFSBucket, GridFSBucketReadStream, GridFSBucketWriteStream, GridFSFile, MongoClient, ObjectId } from "mongodb";
 import { IRepository, MongoDB } from '@monorepo/mongodb';
 import { collectionName } from "../../Models/Products/ProductPicture";
+import { ISeedable } from '@monorepo/mongodb/dist/ISeedable';
 
-export class ProductPictureRepository implements IRepository {
+export class ProductPictureRepository implements IRepository, ISeedable {
+    IRepository: 'IRepository' = 'IRepository';
+    ISeedable: 'ISeedable' = 'ISeedable';
+
     private session: ClientSession | undefined = undefined
 
     setTransactionSession(session?: ClientSession): void {
@@ -36,7 +40,7 @@ export class ProductPictureRepository implements IRepository {
     }
 
     async seed(count?: number): Promise<void> {
-        throw new Error("Method not implemented.");
+        // throw new Error("Method not implemented.");
     }
 
     async getReadStream(fileId: string | ObjectId): Promise<GridFSBucketReadStream> {

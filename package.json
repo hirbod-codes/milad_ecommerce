@@ -18,6 +18,7 @@
         "build:web": "vite build --config ./frontend/web/vite.config.ts",
         "build:utils": "tsc -p ./packages/utils/tsconfig.json",
         "build:mongodb": "tsc -p ./packages/mongodb/tsconfig.json",
+        "build:db": "tsc -p ./packages/db/tsconfig.json",
         "dev:api": "npm run dev --workspace=api",
         "dev:authorization": "npm run dev --workspace=authorization",
         "dev:zscore-maintainer": "npm run dev --workspace=zscore-maintainer",

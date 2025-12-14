@@ -1,7 +1,8 @@
 import { ClientSession, Db, MongoClient } from 'mongodb'
 import { DbConfigurationError } from './Exceptions/DbConfigurationError'
 import { ConnectionError } from './Exceptions/ConnectionError'
-import { IRepository } from './IRepository'
+import { IRepository, isIRepository } from './IRepository'
+import { ISeedable, isISeedable } from './ISeedable'
 
 export type MongodbConfig = {
     supportsTransaction: boolean;
@@ -18,15 +19,21 @@ export class MongoDB {
 
     public static config: MongodbConfig
 
-    private repositories: IRepository[] = []
+    private static seeding: boolean = false
 
-    addRepository(repository: IRepository) {
-        if (this.repositories.find(f => f.constructor === repository.constructor) === undefined)
-            this.repositories.push(repository)
+    private static repositories: IRepository[] = []
+    private static seedables: ISeedable[] = []
+
+    addRepository(repository: IRepository | ISeedable) {
+        if (isIRepository(repository) && MongoDB.repositories.find(f => f.constructor === repository.constructor) === undefined)
+            MongoDB.repositories.push(repository)
+
+        if (isISeedable(repository) && MongoDB.seedables.find(f => f.constructor === repository.constructor) === undefined)
+            MongoDB.seedables.push(repository)
     }
 
     removeRepository(index: number) {
-        this.repositories = this.repositories.slice(0, index).concat(this.repositories.slice(index + 1))
+        MongoDB.repositories = MongoDB.repositories.slice(0, index).concat(MongoDB.repositories.slice(index + 1))
     }
 
     static getDbInstance() {
@@ -175,23 +182,25 @@ export class MongoDB {
             try { await this.session.abortTransaction() }
             finally { this.session = undefined }
 
-        this.repositories = []
+        MongoDB.repositories = []
     }
 
-    async dropAllCollections() {
+    async dropSeedableCollections() {
         const db = await MongoDB.getDb()
-        for (const repository of this.repositories)
+        for (const repository of MongoDB.seedables)
             await repository.dropCollection(db)
     }
 
     async createCollections() {
         const db = await MongoDB.getDb()
-        for (const repository of this.repositories)
+        for (const repository of MongoDB.repositories)
             repository.addCollection(db)
     }
 
     async seedCollections() {
         console.time('seed')
+
+        MongoDB.seeding = true
 
         try {
             let safety = 0
@@ -199,7 +208,7 @@ export class MongoDB {
                 safety++
 
                 let failed = false
-                for (const repository of this.repositories)
+                for (const repository of MongoDB.seedables)
                     try { await repository.seed() }
                     catch (e) { failed = true; console.error(e) }
 
@@ -209,7 +218,12 @@ export class MongoDB {
         } catch (e) {
             console.error(e)
             throw e
-        } finally { console.timeEnd('seed') }
+        }
 
+        console.timeEnd('seed')
+
+        MongoDB.seeding = false
     }
+
+    public static isSeeding(): boolean { return MongoDB.seeding }
 }

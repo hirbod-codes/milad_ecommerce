@@ -4,6 +4,8 @@ import { collectionName } from '../Models/Privilege'
 import { IRepository, MongoDB } from '@monorepo/mongodb';
 
 export class RoleRepository implements IRepository {
+    IRepository: 'IRepository' = 'IRepository';
+
     private session: ClientSession | undefined = undefined
 
     setTransactionSession(session?: ClientSession): void {
@@ -34,28 +36,6 @@ export class RoleRepository implements IRepository {
 
     private async getCollection(): Promise<Collection<RoleCreate>> {
         return (await MongoDB.getDb()).collection<RoleCreate>(collectionName)
-    }
-
-    async dropCollection(db: Db): Promise<void> {
-        if ((await db.listCollections().toArray()).map(e => e.name).includes(collectionName))
-            await db.dropCollection(collectionName)
-    }
-
-    async seed(count?: number): Promise<void> {
-        console.log('RoleRepository.seed()')
-        console.time()
-
-        try {
-            const collection = await this.getCollection()
-
-            if ((await collection.countDocuments()) !== 0) {
-                console.warn(`${collectionName} collection is not empty!`)
-                return
-            }
-
-            // handled by the Authorization service
-            throw new Error("Method not implemented.");
-        } finally { console.timeEnd() }
     }
 
     async getRolesWithPrivileges(): Promise<RoleWithPrivileges[] | false> {

@@ -1,7 +1,7 @@
 import express from "express";
 import dotenv from "dotenv";
 import pino from 'pino-http'
-import { getBooleanEnv, getIntegerEnv, getStringEnv, tryAndWait } from "@monorepo/utils";
+import { getBooleanEnv, getIntegerEnv, getStringEnv, httpRequest, httpsRequest, tryAndWait } from "@monorepo/utils";
 import { TagRepository } from "./DB/Repositories/TagRepository";
 import { ProductReviewsRepository } from "./DB/Repositories/Products/ProductReviewsRepository";
 import { ProductRepository } from "./DB/Repositories/Products/ProductRepository";
@@ -23,6 +23,7 @@ import { ProductStatisticsRepository } from "./DB/Repositories/Products/ProductS
 import { ProductViewRepository } from "./DB/Repositories/Products/ProductViewRepository";
 import { UserRepository } from "./DB/Repositories/UserRepository";
 import { RoleRepository } from "./DB/Repositories/RoleRepository";
+import { boolean } from "yup";
 
 
 console.log('running...');
@@ -78,7 +79,16 @@ RevokedAccessTokenManager.initialize(revokedTokensRedisType, revokedTokensRedisI
 export const queueManagement = new QueueManagement(messageBrokerUrl, messageBrokerUsername, messageBrokerPassword, messageBrokerType as any);
 
 (async () => {
-    await tryAndWait(async () => {
+    if (!await tryAndWait(async () => {
+        const result = await httpRequest({ method: 'get', port: 3000, host: 'localhost', path: '/is_seeding' })
+        if (result.response.statusCode === 200 && boolean().isValidSync(result.data) && boolean().cast(result.data) === false)
+            return
+        else
+            throw new Error('Authorization service has not finished seeding.')
+    }))
+        throw new Error('Failed to communicate to authorization service.')
+
+    if (!await tryAndWait(async () => {
         MongoDB.config = dbConfig
 
         const db = MongoDB.getDbInstance()
@@ -98,15 +108,17 @@ export const queueManagement = new QueueManagement(messageBrokerUrl, messageBrok
         db.addRepository(new RoleRepository())
 
         if (!isProduction)
-            await MongoDB.getDbInstance().dropAllCollections()
+            await MongoDB.getDbInstance().dropSeedableCollections()
 
         await db.createCollections()
 
         if (!isProduction)
             await db.seedCollections()
-    })
+    }))
+        throw new Error('Failed to prepare database.')
 
-    await tryAndWait(async () => await queueManagement.subscribeConsumers(messageBrokerUrl))
+    if (!await tryAndWait(async () => await queueManagement.subscribeConsumers(messageBrokerUrl)))
+        throw new Error('Failed to subscribe to message broker.')
 
     const collectDefaultMetrics = prometheusClient.collectDefaultMetrics;
     collectDefaultMetrics();
@@ -140,6 +152,11 @@ export const queueManagement = new QueueManagement(messageBrokerUrl, messageBrok
     // To Do: Add rate limiter middleware
 
     app.use(express.json())
+
+    if (!isProduction)
+        app.get('/is_seeding', (req, res) => {
+            res.status(200).json(MongoDB.isSeeding())
+        })
 
     app.get('/metrics', async (req, res) => {
         res.set('Content-Type', prometheusClient.register.contentType);

@@ -5,8 +5,12 @@ import { IRepository, MongoDB } from '@monorepo/mongodb';
 import { faker } from '@faker-js/faker';
 import { ProductRepository } from './ProductRepository';
 import { UserRepository } from '../UserRepository';
+import { ISeedable } from "@monorepo/mongodb/dist/ISeedable";
 
-export class ProductReviewsRepository implements IRepository {
+export class ProductReviewsRepository implements IRepository, ISeedable {
+    IRepository: 'IRepository' = 'IRepository';
+    ISeedable: 'ISeedable' = 'ISeedable';
+
     private session: ClientSession | undefined = undefined
 
     setTransactionSession(session?: ClientSession): void {

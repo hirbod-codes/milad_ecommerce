@@ -65,7 +65,7 @@ export function getBooleanEnv(key: string, message?: string, validate?: (schema:
     return env!
 }
 
-export async function httpRequest(options: http.RequestOptions, sendData?: string) {
+export async function httpRequest(options: http.RequestOptions, sendData?: string): Promise<{ response: http.IncomingMessage, data: string }> {
     return new Promise<{ response: http.IncomingMessage, data: string }>((resolve, reject) => {
         const request = http.request(options, (response) => {
             let data = '';
@@ -95,8 +95,8 @@ export async function httpRequest(options: http.RequestOptions, sendData?: strin
     })
 }
 
-export async function httpsRequest(options: https.RequestOptions, sendData?: string) {
-    return new Promise<{ response: https.RequestOptions, data: string }>((resolve, reject) => {
+export async function httpsRequest(options: https.RequestOptions, sendData?: string): Promise<{ response: http.IncomingMessage, data: string }> {
+    return new Promise<{ response: http.IncomingMessage, data: string }>((resolve, reject) => {
         const request = https.request(options, (response) => {
             let data = '';
             response.on('data', (chunk) => {

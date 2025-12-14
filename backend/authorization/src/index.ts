@@ -114,7 +114,7 @@ export const queueManagement = new QueueManagement(messageBrokerUrl, messageBrok
         db.addRepository(new RoleRepository())
 
         if (!isProduction)
-            await MongoDB.getDbInstance().dropAllCollections()
+            await MongoDB.getDbInstance().dropSeedableCollections()
 
         await db.createCollections()
 
@@ -126,10 +126,10 @@ export const queueManagement = new QueueManagement(messageBrokerUrl, messageBrok
             await db.seedCollections()
         }
     }))
-        exit(1)
+        throw new Error('Failed to prepare database.')
 
     if (!await tryAndWait(async () => await queueManagement.subscribeConsumers(messageBrokerUrl)))
-        exit(1)
+        throw new Error('Failed to subscribe to message broker.')
 
     const collectDefaultMetrics = prometheusClient.collectDefaultMetrics;
     collectDefaultMetrics();
@@ -164,6 +164,11 @@ export const queueManagement = new QueueManagement(messageBrokerUrl, messageBrok
 
     app.use(express.json())
     app.use(cookieParser())
+
+    if (!isProduction)
+        app.get('/is_seeding', (req, res) => {
+            res.status(200).json(MongoDB.isSeeding())
+        })
 
     app.get('/metrics', async (req, res) => {
         res.set('Content-Type', prometheusClient.register.contentType);

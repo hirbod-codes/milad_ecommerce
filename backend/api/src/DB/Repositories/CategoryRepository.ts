@@ -4,8 +4,12 @@ import { Category, CategoryCreate, CategoryImmutable, CategoryInput, CategoryUpd
 import { IRepository, MongoDB } from '@monorepo/mongodb';
 import { faker } from "@faker-js/faker"
 import { v4 as uuid } from 'uuid';
+import { ISeedable } from "@monorepo/mongodb/dist/ISeedable";
 
-export class CategoryRepository implements IRepository {
+export class CategoryRepository implements IRepository, ISeedable {
+    IRepository: 'IRepository' = 'IRepository';
+    ISeedable: 'ISeedable' = 'ISeedable';
+
     private session: ClientSession | undefined = undefined
 
     setTransactionSession(session?: ClientSession): void {

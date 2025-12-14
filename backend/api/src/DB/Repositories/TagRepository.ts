@@ -4,8 +4,12 @@ import { Tag, TagCreate, TagImmutable, TagInput, TagUpdate, collectionName, sche
 import { IRepository, MongoDB } from '@monorepo/mongodb';
 import { faker } from '@faker-js/faker';
 import { v4 as uuid } from 'uuid';
+import { ISeedable } from '@monorepo/mongodb/dist/ISeedable';
 
-export class TagRepository implements IRepository {
+export class TagRepository implements IRepository, ISeedable {
+    IRepository: 'IRepository' = 'IRepository';
+    ISeedable: 'ISeedable' = 'ISeedable';
+
     private session: ClientSession | undefined = undefined
 
     setTransactionSession(session?: ClientSession): void {

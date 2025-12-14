@@ -3,8 +3,12 @@ import { IRepository, MongoDB } from '@monorepo/mongodb';
 import { collectionName, ProductViewCreate, ProductViewInput, schemaVersion } from "../../Models/Products/ProductView";
 import { number, string } from "yup";
 import { DateTime } from "luxon";
+import { ISeedable } from "@monorepo/mongodb/dist/ISeedable";
 
-export class ProductViewRepository implements IRepository {
+export class ProductViewRepository implements IRepository, ISeedable {
+    IRepository: 'IRepository' = 'IRepository';
+    ISeedable: 'ISeedable' = 'ISeedable';
+
     private session: ClientSession | undefined = undefined
 
     setTransactionSession(session?: ClientSession): void {
@@ -41,7 +45,7 @@ export class ProductViewRepository implements IRepository {
     }
 
     async seed(count?: number): Promise<void> {
-        throw new Error("Method not implemented.");
+        // throw new Error("Method not implemented.");
     }
 
     async create(productViewInput: ProductViewInput, now: number) {

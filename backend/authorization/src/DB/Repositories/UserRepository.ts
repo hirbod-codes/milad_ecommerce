@@ -5,8 +5,12 @@ import crypto from "crypto";
 import { faker } from "@faker-js/faker"
 import { RoleRepository } from "./RoleRepository";
 import { MongoDB, IRepository } from "@monorepo/mongodb";
+import { ISeedable } from '@monorepo/mongodb/dist/ISeedable';
 
-export class UserRepository implements IRepository {
+export class UserRepository implements IRepository, ISeedable {
+    IRepository: 'IRepository' = 'IRepository';
+    ISeedable: 'ISeedable' = 'ISeedable';
+
     private session: ClientSession | undefined = undefined
 
     setTransactionSession(session?: ClientSession): void {

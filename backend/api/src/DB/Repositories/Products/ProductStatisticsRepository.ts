@@ -6,8 +6,12 @@ import { collectionName as productCollectionName } from "../../Models/Products/P
 import { Product, ProductCreate, ProductImmutable, ProductUpdate } from "../../Models/Products/Product";
 import { number } from "yup";
 import { IRepository, MongoDB } from '@monorepo/mongodb'
+import { ISeedable } from "@monorepo/mongodb/dist/ISeedable";
 
-export class ProductStatisticsRepository implements IRepository {
+export class ProductStatisticsRepository implements IRepository, ISeedable {
+    IRepository: 'IRepository' = 'IRepository';
+    ISeedable: 'ISeedable' = 'ISeedable';
+
     private session: ClientSession | undefined = undefined
 
     setTransactionSession(session?: ClientSession): void {
@@ -56,7 +60,7 @@ export class ProductStatisticsRepository implements IRepository {
     }
 
     async seed(count?: number): Promise<void> {
-        throw new Error("Method not implemented.");
+        // throw new Error("Method not implemented.");
     }
 
     async create(productStatistics: ProductStatisticsInput, now: number): Promise<InsertManyResult | false> {
