@@ -2,8 +2,11 @@ import { Collection, Db, ClientSession } from "mongodb";
 import { DateTime } from "luxon";
 import { collectionName, FailedProductSaleRangeCreate, FailedProductSaleRangeInput, schemaVersion } from "../Models/FailedProductSaleRange";
 import { IRepository, MongoDB } from "@monorepo/mongodb";
+import { ISeedable } from '@monorepo/mongodb/dist/ISeedable';
 
 export class FailedProductSaleRangeRepository implements IRepository {
+    IRepository: 'IRepository' = 'IRepository';
+
     private session: ClientSession | undefined = undefined
 
     setTransactionSession(session?: ClientSession): void {
@@ -29,15 +32,6 @@ export class FailedProductSaleRangeRepository implements IRepository {
 
     private async getCollection(): Promise<Collection<FailedProductSaleRangeCreate>> {
         return (await MongoDB.getDb()).collection<FailedProductSaleRangeCreate>(collectionName)
-    }
-
-    async dropCollection(db: Db): Promise<void> {
-        if ((await db.listCollections().toArray()).map(e => e.name).includes(collectionName))
-            await db.dropCollection(collectionName)
-    }
-
-    async seed(count?: number) {
-        // throw new Error("This method has not implemented.")
     }
 
     async create(failedProductSaleRange: FailedProductSaleRangeInput, now?: number) {

@@ -1,8 +1,6 @@
 import express from "express";
 import dotenv from "dotenv";
 import { runMasterJobs } from "./runMasterJobs";
-import { collectionName as failedProductSaleRangeCollectionName } from "./DB/Models/FailedProductSaleRange";
-import { collectionName as zScoreMaintainerOptionsCollectionName } from "./DB/Models/zScoreMaintainerOptions";
 import { ZScoreMaintainerOptionsRepository } from "./DB/Repositories/ZScoreMaintainerOptionsRepository";
 import { boolean, number, string, object } from "yup";
 import { handleRange, runSlaveJobs } from "./runSlaveJobs";
@@ -41,7 +39,7 @@ export const dbConfig = {
         db.addRepository(new ZScoreMaintainerOptionsRepository())
 
         if (!isProduction)
-            await MongoDB.getDbInstance().dropAllCollections()
+            await MongoDB.getDbInstance().dropSeedableCollections()
 
         await db.createCollections()
 

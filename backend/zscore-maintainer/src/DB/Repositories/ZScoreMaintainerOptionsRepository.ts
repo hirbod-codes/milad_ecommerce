@@ -2,8 +2,11 @@ import { ObjectId, Collection, Db, ClientSession } from "mongodb";
 import { schemaVersion as zScoreMaintainerOptionsSchemaVersion, collectionName, ZScoreMaintainerOptionsCreate } from "../Models/zScoreMaintainerOptions";
 import { DateTime } from "luxon";
 import { IRepository, MongoDB } from "@monorepo/mongodb";
+import { ISeedable } from '@monorepo/mongodb/dist/ISeedable';
 
 export class ZScoreMaintainerOptionsRepository implements IRepository {
+    IRepository: 'IRepository' = 'IRepository';
+
     private session: ClientSession | undefined = undefined
 
     setTransactionSession(session?: ClientSession): void {
@@ -29,15 +32,6 @@ export class ZScoreMaintainerOptionsRepository implements IRepository {
 
     private async getCollection(): Promise<Collection<ZScoreMaintainerOptionsCreate>> {
         return (await MongoDB.getDb()).collection<ZScoreMaintainerOptionsCreate>(collectionName)
-    }
-
-    async dropCollection(db: Db): Promise<void> {
-        if ((await db.listCollections().toArray()).map(e => e.name).includes(collectionName))
-            await db.dropCollection(collectionName)
-    }
-
-    async seed(count?: number) {
-        // throw new Error("This method has not implemented.")
     }
 
     async createOptions() {
