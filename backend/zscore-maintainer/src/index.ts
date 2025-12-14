@@ -3,9 +3,16 @@ import dotenv from "dotenv";
 import { runMasterJobs } from "./runMasterJobs";
 import { ZScoreMaintainerOptionsRepository } from "./DB/Repositories/ZScoreMaintainerOptionsRepository";
 import { boolean, number, string, object } from "yup";
-import { handleRange, runSlaveJobs } from "./runSlaveJobs";
+import { runSlaveJobs } from "./runSlaveJobs";
 import { getBooleanEnv, getIntegerEnv, getStringEnv, tryAndWait } from "@monorepo/utils";
 import { MongoDB } from "@monorepo/mongodb";
+import { ProductSaleRangeInput, productSaleRangeInputSchema } from "./DB/Models/ProductSaleRange";
+import { ProductSaleRangeRepository } from "./DB/Repositories/ProductSaleRangeRepository";
+import { ProductRepository } from "./DB/Repositories/ProductRepository";
+import { ProductSaleRepository } from "./DB/Repositories/ProductSaleRepository";
+import { ProductStatisticsRepository } from "./DB/Repositories/ProductStatisticsRepository";
+import { DateTime } from "luxon";
+import { ObjectId } from "mongodb";
 
 console.log('running...');
 
@@ -76,11 +83,11 @@ function runMaster() {
                         .then((r) => {
                             if (r === false || !r.acknowledged)
                                 res.sendStatus(500)
-
-                            res.sendStatus(201)
+                            else
+                                res.sendStatus(204)
                         })
                 else
-                    res.sendStatus(201)
+                    res.sendStatus(200)
             })
     })
 
@@ -109,20 +116,21 @@ function runSlave() {
     })
 
     app.post('/calculate-z-score', (req, res) => {
-        const { range, count, inclusive } = req.body
+        const { range, count, duration, inclusive } = req.body
 
-        if (
-            !object().required().shape({ min: string().required(), max: string().required() }).isValidSync(range) ||
-            !number().required().integer().positive().isValidSync(count) ||
-            !boolean().required().isValidSync(inclusive)
-        ) {
+        if (!productSaleRangeInputSchema.isValidSync({ range, count, duration })) {
+            res.sendStatus(400)
+            return
+        }
+
+        if (!boolean().required().isValidSync(inclusive)) {
             res.sendStatus(400)
             return
         }
 
         res.sendStatus(200)
 
-        handleRange(range, count, inclusive)
+        handleRange(range, count, duration, inclusive)
     })
 
     app.all('*', (req, res) => {
@@ -132,4 +140,60 @@ function runSlave() {
     app.listen(hostPort, hostIp, () => console.log(`listening on ${hostIp}:${hostPort}...`))
 
     runSlaveJobs(masterHost, masterPort, hostName, hostPort)
+}
+
+async function handleRange({ max, min }: { min: string, max: string }, count: number, duration: number, inclusive: boolean) {
+    try {
+        const mongodb = MongoDB.getDbInstance()
+        const productRepository = new ProductRepository()
+        const productSaleRepository = new ProductSaleRepository()
+        const productStatisticsRepository = new ProductStatisticsRepository()
+        const productSaleRangeRepository = new ProductSaleRangeRepository()
+
+        const minId = ObjectId.createFromHexString(min)
+        const maxId = ObjectId.createFromHexString(max)
+
+        let i = minId
+        const limit = 1000
+        while (i < maxId) {
+            const fetchedProductSales = await productSaleRepository.getProductSales(limit, i.toString(), max, true)
+            if (fetchedProductSales.length === 0)
+                break
+
+            //                               id   quantity
+            const groupedProductSales: Map<string, number> = new Map()
+            for (const p of fetchedProductSales)
+                groupedProductSales.set(p._id.toString(), (groupedProductSales.get(p._id.toString()) ?? 0) + p.metadata.quantity)
+
+            try {
+                await mongodb.startTransaction()
+
+                for (const [k, v] of groupedProductSales.entries()) {
+                    const updateCountResult = await productStatisticsRepository.updateSaleCount(k, DateTime.utc().toUnixInteger(), v)
+                    if (updateCountResult === false)
+                        throw new Error('Failed to update product statistics document')
+                }
+
+                const result = await productSaleRangeRepository.processed({ min, max, count, duration }, i.toString())
+                if (result === false || !result.acknowledged || result.matchedCount !== 1)
+                    throw new Error('Failed to update product statistics document')
+
+                await mongodb.commitTransaction()
+            } catch (e) {
+                console.error(e)
+                await mongodb.abortTransaction()
+            }
+
+            i = ObjectId.createFromHexString(fetchedProductSales[fetchedProductSales.length - 1]._id.toString())
+
+
+
+
+            // const updateImmutablesResult = await productRepository.updateImmutables(productSales._id, { weeklyOrderZScore: updateCountResult.weeklyZScore, monthlyOrderZScore: updateCountResult.monthlyZScore, yearlyOrderZScore: updateCountResult.yearlyZScore })
+            // if (updateImmutablesResult === false || !updateImmutablesResult.acknowledged || updateImmutablesResult.matchedCount !== 1)
+            //     throw new Error('Failed to update product document')
+        }
+    } catch (e) {
+        console.error(e)
+    }
 }

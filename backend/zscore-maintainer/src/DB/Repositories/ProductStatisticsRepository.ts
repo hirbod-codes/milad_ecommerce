@@ -1,5 +1,5 @@
 import { DateTime } from "luxon";
-import { ClientSession, Collection, Db, DeleteResult, InsertManyResult, InsertOneResult, ObjectId, Timestamp, UpdateResult } from 'mongodb'
+import { ClientSession, Collection, Db, DeleteResult, InsertOneResult, ObjectId, UpdateResult } from 'mongodb'
 import { collectionName, ProductStatisticsCreate, ProductStatisticsInput, schemaVersion } from "../Models/ProductStatistics";
 import { number } from "yup";
 import { IRepository, MongoDB } from '@monorepo/mongodb'
@@ -131,7 +131,7 @@ export class ProductStatisticsRepository implements IDropable, IRepository {
                 , { session: this.session }
             )
             if (!result.acknowledged)
-                throw new Error('Failed to create ProductStatistics document for weekly time period.')
+                throw new Error('Failed to create ProductStatistics document for monthly time period.')
 
             return result
         } catch (e) {
@@ -169,7 +169,7 @@ export class ProductStatisticsRepository implements IDropable, IRepository {
                 , { session: this.session }
             )
             if (!result.acknowledged)
-                throw new Error('Failed to create ProductStatistics document for weekly time period.')
+                throw new Error('Failed to create ProductStatistics document for yearly time period.')
 
             return result
         } catch (e) {
@@ -264,7 +264,7 @@ export class ProductStatisticsRepository implements IDropable, IRepository {
         let updateResult = await (await this.getCollection()).updateOne(
             {
                 productId: ObjectId.createFromHexString(productId.toString()),
-                duration: 608_800, // a week in seconds
+                duration: this.WEEK_SECONDS,
                 timestamp: thisWeek.toUnixInteger(),
             },
             {

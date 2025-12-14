@@ -2,11 +2,32 @@ import { Collection, ObjectId } from "mongodb";
 import { MongoDB } from '@monorepo/mongodb';
 import { DateTime } from "luxon";
 import { number, string } from "yup";
-import { collectionName, ProductSaleCreate } from "../Models/ProductSale";
+import { collectionName, ProductSale, ProductSaleCreate } from "../Models/ProductSale";
 
 export class ProductSaleRepository {
     private async getCollection(): Promise<Collection<ProductSaleCreate>> {
         return (await MongoDB.getDb()).collection<ProductSaleCreate>(collectionName)
+    }
+
+    async getProductSales(limit: number, offsetId?: string, maxId?: string, inclusive: boolean = false): Promise<ProductSale[]> {
+        const filter: any = {}
+
+        if (offsetId)
+            filter._id = { $gte: ObjectId.createFromHexString(offsetId) }
+
+        if (maxId)
+            if (filter._id)
+                filter._id[inclusive ? '$lte' : '$lt'] = ObjectId.createFromHexString(maxId)
+            else if (!filter._id)
+                filter._id = { [inclusive ? '$lte' : '$lt']: ObjectId.createFromHexString(maxId) }
+
+        return await (await this.getCollection()).find(filter, { sort: [['_id', 1]] }).limit(limit).toArray()
+    }
+
+    async getLastProductSaleId(): Promise<string | undefined> {
+        const doc = await (await this.getCollection()).findOne({}, { sort: [['_id', -1]] })
+
+        return doc?._id.toString() ?? undefined
     }
 
     async getEstimatedCount() {

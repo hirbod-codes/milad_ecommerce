@@ -2,8 +2,12 @@ import { ObjectId, Collection, Db, ClientSession } from "mongodb";
 import { schemaVersion as zScoreMaintainerOptionsSchemaVersion, collectionName, ZScoreMaintainerOptionsCreate } from "../Models/zScoreMaintainerOptions";
 import { DateTime } from "luxon";
 import { IRepository, MongoDB } from "@monorepo/mongodb";
+import { ISeedable } from "@monorepo/mongodb/dist/ISeedable";
+import { IDropable } from "@monorepo/mongodb/dist/IDropable";
 
-export class ZScoreMaintainerOptionsRepository implements IRepository {
+export class ZScoreMaintainerOptionsRepository implements IRepository, ISeedable, IDropable {
+    ISeedable: "ISeedable" = "ISeedable";
+    IDropable: "IDropable" = "IDropable";
     IRepository: 'IRepository' = 'IRepository';
 
     private session: ClientSession | undefined = undefined
@@ -14,6 +18,11 @@ export class ZScoreMaintainerOptionsRepository implements IRepository {
 
     unsetTransactionSession(): void {
         this.session = undefined
+    } 
+    
+    async dropCollection(db: Db): Promise<void> {
+        if ((await db.listCollections().toArray()).map(e => e.name).includes(collectionName))
+            await db.dropCollection(collectionName)
     }
 
     async addCollection(db: Db): Promise<void> {
@@ -31,6 +40,10 @@ export class ZScoreMaintainerOptionsRepository implements IRepository {
 
     private async getCollection(): Promise<Collection<ZScoreMaintainerOptionsCreate>> {
         return (await MongoDB.getDb()).collection<ZScoreMaintainerOptionsCreate>(collectionName)
+    }
+
+    async seed(count?: number): Promise<void> {
+        // 
     }
 
     async createOptions() {
