@@ -6,8 +6,10 @@ import { PrivilegeRepository } from './PrivilegeRepository'
 import { faker } from '@faker-js/faker'
 import { IRepository, MongoDB } from '@monorepo/mongodb'
 import { ISeedable } from '@monorepo/mongodb/dist/ISeedable';
+import { IDropable } from '@monorepo/mongodb/dist/IDropable'
 
-export class RoleRepository implements IRepository, ISeedable {
+export class RoleRepository implements IRepository, ISeedable, IDropable {
+    IDropable: 'IDropable' = 'IDropable';
     IRepository: 'IRepository' = 'IRepository';
     ISeedable: 'ISeedable' = 'ISeedable';
 

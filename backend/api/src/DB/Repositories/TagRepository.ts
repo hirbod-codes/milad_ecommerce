@@ -5,8 +5,10 @@ import { IRepository, MongoDB } from '@monorepo/mongodb';
 import { faker } from '@faker-js/faker';
 import { v4 as uuid } from 'uuid';
 import { ISeedable } from '@monorepo/mongodb/dist/ISeedable';
+import { IDropable } from '@monorepo/mongodb/dist/IDropable';
 
-export class TagRepository implements IRepository, ISeedable {
+export class TagRepository implements IRepository, ISeedable, IDropable {
+    IDropable: 'IDropable' = 'IDropable';
     IRepository: 'IRepository' = 'IRepository';
     ISeedable: 'ISeedable' = 'ISeedable';
 

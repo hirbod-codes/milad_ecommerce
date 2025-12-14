@@ -4,8 +4,10 @@ import { collectionName, ProductViewCreate, ProductViewInput, schemaVersion } fr
 import { number, string } from "yup";
 import { DateTime } from "luxon";
 import { ISeedable } from "@monorepo/mongodb/dist/ISeedable";
+import { IDropable } from "@monorepo/mongodb/dist/IDropable";
 
-export class ProductViewRepository implements IRepository, ISeedable {
+export class ProductViewRepository implements IRepository, ISeedable, IDropable {
+    IDropable: 'IDropable' = 'IDropable';
     IRepository: 'IRepository' = 'IRepository';
     ISeedable: 'ISeedable' = 'ISeedable';
 

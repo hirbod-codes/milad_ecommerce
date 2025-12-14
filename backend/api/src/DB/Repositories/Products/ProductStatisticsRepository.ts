@@ -7,8 +7,10 @@ import { Product, ProductCreate, ProductImmutable, ProductUpdate } from "../../M
 import { number } from "yup";
 import { IRepository, MongoDB } from '@monorepo/mongodb'
 import { ISeedable } from "@monorepo/mongodb/dist/ISeedable";
+import { IDropable } from "@monorepo/mongodb/dist/IDropable";
 
-export class ProductStatisticsRepository implements IRepository, ISeedable {
+export class ProductStatisticsRepository implements IRepository, ISeedable, IDropable {
+    IDropable: 'IDropable' = 'IDropable';
     IRepository: 'IRepository' = 'IRepository';
     ISeedable: 'ISeedable' = 'ISeedable';
 

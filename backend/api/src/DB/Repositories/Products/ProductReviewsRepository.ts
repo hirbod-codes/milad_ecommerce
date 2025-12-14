@@ -6,8 +6,10 @@ import { faker } from '@faker-js/faker';
 import { ProductRepository } from './ProductRepository';
 import { UserRepository } from '../UserRepository';
 import { ISeedable } from "@monorepo/mongodb/dist/ISeedable";
+import { IDropable } from '@monorepo/mongodb/dist/IDropable';
 
-export class ProductReviewsRepository implements IRepository, ISeedable {
+export class ProductReviewsRepository implements IRepository, ISeedable, IDropable {
+    IDropable: 'IDropable' = 'IDropable';
     IRepository: 'IRepository' = 'IRepository';
     ISeedable: 'ISeedable' = 'ISeedable';
 

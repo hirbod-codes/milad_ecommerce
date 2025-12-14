@@ -3,6 +3,7 @@ import { DbConfigurationError } from './Exceptions/DbConfigurationError'
 import { ConnectionError } from './Exceptions/ConnectionError'
 import { IRepository, isIRepository } from './IRepository'
 import { ISeedable, isISeedable } from './ISeedable'
+import { IDropable, isIDropable } from './IDropable'
 
 export type MongodbConfig = {
     supportsTransaction: boolean;
@@ -23,13 +24,17 @@ export class MongoDB {
 
     private static repositories: IRepository[] = []
     private static seedables: ISeedable[] = []
+    private static dropables: IDropable[] = []
 
-    addRepository(repository: IRepository | ISeedable) {
+    addRepository(repository: IRepository | ISeedable | IDropable) {
         if (isIRepository(repository) && MongoDB.repositories.find(f => f.constructor === repository.constructor) === undefined)
             MongoDB.repositories.push(repository)
 
         if (isISeedable(repository) && MongoDB.seedables.find(f => f.constructor === repository.constructor) === undefined)
             MongoDB.seedables.push(repository)
+
+        if (isIDropable(repository) && MongoDB.dropables.find(f => f.constructor === repository.constructor) === undefined)
+            MongoDB.dropables.push(repository)
     }
 
     removeRepository(index: number) {
@@ -187,7 +192,7 @@ export class MongoDB {
 
     async dropSeedableCollections() {
         const db = await MongoDB.getDb()
-        for (const repository of MongoDB.seedables)
+        for (const repository of MongoDB.dropables)
             await repository.dropCollection(db)
     }
 

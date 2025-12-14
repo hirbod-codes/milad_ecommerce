@@ -4,8 +4,10 @@ import { collectionName, Privilege, PrivilegeCreate, PrivilegeInput, PrivilegeUp
 import { privilegeNames } from '../Models/privilegeNames'
 import { IRepository, MongoDB } from '@monorepo/mongodb'
 import { ISeedable } from '@monorepo/mongodb/dist/ISeedable';
+import { IDropable } from '@monorepo/mongodb/dist/IDropable'
 
-export class PrivilegeRepository implements IRepository, ISeedable {
+export class PrivilegeRepository implements IRepository, ISeedable, IDropable {
+    IDropable: 'IDropable' = 'IDropable';
     IRepository: 'IRepository' = 'IRepository';
     ISeedable: 'ISeedable' = 'ISeedable';
 

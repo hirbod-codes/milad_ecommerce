@@ -5,8 +5,10 @@ import { DateTime } from "luxon";
 import { number, string } from "yup";
 import { collectionName as orderCollectionName, OrderCreate } from "../../Models/Order";
 import { ISeedable } from "@monorepo/mongodb/dist/ISeedable";
+import { IDropable } from "@monorepo/mongodb/dist/IDropable";
 
-export class ProductSaleRepository implements IRepository, ISeedable {
+export class ProductSaleRepository implements IRepository, ISeedable, IDropable {
+    IDropable: 'IDropable' = 'IDropable';
     IRepository: 'IRepository' = 'IRepository';
     ISeedable: 'ISeedable' = 'ISeedable';
 

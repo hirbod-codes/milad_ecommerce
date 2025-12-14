@@ -9,8 +9,10 @@ import { ProductPictureRepository } from "./ProductPictureRepository";
 import * as fs from 'fs'
 import { ProductStatisticsRepository } from "./ProductStatisticsRepository";
 import { ISeedable } from "@monorepo/mongodb/dist/ISeedable";
+import { IDropable } from "@monorepo/mongodb/dist/IDropable";
 
-export class ProductRepository implements IRepository, ISeedable {
+export class ProductRepository implements IRepository, ISeedable, IDropable {
+    IDropable: 'IDropable' = 'IDropable';
     IRepository: 'IRepository' = 'IRepository';
     ISeedable: 'ISeedable' = 'ISeedable';
 

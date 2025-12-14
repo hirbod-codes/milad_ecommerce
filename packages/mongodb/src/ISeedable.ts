@@ -3,8 +3,6 @@ import { Db } from "mongodb";
 export interface ISeedable {
     ISeedable: 'ISeedable';
 
-    dropCollection(db: Db): Promise<void>;
-
     /**
      * calling this method multiple times does not add to the number of documents in the collection (use count parameter instead).
      * @param count number of documents in the collection after seed operation.
