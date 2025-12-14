@@ -7,12 +7,30 @@ import { ProductSaleRepository } from "./DB/Repositories/ProductSaleRepository";
 import { ProductViewRepository } from "./DB/Repositories/ProductViewRepository";
 import { ProductSaleRangeRepository } from "./DB/Repositories/ProductSaleRangeRepository";
 import { ProductViewRangeRepository } from "./DB/Repositories/ProductViewRangeRepository";
+import { ProductRepository } from "./DB/Repositories/ProductRepository";
 
+let failedJob: ScheduledTask | undefined = undefined
 let salesJob: ScheduledTask | undefined = undefined
 let viewsJob: ScheduledTask | undefined = undefined
 
 export function runMasterJobs() {
     // A job for failed product sale ranges
+    failedJob = schedule(
+        '0 0 */2 * * *',
+        async () => {
+            console.time()
+            console.log(`running cron job: "maintain sales z-score" at ${DateTime.utc().toISO()}...`)
+
+            try {
+                const productRepository = new ProductRepository()
+            } catch (e) {
+                console.error(e)
+            }
+
+            console.log('done')
+            console.timeEnd()
+        },
+        { name: 'maintain sales z-score', runOnInit: true, timezone: 'UTC' })
 
     // A job for collecting product sale ranges and assigning them to slaves
     salesJob = schedule(
@@ -99,7 +117,7 @@ export function runMasterJobs() {
             console.log('done')
             console.timeEnd()
         },
-        { name: 'maintain sales z-score', runOnInit: true, timezone: 'UTC' })
+        { name: 'maintain sales count', runOnInit: true, timezone: 'UTC' })
 
     viewsJob = schedule(
         '0 0 */4 * * *',
@@ -185,7 +203,7 @@ export function runMasterJobs() {
             console.log('done')
             console.timeEnd()
         },
-        { name: 'maintain views z-score', runOnInit: true, timezone: 'UTC' })
+        { name: 'maintain views count', runOnInit: true, timezone: 'UTC' })
 }
 
 async function deliverTaskToSlave(host: string, port: number, range: { min: string, max: string }, count: number, inclusive: boolean): Promise<boolean> {

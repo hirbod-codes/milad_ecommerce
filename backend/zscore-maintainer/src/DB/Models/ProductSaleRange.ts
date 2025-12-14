@@ -13,7 +13,7 @@ export const productSaleRangeSchema = object().required().strict(true).noUnknown
     lastProcessed: likeObjectId.optional(),
     duration: number().required().strict(true).integer(),
     count: number().required().strict(true).integer(),
-    fullyProcessed: boolean().required(),
+    zScoreCalculated: boolean().required(),
     createdAt: number().strict(true).required(),
     updatedAt: number().strict(true).required(),
 })

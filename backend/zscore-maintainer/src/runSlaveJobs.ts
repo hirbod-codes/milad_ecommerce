@@ -1,10 +1,6 @@
 import { DateTime } from "luxon";
 import { schedule } from "node-cron";
-import { MongoDB } from "@monorepo/mongodb";
 import { httpRequest } from "@monorepo/utils";
-import { ProductSaleRepository } from "./DB/Repositories/ProductSaleRepository";
-import { ProductRepository } from "./DB/Repositories/ProductRepository";
-import { ProductStatisticsRepository } from "./DB/Repositories/ProductStatisticsRepository";
 
 export async function runSlaveJobs(masterHost: string, masterPort: number, host: string, port: number) {
     schedule('0 0 * * * *', async () => {

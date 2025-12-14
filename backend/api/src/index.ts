@@ -1,7 +1,7 @@
 import express from "express";
 import dotenv from "dotenv";
 import pino from 'pino-http'
-import { getBooleanEnv, getIntegerEnv, getStringEnv, httpRequest, httpsRequest, tryAndWait } from "@monorepo/utils";
+import { getBooleanEnv, getIntegerEnv, getStringEnv, httpRequest, tryAndWait } from "@monorepo/utils";
 import { TagRepository } from "./DB/Repositories/TagRepository";
 import { ProductReviewsRepository } from "./DB/Repositories/Products/ProductReviewsRepository";
 import { ProductRepository } from "./DB/Repositories/Products/ProductRepository";
@@ -19,7 +19,6 @@ import prometheusClient from 'prom-client'
 import { ProductSaleRepository } from "./DB/Repositories/Products/ProductSaleRepository";
 import { MongoDB } from "@monorepo/mongodb";
 import { ProductPictureRepository } from "./DB/Repositories/Products/ProductPictureRepository";
-import { ProductStatisticsRepository } from "./DB/Repositories/Products/ProductStatisticsRepository";
 import { ProductViewRepository } from "./DB/Repositories/Products/ProductViewRepository";
 import { UserRepository } from "./DB/Repositories/UserRepository";
 import { RoleRepository } from "./DB/Repositories/RoleRepository";
@@ -34,6 +33,9 @@ export const isProduction = getStringEnv('NODE_ENV', 'The Node env environment v
 
 export const hostName = getStringEnv('HOST', 'The HOST environment variable is not provided')
 export const hostPort = getIntegerEnv('PORT', 'The PORT environment variable is not provided', (s) => s.min(1025))
+
+export const authorizationHost = getStringEnv('AUTHORIZATION_HOST', 'The HOST environment variable is not provided')
+export const authorizationPort = getIntegerEnv('AUTHORIZATION_PORT', 'The PORT environment variable is not provided', (s) => s.min(1025))
 
 
 // Communications
@@ -103,7 +105,6 @@ export const queueManagement = new QueueManagement(messageBrokerUrl, messageBrok
         db.addRepository(new ProductSaleRepository())
         db.addRepository(new ProductViewRepository())
         db.addRepository(new ProductPictureRepository())
-        db.addRepository(new ProductStatisticsRepository())
         db.addRepository(new UserRepository())
         db.addRepository(new RoleRepository())
 

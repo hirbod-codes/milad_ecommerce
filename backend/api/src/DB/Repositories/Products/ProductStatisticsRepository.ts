@@ -15,34 +15,6 @@ export class ProductStatisticsRepository {
         this.session = undefined
     }
 
-    async addCollection(db: Db): Promise<void> {
-        if (!(await db.listCollections().toArray()).map(e => e.name).includes(collectionName))
-            await db.createCollection(collectionName)
-
-        const indexes = await db.collection(collectionName).indexes()
-
-        if (indexes.find(i => i.name === 'timestamp') === undefined)
-            await db.createIndex(collectionName, { timestamp: -1 }, { name: 'timestamp' })
-
-        if (indexes.find(i => i.name === 'productId') === undefined)
-            await db.createIndex(collectionName, { productId: -1 }, { name: 'productId' })
-
-        if (indexes.find(i => i.name === 'tags') === undefined)
-            await db.createIndex(collectionName, { tags: 1 }, { name: 'tags' })
-
-        if (indexes.find(i => i.name === 'categories') === undefined)
-            await db.createIndex(collectionName, { categories: 1 }, { name: 'categories' })
-
-        if (indexes.find(i => i.name === 'count') === undefined)
-            await db.createIndex(collectionName, { count: -1 }, { name: 'count' })
-
-        if (indexes.find(i => i.name === 'duration') === undefined)
-            await db.createIndex(collectionName, { duration: -1 }, { name: 'duration' })
-
-        if (indexes.find(i => i.name === 'zScore') === undefined)
-            await db.createIndex(collectionName, { zScore: -1 }, { name: 'zScore' })
-    }
-
     private async getCollection(): Promise<Collection<ProductStatisticsCreate>> {
         return (await MongoDB.getDb()).collection<ProductStatisticsCreate>(collectionName)
     }

@@ -9,7 +9,6 @@ import { tokenRouter } from "./routes/Auth/tokens";
 import { emailRouter } from "./routes/Auth/email";
 import { phoneNumberRouter } from "./routes/Auth/phoneNumber";
 import { oauthGoogleRouter } from "./routes/oauth/google";
-import { exit } from "process";
 import { QueueManagement } from "./QueueManagement";
 import { users } from "./routes/users";
 import { user } from "./routes/user";

@@ -33,8 +33,8 @@ export class ProductViewRangeRepository implements IRepository {
         if (indexes.find(i => i.name === 'duration') === undefined)
             await db.createIndex(collectionName, { duration: 1 }, { name: 'duration' })
 
-        if (indexes.find(i => i.name === 'fullyProcessed') === undefined)
-            await db.createIndex(collectionName, { fullyProcessed: -1 }, { name: 'fullyProcessed' })
+        if (indexes.find(i => i.name === 'zScoreCalculated') === undefined)
+            await db.createIndex(collectionName, { zScoreCalculated: -1 }, { name: 'zScoreCalculated' })
     }
 
     private async getCollection(): Promise<Collection<ProductViewRangeCreate>> {
@@ -43,7 +43,7 @@ export class ProductViewRangeRepository implements IRepository {
 
     async create(productViewRange: ProductViewRangeInput, now: number): Promise<InsertOneResult | false> {
         try {
-            const p: ProductViewRangeCreate = { ...productViewRange, schemaVersion, lastProcessed: undefined, fullyProcessed: false, createdAt: now, updatedAt: now }
+            const p: ProductViewRangeCreate = { ...productViewRange, schemaVersion, lastProcessed: undefined, zScoreCalculated: false, createdAt: now, updatedAt: now }
 
             const result = await (await this.getCollection()).insertOne(p)
             if (!result.acknowledged)
@@ -68,6 +68,6 @@ export class ProductViewRangeRepository implements IRepository {
 
     async processed(range: ProductViewRangeInput, lastProcessed: string): Promise<UpdateResult | false> {
         const lastProcessedId = ObjectId.createFromHexString(lastProcessed)
-        return await (await this.getCollection()).updateOne({ min: range.min, max: range.max, count: range.count, duration: range.duration }, { $set: { lastProcessed: lastProcessedId, fullyProcessed: lastProcessedId.toString() === range.max.toString() } })
+        return await (await this.getCollection()).updateOne({ min: range.min, max: range.max, count: range.count, duration: range.duration }, { $set: { lastProcessed: lastProcessedId, zScoreCalculated: lastProcessedId.toString() === range.max.toString() } })
     }
 }
