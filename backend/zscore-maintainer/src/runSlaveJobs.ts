@@ -9,6 +9,7 @@ export async function runSlaveJobs(masterHost: string, masterPort: number, host:
 
         try {
             const r = await httpRequest({ host: masterHost, port: masterPort, path: '/subscribe', method: 'POST' }, JSON.stringify({ host, port }))
+            console.log(r)
             if (!r.response.statusCode || r.response.statusCode < 200)
                 console.warn('Failed to subscribe to master.')
         } catch (e) {

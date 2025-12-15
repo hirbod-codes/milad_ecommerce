@@ -275,9 +275,9 @@ services:
         networks:
             - authorization_redis
 
-    ############################################################################################# zscore-manager-master
-    zscore-manager-master:
-        container_name: zscore-manager-master
+    ############################################################################################# zscore_manager_master
+    zscore_manager_master:
+        container_name: zscore_manager_master
         build:
             context: .
             dockerfile: ./backend/zscore-maintainer/Dockerfile
@@ -299,9 +299,9 @@ services:
             - db
             - zscore_manager
 
-    ############################################################################################# zscore-manager-slave1
-    zscore-manager-slave1:
-        container_name: zscore-manager-slave1
+    ############################################################################################# zscore_manager_slave1
+    zscore_manager_slave1:
+        container_name: zscore_manager_slave1
         build:
             context: .
             dockerfile: ./backend/zscore-maintainer/Dockerfile
@@ -319,16 +319,16 @@ services:
             - APP_MODE=slave
             - API_HOST=api
             - API_PORT=3000
-            - HOST_NAME=zscore-manager-slave1
-            - MASTER_HOST=zscore-manager-master
+            - HOST_NAME=zscore_manager_slave1
+            - MASTER_HOST=zscore_manager_master
             - MASTER_PORT=3000
         networks:
             - db
             - zscore_manager
 
-    ############################################################################################# zscore-manager-slave2
-    zscore-manager-slave2:
-        container_name: zscore-manager-slave2
+    ############################################################################################# zscore_manager_slave2
+    zscore_manager_slave2:
+        container_name: zscore_manager_slave2
         build:
             context: .
             dockerfile: ./backend/zscore-maintainer/Dockerfile
@@ -346,8 +346,8 @@ services:
             - APP_MODE=slave
             - API_HOST=api
             - API_PORT=3000
-            - HOST_NAME=zscore-manager-slave2
-            - MASTER_HOST=zscore-manager-master
+            - HOST_NAME=zscore_manager_slave2
+            - MASTER_HOST=zscore_manager_master
             - MASTER_PORT=3000
         networks:
             - db
