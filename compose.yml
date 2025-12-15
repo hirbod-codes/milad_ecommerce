@@ -287,6 +287,7 @@ services:
             - /app/node_modules
         environment:
             - NODE_ENV=development
+            - PORT=3000
             - DB_SUPPORTS_TRANSACTION=false
             - DB_URL=mongodb://${mongodb_host_ip}:${mongodb_host_port}
             - MONGODB_USERNAME=admin
@@ -310,6 +311,7 @@ services:
             - /app/node_modules
         environment:
             - NODE_ENV=development
+            - PORT=3000
             - DB_SUPPORTS_TRANSACTION=false
             - DB_URL=mongodb://${mongodb_host_ip}:${mongodb_host_port}
             - MONGODB_USERNAME=admin
@@ -317,6 +319,9 @@ services:
             - APP_MODE=slave
             - API_HOST=api
             - API_PORT=3000
+            - HOST_NAME=zscore-manager-slave1
+            - MASTER_HOST=zscore-manager-master
+            - MASTER_PORT=3000
         networks:
             - db
             - zscore_manager
@@ -333,6 +338,7 @@ services:
             - /app/node_modules
         environment:
             - NODE_ENV=development
+            - PORT=3000
             - DB_SUPPORTS_TRANSACTION=false
             - DB_URL=mongodb://${mongodb_host_ip}:${mongodb_host_port}
             - MONGODB_USERNAME=admin
@@ -340,6 +346,9 @@ services:
             - APP_MODE=slave
             - API_HOST=api
             - API_PORT=3000
+            - HOST_NAME=zscore-manager-slave2
+            - MASTER_HOST=zscore-manager-master
+            - MASTER_PORT=3000
         networks:
             - db
             - zscore_manager

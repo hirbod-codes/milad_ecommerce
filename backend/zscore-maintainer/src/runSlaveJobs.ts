@@ -3,7 +3,7 @@ import { schedule } from "node-cron";
 import { httpRequest } from "@monorepo/utils";
 
 export async function runSlaveJobs(masterHost: string, masterPort: number, host: string, port: number) {
-    schedule('0 0 * * * *', async () => {
+    schedule('0 * * * * *', async () => {
         console.time()
         console.log(`running cron job: "subscription" at ${DateTime.utc().toISO()}...`)
 
