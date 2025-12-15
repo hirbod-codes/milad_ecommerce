@@ -118,10 +118,10 @@ services:
         ports:
             - 80:80
             - 443:443
-        depends_on:
-            - web
-            - api
-            - authorization
+        # depends_on:
+        #     - web
+        #     - api
+        #     - authorization
         networks:
             - gateway
 
@@ -196,6 +196,7 @@ services:
             - /app/node_modules
         environment:
             - NODE_ENV=development
+            - PORT=3000
             - DB_SUPPORTS_TRANSACTION=false
             - DB_URL=mongodb://${mongodb_host_ip}:${mongodb_host_port}
             - MONGODB_USERNAME=admin
@@ -205,10 +206,12 @@ services:
             - REVOKED_TOKENS_REDIS_TYPE=single
             - REVOKED_TOKENS_REDIS_INITIAL_NODE_URL=redis://revoked_access_tokens_redis:6379
             - MESSAGE_BROKER_TYPE=single
-            - MESSAGE_BROKER_URL=rabbitmq:5672
+            - MESSAGE_BROKER_SINGLE_URL=rabbitmq:5672
             - MESSAGE_BROKER_USERNAME=admin
             - MESSAGE_BROKER_PASSWORD=password
             - ALLOWED_ORIGINS=https://localhost,http://localhost:81
+            - AUTHORIZATION_HOST=authorization
+            - AUTHORIZATION_PORT=3000
         networks:
             - gateway
             - db
@@ -239,6 +242,7 @@ services:
             - /app/node_modules
         environment:
             - NODE_ENV=development
+            - PORT=3000
             - ADMIN_USERNAME=hirbod
             - ADMIN_PHONE_NUMBER=09999999999
             - ADMIN_EMAIL=example@domain.com
@@ -288,6 +292,8 @@ services:
             - MONGODB_USERNAME=admin
             - MONGODB_PASSWORD=password
             - APP_MODE=master
+            - API_HOST=api
+            - API_PORT=3000
         networks:
             - db
             - zscore_manager
@@ -309,6 +315,8 @@ services:
             - MONGODB_USERNAME=admin
             - MONGODB_PASSWORD=password
             - APP_MODE=slave
+            - API_HOST=api
+            - API_PORT=3000
         networks:
             - db
             - zscore_manager
@@ -330,6 +338,8 @@ services:
             - MONGODB_USERNAME=admin
             - MONGODB_PASSWORD=password
             - APP_MODE=slave
+            - API_HOST=api
+            - API_PORT=3000
         networks:
             - db
             - zscore_manager

@@ -82,7 +82,7 @@ export const queueManagement = new QueueManagement(messageBrokerUrl, messageBrok
 
 (async () => {
     if (!await tryAndWait(async () => {
-        const result = await httpRequest({ method: 'get', port: 3000, host: 'localhost', path: '/is_seeding' })
+        const result = await httpRequest({ method: 'get', port: authorizationPort, host: authorizationHost, path: '/is_seeding' })
         if (result.response.statusCode === 200 && boolean().isValidSync(result.data) && boolean().cast(result.data) === false)
             return
         else
