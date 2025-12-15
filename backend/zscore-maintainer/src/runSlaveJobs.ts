@@ -8,8 +8,7 @@ export async function runSlaveJobs(masterHost: string, masterPort: number, host:
         console.log(`running cron job: "subscription" at ${DateTime.utc().toISO()}...`)
 
         try {
-            const r = await httpRequest({ host: masterHost, port: masterPort, path: '/subscribe', method: 'POST' }, JSON.stringify({ host, port }))
-            console.log(r)
+            const r = await httpRequest({ host: masterHost, port: masterPort, path: '/subscribe', method: 'POST', headers: { "content-type": 'application/json' } }, JSON.stringify({ host, port: Number(port) }))
             if (!r.response.statusCode || r.response.statusCode < 200)
                 console.warn('Failed to subscribe to master.')
         } catch (e) {

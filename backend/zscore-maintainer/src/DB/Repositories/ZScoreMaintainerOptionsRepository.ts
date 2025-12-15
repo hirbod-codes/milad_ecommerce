@@ -1,5 +1,5 @@
 import { ObjectId, Collection, Db, ClientSession } from "mongodb";
-import { schemaVersion as zScoreMaintainerOptionsSchemaVersion, collectionName, ZScoreMaintainerOptionsCreate } from "../Models/zScoreMaintainerOptions";
+import { schemaVersion, collectionName, ZScoreMaintainerOptionsCreate } from "../Models/zScoreMaintainerOptions";
 import { DateTime } from "luxon";
 import { IRepository, MongoDB } from "@monorepo/mongodb";
 import { ISeedable } from "@monorepo/mongodb/dist/ISeedable";
@@ -18,8 +18,8 @@ export class ZScoreMaintainerOptionsRepository implements IRepository, ISeedable
 
     unsetTransactionSession(): void {
         this.session = undefined
-    } 
-    
+    }
+
     async dropCollection(db: Db): Promise<void> {
         if ((await db.listCollections().toArray()).map(e => e.name).includes(collectionName))
             await db.dropCollection(collectionName)
@@ -43,7 +43,15 @@ export class ZScoreMaintainerOptionsRepository implements IRepository, ISeedable
     }
 
     async seed(count?: number): Promise<void> {
-        // 
+        const now = DateTime.utc().toUnixInteger();
+        await (await this.getCollection()).insertOne({
+            schemaVersion,
+            lastProcessedSaleId: undefined,
+            lastProcessedViewId: undefined,
+            addresses: [],
+            updatedAt: now,
+            createdAt: now,
+        })
     }
 
     async createOptions() {
@@ -55,7 +63,7 @@ export class ZScoreMaintainerOptionsRepository implements IRepository, ISeedable
                 return options._id
 
             const result = await collection.insertOne({
-                schemaVersion: zScoreMaintainerOptionsSchemaVersion,
+                schemaVersion,
                 lastProcessedSaleId: undefined,
                 lastProcessedViewId: undefined,
                 addresses: [],

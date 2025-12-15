@@ -282,6 +282,8 @@ services:
             context: .
             dockerfile: ./backend/zscore-maintainer/Dockerfile
             target: development
+        ports:
+            - 3002:3000
         volumes:
             - ./backend/zscore-maintainer:/app/backend/zscore-maintainer
             - /app/node_modules
@@ -306,6 +308,8 @@ services:
             context: .
             dockerfile: ./backend/zscore-maintainer/Dockerfile
             target: development
+        ports:
+            - 3003:3000
         volumes:
             - ./backend/zscore-maintainer:/app/backend/zscore-maintainer
             - /app/node_modules
@@ -333,6 +337,8 @@ services:
             context: .
             dockerfile: ./backend/zscore-maintainer/Dockerfile
             target: development
+        ports:
+            - 3004:3000
         volumes:
             - ./backend/zscore-maintainer:/app/backend/zscore-maintainer
             - /app/node_modules
